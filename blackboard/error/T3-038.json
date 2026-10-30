@@ -1,0 +1,15 @@
+{
+  "id": "T3-038",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-038"
+  ],
+  "path": "src/main/java/com/apexledger/banking/treasury/api/FxController.java",
+  "kind": "refactor",
+  "layer": "interface",
+  "feature": null,
+  "export": "FxController",
+  "intent": "Inspect and refactor the implementation of Unit FxController (FX Settlement context, interface layer, package com.apexledger.banking.treasury). Thin REST controller /api/v1/fx: POST quotes, POST conversions. DTO records, validation, expired quote -> 409/422 ProblemDetail; no rate logic. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-038 not resolvable in queue or complete"
+}

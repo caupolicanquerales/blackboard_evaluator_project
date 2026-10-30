@@ -1,0 +1,15 @@
+{
+  "id": "T3-054",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-054"
+  ],
+  "path": "src/main/java/com/apexledger/banking/payments/domain/SettlementBatch.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "SettlementBatch",
+  "intent": "Inspect and refactor the implementation of Unit SettlementBatch (Payment Orchestration context, domain layer, package com.apexledger.banking.payments). Aggregate Settlement Batch grouping payments settled together. Invariants: only AUTHORIZED payments added; same payment cannot be in a batch twice; closed batch is immutable. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-054 not resolvable in queue or complete"
+}

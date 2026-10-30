@@ -1,0 +1,15 @@
+{
+  "id": "T1-059",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/apexledger/banking/payments/application/port/ClearingNetworkPortTest.java",
+  "kind": "test",
+  "layer": "application",
+  "feature": null,
+  "export": "ClearingNetworkPort",
+  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit ClearingNetworkPort (Payment Orchestration context, application layer, package com.apexledger.banking.payments). Outbound port submit(PaymentOrder) -> ClearingResult (accepted/failed) for ACH, SWIFT, SEPA; network message models never enter the domain. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/payments/application/port/ClearingNetworkPort.java.",
+  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+}

@@ -1,0 +1,15 @@
+{
+  "id": "T1-054",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/apexledger/banking/payments/domain/SettlementBatchTest.java",
+  "kind": "test",
+  "layer": "domain",
+  "feature": null,
+  "export": "SettlementBatch",
+  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit SettlementBatch (Payment Orchestration context, domain layer, package com.apexledger.banking.payments). Aggregate Settlement Batch grouping payments settled together. Invariants: only AUTHORIZED payments added; same payment cannot be in a batch twice; closed batch is immutable. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/payments/domain/SettlementBatch.java.",
+  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+}

@@ -1,0 +1,16 @@
+{
+  "id": "T2-065",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-065",
+    "T2-059"
+  ],
+  "path": "src/main/java/com/apexledger/banking/payments/infrastructure/ClearingNetworkAdapter.java",
+  "kind": "code",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "ClearingNetworkAdapter",
+  "intent": "Implement Unit ClearingNetworkAdapter (Payment Orchestration context, infrastructure layer, package com.apexledger.banking.payments). Anticorruption adapter for ACH/SWIFT/SEPA clearing (simulated, configurable result); translates network messages at the edge. Make the tests at src/test/java/com/apexledger/banking/payments/infrastructure/ClearingNetworkAdapterTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "error": "dependsOn T2-059 not resolvable in queue or complete"
+}

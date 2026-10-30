@@ -1,0 +1,15 @@
+{
+  "id": "T1-022",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/apexledger/banking/ledger/domain/JournalEntryTest.java",
+  "kind": "test",
+  "layer": "domain",
+  "feature": null,
+  "export": "JournalEntry",
+  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit JournalEntry (Ledger Accounting context, domain layer, package com.apexledger.banking.ledger). Immutable JournalEntry with lines (ledger account, DEBIT/CREDIT, local amount, optional foreign amount and exact FX rate). Invariants: total debits == total credits per currency; at least two lines; no mutation after creation; correction only via reversal() producing an Adjustment Journal with opposite sides; status PENDING/POSTED; cannot be created in a closed FiscalPeriod. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/ledger/domain/JournalEntry.java.",
+  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+}

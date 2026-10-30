@@ -1,0 +1,15 @@
+{
+  "id": "T3-023",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-023"
+  ],
+  "path": "src/main/java/com/apexledger/banking/ledger/domain/BalanceCalculator.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "BalanceCalculator",
+  "intent": "Inspect and refactor the implementation of Unit BalanceCalculator (Ledger Accounting context, domain layer, package com.apexledger.banking.ledger). Stateless domain service: bookBalance(account, posted entries) from settled POSTED lines only; availableBalance = bookBalance minus sum of active holds. Book Balance is always kept separate from Available Balance; never negative holds. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-023 not resolvable in queue or complete"
+}

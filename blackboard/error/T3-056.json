@@ -1,0 +1,15 @@
+{
+  "id": "T3-056",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-056"
+  ],
+  "path": "src/main/java/com/apexledger/banking/payments/application/port/HoldPort.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "HoldPort",
+  "intent": "Inspect and refactor the implementation of Unit HoldPort (Payment Orchestration context, application layer, package com.apexledger.banking.payments). Outbound port reserve(account, Money, paymentRef) and release(holdId); Payments sees only the hold outcome, never Account State or overdraft rules. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-056 not resolvable in queue or complete"
+}

@@ -1,0 +1,17 @@
+{
+  "id": "T2-062",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-062",
+    "T2-056",
+    "T2-015"
+  ],
+  "path": "src/main/java/com/apexledger/banking/payments/infrastructure/AccountsHoldAdapter.java",
+  "kind": "code",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "AccountsHoldAdapter",
+  "intent": "Implement Unit AccountsHoldAdapter (Payment Orchestration context, infrastructure layer, package com.apexledger.banking.payments). Anticorruption adapter implementing HoldPort via AccountService.placeHold/releaseHold; translates account rule violations into a hold-rejected outcome. Make the tests at src/test/java/com/apexledger/banking/payments/infrastructure/AccountsHoldAdapterTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "error": "dependsOn T2-015 not resolvable in queue or complete"
+}

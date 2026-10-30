@@ -1,0 +1,15 @@
+{
+  "id": "T1-037",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/apexledger/banking/treasury/infrastructure/StubFxRateProviderAdapterTest.java",
+  "kind": "test",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "StubFxRateProviderAdapter",
+  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit StubFxRateProviderAdapter (FX Settlement context, infrastructure layer, package com.apexledger.banking.treasury). Deterministic FxRateProviderPort adapter reading fixed rates and spread from properties banking.treasury.rates; unknown pair -> DomainRuleViolationException. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/treasury/infrastructure/StubFxRateProviderAdapter.java.",
+  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+}

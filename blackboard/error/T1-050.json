@@ -1,0 +1,15 @@
+{
+  "id": "T1-050",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/apexledger/banking/payments/domain/PaymentEventsTest.java",
+  "kind": "test",
+  "layer": "domain",
+  "feature": null,
+  "export": "PaymentEvents",
+  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit PaymentEvents (Payment Orchestration context, domain layer, package com.apexledger.banking.payments). Nested record PaymentRequestedEvent (paymentReference, direction, Money amount, currency, parties, crossBorder) published when a payment is requested; the only fact Compliance needs for screening. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/payments/domain/PaymentEvents.java.",
+  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+}

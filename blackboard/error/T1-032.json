@@ -1,0 +1,15 @@
+{
+  "id": "T1-032",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/apexledger/banking/treasury/domain/TreasuryEventsTest.java",
+  "kind": "test",
+  "layer": "domain",
+  "feature": null,
+  "export": "TreasuryEvents",
+  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit TreasuryEvents (FX Settlement context, domain layer, package com.apexledger.banking.treasury). Nested record RateUtilizationRecordedEvent (quoteId, pair, rate index, local and foreign amounts) published on each conversion so treasury stays hedged. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/treasury/domain/TreasuryEvents.java.",
+  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+}

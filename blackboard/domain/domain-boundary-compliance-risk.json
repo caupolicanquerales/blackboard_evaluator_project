@@ -1,0 +1,111 @@
+{
+  "schema_version": "1.0",
+  "report_type": "domain-slice",
+  "metadata": {
+    "generated_at": "2026-10-30T17:14:48-03:00",
+    "agent": "domain-boundary-discovery-specialist"
+  },
+  "subdomain": {
+    "name": "Compliance & Risk",
+    "type": "supporting",
+    "capability": "Screen transactions and account operations against sanctions, PEP lists and velocity patterns.",
+    "why_distinct": "Regulatory language, watchlist data and operator override audit rules differ from banking operations."
+  },
+  "ubiquitous_language": [
+    {
+      "term": "Sanctions List",
+      "context": "Transaction Screening",
+      "definition": "OFAC or UN watchlist."
+    },
+    {
+      "term": "PEP Screening",
+      "context": "Transaction Screening",
+      "definition": "Check against Politically Exposed Persons lists."
+    },
+    {
+      "term": "Transaction Velocity",
+      "context": "Transaction Screening",
+      "definition": "Frequency/volume pattern used to detect anomalies."
+    },
+    {
+      "term": "Compliance Hold",
+      "context": "Transaction Screening",
+      "definition": "Hold on a transaction triggered by a compliance match, distinct from account Hold."
+    },
+    {
+      "term": "SAR",
+      "context": "Transaction Screening",
+      "definition": "Suspicious Activity Report."
+    }
+  ],
+  "bounded_contexts": [
+    {
+      "name": "Transaction Screening",
+      "responsibility": "Screen transactions and decide clearance, flagging or suspension, with audited overrides.",
+      "in_scope": [
+        "Sanction and PEP screening",
+        "Velocity analysis",
+        "Compliance Hold",
+        "Risk Operations Queue",
+        "Override approval/rejection",
+        "SAR"
+      ],
+      "out_of_scope": [
+        "Account Hold",
+        "Payment execution",
+        "Ledger posting"
+      ],
+      "ubiquitous_language": [
+        "Sanctions List",
+        "PEP Screening",
+        "Transaction Velocity",
+        "Compliance Hold",
+        "SAR"
+      ],
+      "invariants": [
+        "Transactions over 5000 USD or cross-border undergo real-time sanction screening before payment authorization completes",
+        "A compliance match issues a Compliance Hold, notifies the Risk Operations Queue and publishes TransactionSuspended",
+        "Overrides are logged with operator ID, regulatory justification and cryptographic audit timestamp"
+      ],
+      "source_of_truth": [
+        "Screening Result",
+        "Compliance Hold",
+        "Compliance Override",
+        "SAR"
+      ],
+      "publishes": [
+        "ComplianceClearedEvent",
+        "ComplianceFlaggedEvent",
+        "TransactionSuspended"
+      ],
+      "consumes": [
+        "AccountCreatedEvent",
+        "PaymentRequestedEvent"
+      ],
+      "actors": [
+        "Compliance Officer",
+        "Risk Operations Analyst"
+      ],
+      "external_systems": [
+        "OFAC",
+        "UN Sanctions List",
+        "PEP list provider"
+      ],
+      "confidence": "high"
+    }
+  ],
+  "assumptions": [
+    {
+      "item": "TransactionSuspended is named in rules but not in the event summary; assumed to coexist with ComplianceFlaggedEvent.",
+      "type": "Ambiguity",
+      "impact_on_boundaries": "None on ownership; consumer unknown.",
+      "confidence": "medium"
+    },
+    {
+      "item": "Overlap of thresholds: 5000 USD screening vs 10000 USD cross-border AML clearance in Payments.",
+      "type": "Ambiguity",
+      "impact_on_boundaries": "Compliance owns screening decision; Payments only enforces that clearance exists.",
+      "confidence": "medium"
+    }
+  ]
+}

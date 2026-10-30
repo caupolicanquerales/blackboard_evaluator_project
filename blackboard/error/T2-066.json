@@ -1,0 +1,18 @@
+{
+  "id": "T2-066",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-066",
+    "T2-060",
+    "T2-039",
+    "T2-008"
+  ],
+  "path": "src/main/java/com/apexledger/banking/payments/infrastructure/PaymentComplianceEventListener.java",
+  "kind": "code",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "PaymentComplianceEventListener",
+  "intent": "Implement Unit PaymentComplianceEventListener (Payment Orchestration context, infrastructure layer, package com.apexledger.banking.payments). @EventListener consuming ComplianceClearedEvent, ComplianceFlaggedEvent, AccountFrozenEvent, FundsReservedEvent and FundsReleasedEvent and forwarding outcomes to PaymentOrchestrationService; ignores unknown references. Make the tests at src/test/java/com/apexledger/banking/payments/infrastructure/PaymentComplianceEventListenerTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "error": "dependsOn T2-008 not resolvable in queue or complete"
+}

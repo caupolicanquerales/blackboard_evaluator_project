@@ -1,0 +1,16 @@
+{
+  "id": "T2-049",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-049",
+    "T2-045"
+  ],
+  "path": "src/main/java/com/apexledger/banking/compliance/api/ComplianceController.java",
+  "kind": "code",
+  "layer": "interface",
+  "feature": null,
+  "export": "ComplianceController",
+  "intent": "Implement Unit ComplianceController (Transaction Screening context, interface layer, package com.apexledger.banking.compliance). Thin REST controller /api/v1/compliance: list Risk Operations Queue, approve/reject override (operatorId and justification required). DTO records; no screening logic; domain violations -> 422 ProblemDetail. Make the tests at src/test/java/com/apexledger/banking/compliance/api/ComplianceControllerTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "error": "dependsOn T1-049 not resolvable in queue or complete"
+}

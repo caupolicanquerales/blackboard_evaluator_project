@@ -1,0 +1,24 @@
+{
+  "modules": [
+    "Package com.apexledger.banking.ledger.{domain,application,application.port,infrastructure,api}",
+    "Context-to-units: Ledger Accounting -> LedgerEvents, ChartOfAccounts, FiscalPeriod, JournalEntry, BalanceCalculator, LedgerRepository, GeneralLedgerService, InMemoryLedgerStore, LedgerHoldEventListener, LedgerBalanceAdapter, GeneralLedgerController"
+  ],
+  "layers": [
+    "domain: JournalEntry, ChartOfAccounts, FiscalPeriod, BalanceCalculator, LedgerEvents (immutable, framework-free)",
+    "application: GeneralLedgerService and LedgerRepository port",
+    "infrastructure: in-memory store, hold event listener (consumes Accounts events), LedgerBalanceAdapter implementing Accounts' LedgerBalancePort (anticorruption, owned by the consumer-facing edge)",
+    "interface (package api): GeneralLedgerController"
+  ],
+  "build_order": [
+    "LedgerEvents, ChartOfAccounts, FiscalPeriod, JournalEntry, BalanceCalculator",
+    "LedgerRepository, GeneralLedgerService",
+    "InMemoryLedgerStore, LedgerHoldEventListener, LedgerBalanceAdapter, GeneralLedgerController",
+    "Depends on accounts-domain tasks AccountEvents (events consumed) and LedgerBalancePort",
+    "Task ids: LedgerEvents=T1/T2/T3-019, ChartOfAccounts=T1/T2/T3-020, FiscalPeriod=T1/T2/T3-021, JournalEntry=T1/T2/T3-022, BalanceCalculator=T1/T2/T3-023, LedgerRepository=T1/T2/T3-024, GeneralLedgerService=T1/T2/T3-025, InMemoryLedgerStore=T1/T2/T3-026, LedgerHoldEventListener=T1/T2/T3-027, LedgerBalanceAdapter=T1/T2/T3-028, GeneralLedgerController=T1/T2/T3-029"
+  ],
+  "risks": [
+    "Orchestration vs choreography with Payments is open: posting is exposed as a service call and holds arrive as events",
+    "Available Balance derived from consumed hold events; may move to Accounts if synchronous reads are needed",
+    "Reporting consumer of JournalPostedEvent is undescribed; only the event is published"
+  ]
+}

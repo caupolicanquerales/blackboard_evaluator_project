@@ -1,0 +1,15 @@
+{
+  "id": "T3-002",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-002"
+  ],
+  "path": "src/main/java/com/apexledger/banking/shared/Money.java",
+  "kind": "refactor",
+  "layer": "shared",
+  "feature": null,
+  "export": "Money",
+  "intent": "Inspect and refactor the implementation of Unit Money (Shared kernel context, shared layer, package com.apexledger.banking.shared). Value object (record) of amount (BigDecimal) and ISO currency. Invariants: non-null amount and currency, amount scale normalised, immutable. Behavior: add, subtract (same currency only, else DomainRuleViolationException), isNegative, isZero, compareTo. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-002 not resolvable in queue or complete"
+}

@@ -1,0 +1,16 @@
+{
+  "id": "T2-047",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-047",
+    "T2-043"
+  ],
+  "path": "src/main/java/com/apexledger/banking/compliance/infrastructure/StubWatchlistAdapter.java",
+  "kind": "code",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "StubWatchlistAdapter",
+  "intent": "Implement Unit StubWatchlistAdapter (Transaction Screening context, infrastructure layer, package com.apexledger.banking.compliance). WatchlistPort adapter backed by configurable property lists (banking.compliance.sanctioned-subjects) simulating OFAC/UN/PEP; translates to Screening's types. Make the tests at src/test/java/com/apexledger/banking/compliance/infrastructure/StubWatchlistAdapterTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "error": "dependsOn T2-043 not resolvable in queue or complete"
+}

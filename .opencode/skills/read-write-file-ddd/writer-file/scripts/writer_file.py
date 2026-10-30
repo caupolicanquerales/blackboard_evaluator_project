@@ -27,14 +27,28 @@ DEFAULT_OUTPUT_DIR = "blackboard"
 
 REPORT_TYPE_DISCOVERY = "domain-boundary-draft"
 REPORT_TYPE_FINAL = "domain-boundary-analysis"
+REPORT_TYPE_SLICE = "domain-slice"
+REPORT_TYPE_CONTEXT_MAP = "context-map"
 REPORT_FILENAMES = {
     REPORT_TYPE_DISCOVERY: "domain-boundary-draft.json",
     REPORT_TYPE_FINAL: "domain-boundary-analysis.json",
+    REPORT_TYPE_CONTEXT_MAP: "context-map.json",
 }
 REPORT_KINDS = {
     "discovery": REPORT_TYPE_DISCOVERY,
     "final": REPORT_TYPE_FINAL,
+    "domain-slice": REPORT_TYPE_SLICE,
+    "context-map": REPORT_TYPE_CONTEXT_MAP,
 }
+SLICE_KEYS = (
+    "schema_version",
+    "report_type",
+    "metadata",
+    "subdomain",
+    "ubiquitous_language",
+    "bounded_contexts",
+    "assumptions",
+)
 
 CONFIDENCES = frozenset({"high", "medium", "low"})
 SUBDOMAIN_TYPES = frozenset({"core", "supporting", "generic"})
@@ -101,6 +115,7 @@ FLOW_REQUIRED_KEYS = ("business_process", "contexts_involved", "consistency_expe
 BOUNDARY_OVERVIEW_KEYS = ("from", "to", "description")
 RATIONALE_KEYS = ("why_these_boundaries", "rejected_alternatives", "weakest_boundaries")
 HANDOFF_KEYS = ("modeling_focus", "deeper_investigation", "coupling_risks", "out_of_scope")
+CONTEXT_MAP_FILE_KEYS = ("schema_version", "report_type", "metadata", "context_map", "cross_boundary_flows")
 
 DISCOVERY_KEYS = (
     "schema_version",
@@ -200,8 +215,10 @@ def validate_metadata(metadata, report_type, label):
             return f"{label}.{key} must be a non-empty string when present"
     if "confidence" in metadata and metadata["confidence"] not in CONFIDENCES:
         return f"{label}.confidence must be one of {sorted(CONFIDENCES)} (got {metadata['confidence']!r})"
-    if report_type == REPORT_TYPE_FINAL and not is_non_empty_str(metadata.get("source_report")):
-        return f"{label}.source_report is required for {REPORT_TYPE_FINAL}"
+    if report_type in (REPORT_TYPE_FINAL, REPORT_TYPE_CONTEXT_MAP) and not is_non_empty_str(
+        metadata.get("source_report")
+    ):
+        return f"{label}.source_report is required for {report_type}"
     return None
 
 
@@ -530,6 +547,67 @@ def validate_final(report):
     return validate_handoff_notes(report.get("handoff_notes"), "report.handoff_notes")
 
 
+def validate_domain_slice(report):
+    """Validate one per-subdomain file consumed by domain-context-mapping."""
+    reason = check_keys(report, SLICE_KEYS, (), "report")
+    if reason:
+        return reason
+    reason = validate_metadata(report.get("metadata"), REPORT_TYPE_SLICE, "report.metadata")
+    if reason:
+        return reason
+    reason = validate_subdomains([report.get("subdomain")], "report.subdomain")
+    if reason:
+        return reason
+    reason = validate_language(report.get("ubiquitous_language"), "report.ubiquitous_language")
+    if reason:
+        return reason
+    context_names = validate_bounded_contexts(report.get("bounded_contexts"), "report.bounded_contexts")
+    if isinstance(context_names, str):
+        return context_names
+    return validate_assumptions(report.get("assumptions"), "report.assumptions")
+
+
+def load_context_names(source_report):
+    """Collect bounded context names from every per-domain slice in source_report."""
+    directory = Path(source_report).expanduser()
+    if not directory.is_absolute():
+        directory = Path.cwd() / directory
+    if not directory.is_dir():
+        return None, f"source report directory not found: {source_report}"
+    names = set()
+    for path in sorted(directory.glob("domain-boundary-*.json")):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            return None, f"cannot read slice {path}: {exc}"
+        contexts = data.get("bounded_contexts") if isinstance(data, dict) else None
+        for context in contexts if isinstance(contexts, list) else []:
+            if isinstance(context, dict) and is_non_empty_str(context.get("name")):
+                names.add(context["name"])
+    if not names:
+        return None, f"no bounded contexts found in per-domain files under {source_report}"
+    return sorted({name.strip().casefold() for name in names}), None
+
+
+def validate_context_map_file(report):
+    """Validate the lightweight context map: relationships and flows only."""
+    reason = check_keys(report, CONTEXT_MAP_FILE_KEYS, (), "report")
+    if reason:
+        return reason
+    reason = validate_metadata(report.get("metadata"), REPORT_TYPE_CONTEXT_MAP, "report.metadata")
+    if reason:
+        return reason
+    context_names, reason = load_context_names(report["metadata"]["source_report"])
+    if reason:
+        return reason
+    reason = validate_context_map(report.get("context_map"), context_names, "report.context_map")
+    if reason:
+        return reason
+    return validate_cross_boundary_flows(
+        report.get("cross_boundary_flows"), context_names, "report.cross_boundary_flows"
+    )
+
+
 def validate_report(report):
     if not isinstance(report, dict):
         return "report must be a JSON object"
@@ -539,9 +617,13 @@ def validate_report(report):
             f"(got {report.get('schema_version')!r})"
         )
     report_type = report.get("report_type")
+    if report_type == REPORT_TYPE_SLICE:
+        return validate_domain_slice(report)
+    if report_type == REPORT_TYPE_CONTEXT_MAP:
+        return validate_context_map_file(report)
     if report_type not in REPORT_FILENAMES:
         return (
-            f"report.report_type must be one of {sorted(REPORT_FILENAMES)} "
+            f"report.report_type must be one of {sorted([*REPORT_FILENAMES, REPORT_TYPE_SLICE])} "
             f"(got {report_type!r})"
         )
     reason = validate_metadata(report.get("metadata"), report_type, "report.metadata")
@@ -583,7 +665,7 @@ def resolve_report_type(payload, requested_kind):
                 f"(got {payload_type!r})",
             )
         return expected, None
-    if payload_type not in REPORT_FILENAMES:
+    if payload_type not in REPORT_FILENAMES and payload_type != REPORT_TYPE_SLICE:
         return None, f"unknown report_type {payload_type!r}"
     return payload_type, None
 
@@ -594,6 +676,8 @@ def resolve_target(report_type, output_dir, target):
         if path.suffix != ".json":
             return None, f"target report must use the .json extension (got {path.name!r})"
         return path, None
+    if report_type == REPORT_TYPE_SLICE:
+        return None, "--target is required for domain-slice reports (blackboard/domain/domain-boundary-<slug>.json)"
     return Path(output_dir).expanduser() / REPORT_FILENAMES[report_type], None
 
 
@@ -752,6 +836,84 @@ def build_final_template():
     }
 
 
+def build_slice_template():
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "report_type": REPORT_TYPE_SLICE,
+        "metadata": {
+            "generated_at": "2026-01-01T00:00:00Z",
+            "agent": "domain-boundary-discovery-specialist",
+        },
+        "subdomain": {
+            "name": "Example Subdomain",
+            "type": "core",
+            "capability": "Business capability owned by this subdomain.",
+            "why_distinct": "Why this area has its own rules, language, or lifecycle.",
+        },
+        "ubiquitous_language": [
+            {
+                "term": "Domain term",
+                "context": "Example Context",
+                "definition": "What the term means inside that context.",
+            }
+        ],
+        "bounded_contexts": [
+            {
+                "name": "Example Context",
+                "responsibility": "Single business responsibility of the context.",
+                "in_scope": ["Concept handled inside the context"],
+                "out_of_scope": ["Concept handled elsewhere"],
+                "ubiquitous_language": ["Domain term"],
+                "invariants": ["Business rule owned by this context"],
+                "source_of_truth": ["Concept this context owns"],
+                "publishes": ["Domain event published"],
+                "consumes": [],
+                "actors": ["Actor or role"],
+                "external_systems": [],
+                "confidence": "medium",
+            }
+        ],
+        "assumptions": [
+            {
+                "item": "Assumption, ambiguity, or open question.",
+                "type": "Open question",
+                "impact_on_boundaries": "Which boundary could change and why.",
+                "confidence": "low",
+            }
+        ],
+    }
+
+
+def build_context_map_template():
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "report_type": REPORT_TYPE_CONTEXT_MAP,
+        "metadata": {
+            "generated_at": "2026-01-01T00:00:00Z",
+            "agent": "domain-context-mapping-specialist",
+            "source_report": "blackboard/domain",
+        },
+        "context_map": [
+            {
+                "upstream": "Example Context",
+                "downstream": "external",
+                "relationship": "Open host service / published language",
+                "direction": "Example Context -> external",
+                "exchanged_information": "Published domain event fields.",
+                "boundary_protection": "Versioned event contract.",
+            }
+        ],
+        "cross_boundary_flows": [
+            {
+                "business_process": "End-to-end business process",
+                "contexts_involved": ["Example Context", "external"],
+                "consistency_expectation": "Eventual consistency.",
+                "notes": "Optional notes.",
+            }
+        ],
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Validate and write a strategic DDD report to the blackboard.",
@@ -761,7 +923,7 @@ def main():
     parser.add_argument(
         "--report-type",
         choices=sorted(REPORT_KINDS),
-        help="discovery (boundary draft) or final (context analysis)",
+        help="discovery (boundary draft), domain-slice (one subdomain file), or final (context analysis)",
     )
     parser.add_argument(
         "--output-dir",
@@ -784,11 +946,12 @@ def main():
     args = parser.parse_args()
 
     if args.emit_template:
-        template = (
-            build_final_template()
-            if REPORT_KINDS[args.emit_template] == REPORT_TYPE_FINAL
-            else build_discovery_template()
-        )
+        selected = REPORT_KINDS[args.emit_template]
+        template = {
+            REPORT_TYPE_FINAL: build_final_template,
+            REPORT_TYPE_SLICE: build_slice_template,
+            REPORT_TYPE_CONTEXT_MAP: build_context_map_template,
+        }.get(selected, build_discovery_template)()
         print(json.dumps(template, indent=2, ensure_ascii=False))
         return EXIT_OK
 
@@ -831,6 +994,13 @@ def main():
     if reason:
         print(f"[writer-file] {reason}", file=sys.stderr)
         return EXIT_IO
+
+    if report_type == REPORT_TYPE_CONTEXT_MAP:
+        print(
+            f"[writer-file] wrote {path} ({report_type}, {len(report['context_map'])} "
+            f"relationship(s), {len(report['cross_boundary_flows'])} flow(s))"
+        )
+        return EXIT_OK
 
     context_count = len(report["bounded_contexts"])
     print(

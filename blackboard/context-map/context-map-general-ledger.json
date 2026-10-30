@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "report_type": "context-map",
+  "metadata": {
+    "generated_at": "2026-10-30T20:20:00Z",
+    "agent": "domain-context-mapping-specialist",
+    "source_report": "blackboard/domain"
+  },
+  "context_map": [
+    {
+      "upstream": "Ledger Accounting",
+      "downstream": "Account Lifecycle",
+      "relationship": "Open host service / published language",
+      "direction": "Ledger Accounting -> Account Lifecycle",
+      "exchanged_information": "Current balance for closure checks.",
+      "boundary_protection": "Accounts reads balance only and never keeps its own balance; journal details stay in Ledger."
+    },
+    {
+      "upstream": "Ledger Accounting",
+      "downstream": "external",
+      "relationship": "Open host service / published language",
+      "direction": "Ledger Accounting -> external",
+      "exchanged_information": "Posted journal facts for reporting consumers.",
+      "boundary_protection": "Only posted entries are published; pending entries stay internal."
+    }
+  ],
+  "cross_boundary_flows": [
+    {
+      "business_process": "Journal posting and downstream reporting",
+      "contexts_involved": [
+        "Ledger Accounting",
+        "external"
+      ],
+      "consistency_expectation": "Eventual; reports lag posted entries.",
+      "notes": "Reporting context is undescribed and an open question."
+    }
+  ]
+}

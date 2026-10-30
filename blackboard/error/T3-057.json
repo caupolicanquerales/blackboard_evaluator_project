@@ -1,0 +1,15 @@
+{
+  "id": "T3-057",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-057"
+  ],
+  "path": "src/main/java/com/apexledger/banking/payments/application/port/LedgerPostingPort.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "LedgerPostingPort",
+  "intent": "Inspect and refactor the implementation of Unit LedgerPostingPort (Payment Orchestration context, application layer, package com.apexledger.banking.payments). Outbound port postAuthorization and postSettlement confirmations for a payment; Ledger validates its own balance and period rules. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-057 not resolvable in queue or complete"
+}

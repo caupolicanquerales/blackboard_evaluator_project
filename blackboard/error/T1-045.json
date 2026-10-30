@@ -1,0 +1,15 @@
+{
+  "id": "T1-045",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/apexledger/banking/compliance/application/TransactionScreeningServiceTest.java",
+  "kind": "test",
+  "layer": "application",
+  "feature": null,
+  "export": "TransactionScreeningService",
+  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit TransactionScreeningService (Transaction Screening context, application layer, package com.apexledger.banking.compliance). Use cases: screen(paymentReference, amount, crossBorder) before authorization completes -> publishes ComplianceClearedEvent, or on match creates ComplianceHold, enqueues to Risk Operations Queue, publishes ComplianceFlaggedEvent and TransactionSuspended; approveOverride/rejectOverride audited with operator, justification and hash timestamp; screenAccountCreated. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/compliance/application/TransactionScreeningService.java.",
+  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+}

@@ -1,0 +1,16 @@
+{
+  "id": "T2-068",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-068",
+    "T2-060"
+  ],
+  "path": "src/main/java/com/apexledger/banking/payments/api/PaymentController.java",
+  "kind": "code",
+  "layer": "interface",
+  "feature": null,
+  "export": "PaymentController",
+  "intent": "Implement Unit PaymentController (Payment Orchestration context, interface layer, package com.apexledger.banking.payments). Thin REST controller /api/v1/payments: create payment order, get status, settle batch. DTO records, validation, domain violations -> 422 ProblemDetail; no orchestration logic. Make the tests at src/test/java/com/apexledger/banking/payments/api/PaymentControllerTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "error": "dependsOn T1-068 not resolvable in queue or complete"
+}

@@ -1,0 +1,15 @@
+{
+  "id": "T1-030",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/apexledger/banking/treasury/domain/CurrencyPairTest.java",
+  "kind": "test",
+  "layer": "domain",
+  "feature": null,
+  "export": "CurrencyPair",
+  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit CurrencyPair (FX Settlement context, domain layer, package com.apexledger.banking.treasury). Value object (record) base/quote ISO currencies. Invariants: both non-null, valid and different; inverse(); stable symbol like EUR/USD. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/treasury/domain/CurrencyPair.java.",
+  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+}

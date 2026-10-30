@@ -1,0 +1,15 @@
+{
+  "id": "T3-026",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-026"
+  ],
+  "path": "src/main/java/com/apexledger/banking/ledger/infrastructure/InMemoryLedgerStore.java",
+  "kind": "refactor",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "InMemoryLedgerStore",
+  "intent": "Inspect and refactor the implementation of Unit InMemoryLedgerStore (Ledger Accounting context, infrastructure layer, package com.apexledger.banking.ledger). Thread-safe in-memory LedgerRepository; append-only entry list, defensive copies on read, no mutation or removal of stored entries. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-026 not resolvable in queue or complete"
+}

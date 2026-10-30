@@ -1,0 +1,16 @@
+{
+  "id": "T2-026",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-026",
+    "T2-024"
+  ],
+  "path": "src/main/java/com/apexledger/banking/ledger/infrastructure/InMemoryLedgerStore.java",
+  "kind": "code",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "InMemoryLedgerStore",
+  "intent": "Implement Unit InMemoryLedgerStore (Ledger Accounting context, infrastructure layer, package com.apexledger.banking.ledger). Thread-safe in-memory LedgerRepository; append-only entry list, defensive copies on read, no mutation or removal of stored entries. Make the tests at src/test/java/com/apexledger/banking/ledger/infrastructure/InMemoryLedgerStoreTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "error": "dependsOn T2-024 not resolvable in queue or complete"
+}

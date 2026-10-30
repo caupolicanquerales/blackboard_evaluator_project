@@ -1,0 +1,15 @@
+{
+  "id": "T3-066",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-066"
+  ],
+  "path": "src/main/java/com/apexledger/banking/payments/infrastructure/PaymentComplianceEventListener.java",
+  "kind": "refactor",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "PaymentComplianceEventListener",
+  "intent": "Inspect and refactor the implementation of Unit PaymentComplianceEventListener (Payment Orchestration context, infrastructure layer, package com.apexledger.banking.payments). @EventListener consuming ComplianceClearedEvent, ComplianceFlaggedEvent, AccountFrozenEvent, FundsReservedEvent and FundsReleasedEvent and forwarding outcomes to PaymentOrchestrationService; ignores unknown references. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-066 not resolvable in queue or complete"
+}

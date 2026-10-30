@@ -1,0 +1,15 @@
+{
+  "id": "T3-058",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-058"
+  ],
+  "path": "src/main/java/com/apexledger/banking/payments/application/port/FxQuotePort.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "FxQuotePort",
+  "intent": "Inspect and refactor the implementation of Unit FxQuotePort (Payment Orchestration context, application layer, package com.apexledger.banking.payments). Outbound port requestQuote and convert returning an opaque quote (id, expiry, converted amounts); Payments never computes rates or spreads. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-058 not resolvable in queue or complete"
+}

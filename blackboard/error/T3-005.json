@@ -1,0 +1,15 @@
+{
+  "id": "T3-005",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-005"
+  ],
+  "path": "src/main/java/com/apexledger/banking/shared/EventPublisher.java",
+  "kind": "refactor",
+  "layer": "shared",
+  "feature": null,
+  "export": "EventPublisher",
+  "intent": "Inspect and refactor the implementation of Unit EventPublisher (Shared kernel context, shared layer, package com.apexledger.banking.shared). Outbound port publish(DomainEvent). Domain and application layers depend on this port, never on Spring. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-005 not resolvable in queue or complete"
+}

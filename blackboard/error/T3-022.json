@@ -1,0 +1,15 @@
+{
+  "id": "T3-022",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-022"
+  ],
+  "path": "src/main/java/com/apexledger/banking/ledger/domain/JournalEntry.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "JournalEntry",
+  "intent": "Inspect and refactor the implementation of Unit JournalEntry (Ledger Accounting context, domain layer, package com.apexledger.banking.ledger). Immutable JournalEntry with lines (ledger account, DEBIT/CREDIT, local amount, optional foreign amount and exact FX rate). Invariants: total debits == total credits per currency; at least two lines; no mutation after creation; correction only via reversal() producing an Adjustment Journal with opposite sides; status PENDING/POSTED; cannot be created in a closed FiscalPeriod. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-022 not resolvable in queue or complete"
+}

@@ -1,0 +1,15 @@
+{
+  "id": "T3-012",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-012"
+  ],
+  "path": "src/main/java/com/apexledger/banking/accounts/application/port/AccountRepository.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "AccountRepository",
+  "intent": "Inspect and refactor the implementation of Unit AccountRepository (Account Lifecycle context, application layer, package com.apexledger.banking.accounts). Outbound port: save(DepositAccount), findByAccountNumber(String) returning Optional, existsByAccountNumber. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-012 not resolvable in queue or complete"
+}

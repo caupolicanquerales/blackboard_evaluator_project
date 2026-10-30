@@ -1,0 +1,15 @@
+{
+  "id": "T3-053",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-053"
+  ],
+  "path": "src/main/java/com/apexledger/banking/payments/domain/PaymentOrder.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "PaymentOrder",
+  "intent": "Inspect and refactor the implementation of Unit PaymentOrder (Payment Orchestration context, domain layer, package com.apexledger.banking.payments). Aggregate Payment Order. Invariants: outgoing transfers require a reservation hold before authorization; execution is two-phase Authorization then Settlement (settle only from AUTHORIZED); clearing failure triggers Reversal (hold release request); cross-border above USD 10,000 equivalent needs FX settlement and AML clearance before execution; compliance flag suspends it; executes only after clearance. Behavior: request, recordCompliance(cleared/flagged), recordHoldReserved, recordFxQuote, authorize, markCleared, settle, fail/reverse; emits PaymentRequestedEvent. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-053 not resolvable in queue or complete"
+}

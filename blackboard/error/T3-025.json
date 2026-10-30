@@ -1,0 +1,15 @@
+{
+  "id": "T3-025",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-025"
+  ],
+  "path": "src/main/java/com/apexledger/banking/ledger/application/GeneralLedgerService.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "GeneralLedgerService",
+  "intent": "Inspect and refactor the implementation of Unit GeneralLedgerService (Ledger Accounting context, application layer, package com.apexledger.banking.ledger). Use cases: postJournal (validates balance and open period, then publishes JournalPostedEvent), createPending, reverse (Adjustment Journal), closePeriod, bookBalance, availableBalance, registerHold/releaseHold. Uses Clock; immutable entries; rejects posting to closed periods. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-025 not resolvable in queue or complete"
+}

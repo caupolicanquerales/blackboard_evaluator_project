@@ -1,0 +1,15 @@
+{
+  "id": "T1-027",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/apexledger/banking/ledger/infrastructure/LedgerHoldEventListenerTest.java",
+  "kind": "test",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "LedgerHoldEventListener",
+  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit LedgerHoldEventListener (Ledger Accounting context, infrastructure layer, package com.apexledger.banking.ledger). Spring @EventListener consuming Accounts' FundsReservedEvent and FundsReleasedEvent and calling GeneralLedgerService.registerHold/releaseHold so Available Balance recovers after release. Idempotent per holdId; reads only the published event fields. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/ledger/infrastructure/LedgerHoldEventListener.java.",
+  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+}

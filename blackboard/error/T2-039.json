@@ -1,0 +1,16 @@
+{
+  "id": "T2-039",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-039",
+    "T2-004"
+  ],
+  "path": "src/main/java/com/apexledger/banking/compliance/domain/ComplianceEvents.java",
+  "kind": "code",
+  "layer": "domain",
+  "feature": null,
+  "export": "ComplianceEvents",
+  "intent": "Implement Unit ComplianceEvents (Transaction Screening context, domain layer, package com.apexledger.banking.compliance). Published language: nested records ComplianceClearedEvent, ComplianceFlaggedEvent, TransactionSuspended (each with paymentReference); Compliance exposes only outcomes, never match details, lists or SAR content. Make the tests at src/test/java/com/apexledger/banking/compliance/domain/ComplianceEventsTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "error": "dependsOn T1-039 not resolvable in queue or complete"
+}

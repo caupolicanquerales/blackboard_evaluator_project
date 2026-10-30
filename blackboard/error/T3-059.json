@@ -1,0 +1,15 @@
+{
+  "id": "T3-059",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-059"
+  ],
+  "path": "src/main/java/com/apexledger/banking/payments/application/port/ClearingNetworkPort.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "ClearingNetworkPort",
+  "intent": "Inspect and refactor the implementation of Unit ClearingNetworkPort (Payment Orchestration context, application layer, package com.apexledger.banking.payments). Outbound port submit(PaymentOrder) -> ClearingResult (accepted/failed) for ACH, SWIFT, SEPA; network message models never enter the domain. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-059 not resolvable in queue or complete"
+}

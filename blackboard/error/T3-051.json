@@ -1,0 +1,15 @@
+{
+  "id": "T3-051",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-051"
+  ],
+  "path": "src/main/java/com/apexledger/banking/payments/domain/TransferDirection.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "TransferDirection",
+  "intent": "Inspect and refactor the implementation of Unit TransferDirection (Payment Orchestration context, domain layer, package com.apexledger.banking.payments). Enum INBOUND, OUTBOUND, INTERNAL. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-051 not resolvable in queue or complete"
+}

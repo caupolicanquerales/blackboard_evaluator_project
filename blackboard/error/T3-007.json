@@ -1,0 +1,15 @@
+{
+  "id": "T3-007",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-007"
+  ],
+  "path": "src/main/java/com/apexledger/banking/shared/BankingConfiguration.java",
+  "kind": "refactor",
+  "layer": "shared",
+  "feature": null,
+  "export": "BankingConfiguration",
+  "intent": "Inspect and refactor the implementation of Unit BankingConfiguration (Shared kernel context, shared layer, package com.apexledger.banking.shared). Spring @Configuration providing a Clock bean (system UTC) and wiring EventPublisher to SpringEventPublisher; no business logic. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-007 not resolvable in queue or complete"
+}

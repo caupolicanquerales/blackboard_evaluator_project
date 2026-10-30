@@ -1,0 +1,16 @@
+{
+  "id": "T2-059",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-059",
+    "T2-053"
+  ],
+  "path": "src/main/java/com/apexledger/banking/payments/application/port/ClearingNetworkPort.java",
+  "kind": "code",
+  "layer": "application",
+  "feature": null,
+  "export": "ClearingNetworkPort",
+  "intent": "Implement Unit ClearingNetworkPort (Payment Orchestration context, application layer, package com.apexledger.banking.payments). Outbound port submit(PaymentOrder) -> ClearingResult (accepted/failed) for ACH, SWIFT, SEPA; network message models never enter the domain. Make the tests at src/test/java/com/apexledger/banking/payments/application/port/ClearingNetworkPortTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "error": "dependsOn T1-059 not resolvable in queue or complete"
+}

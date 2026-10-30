@@ -1,0 +1,15 @@
+{
+  "id": "T3-041",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-041"
+  ],
+  "path": "src/main/java/com/apexledger/banking/compliance/domain/ComplianceHold.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "ComplianceHold",
+  "intent": "Inspect and refactor the implementation of Unit ComplianceHold (Transaction Screening context, domain layer, package com.apexledger.banking.compliance). Entity Compliance Hold (distinct from account Hold) created on a screening match with status ACTIVE/RELEASED/REJECTED. Invariants: only one active hold per transaction; resolved only through an approved or rejected override. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-041 not resolvable in queue or complete"
+}

@@ -1,0 +1,15 @@
+{
+  "id": "T3-030",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-030"
+  ],
+  "path": "src/main/java/com/apexledger/banking/treasury/domain/CurrencyPair.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "CurrencyPair",
+  "intent": "Inspect and refactor the implementation of Unit CurrencyPair (FX Settlement context, domain layer, package com.apexledger.banking.treasury). Value object (record) base/quote ISO currencies. Invariants: both non-null, valid and different; inverse(); stable symbol like EUR/USD. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-030 not resolvable in queue or complete"
+}

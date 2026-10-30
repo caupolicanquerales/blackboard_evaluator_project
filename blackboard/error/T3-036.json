@@ -1,0 +1,15 @@
+{
+  "id": "T3-036",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-036"
+  ],
+  "path": "src/main/java/com/apexledger/banking/treasury/infrastructure/InMemoryQuoteRepository.java",
+  "kind": "refactor",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "InMemoryQuoteRepository",
+  "intent": "Inspect and refactor the implementation of Unit InMemoryQuoteRepository (FX Settlement context, infrastructure layer, package com.apexledger.banking.treasury). Thread-safe in-memory QuoteRepository (ConcurrentHashMap). Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-036 not resolvable in queue or complete"
+}

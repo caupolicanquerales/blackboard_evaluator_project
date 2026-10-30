@@ -1,0 +1,27 @@
+{
+  "modules": [
+    "Package com.apexledger.banking.payments.{domain,application,application.port,infrastructure,api}",
+    "Context-to-units: Payment Orchestration -> PaymentEvents, TransferDirection, PaymentStatus, PaymentOrder, SettlementBatch, PaymentOrderRepository, HoldPort, LedgerPostingPort, FxQuotePort, ClearingNetworkPort, PaymentOrchestrationService, InMemoryPaymentOrderRepository, AccountsHoldAdapter, LedgerPostingAdapter, FxQuoteAdapter, ClearingNetworkAdapter, PaymentComplianceEventListener, PaymentController",
+    "Compliance listener PaymentRequestedEventListener (Transaction Screening) queued here because it consumes PaymentEvents"
+  ],
+  "layers": [
+    "domain: PaymentOrder, SettlementBatch, enums, PaymentEvents (never models network messages)",
+    "application: PaymentOrchestrationService plus outbound ports HoldPort, LedgerPostingPort, FxQuotePort, ClearingNetworkPort",
+    "infrastructure: anticorruption adapters to Accounts, Ledger, Treasury and ACH/SWIFT/SEPA, compliance event listener, in-memory repository",
+    "interface (package api): PaymentController"
+  ],
+  "build_order": [
+    "PaymentEvents, TransferDirection, PaymentStatus, PaymentOrder, SettlementBatch",
+    "Outbound ports, PaymentOrchestrationService",
+    "Adapters (needs accounts, ledger, treasury services), listeners, PaymentController",
+    "Depends on upstream accounts, general-ledger, treasury-fx and compliance-risk tasks",
+    "Task ids: PaymentEvents=T1/T2/T3-050, TransferDirection=T1/T2/T3-051, PaymentStatus=T1/T2/T3-052, PaymentOrder=T1/T2/T3-053, SettlementBatch=T1/T2/T3-054, PaymentOrderRepository=T1/T2/T3-055, HoldPort=T1/T2/T3-056, LedgerPostingPort=T1/T2/T3-057, FxQuotePort=T1/T2/T3-058, ClearingNetworkPort=T1/T2/T3-059, PaymentOrchestrationService=T1/T2/T3-060, InMemoryPaymentOrderRepository=T1/T2/T3-061, AccountsHoldAdapter=T1/T2/T3-062, LedgerPostingAdapter=T1/T2/T3-063, FxQuoteAdapter=T1/T2/T3-064, ClearingNetworkAdapter=T1/T2/T3-065, PaymentComplianceEventListener=T1/T2/T3-066, PaymentRequestedEventListener=T1/T2/T3-067, PaymentController=T1/T2/T3-068"
+  ],
+  "risks": [
+    "Settlement confirmation flows as commands to Accounts and Ledger; orchestration vs choreography is open",
+    "Lifecycle events beyond PaymentRequestedEvent are not named; none are invented",
+    "Quote lock expiry (30 s) during execution forces a new quote",
+    "Funds appear reserved until hold release is confirmed after clearing failure",
+    "Thresholds differ: 5000 USD screening (Compliance) versus 10000 USD cross-border AML clearance (Payments enforces presence only)"
+  ]
+}

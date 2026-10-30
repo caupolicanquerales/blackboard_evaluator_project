@@ -1,0 +1,15 @@
+{
+  "id": "T2-002",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-002"
+  ],
+  "path": "src/main/java/com/apexledger/banking/shared/Money.java",
+  "kind": "code",
+  "layer": "shared",
+  "feature": null,
+  "export": "Money",
+  "intent": "Implement Unit Money (Shared kernel context, shared layer, package com.apexledger.banking.shared). Value object (record) of amount (BigDecimal) and ISO currency. Invariants: non-null amount and currency, amount scale normalised, immutable. Behavior: add, subtract (same currency only, else DomainRuleViolationException), isNegative, isZero, compareTo. Make the tests at src/test/java/com/apexledger/banking/shared/MoneyTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "error": "dependsOn T1-002 not resolvable in queue or complete"
+}

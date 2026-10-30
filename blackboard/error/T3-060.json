@@ -1,0 +1,15 @@
+{
+  "id": "T3-060",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-060"
+  ],
+  "path": "src/main/java/com/apexledger/banking/payments/application/PaymentOrchestrationService.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "PaymentOrchestrationService",
+  "intent": "Inspect and refactor the implementation of Unit PaymentOrchestrationService (Payment Orchestration context, application layer, package com.apexledger.banking.payments). Orchestrates a payment: request (publish PaymentRequestedEvent), reserve hold for outgoing, FX quote for cross-border (> USD 10,000 requires FX and clearance), wait for compliance clearance, authorize, clear, settle with ledger posting; clearing failure releases the hold (Reversal). Handles compliance cleared/flagged and account-frozen outcomes. Idempotent by payment reference. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-060 not resolvable in queue or complete"
+}

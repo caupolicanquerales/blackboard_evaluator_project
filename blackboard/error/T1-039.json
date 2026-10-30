@@ -1,0 +1,15 @@
+{
+  "id": "T1-039",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/apexledger/banking/compliance/domain/ComplianceEventsTest.java",
+  "kind": "test",
+  "layer": "domain",
+  "feature": null,
+  "export": "ComplianceEvents",
+  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit ComplianceEvents (Transaction Screening context, domain layer, package com.apexledger.banking.compliance). Published language: nested records ComplianceClearedEvent, ComplianceFlaggedEvent, TransactionSuspended (each with paymentReference); Compliance exposes only outcomes, never match details, lists or SAR content. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/compliance/domain/ComplianceEvents.java.",
+  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+}

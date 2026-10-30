@@ -1,0 +1,1 @@
+python3 orchestrator_github.py --seed seed/001_description.md --watch

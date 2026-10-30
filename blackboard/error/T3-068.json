@@ -1,0 +1,15 @@
+{
+  "id": "T3-068",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-068"
+  ],
+  "path": "src/main/java/com/apexledger/banking/payments/api/PaymentController.java",
+  "kind": "refactor",
+  "layer": "interface",
+  "feature": null,
+  "export": "PaymentController",
+  "intent": "Inspect and refactor the implementation of Unit PaymentController (Payment Orchestration context, interface layer, package com.apexledger.banking.payments). Thin REST controller /api/v1/payments: create payment order, get status, settle batch. DTO records, validation, domain violations -> 422 ProblemDetail; no orchestration logic. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-068 not resolvable in queue or complete"
+}

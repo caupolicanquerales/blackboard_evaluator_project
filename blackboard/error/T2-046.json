@@ -1,0 +1,16 @@
+{
+  "id": "T2-046",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-046",
+    "T2-044"
+  ],
+  "path": "src/main/java/com/apexledger/banking/compliance/infrastructure/InMemoryComplianceRepository.java",
+  "kind": "code",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "InMemoryComplianceRepository",
+  "intent": "Implement Unit InMemoryComplianceRepository (Transaction Screening context, infrastructure layer, package com.apexledger.banking.compliance). Thread-safe in-memory ComplianceRepository; overrides are append-only. Make the tests at src/test/java/com/apexledger/banking/compliance/infrastructure/InMemoryComplianceRepositoryTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "error": "dependsOn T2-044 not resolvable in queue or complete"
+}

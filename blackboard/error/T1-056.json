@@ -1,0 +1,15 @@
+{
+  "id": "T1-056",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/apexledger/banking/payments/application/port/HoldPortTest.java",
+  "kind": "test",
+  "layer": "application",
+  "feature": null,
+  "export": "HoldPort",
+  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit HoldPort (Payment Orchestration context, application layer, package com.apexledger.banking.payments). Outbound port reserve(account, Money, paymentRef) and release(holdId); Payments sees only the hold outcome, never Account State or overdraft rules. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/payments/application/port/HoldPort.java.",
+  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+}

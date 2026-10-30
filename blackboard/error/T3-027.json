@@ -1,0 +1,15 @@
+{
+  "id": "T3-027",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-027"
+  ],
+  "path": "src/main/java/com/apexledger/banking/ledger/infrastructure/LedgerHoldEventListener.java",
+  "kind": "refactor",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "LedgerHoldEventListener",
+  "intent": "Inspect and refactor the implementation of Unit LedgerHoldEventListener (Ledger Accounting context, infrastructure layer, package com.apexledger.banking.ledger). Spring @EventListener consuming Accounts' FundsReservedEvent and FundsReleasedEvent and calling GeneralLedgerService.registerHold/releaseHold so Available Balance recovers after release. Idempotent per holdId; reads only the published event fields. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-027 not resolvable in queue or complete"
+}

@@ -1,0 +1,15 @@
+{
+  "id": "T3-062",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-062"
+  ],
+  "path": "src/main/java/com/apexledger/banking/payments/infrastructure/AccountsHoldAdapter.java",
+  "kind": "refactor",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "AccountsHoldAdapter",
+  "intent": "Inspect and refactor the implementation of Unit AccountsHoldAdapter (Payment Orchestration context, infrastructure layer, package com.apexledger.banking.payments). Anticorruption adapter implementing HoldPort via AccountService.placeHold/releaseHold; translates account rule violations into a hold-rejected outcome. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-062 not resolvable in queue or complete"
+}

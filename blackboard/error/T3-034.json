@@ -1,0 +1,15 @@
+{
+  "id": "T3-034",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-034"
+  ],
+  "path": "src/main/java/com/apexledger/banking/treasury/application/port/QuoteRepository.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "QuoteRepository",
+  "intent": "Inspect and refactor the implementation of Unit QuoteRepository (FX Settlement context, application layer, package com.apexledger.banking.treasury). Outbound port: save(ExchangeRateQuote), findById(String) returning Optional. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-034 not resolvable in queue or complete"
+}

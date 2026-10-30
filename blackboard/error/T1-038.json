@@ -1,0 +1,15 @@
+{
+  "id": "T1-038",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/apexledger/banking/treasury/api/FxControllerTest.java",
+  "kind": "test",
+  "layer": "interface",
+  "feature": null,
+  "export": "FxController",
+  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit FxController (FX Settlement context, interface layer, package com.apexledger.banking.treasury). Thin REST controller /api/v1/fx: POST quotes, POST conversions. DTO records, validation, expired quote -> 409/422 ProblemDetail; no rate logic. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/treasury/api/FxController.java.",
+  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+}

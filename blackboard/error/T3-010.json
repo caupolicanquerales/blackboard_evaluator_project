@@ -1,0 +1,15 @@
+{
+  "id": "T3-010",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-010"
+  ],
+  "path": "src/main/java/com/apexledger/banking/accounts/domain/Hold.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "Hold",
+  "intent": "Inspect and refactor the implementation of Unit Hold (Account Lifecycle context, domain layer, package com.apexledger.banking.accounts). Entity/value Hold (Reservation Hold/Lien): holdId, Money amount, paymentReference, status ACTIVE/RELEASED/SETTLED. Invariants: positive amount; release only once; released/settled hold cannot be reactivated. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-010 not resolvable in queue or complete"
+}

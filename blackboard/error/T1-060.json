@@ -1,0 +1,15 @@
+{
+  "id": "T1-060",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/apexledger/banking/payments/application/PaymentOrchestrationServiceTest.java",
+  "kind": "test",
+  "layer": "application",
+  "feature": null,
+  "export": "PaymentOrchestrationService",
+  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit PaymentOrchestrationService (Payment Orchestration context, application layer, package com.apexledger.banking.payments). Orchestrates a payment: request (publish PaymentRequestedEvent), reserve hold for outgoing, FX quote for cross-border (> USD 10,000 requires FX and clearance), wait for compliance clearance, authorize, clear, settle with ledger posting; clearing failure releases the hold (Reversal). Handles compliance cleared/flagged and account-frozen outcomes. Idempotent by payment reference. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/payments/application/PaymentOrchestrationService.java.",
+  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+}

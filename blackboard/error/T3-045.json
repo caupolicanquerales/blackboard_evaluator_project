@@ -1,0 +1,15 @@
+{
+  "id": "T3-045",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-045"
+  ],
+  "path": "src/main/java/com/apexledger/banking/compliance/application/TransactionScreeningService.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "TransactionScreeningService",
+  "intent": "Inspect and refactor the implementation of Unit TransactionScreeningService (Transaction Screening context, application layer, package com.apexledger.banking.compliance). Use cases: screen(paymentReference, amount, crossBorder) before authorization completes -> publishes ComplianceClearedEvent, or on match creates ComplianceHold, enqueues to Risk Operations Queue, publishes ComplianceFlaggedEvent and TransactionSuspended; approveOverride/rejectOverride audited with operator, justification and hash timestamp; screenAccountCreated. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-045 not resolvable in queue or complete"
+}

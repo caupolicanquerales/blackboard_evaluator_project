@@ -1,0 +1,15 @@
+{
+  "id": "T3-003",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-003"
+  ],
+  "path": "src/main/java/com/apexledger/banking/shared/DomainRuleViolationException.java",
+  "kind": "refactor",
+  "layer": "shared",
+  "feature": null,
+  "export": "DomainRuleViolationException",
+  "intent": "Inspect and refactor the implementation of Unit DomainRuleViolationException (Shared kernel context, shared layer, package com.apexledger.banking.shared). Unchecked exception signalling a broken business invariant, carrying a stable message. Thrown by every context's domain; mapped to HTTP 422 at the interface layer. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-003 not resolvable in queue or complete"
+}

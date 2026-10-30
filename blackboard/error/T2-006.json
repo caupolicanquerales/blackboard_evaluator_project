@@ -1,0 +1,16 @@
+{
+  "id": "T2-006",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-006",
+    "T2-005"
+  ],
+  "path": "src/main/java/com/apexledger/banking/shared/SpringEventPublisher.java",
+  "kind": "code",
+  "layer": "shared",
+  "feature": null,
+  "export": "SpringEventPublisher",
+  "intent": "Implement Unit SpringEventPublisher (Shared kernel context, shared layer, package com.apexledger.banking.shared). Adapter implementing EventPublisher via Spring ApplicationEventPublisher; publishes synchronously in-process and propagates listener failures unchanged. Make the tests at src/test/java/com/apexledger/banking/shared/SpringEventPublisherTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "error": "dependsOn T2-005 not resolvable in queue or complete"
+}

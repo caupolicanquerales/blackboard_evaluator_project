@@ -1,0 +1,15 @@
+{
+  "id": "T3-011",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-011"
+  ],
+  "path": "src/main/java/com/apexledger/banking/accounts/domain/DepositAccount.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "DepositAccount",
+  "intent": "Inspect and refactor the implementation of Unit DepositAccount (Account Lifecycle context, domain layer, package com.apexledger.banking.accounts). Aggregate root DepositAccount (Account Lifecycle). Invariants: opened PROVISIONAL for a verified customer; state transitions per AccountState; FROZEN rejects debits/holds but accepts credits; overdraft limit approved individually and <= regulatory cap (rejects above); cannot TERMINATE with non-zero balance or active holds. Behavior: open, activate, freeze, terminate(currentBalance), approveOverdraft, placeHold, releaseHold; collects domain events (AccountCreatedEvent, AccountFrozenEvent, FundsReservedEvent, FundsReleasedEvent). Holds Account State/Overdraft Boundary only, never a balance. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-011 not resolvable in queue or complete"
+}

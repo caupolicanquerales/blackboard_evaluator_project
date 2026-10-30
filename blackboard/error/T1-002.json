@@ -1,0 +1,15 @@
+{
+  "id": "T1-002",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/apexledger/banking/shared/MoneyTest.java",
+  "kind": "test",
+  "layer": "shared",
+  "feature": null,
+  "export": "Money",
+  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit Money (Shared kernel context, shared layer, package com.apexledger.banking.shared). Value object (record) of amount (BigDecimal) and ISO currency. Invariants: non-null amount and currency, amount scale normalised, immutable. Behavior: add, subtract (same currency only, else DomainRuleViolationException), isNegative, isZero, compareTo. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/shared/Money.java.",
+  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+}

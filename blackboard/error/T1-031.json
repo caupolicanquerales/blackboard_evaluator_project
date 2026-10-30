@@ -1,0 +1,15 @@
+{
+  "id": "T1-031",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/apexledger/banking/treasury/domain/ExchangeRateQuoteTest.java",
+  "kind": "test",
+  "layer": "domain",
+  "feature": null,
+  "export": "ExchangeRateQuote",
+  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit ExchangeRateQuote (FX Settlement context, domain layer, package com.apexledger.banking.treasury). Aggregate Exchange Rate Quote: quoteId, CurrencyPair, rate index, spread rate, issuedAt, lockExpiresAt. Invariants: lock duration never exceeds 30 seconds (longer request rejected or capped); positive rate; isValidAt(Instant); convert(Money) uses the exact rate and fails when expired and records local amount, foreign amount and rate index used. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/treasury/domain/ExchangeRateQuote.java.",
+  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+}

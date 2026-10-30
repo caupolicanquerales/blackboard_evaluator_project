@@ -1,0 +1,16 @@
+{
+  "id": "T2-033",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-033",
+    "T2-030"
+  ],
+  "path": "src/main/java/com/apexledger/banking/treasury/application/port/FxRateProviderPort.java",
+  "kind": "code",
+  "layer": "application",
+  "feature": null,
+  "export": "FxRateProviderPort",
+  "intent": "Implement Unit FxRateProviderPort (FX Settlement context, application layer, package com.apexledger.banking.treasury). Outbound port marketRate(CurrencyPair) -> market rate and spread in Treasury's own types (anticorruption); provider formats never leak. Make the tests at src/test/java/com/apexledger/banking/treasury/application/port/FxRateProviderPortTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "error": "dependsOn T1-033 not resolvable in queue or complete"
+}

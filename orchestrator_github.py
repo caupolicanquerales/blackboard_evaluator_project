@@ -17,25 +17,28 @@ from pathlib import Path
 
 import telemetry
 from orchestrator_opencode import (
-    ANALYSIS_REPORT,
     ARCHITECT_AGENT,
+    CONTEXT_MAP_DIR,
     COMPLETE_DIR,
     DISCOVERY_AGENT,
-    DRAFT_REPORT,
+    DOMAIN_DIR,
     ERROR_DIR,
+    validate_domain_files,
+    validate_context_maps,
     MAPPING_AGENT,
-    PLAN_FILE,
     PROMPT_KEYS,
     QUEUE_DIR,
     ROOT,
     SEED_DIR,
     STAGE_INSTRUCTIONS,
     VERIFY_MODES,
+    append_feedback,
     build_architect_prompt,
     build_discovery_prompt,
     build_mapping_prompt,
     claimable,
     emit_tasks,
+    execute_with_tdd,
     get_project_root,
     load_index,
     read_queue,
@@ -225,7 +228,7 @@ def _run_agent(command, timeout, cwd):
     return True, ""
 
 
-def invoke_agent(task, args):
+def invoke_agent(task, args, feedback=None):
     profile, reason = resolve_profile(task["targetAgent"], list_profiles())
     if profile is None:
         return False, reason
@@ -237,6 +240,7 @@ def invoke_agent(task, args):
         "Resolve `path` against the project root above. Task JSON:\n"
     )
     message += json.dumps({key: task[key] for key in PROMPT_KEYS}, indent=2)
+    message = append_feedback(message, task, feedback)
     command = build_copilot_command(args, profile, message)
     print(f"[cmd ] {args.copilot_bin} -p <task> -s --agent {profile['name']} --no-ask-user --add-dir {ROOT} --allow-all-tools --allow-tool {args.allow_tool} --allow-all-paths")
     return run_agent(command, args.timeout, ROOT)
@@ -252,7 +256,7 @@ def run_discovery(args, description_path):
         print(f"[cmd ] {args.copilot_bin} -p <description> -s --agent {profile['name']} --no-ask-user --add-dir {ROOT} --allow-all-tools --allow-tool {args.allow_tool} --allow-all-paths")
         ok, reason = run_agent(command, args.timeout, ROOT)
         if ok:
-            reason = validate_report(DRAFT_REPORT, "discovery")
+            reason = validate_domain_files()
             ok = reason is None
         if not ok:
             telemetry.mark_error(current, reason)
@@ -264,13 +268,13 @@ def run_mapping(args):
     profile, reason = resolve_profile(MAPPING_AGENT, list_profiles())
     if profile is None:
         return False, reason
-    with telemetry.span("blackboard.mapping", {"draft": str(DRAFT_REPORT)}) as current:
+    with telemetry.span("blackboard.mapping", {"domain_dir": str(DOMAIN_DIR)}) as current:
         message = build_mapping_prompt()
         command = build_copilot_command(args, profile, message)
         print(f"[cmd ] {args.copilot_bin} -p <draft> -s --agent {profile['name']} --no-ask-user --add-dir {ROOT} --allow-all-tools --allow-tool {args.allow_tool} --allow-all-paths")
         ok, reason = run_agent(command, args.timeout, ROOT)
         if ok:
-            reason = validate_report(ANALYSIS_REPORT, "final")
+            reason = validate_context_maps()
             ok = reason is None
         if not ok:
             telemetry.mark_error(current, reason)
@@ -282,13 +286,13 @@ def run_architect(args):
     profile, reason = resolve_profile(ARCHITECT_AGENT, list_profiles())
     if profile is None:
         return False, reason
-    with telemetry.span("blackboard.architect", {"analysis": str(ANALYSIS_REPORT)}) as current:
+    with telemetry.span("blackboard.architect", {"context_maps": str(CONTEXT_MAP_DIR)}) as current:
         message = build_architect_prompt(get_project_root(), RUNNER_SCRIPT)
         command = build_copilot_command(args, profile, message)
         print(f"[cmd ] {args.copilot_bin} -p <reports> -s --agent {profile['name']} --no-ask-user --add-dir {ROOT} --allow-all-tools --allow-tool {args.allow_tool} --allow-all-paths")
         ok, reason = run_agent(command, args.timeout, ROOT)
-        if ok and not PLAN_FILE.is_file():
-            ok, reason = False, f"architect finished but {PLAN_FILE.relative_to(ROOT)} was not created"
+        if ok and not any(COMPLETE_DIR.glob("execution-strategy-*.json")):
+            ok, reason = False, "architect finished but no execution-strategy-<slug>.json was created"
         if ok and not any(QUEUE_DIR.glob("*.json")) and not any(COMPLETE_DIR.glob("*.json")):
             ok, reason = False, "architect finished but emitted no tasks"
         if not ok:
@@ -332,11 +336,16 @@ def run_pass(args):
             return processed, [task["id"] for _, task in kept]
         file, task = ready[0]
         print(f"[run ] {task['id']} -> {task['targetAgent']} ({task['path']})")
-        ok, reason = invoke_agent(task, args)
-        if ok and task["stage"] != 0 and not (get_project_root() / task["path"]).exists():
-            ok, reason = False, f"agent finished but {task['path']} was not created"
-        if ok:
-            ok, reason = run_verification(get_project_root(), args.verify, args.verify_scope, task, args.verify_timeout)
+        def invoke(feedback):
+            ok, reason = invoke_agent(task, args, feedback)
+            if ok and task["stage"] != 0 and not (get_project_root() / task["path"]).exists():
+                return False, f"agent finished but {task['path']} was not created"
+            return ok, reason
+
+        def verify():
+            return run_verification(get_project_root(), args.verify, args.verify_scope, task, args.verify_timeout)
+
+        ok, reason = execute_with_tdd(task, invoke, verify)
         if ok:
             with telemetry.span("blackboard.complete", {"file": file.name, **telemetry.task_attributes(task)}):
                 file.replace(COMPLETE_DIR / file.name)
@@ -385,32 +394,36 @@ def main():
     print(f"[root] generated project: {project_root}")
 
     if args.force:
-        for report in (DRAFT_REPORT, ANALYSIS_REPORT):
-            report.unlink(missing_ok=True)
+        for map_file in CONTEXT_MAP_DIR.glob("context-map-*.json"):
+            map_file.unlink(missing_ok=True)
+        for domain_file in DOMAIN_DIR.glob("domain-boundary-*.json"):
+            domain_file.unlink(missing_ok=True)
 
     if shutil.which(args.copilot_bin) is None:
         print(f"[fatal] {args.copilot_bin!r} not found on PATH (install GitHub Copilot CLI or set COPILOT_BIN)")
         return 2
 
-    if validate_report(DRAFT_REPORT, "discovery") is None and not args.force:
-        print(f"[skip] discovery report already valid: {DRAFT_REPORT.relative_to(ROOT)}")
+    if validate_domain_files() is None and not args.force:
+        print(f"[skip] discovery files already valid: {DOMAIN_DIR.relative_to(ROOT)}/")
     else:
-        DRAFT_REPORT.unlink(missing_ok=True)
+        for domain_file in DOMAIN_DIR.glob("domain-boundary-*.json"):
+            domain_file.unlink(missing_ok=True)
         ok, reason = run_discovery(args, description)
         if not ok:
             print(f"[fatal] discovery: {reason}")
             return 1
         print("[ddd ] discovery report ready")
 
-    if validate_report(ANALYSIS_REPORT, "final") is None and not args.force:
-        print(f"[skip] mapping report already valid: {ANALYSIS_REPORT.relative_to(ROOT)}")
+    if validate_context_maps() is None and not args.force:
+        print(f"[skip] context maps already valid: {CONTEXT_MAP_DIR.relative_to(ROOT)}/")
     else:
-        ANALYSIS_REPORT.unlink(missing_ok=True)
+        for map_file in CONTEXT_MAP_DIR.glob("context-map-*.json"):
+            map_file.unlink(missing_ok=True)
         ok, reason = run_mapping(args)
         if not ok:
             print(f"[fatal] mapping: {reason}")
             return 1
-        print("[ddd ] analysis report ready")
+        print("[ddd ] context maps ready")
 
     print("[plan] architect reading the validated reports")
     ok, reason = run_architect(args)

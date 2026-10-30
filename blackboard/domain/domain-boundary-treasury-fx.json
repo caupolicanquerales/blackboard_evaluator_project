@@ -1,0 +1,99 @@
+{
+  "schema_version": "1.0",
+  "report_type": "domain-slice",
+  "metadata": {
+    "generated_at": "2026-10-30T17:14:48-03:00",
+    "agent": "domain-boundary-discovery-specialist"
+  },
+  "subdomain": {
+    "name": "Treasury & FX",
+    "type": "supporting",
+    "capability": "Live FX quotes, currency conversion and multi-currency clearing for international routes.",
+    "why_distinct": "Market-rate and treasury position language with its own quote expiry and hedging rules."
+  },
+  "ubiquitous_language": [
+    {
+      "term": "Currency Pair",
+      "context": "FX Settlement",
+      "definition": "Two currencies whose exchange rate is quoted."
+    },
+    {
+      "term": "Exchange Rate Quote",
+      "context": "FX Settlement",
+      "definition": "Offered rate for a currency pair."
+    },
+    {
+      "term": "Spread Rate",
+      "context": "FX Settlement",
+      "definition": "Margin applied over the market rate."
+    },
+    {
+      "term": "Rate Lock Expiry",
+      "context": "FX Settlement",
+      "definition": "Also Rate Hold Expiry: end of the 30-second quote lock."
+    },
+    {
+      "term": "Treasury Clearing",
+      "context": "FX Settlement",
+      "definition": "Multi-currency balance clearing for international routes."
+    }
+  ],
+  "bounded_contexts": [
+    {
+      "name": "FX Settlement",
+      "responsibility": "Issue locked FX quotes, execute conversions and report rate utilization.",
+      "in_scope": [
+        "Quote issuance and lock",
+        "Conversion execution",
+        "Rate utilization metrics",
+        "Treasury clearing"
+      ],
+      "out_of_scope": [
+        "Payment orchestration",
+        "Journal posting",
+        "AML screening"
+      ],
+      "ubiquitous_language": [
+        "Currency Pair",
+        "Exchange Rate Quote",
+        "Spread Rate",
+        "Rate Lock Expiry",
+        "Treasury Clearing"
+      ],
+      "invariants": [
+        "FX quote lock lasts at most 30 seconds",
+        "Foreign currency settlement records local amount, foreign amount and exact rate index used",
+        "Conversions publish rate utilization metrics to keep treasury hedged"
+      ],
+      "source_of_truth": [
+        "Exchange Rate Quote",
+        "Currency Conversion",
+        "Rate utilization metrics"
+      ],
+      "publishes": [],
+      "consumes": [],
+      "actors": [
+        "Treasury Dealer",
+        "Payment Orchestrator"
+      ],
+      "external_systems": [
+        "Market rate provider"
+      ],
+      "confidence": "medium"
+    }
+  ],
+  "assumptions": [
+    {
+      "item": "No FX events are named in the description; quotes are requested synchronously by Payments.",
+      "type": "Assumption",
+      "impact_on_boundaries": "Integration style only; publishes left empty.",
+      "confidence": "medium"
+    },
+    {
+      "item": "Rate source and hedging process are not described.",
+      "type": "Open question",
+      "impact_on_boundaries": "May add a market-data external system or Treasury Position context.",
+      "confidence": "low"
+    }
+  ]
+}

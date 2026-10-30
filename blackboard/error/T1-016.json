@@ -1,0 +1,15 @@
+{
+  "id": "T1-016",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/apexledger/banking/accounts/infrastructure/InMemoryAccountRepositoryTest.java",
+  "kind": "test",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "InMemoryAccountRepository",
+  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit InMemoryAccountRepository (Account Lifecycle context, infrastructure layer, package com.apexledger.banking.accounts). ConcurrentHashMap-backed AccountRepository adapter (persistence technology unspecified); thread-safe, returns Optional.empty for unknown accounts. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/accounts/infrastructure/InMemoryAccountRepository.java.",
+  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+}

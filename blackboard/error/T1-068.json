@@ -1,0 +1,15 @@
+{
+  "id": "T1-068",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/apexledger/banking/payments/api/PaymentControllerTest.java",
+  "kind": "test",
+  "layer": "interface",
+  "feature": null,
+  "export": "PaymentController",
+  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit PaymentController (Payment Orchestration context, interface layer, package com.apexledger.banking.payments). Thin REST controller /api/v1/payments: create payment order, get status, settle batch. DTO records, validation, domain violations -> 422 ProblemDetail; no orchestration logic. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/payments/api/PaymentController.java.",
+  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+}

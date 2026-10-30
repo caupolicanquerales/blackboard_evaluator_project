@@ -1,0 +1,19 @@
+{
+  "name": "nestjs-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server that generates NestJS projects into the shared workspace",
+  "main": "dist/index.js",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "typescript": "^5.5.4"
+  }
+}

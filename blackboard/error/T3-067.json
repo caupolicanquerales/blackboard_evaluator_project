@@ -1,0 +1,15 @@
+{
+  "id": "T3-067",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-067"
+  ],
+  "path": "src/main/java/com/apexledger/banking/compliance/infrastructure/PaymentRequestedEventListener.java",
+  "kind": "refactor",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "PaymentRequestedEventListener",
+  "intent": "Inspect and refactor the implementation of Unit PaymentRequestedEventListener (Transaction Screening context, infrastructure layer, package com.apexledger.banking.compliance). Transaction Screening @EventListener consuming PaymentRequestedEvent and calling TransactionScreeningService.screen for transfers over USD 5,000 or cross-border before authorization completes. Lives in the compliance infrastructure package; queued with payments because it needs PaymentEvents. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-067 not resolvable in queue or complete"
+}

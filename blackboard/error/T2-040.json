@@ -1,0 +1,16 @@
+{
+  "id": "T2-040",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-040",
+    "T2-002"
+  ],
+  "path": "src/main/java/com/apexledger/banking/compliance/domain/ScreeningResult.java",
+  "kind": "code",
+  "layer": "domain",
+  "feature": null,
+  "export": "ScreeningResult",
+  "intent": "Implement Unit ScreeningResult (Transaction Screening context, domain layer, package com.apexledger.banking.compliance). Value object with outcome CLEARED/FLAGGED, subject reference and reason. Invariants: screening is mandatory when amount exceeds USD 5,000 or the transfer is cross-border (requiresScreening(amountUsd, crossBorder)); flagged results require a reason. Make the tests at src/test/java/com/apexledger/banking/compliance/domain/ScreeningResultTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "error": "dependsOn T1-040 not resolvable in queue or complete"
+}

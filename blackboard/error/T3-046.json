@@ -1,0 +1,15 @@
+{
+  "id": "T3-046",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-046"
+  ],
+  "path": "src/main/java/com/apexledger/banking/compliance/infrastructure/InMemoryComplianceRepository.java",
+  "kind": "refactor",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "InMemoryComplianceRepository",
+  "intent": "Inspect and refactor the implementation of Unit InMemoryComplianceRepository (Transaction Screening context, infrastructure layer, package com.apexledger.banking.compliance). Thread-safe in-memory ComplianceRepository; overrides are append-only. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-046 not resolvable in queue or complete"
+}

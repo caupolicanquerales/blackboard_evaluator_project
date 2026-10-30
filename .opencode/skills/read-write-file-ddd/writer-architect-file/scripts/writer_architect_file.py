@@ -154,8 +154,18 @@ def validate_task(task, label):
     return None
 
 
-def validate_task_batch(tasks):
-    """Validate each task, then the batch: unique IDs, known dependencies, no cycles."""
+def existing_task_ids(output_dir):
+    """IDs already written to the queue or complete folders (upstream domains)."""
+    folders = [Path(output_dir), Path(output_dir).parent / "complete"]
+    return {path.stem for folder in folders if folder.is_dir() for path in folder.glob("T-*.json")}
+
+
+def validate_task_batch(tasks, external_ids=frozenset()):
+    """Validate each task, then the batch: unique IDs, known dependencies, no cycles.
+
+    Dependencies may point to tasks in this batch or to external_ids (upstream domains
+    already queued or completed). External dependencies are not cycle-checked.
+    """
     ids = {}
     for index, (source, task) in enumerate(tasks):
         label = f"task[{index}] ({source.name})"
@@ -167,11 +177,14 @@ def validate_task_batch(tasks):
         ids[task["id"]] = task
 
     for task_id, task in ids.items():
-        unknown = [dep for dep in task["depends_on"] if dep not in ids]
+        unknown = [dep for dep in task["depends_on"] if dep not in ids and dep not in external_ids]
         if unknown:
             return f"{task_id}.depends_on references unknown task(s): {', '.join(unknown)}"
 
-    remaining = {task_id: set(task["depends_on"]) for task_id, task in ids.items()}
+    remaining = {
+        task_id: {dep for dep in task["depends_on"] if dep in ids}
+        for task_id, task in ids.items()
+    }
     while remaining:
         ready = [task_id for task_id, deps in remaining.items() if not deps]
         if not ready:
@@ -246,12 +259,12 @@ def cmd_tasks(args):
             return code
         tasks.append((source, payload))
 
-    reason = validate_task_batch(tasks)
+    output_dir = Path(args.output_dir)
+    reason = validate_task_batch(tasks, existing_task_ids(output_dir))
     if reason:
         print(f"[writer-architect] invalid task batch: {reason}", file=sys.stderr)
         return EXIT_INVALID
 
-    output_dir = Path(args.output_dir)
     for _, task in tasks:
         reason, code = atomic_write(output_dir / f"{task['id']}.json", task, args.force)
         if reason:

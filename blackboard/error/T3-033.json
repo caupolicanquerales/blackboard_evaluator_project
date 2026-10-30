@@ -1,0 +1,15 @@
+{
+  "id": "T3-033",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-033"
+  ],
+  "path": "src/main/java/com/apexledger/banking/treasury/application/port/FxRateProviderPort.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "FxRateProviderPort",
+  "intent": "Inspect and refactor the implementation of Unit FxRateProviderPort (FX Settlement context, application layer, package com.apexledger.banking.treasury). Outbound port marketRate(CurrencyPair) -> market rate and spread in Treasury's own types (anticorruption); provider formats never leak. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-033 not resolvable in queue or complete"
+}

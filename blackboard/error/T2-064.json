@@ -1,0 +1,17 @@
+{
+  "id": "T2-064",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-064",
+    "T2-058",
+    "T2-035"
+  ],
+  "path": "src/main/java/com/apexledger/banking/payments/infrastructure/FxQuoteAdapter.java",
+  "kind": "code",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "FxQuoteAdapter",
+  "intent": "Implement Unit FxQuoteAdapter (Payment Orchestration context, infrastructure layer, package com.apexledger.banking.payments). Adapter implementing FxQuotePort via FxService.requestQuote/convert; maps expiry to a renew-quote outcome. Make the tests at src/test/java/com/apexledger/banking/payments/infrastructure/FxQuoteAdapterTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "error": "dependsOn T2-058 not resolvable in queue or complete"
+}

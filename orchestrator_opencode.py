@@ -3,12 +3,13 @@
 
 The pipeline runs in four phases over one business description from ``seed/``:
 
-1. ``domain-boundary-discovery-specialist`` writes
-   ``blackboard/domain-boundary-draft.json``.
-2. ``domain-context-mapping-specialist`` writes
-   ``blackboard/domain-boundary-analysis.json``.
-3. ``agent-architect`` reads the validated reports, writes the architecture plan
-   and queues dependency-ordered tasks.
+1. ``domain-boundary-discovery-specialist`` writes one small file per subdomain
+   to ``blackboard/domain/domain-boundary-<slug>.json``.
+2. ``domain-context-mapping-specialist`` reads those files and writes one
+   context map per slice to ``blackboard/context-map/context-map-<slug>.json``.
+3. ``agent-architect`` reads each slice with its context map, writes one execution
+   strategy per domain to ``blackboard/complete/execution-strategy-<slug>.json`` and
+   queues dependency-ordered tasks.
 4. The blackboard workers drain the queue in stage order:
 
    stage 0 -> agent-container  (generate the project root / scaffold)
@@ -36,9 +37,8 @@ COMPLETE_DIR = BLACKBOARD / "complete"
 ERROR_DIR = BLACKBOARD / "error"
 PROJECTS_DIR = ROOT / "projects"
 SEED_DIR = ROOT / "seed"
-DRAFT_REPORT = BLACKBOARD / "domain-boundary-draft.json"
-ANALYSIS_REPORT = BLACKBOARD / "domain-boundary-analysis.json"
-PLAN_FILE = COMPLETE_DIR / "architecture-plan.md"
+DOMAIN_DIR = BLACKBOARD / "domain"
+CONTEXT_MAP_DIR = BLACKBOARD / "context-map"
 READER_SCRIPT = (
     ROOT
     / ".opencode"
@@ -92,10 +92,20 @@ LAYERS = ("root", "domain", "application", "infrastructure", "interface", "share
 ID_PATTERN = re.compile(r"^T([0-3])-(\d{3})$")
 
 VERIFY_MODES = ("none", "typecheck", "build")
+MAX_TDD_RETRIES = 3
+TDD_STAGE = 2
+
+FEEDBACK_TEMPLATE = """
+Previous attempt FAILED verification. Fix the implementation at `{path}` so the build and tests pass.
+Do not change unrelated files. Verification output:
+```
+{log}
+```
+"""
 
 DISCOVERY_PROMPT = """You are the domain boundary discovery specialist for this repository.
 Read the business description at {description} and follow your agent instructions.
-Write the validated boundary draft to {draft} using the writer script.
+Write one domain boundary file per subdomain into {domain_dir}.
 Do not write application code.
 Finish by confirming the report path.
 
@@ -104,24 +114,24 @@ Business description:
 """
 
 MAPPING_PROMPT = """You are the domain context mapping specialist for this repository.
-Read the validated boundary draft at {draft} with the reader script, build and validate
-the DDD context map, and write the final Domain Boundary Analysis to {analysis} using the
-writer script with --check-source.
+Read every domain boundary file matching {domain_dir}/domain-boundary-*.json. For each one,
+build and validate its context map and write it to {context_map_dir}/context-map-<slug>.json
+using the writer script. One context map per slice; never copy subdomain definitions.
 Do not write application code.
-Finish by confirming the report path.
+Finish by confirming the report paths.
 """
 
 ARCHITECT_PROMPT = """You are the blackboard architect for this repository.
 The generated project root is {project_root}: every task `path` resolves relative to it.
 
-Read the final Domain Boundary Analysis at {analysis} and the boundary draft at {draft}.
-Derive the bounded contexts, modules, and build order from those reports.
+Process each domain separately. For every slice `{domain_dir}/domain-boundary-<slug>.json`,
+read it together with its context map `{context_map_dir}/context-map-<slug>.json`.
 
-Follow these steps exactly:
+Follow these steps exactly, once per domain:
 
-1. Write the Architecture Plan to {plan}.
-   Include the bounded contexts, module/package layout, build order, and the mapping
-   from bounded context to units of work.
+1. Write that domain's execution strategy to {strategy_dir}/execution-strategy-<slug>.json.
+   Include the bounded contexts, module/package layout, build order, risks, and the mapping
+   from bounded context to units of work. Use only the slice and its own context map.
 
 2. Decompose the plan into blackboard tasks. Every task is a JSON object with exactly
    these keys and no others:
@@ -135,6 +145,7 @@ Follow these steps exactly:
 
    Field rules:
    - id: "T<stage>-<3 digits>" (for example T0-001, T1-001); the suffix must match stage.
+     Numbers are unique across all domains; continue the sequence, never reuse an id.
    - dependsOn: ids of earlier tasks. Stage 1 depends on the stage 0 task; stage 2 depends
      on the matching stage 1 task; stage 3 depends on the matching stage 2 task.
    - path: path relative to the project root; the file the agent must create or modify.
@@ -166,23 +177,23 @@ def build_discovery_prompt(description_path):
         content = ""
     return (
         DISCOVERY_PROMPT.replace("{description}", str(description_path))
-        .replace("{draft}", str(DRAFT_REPORT.relative_to(ROOT)))
+        .replace("{domain_dir}", str(DOMAIN_DIR.relative_to(ROOT)))
         .replace("{content}", content)
     )
 
 
 def build_mapping_prompt():
     return MAPPING_PROMPT.replace(
-        "{draft}", str(DRAFT_REPORT.relative_to(ROOT))
-    ).replace("{analysis}", str(ANALYSIS_REPORT.relative_to(ROOT)))
+        "{domain_dir}", str(DOMAIN_DIR.relative_to(ROOT))
+    ).replace("{context_map_dir}", str(CONTEXT_MAP_DIR.relative_to(ROOT)))
 
 
 def build_architect_prompt(project_root, runner=None):
     return (
         ARCHITECT_PROMPT.replace("{project_root}", str(project_root))
-        .replace("{analysis}", str(ANALYSIS_REPORT.relative_to(ROOT)))
-        .replace("{draft}", str(DRAFT_REPORT.relative_to(ROOT)))
-        .replace("{plan}", str(PLAN_FILE.relative_to(ROOT)))
+        .replace("{domain_dir}", str(DOMAIN_DIR.relative_to(ROOT)))
+        .replace("{context_map_dir}", str(CONTEXT_MAP_DIR.relative_to(ROOT)))
+        .replace("{strategy_dir}", str(COMPLETE_DIR.relative_to(ROOT)))
         .replace("{runner}", runner or RUNNER_SCRIPT)
     )
 
@@ -553,7 +564,13 @@ def validate_report(path, expect):
     return None
 
 
-def invoke_agent(task, auto_approve, timeout):
+def append_feedback(message, task, feedback):
+    if not feedback:
+        return message
+    return message + FEEDBACK_TEMPLATE.format(path=task["path"], log=feedback)
+
+
+def invoke_agent(task, auto_approve, timeout, feedback=None):
     instruction = STAGE_INSTRUCTIONS.get(task["stage"], "Complete this blackboard task.")
     message = (
         f"Project root: {get_project_root()}\n"
@@ -561,12 +578,52 @@ def invoke_agent(task, auto_approve, timeout):
         "Resolve `path` against the project root above. Task JSON:\n"
     )
     message += json.dumps({key: task[key] for key in PROMPT_KEYS}, indent=2)
+    message = append_feedback(message, task, feedback)
     command = ["opencode", "run", "--agent", task["targetAgent"], "--dir", str(ROOT)]
     if auto_approve:
         command.append("--auto")
     command.append(message)
     print(f"[cmd ] opencode run --agent {task['targetAgent']} --dir {ROOT}")
     return run_agent(command, timeout, ROOT)
+
+
+def validate_domain_files():
+    """Gate for the per-domain discovery files in blackboard/domain/.
+
+    Returns None when at least one file exists and every file parses as a JSON object.
+    Otherwise returns the reason string.
+    """
+    if not DOMAIN_DIR.is_dir():
+        return f"discovery did not create {DOMAIN_DIR.relative_to(ROOT)}/"
+    files = sorted(DOMAIN_DIR.glob("domain-boundary-*.json"))
+    if not files:
+        return f"no domain-boundary-*.json files in {DOMAIN_DIR.relative_to(ROOT)}/"
+    for path in files:
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            return f"{path.name} is not valid JSON: {exc}"
+        if not isinstance(payload, dict):
+            return f"{path.name} must be a JSON object"
+    return None
+
+
+def validate_context_maps():
+    """Gate for the per-domain context maps in blackboard/context-map/.
+
+    Every slice in blackboard/domain/ needs a valid context-map-<slug>.json.
+    Returns None when all are valid, otherwise the reason string.
+    """
+    reason = validate_domain_files()
+    if reason:
+        return reason
+    for domain_file in sorted(DOMAIN_DIR.glob("domain-boundary-*.json")):
+        slug = domain_file.stem.removeprefix("domain-boundary-")
+        map_file = CONTEXT_MAP_DIR / f"context-map-{slug}.json"
+        reason = validate_report(map_file, "any")
+        if reason:
+            return f"{map_file.relative_to(ROOT)}: {reason}"
+    return None
 
 
 def run_discovery(args, description_path):
@@ -579,7 +636,7 @@ def run_discovery(args, description_path):
         print(f"[cmd ] opencode run --agent {DISCOVERY_AGENT} --dir {ROOT}")
         ok, reason = run_agent(command, args.timeout, ROOT)
         if ok:
-            reason = validate_report(DRAFT_REPORT, "discovery")
+            reason = validate_domain_files()
             ok = reason is None
         if not ok:
             telemetry.mark_error(current, reason)
@@ -588,7 +645,7 @@ def run_discovery(args, description_path):
 
 
 def run_mapping(args):
-    with telemetry.span("blackboard.mapping", {"draft": str(DRAFT_REPORT)}) as current:
+    with telemetry.span("blackboard.mapping", {"domain_dir": str(DOMAIN_DIR)}) as current:
         message = build_mapping_prompt()
         command = ["opencode", "run", "--agent", MAPPING_AGENT, "--dir", str(ROOT)]
         if not args.no_auto:
@@ -597,7 +654,7 @@ def run_mapping(args):
         print(f"[cmd ] opencode run --agent {MAPPING_AGENT} --dir {ROOT}")
         ok, reason = run_agent(command, args.timeout, ROOT)
         if ok:
-            reason = validate_report(ANALYSIS_REPORT, "final")
+            reason = validate_context_maps()
             ok = reason is None
         if not ok:
             telemetry.mark_error(current, reason)
@@ -606,7 +663,7 @@ def run_mapping(args):
 
 
 def run_architect(args):
-    with telemetry.span("blackboard.architect", {"analysis": str(ANALYSIS_REPORT)}) as current:
+    with telemetry.span("blackboard.architect", {"context_maps": str(CONTEXT_MAP_DIR)}) as current:
         message = build_architect_prompt(get_project_root())
         command = ["opencode", "run", "--agent", ARCHITECT_AGENT, "--dir", str(ROOT)]
         if not args.no_auto:
@@ -656,6 +713,31 @@ def emit_tasks(paths):
     return None
 
 
+def execute_with_tdd(task, invoke, verify):
+    """Run one task. Stage 2 retries the coder with the verification log, up to MAX_TDD_RETRIES.
+
+    invoke(feedback) -> (ok, reason): runs the agent and checks its output exists.
+    verify() -> (ok, reason): runs the build/test gate.
+    Agent failures are not retried; only verification failures are.
+    """
+    attempts = MAX_TDD_RETRIES if task["stage"] == TDD_STAGE else 1
+    feedback = None
+    reason = ""
+    for attempt in range(1, attempts + 1):
+        ok, reason = invoke(feedback)
+        if not ok:
+            return False, reason
+        ok, reason = verify()
+        if ok:
+            return True, ""
+        if attempt < attempts:
+            print(f"[tdd ] {task['id']} verification failed (attempt {attempt}/{attempts}); retrying coder with log")
+        feedback = reason
+    if attempts > 1:
+        reason = f"TDD failed after {attempts} attempts: {reason}"
+    return False, reason
+
+
 def run_pass(args):
     processed = 0
     while True:
@@ -692,11 +774,16 @@ def run_pass(args):
             return processed, [task["id"] for _, task in kept]
         file, task = ready[0]
         print(f"[run ] {task['id']} -> {task['targetAgent']} ({task['path']})")
-        ok, reason = invoke_agent(task, not args.no_auto, args.timeout)
-        if ok and task["stage"] != 0 and not (get_project_root() / task["path"]).exists():
-            ok, reason = False, f"agent finished but {task['path']} was not created"
-        if ok:
-            ok, reason = run_verification(get_project_root(), args.verify, args.verify_scope, task, args.verify_timeout)
+        def invoke(feedback):
+            ok, reason = invoke_agent(task, not args.no_auto, args.timeout, feedback)
+            if ok and task["stage"] != 0 and not (get_project_root() / task["path"]).exists():
+                return False, f"agent finished but {task['path']} was not created"
+            return ok, reason
+
+        def verify():
+            return run_verification(get_project_root(), args.verify, args.verify_scope, task, args.verify_timeout)
+
+        ok, reason = execute_with_tdd(task, invoke, verify)
         if ok:
             with telemetry.span("blackboard.complete", {"file": file.name, **telemetry.task_attributes(task)}):
                 file.replace(COMPLETE_DIR / file.name)
@@ -744,28 +831,32 @@ def main():
     print(f"[root] generated project: {project_root}")
 
     if args.force:
-        for report in (DRAFT_REPORT, ANALYSIS_REPORT):
-            report.unlink(missing_ok=True)
+        for map_file in CONTEXT_MAP_DIR.glob("context-map-*.json"):
+            map_file.unlink(missing_ok=True)
+        for domain_file in DOMAIN_DIR.glob("domain-boundary-*.json"):
+            domain_file.unlink(missing_ok=True)
 
-    if validate_report(DRAFT_REPORT, "discovery") is None and not args.force:
-        print(f"[skip] discovery report already valid: {DRAFT_REPORT.relative_to(ROOT)}")
+    if validate_domain_files() is None and not args.force:
+        print(f"[skip] discovery files already valid: {DOMAIN_DIR.relative_to(ROOT)}/")
     else:
-        DRAFT_REPORT.unlink(missing_ok=True)
+        for domain_file in DOMAIN_DIR.glob("domain-boundary-*.json"):
+            domain_file.unlink(missing_ok=True)
         ok, reason = run_discovery(args, description)
         if not ok:
             print(f"[fatal] discovery: {reason}")
             return 1
-        print("[ddd ] discovery report ready")
+        print("[ddd ] discovery files ready")
 
-    if validate_report(ANALYSIS_REPORT, "final") is None and not args.force:
-        print(f"[skip] mapping report already valid: {ANALYSIS_REPORT.relative_to(ROOT)}")
+    if validate_context_maps() is None and not args.force:
+        print(f"[skip] context maps already valid: {CONTEXT_MAP_DIR.relative_to(ROOT)}/")
     else:
-        ANALYSIS_REPORT.unlink(missing_ok=True)
+        for map_file in CONTEXT_MAP_DIR.glob("context-map-*.json"):
+            map_file.unlink(missing_ok=True)
         ok, reason = run_mapping(args)
         if not ok:
             print(f"[fatal] mapping: {reason}")
             return 1
-        print("[ddd ] analysis report ready")
+        print("[ddd ] context maps ready")
 
     print("[plan] architect reading the validated reports")
     ok, reason = run_architect(args)

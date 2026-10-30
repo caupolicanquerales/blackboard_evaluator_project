@@ -1,0 +1,15 @@
+{
+  "id": "T3-014",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-014"
+  ],
+  "path": "src/main/java/com/apexledger/banking/accounts/application/port/LedgerBalancePort.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "LedgerBalancePort",
+  "intent": "Inspect and refactor the implementation of Unit LedgerBalancePort (Account Lifecycle context, application layer, package com.apexledger.banking.accounts). Outbound port currentBalance(accountNumber) -> Money, read synchronously from General Ledger at closure time; Accounts never stores balance. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-014 not resolvable in queue or complete"
+}

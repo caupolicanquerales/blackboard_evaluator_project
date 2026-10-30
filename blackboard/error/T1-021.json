@@ -1,0 +1,15 @@
+{
+  "id": "T1-021",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/apexledger/banking/ledger/domain/FiscalPeriodTest.java",
+  "kind": "test",
+  "layer": "domain",
+  "feature": null,
+  "export": "FiscalPeriod",
+  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit FiscalPeriod (Ledger Accounting context, domain layer, package com.apexledger.banking.ledger). Fiscal Period with id and date range, state OPEN/CLOSED. Invariants: closed period accepts no postings (assertOpen throws); close is one-way; contains(date). One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/ledger/domain/FiscalPeriod.java.",
+  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+}

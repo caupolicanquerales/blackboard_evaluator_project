@@ -1,0 +1,15 @@
+{
+  "id": "T3-018",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-018"
+  ],
+  "path": "src/main/java/com/apexledger/banking/accounts/api/AccountController.java",
+  "kind": "refactor",
+  "layer": "interface",
+  "feature": null,
+  "export": "AccountController",
+  "intent": "Inspect and refactor the implementation of Unit AccountController (Account Lifecycle context, interface layer, package com.apexledger.banking.accounts). Thin REST controller /api/v1/accounts: open, activate, freeze, terminate, overdraft, holds. Request/response DTO records, bean validation; no business logic; DomainRuleViolationException -> 422 ProblemDetail, unknown account -> 404. Never exposes the aggregate. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-018 not resolvable in queue or complete"
+}

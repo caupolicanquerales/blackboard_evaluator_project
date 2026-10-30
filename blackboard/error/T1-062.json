@@ -1,0 +1,15 @@
+{
+  "id": "T1-062",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/apexledger/banking/payments/infrastructure/AccountsHoldAdapterTest.java",
+  "kind": "test",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "AccountsHoldAdapter",
+  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit AccountsHoldAdapter (Payment Orchestration context, infrastructure layer, package com.apexledger.banking.payments). Anticorruption adapter implementing HoldPort via AccountService.placeHold/releaseHold; translates account rule violations into a hold-rejected outcome. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/payments/infrastructure/AccountsHoldAdapter.java.",
+  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+}

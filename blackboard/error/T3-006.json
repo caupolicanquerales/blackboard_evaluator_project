@@ -1,0 +1,15 @@
+{
+  "id": "T3-006",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-006"
+  ],
+  "path": "src/main/java/com/apexledger/banking/shared/SpringEventPublisher.java",
+  "kind": "refactor",
+  "layer": "shared",
+  "feature": null,
+  "export": "SpringEventPublisher",
+  "intent": "Inspect and refactor the implementation of Unit SpringEventPublisher (Shared kernel context, shared layer, package com.apexledger.banking.shared). Adapter implementing EventPublisher via Spring ApplicationEventPublisher; publishes synchronously in-process and propagates listener failures unchanged. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-006 not resolvable in queue or complete"
+}

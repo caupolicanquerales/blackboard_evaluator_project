@@ -1,0 +1,17 @@
+{
+  "id": "T2-063",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-063",
+    "T2-057",
+    "T2-025"
+  ],
+  "path": "src/main/java/com/apexledger/banking/payments/infrastructure/LedgerPostingAdapter.java",
+  "kind": "code",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "LedgerPostingAdapter",
+  "intent": "Implement Unit LedgerPostingAdapter (Payment Orchestration context, infrastructure layer, package com.apexledger.banking.payments). Adapter implementing LedgerPostingPort via GeneralLedgerService.postJournal with balanced entries; failures surface as posting-rejected outcomes. Make the tests at src/test/java/com/apexledger/banking/payments/infrastructure/LedgerPostingAdapterTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "error": "dependsOn T2-025 not resolvable in queue or complete"
+}

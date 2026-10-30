@@ -1,0 +1,15 @@
+{
+  "id": "T3-035",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-035"
+  ],
+  "path": "src/main/java/com/apexledger/banking/treasury/application/FxService.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "FxService",
+  "intent": "Inspect and refactor the implementation of Unit FxService (FX Settlement context, application layer, package com.apexledger.banking.treasury). Use cases: requestQuote(pair, lock) (lock <= 30 s), convert(quoteId, Money) refusing expired quotes (a new quote is required), publishing RateUtilizationRecordedEvent per conversion. Uses Clock. Payments treats the returned quote as opaque. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-035 not resolvable in queue or complete"
+}

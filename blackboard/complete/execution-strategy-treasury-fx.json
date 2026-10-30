@@ -1,0 +1,23 @@
+{
+  "modules": [
+    "Package com.apexledger.banking.treasury.{domain,application,application.port,infrastructure,api}",
+    "Context-to-units: FX Settlement -> CurrencyPair, ExchangeRateQuote, TreasuryEvents, FxRateProviderPort, QuoteRepository, FxService, InMemoryQuoteRepository, StubFxRateProviderAdapter, FxController"
+  ],
+  "layers": [
+    "domain: CurrencyPair, ExchangeRateQuote (30 s lock), TreasuryEvents",
+    "application: FxService, ports FxRateProviderPort and QuoteRepository",
+    "infrastructure: in-memory quotes and stub market-rate provider (anticorruption layer)",
+    "interface (package api): FxController"
+  ],
+  "build_order": [
+    "CurrencyPair, ExchangeRateQuote, TreasuryEvents",
+    "FxRateProviderPort, QuoteRepository, FxService",
+    "InMemoryQuoteRepository, StubFxRateProviderAdapter, FxController",
+    "Task ids: CurrencyPair=T1/T2/T3-030, ExchangeRateQuote=T1/T2/T3-031, TreasuryEvents=T1/T2/T3-032, FxRateProviderPort=T1/T2/T3-033, QuoteRepository=T1/T2/T3-034, FxService=T1/T2/T3-035, InMemoryQuoteRepository=T1/T2/T3-036, StubFxRateProviderAdapter=T1/T2/T3-037, FxController=T1/T2/T3-038"
+  ],
+  "risks": [
+    "Market rate source and hedging are undescribed; a stub provider is used behind a port",
+    "Slice names no published events; a rate-utilization event is introduced only to publish utilization metrics",
+    "Quote expiry forces callers (Payments) to request a new quote"
+  ]
+}

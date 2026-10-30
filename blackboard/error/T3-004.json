@@ -1,0 +1,15 @@
+{
+  "id": "T3-004",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-004"
+  ],
+  "path": "src/main/java/com/apexledger/banking/shared/DomainEvent.java",
+  "kind": "refactor",
+  "layer": "shared",
+  "feature": null,
+  "export": "DomainEvent",
+  "intent": "Inspect and refactor the implementation of Unit DomainEvent (Shared kernel context, shared layer, package com.apexledger.banking.shared). Marker interface for domain events exposing occurredAt (Instant). Cross-context communication happens only through events implementing it. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-004 not resolvable in queue or complete"
+}

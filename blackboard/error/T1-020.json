@@ -1,0 +1,15 @@
+{
+  "id": "T1-020",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/apexledger/banking/ledger/domain/ChartOfAccountsTest.java",
+  "kind": "test",
+  "layer": "domain",
+  "feature": null,
+  "export": "ChartOfAccounts",
+  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit ChartOfAccounts (Ledger Accounting context, domain layer, package com.apexledger.banking.ledger). Chart of Accounts: LedgerAccountType enum values ASSET, LIABILITY, EQUITY, EXPENSE, INCOME and registry of ledger accounts by code. Invariants: unique codes; lookup of unknown code fails with DomainRuleViolationException. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/ledger/domain/ChartOfAccounts.java.",
+  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+}

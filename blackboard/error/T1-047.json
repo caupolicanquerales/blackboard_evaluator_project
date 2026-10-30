@@ -1,0 +1,15 @@
+{
+  "id": "T1-047",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/apexledger/banking/compliance/infrastructure/StubWatchlistAdapterTest.java",
+  "kind": "test",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "StubWatchlistAdapter",
+  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit StubWatchlistAdapter (Transaction Screening context, infrastructure layer, package com.apexledger.banking.compliance). WatchlistPort adapter backed by configurable property lists (banking.compliance.sanctioned-subjects) simulating OFAC/UN/PEP; translates to Screening's types. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/compliance/infrastructure/StubWatchlistAdapter.java.",
+  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+}

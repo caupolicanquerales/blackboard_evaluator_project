@@ -1,0 +1,15 @@
+{
+  "id": "T1-040",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/apexledger/banking/compliance/domain/ScreeningResultTest.java",
+  "kind": "test",
+  "layer": "domain",
+  "feature": null,
+  "export": "ScreeningResult",
+  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit ScreeningResult (Transaction Screening context, domain layer, package com.apexledger.banking.compliance). Value object with outcome CLEARED/FLAGGED, subject reference and reason. Invariants: screening is mandatory when amount exceeds USD 5,000 or the transfer is cross-border (requiresScreening(amountUsd, crossBorder)); flagged results require a reason. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/compliance/domain/ScreeningResult.java.",
+  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+}

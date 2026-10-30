@@ -1,0 +1,15 @@
+{
+  "id": "T3-055",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-055"
+  ],
+  "path": "src/main/java/com/apexledger/banking/payments/application/port/PaymentOrderRepository.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "PaymentOrderRepository",
+  "intent": "Inspect and refactor the implementation of Unit PaymentOrderRepository (Payment Orchestration context, application layer, package com.apexledger.banking.payments). Outbound port: save/find PaymentOrder by reference, save/open SettlementBatch. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-055 not resolvable in queue or complete"
+}

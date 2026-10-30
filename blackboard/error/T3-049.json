@@ -1,0 +1,15 @@
+{
+  "id": "T3-049",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-049"
+  ],
+  "path": "src/main/java/com/apexledger/banking/compliance/api/ComplianceController.java",
+  "kind": "refactor",
+  "layer": "interface",
+  "feature": null,
+  "export": "ComplianceController",
+  "intent": "Inspect and refactor the implementation of Unit ComplianceController (Transaction Screening context, interface layer, package com.apexledger.banking.compliance). Thin REST controller /api/v1/compliance: list Risk Operations Queue, approve/reject override (operatorId and justification required). DTO records; no screening logic; domain violations -> 422 ProblemDetail. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-049 not resolvable in queue or complete"
+}

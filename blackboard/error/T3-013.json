@@ -1,0 +1,15 @@
+{
+  "id": "T3-013",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-013"
+  ],
+  "path": "src/main/java/com/apexledger/banking/accounts/application/port/CustomerVerificationPort.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "CustomerVerificationPort",
+  "intent": "Inspect and refactor the implementation of Unit CustomerVerificationPort (Account Lifecycle context, application layer, package com.apexledger.banking.accounts). Outbound port isVerified(customerId) -> boolean; Accounts only consumes verified status, never customer data. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-013 not resolvable in queue or complete"
+}

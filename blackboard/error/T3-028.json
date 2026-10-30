@@ -1,0 +1,15 @@
+{
+  "id": "T3-028",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-028"
+  ],
+  "path": "src/main/java/com/apexledger/banking/ledger/infrastructure/LedgerBalanceAdapter.java",
+  "kind": "refactor",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "LedgerBalanceAdapter",
+  "intent": "Inspect and refactor the implementation of Unit LedgerBalanceAdapter (Ledger Accounting context, infrastructure layer, package com.apexledger.banking.ledger). Implements Accounts' LedgerBalancePort by returning GeneralLedgerService.bookBalance for the account; Accounts reads balance only and never keeps its own. Exposes no journal details. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-028 not resolvable in queue or complete"
+}

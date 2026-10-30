@@ -1,0 +1,15 @@
+{
+  "id": "T1-007",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/apexledger/banking/shared/BankingConfigurationTest.java",
+  "kind": "test",
+  "layer": "shared",
+  "feature": null,
+  "export": "BankingConfiguration",
+  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit BankingConfiguration (Shared kernel context, shared layer, package com.apexledger.banking.shared). Spring @Configuration providing a Clock bean (system UTC) and wiring EventPublisher to SpringEventPublisher; no business logic. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/shared/BankingConfiguration.java.",
+  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+}

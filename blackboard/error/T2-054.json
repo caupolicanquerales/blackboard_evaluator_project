@@ -1,0 +1,16 @@
+{
+  "id": "T2-054",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-054",
+    "T2-053"
+  ],
+  "path": "src/main/java/com/apexledger/banking/payments/domain/SettlementBatch.java",
+  "kind": "code",
+  "layer": "domain",
+  "feature": null,
+  "export": "SettlementBatch",
+  "intent": "Implement Unit SettlementBatch (Payment Orchestration context, domain layer, package com.apexledger.banking.payments). Aggregate Settlement Batch grouping payments settled together. Invariants: only AUTHORIZED payments added; same payment cannot be in a batch twice; closed batch is immutable. Make the tests at src/test/java/com/apexledger/banking/payments/domain/SettlementBatchTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "error": "dependsOn T2-053 not resolvable in queue or complete"
+}

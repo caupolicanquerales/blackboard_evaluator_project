@@ -1,0 +1,16 @@
+{
+  "id": "T2-017",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-017",
+    "T2-013"
+  ],
+  "path": "src/main/java/com/apexledger/banking/accounts/infrastructure/ConfigurableCustomerVerificationAdapter.java",
+  "kind": "code",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "ConfigurableCustomerVerificationAdapter",
+  "intent": "Implement Unit ConfigurableCustomerVerificationAdapter (Account Lifecycle context, infrastructure layer, package com.apexledger.banking.accounts). CustomerVerificationPort adapter driven by property banking.accounts.verified-customers (default: all verified in dev); unknown customer -> not verified. Make the tests at src/test/java/com/apexledger/banking/accounts/infrastructure/ConfigurableCustomerVerificationAdapterTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "error": "dependsOn T2-013 not resolvable in queue or complete"
+}

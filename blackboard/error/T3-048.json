@@ -1,0 +1,15 @@
+{
+  "id": "T3-048",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-048"
+  ],
+  "path": "src/main/java/com/apexledger/banking/compliance/infrastructure/AccountCreatedEventListener.java",
+  "kind": "refactor",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "AccountCreatedEventListener",
+  "intent": "Inspect and refactor the implementation of Unit AccountCreatedEventListener (Transaction Screening context, infrastructure layer, package com.apexledger.banking.compliance). @EventListener consuming Accounts' AccountCreatedEvent and calling TransactionScreeningService.screenAccountCreated for onboarding screening; receives only the creation fact. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-048 not resolvable in queue or complete"
+}

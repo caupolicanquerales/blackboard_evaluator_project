@@ -1,0 +1,15 @@
+{
+  "id": "T2-043",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-043"
+  ],
+  "path": "src/main/java/com/apexledger/banking/compliance/application/port/WatchlistPort.java",
+  "kind": "code",
+  "layer": "application",
+  "feature": null,
+  "export": "WatchlistPort",
+  "intent": "Implement Unit WatchlistPort (Transaction Screening context, application layer, package com.apexledger.banking.compliance). Outbound port matchesSanctionsOrPep(subject) and velocityAnomaly(subject) in Screening's own types (anticorruption towards OFAC, UN, PEP provider). Make the tests at src/test/java/com/apexledger/banking/compliance/application/port/WatchlistPortTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "error": "dependsOn T1-043 not resolvable in queue or complete"
+}

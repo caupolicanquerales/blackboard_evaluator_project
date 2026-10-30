@@ -1,0 +1,15 @@
+{
+  "id": "T3-065",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-065"
+  ],
+  "path": "src/main/java/com/apexledger/banking/payments/infrastructure/ClearingNetworkAdapter.java",
+  "kind": "refactor",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "ClearingNetworkAdapter",
+  "intent": "Inspect and refactor the implementation of Unit ClearingNetworkAdapter (Payment Orchestration context, infrastructure layer, package com.apexledger.banking.payments). Anticorruption adapter for ACH/SWIFT/SEPA clearing (simulated, configurable result); translates network messages at the edge. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-065 not resolvable in queue or complete"
+}

@@ -1,0 +1,15 @@
+{
+  "id": "T3-052",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-052"
+  ],
+  "path": "src/main/java/com/apexledger/banking/payments/domain/PaymentStatus.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "PaymentStatus",
+  "intent": "Inspect and refactor the implementation of Unit PaymentStatus (Payment Orchestration context, domain layer, package com.apexledger.banking.payments). Enum REQUESTED, PENDING_CLEARANCE, AUTHORIZED, CLEARING, SETTLED, REVERSED, SUSPENDED, FAILED with the permitted transitions defined in one method canTransitionTo. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-052 not resolvable in queue or complete"
+}

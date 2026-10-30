@@ -1,0 +1,16 @@
+{
+  "id": "T2-034",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-034",
+    "T2-031"
+  ],
+  "path": "src/main/java/com/apexledger/banking/treasury/application/port/QuoteRepository.java",
+  "kind": "code",
+  "layer": "application",
+  "feature": null,
+  "export": "QuoteRepository",
+  "intent": "Implement Unit QuoteRepository (FX Settlement context, application layer, package com.apexledger.banking.treasury). Outbound port: save(ExchangeRateQuote), findById(String) returning Optional. Make the tests at src/test/java/com/apexledger/banking/treasury/application/port/QuoteRepositoryTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "error": "dependsOn T2-031 not resolvable in queue or complete"
+}

@@ -1,0 +1,15 @@
+{
+  "id": "T1-033",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/apexledger/banking/treasury/application/port/FxRateProviderPortTest.java",
+  "kind": "test",
+  "layer": "application",
+  "feature": null,
+  "export": "FxRateProviderPort",
+  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit FxRateProviderPort (FX Settlement context, application layer, package com.apexledger.banking.treasury). Outbound port marketRate(CurrencyPair) -> market rate and spread in Treasury's own types (anticorruption); provider formats never leak. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/treasury/application/port/FxRateProviderPort.java.",
+  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+}

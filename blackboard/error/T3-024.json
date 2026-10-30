@@ -1,0 +1,15 @@
+{
+  "id": "T3-024",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-024"
+  ],
+  "path": "src/main/java/com/apexledger/banking/ledger/application/port/LedgerRepository.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "LedgerRepository",
+  "intent": "Inspect and refactor the implementation of Unit LedgerRepository (Ledger Accounting context, application layer, package com.apexledger.banking.ledger). Outbound port: append-only saveEntry(JournalEntry), entries by account, findPeriod/savePeriod, active hold register per account (add/release). No update or delete of entries. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-024 not resolvable in queue or complete"
+}

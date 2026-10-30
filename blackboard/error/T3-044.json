@@ -1,0 +1,15 @@
+{
+  "id": "T3-044",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-044"
+  ],
+  "path": "src/main/java/com/apexledger/banking/compliance/application/port/ComplianceRepository.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "ComplianceRepository",
+  "intent": "Inspect and refactor the implementation of Unit ComplianceRepository (Transaction Screening context, application layer, package com.apexledger.banking.compliance). Outbound port: save/find ScreeningResult, ComplianceHold by transaction reference, append ComplianceOverride, list Risk Operations Queue (active holds). Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-044 not resolvable in queue or complete"
+}

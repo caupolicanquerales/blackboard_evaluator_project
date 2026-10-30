@@ -1,0 +1,15 @@
+{
+  "id": "T3-037",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-037"
+  ],
+  "path": "src/main/java/com/apexledger/banking/treasury/infrastructure/StubFxRateProviderAdapter.java",
+  "kind": "refactor",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "StubFxRateProviderAdapter",
+  "intent": "Inspect and refactor the implementation of Unit StubFxRateProviderAdapter (FX Settlement context, infrastructure layer, package com.apexledger.banking.treasury). Deterministic FxRateProviderPort adapter reading fixed rates and spread from properties banking.treasury.rates; unknown pair -> DomainRuleViolationException. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-037 not resolvable in queue or complete"
+}

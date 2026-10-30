@@ -1,0 +1,15 @@
+{
+  "id": "T3-008",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-008"
+  ],
+  "path": "src/main/java/com/apexledger/banking/accounts/domain/AccountEvents.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "AccountEvents",
+  "intent": "Inspect and refactor the implementation of Unit AccountEvents (Account Lifecycle context, domain layer, package com.apexledger.banking.accounts). Account Lifecycle published language: nested records AccountCreatedEvent, AccountFrozenEvent, FundsReservedEvent (accountNumber, holdId, Money, paymentReference), FundsReleasedEvent; all implement DomainEvent and are immutable. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-008 not resolvable in queue or complete"
+}

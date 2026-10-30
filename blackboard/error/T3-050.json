@@ -1,0 +1,15 @@
+{
+  "id": "T3-050",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-050"
+  ],
+  "path": "src/main/java/com/apexledger/banking/payments/domain/PaymentEvents.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "PaymentEvents",
+  "intent": "Inspect and refactor the implementation of Unit PaymentEvents (Payment Orchestration context, domain layer, package com.apexledger.banking.payments). Nested record PaymentRequestedEvent (paymentReference, direction, Money amount, currency, parties, crossBorder) published when a payment is requested; the only fact Compliance needs for screening. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-050 not resolvable in queue or complete"
+}

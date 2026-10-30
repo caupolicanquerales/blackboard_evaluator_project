@@ -1,0 +1,15 @@
+{
+  "id": "T3-039",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-039"
+  ],
+  "path": "src/main/java/com/apexledger/banking/compliance/domain/ComplianceEvents.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "ComplianceEvents",
+  "intent": "Inspect and refactor the implementation of Unit ComplianceEvents (Transaction Screening context, domain layer, package com.apexledger.banking.compliance). Published language: nested records ComplianceClearedEvent, ComplianceFlaggedEvent, TransactionSuspended (each with paymentReference); Compliance exposes only outcomes, never match details, lists or SAR content. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-039 not resolvable in queue or complete"
+}

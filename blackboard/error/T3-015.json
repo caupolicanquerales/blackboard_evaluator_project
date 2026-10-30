@@ -1,0 +1,15 @@
+{
+  "id": "T3-015",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-015"
+  ],
+  "path": "src/main/java/com/apexledger/banking/accounts/application/AccountService.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "AccountService",
+  "intent": "Inspect and refactor the implementation of Unit AccountService (Account Lifecycle context, application layer, package com.apexledger.banking.accounts). Use cases: openAccount (rejects unverified customer), activate, freeze, terminate (reads balance via LedgerBalancePort, refuses if non-zero or unavailable, or active holds), approveOverdraft, placeHold, releaseHold. Persists then publishes the aggregate's events through EventPublisher. Uses injected Clock; no framework logic beyond transactions. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-015 not resolvable in queue or complete"
+}

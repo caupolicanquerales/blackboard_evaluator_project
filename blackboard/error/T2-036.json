@@ -1,0 +1,16 @@
+{
+  "id": "T2-036",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-036",
+    "T2-034"
+  ],
+  "path": "src/main/java/com/apexledger/banking/treasury/infrastructure/InMemoryQuoteRepository.java",
+  "kind": "code",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "InMemoryQuoteRepository",
+  "intent": "Implement Unit InMemoryQuoteRepository (FX Settlement context, infrastructure layer, package com.apexledger.banking.treasury). Thread-safe in-memory QuoteRepository (ConcurrentHashMap). Make the tests at src/test/java/com/apexledger/banking/treasury/infrastructure/InMemoryQuoteRepositoryTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "error": "dependsOn T2-034 not resolvable in queue or complete"
+}

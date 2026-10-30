@@ -1,0 +1,15 @@
+{
+  "id": "T1-010",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/apexledger/banking/accounts/domain/HoldTest.java",
+  "kind": "test",
+  "layer": "domain",
+  "feature": null,
+  "export": "Hold",
+  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit Hold (Account Lifecycle context, domain layer, package com.apexledger.banking.accounts). Entity/value Hold (Reservation Hold/Lien): holdId, Money amount, paymentReference, status ACTIVE/RELEASED/SETTLED. Invariants: positive amount; release only once; released/settled hold cannot be reactivated. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/accounts/domain/Hold.java.",
+  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+}

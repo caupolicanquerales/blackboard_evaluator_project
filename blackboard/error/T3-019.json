@@ -1,0 +1,15 @@
+{
+  "id": "T3-019",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-019"
+  ],
+  "path": "src/main/java/com/apexledger/banking/ledger/domain/LedgerEvents.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "LedgerEvents",
+  "intent": "Inspect and refactor the implementation of Unit LedgerEvents (Ledger Accounting context, domain layer, package com.apexledger.banking.ledger). Ledger published language: nested record JournalPostedEvent (journalId, fiscalPeriod, lines summary). Published only for posted entries; pending entries stay internal. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-019 not resolvable in queue or complete"
+}

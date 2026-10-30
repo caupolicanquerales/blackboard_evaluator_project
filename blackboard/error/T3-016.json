@@ -1,0 +1,15 @@
+{
+  "id": "T3-016",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-016"
+  ],
+  "path": "src/main/java/com/apexledger/banking/accounts/infrastructure/InMemoryAccountRepository.java",
+  "kind": "refactor",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "InMemoryAccountRepository",
+  "intent": "Inspect and refactor the implementation of Unit InMemoryAccountRepository (Account Lifecycle context, infrastructure layer, package com.apexledger.banking.accounts). ConcurrentHashMap-backed AccountRepository adapter (persistence technology unspecified); thread-safe, returns Optional.empty for unknown accounts. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-016 not resolvable in queue or complete"
+}

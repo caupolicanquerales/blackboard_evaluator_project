@@ -1,0 +1,17 @@
+{
+  "id": "T2-028",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-028",
+    "T2-025",
+    "T2-014"
+  ],
+  "path": "src/main/java/com/apexledger/banking/ledger/infrastructure/LedgerBalanceAdapter.java",
+  "kind": "code",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "LedgerBalanceAdapter",
+  "intent": "Implement Unit LedgerBalanceAdapter (Ledger Accounting context, infrastructure layer, package com.apexledger.banking.ledger). Implements Accounts' LedgerBalancePort by returning GeneralLedgerService.bookBalance for the account; Accounts reads balance only and never keeps its own. Exposes no journal details. Make the tests at src/test/java/com/apexledger/banking/ledger/infrastructure/LedgerBalanceAdapterTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "error": "dependsOn T2-014 not resolvable in queue or complete"
+}

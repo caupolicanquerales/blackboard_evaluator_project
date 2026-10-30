@@ -1,0 +1,15 @@
+{
+  "id": "T3-061",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-061"
+  ],
+  "path": "src/main/java/com/apexledger/banking/payments/infrastructure/InMemoryPaymentOrderRepository.java",
+  "kind": "refactor",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "InMemoryPaymentOrderRepository",
+  "intent": "Inspect and refactor the implementation of Unit InMemoryPaymentOrderRepository (Payment Orchestration context, infrastructure layer, package com.apexledger.banking.payments). Thread-safe in-memory PaymentOrderRepository. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-061 not resolvable in queue or complete"
+}

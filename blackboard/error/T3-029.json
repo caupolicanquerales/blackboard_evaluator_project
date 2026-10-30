@@ -1,0 +1,15 @@
+{
+  "id": "T3-029",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-029"
+  ],
+  "path": "src/main/java/com/apexledger/banking/ledger/api/GeneralLedgerController.java",
+  "kind": "refactor",
+  "layer": "interface",
+  "feature": null,
+  "export": "GeneralLedgerController",
+  "intent": "Inspect and refactor the implementation of Unit GeneralLedgerController (Ledger Accounting context, interface layer, package com.apexledger.banking.ledger). Thin REST controller /api/v1/ledger: post journal, reverse entry, close period, get book/available balance. DTO records, validation, DomainRuleViolationException -> 422 ProblemDetail; no ledger logic. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-029 not resolvable in queue or complete"
+}

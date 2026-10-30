@@ -1,0 +1,19 @@
+{
+  "id": "T2-022",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-022",
+    "T2-002",
+    "T2-003",
+    "T2-020",
+    "T2-021"
+  ],
+  "path": "src/main/java/com/apexledger/banking/ledger/domain/JournalEntry.java",
+  "kind": "code",
+  "layer": "domain",
+  "feature": null,
+  "export": "JournalEntry",
+  "intent": "Implement Unit JournalEntry (Ledger Accounting context, domain layer, package com.apexledger.banking.ledger). Immutable JournalEntry with lines (ledger account, DEBIT/CREDIT, local amount, optional foreign amount and exact FX rate). Invariants: total debits == total credits per currency; at least two lines; no mutation after creation; correction only via reversal() producing an Adjustment Journal with opposite sides; status PENDING/POSTED; cannot be created in a closed FiscalPeriod. Make the tests at src/test/java/com/apexledger/banking/ledger/domain/JournalEntryTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "error": "dependsOn T2-020 not resolvable in queue or complete"
+}

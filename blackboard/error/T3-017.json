@@ -1,0 +1,15 @@
+{
+  "id": "T3-017",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-017"
+  ],
+  "path": "src/main/java/com/apexledger/banking/accounts/infrastructure/ConfigurableCustomerVerificationAdapter.java",
+  "kind": "refactor",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "ConfigurableCustomerVerificationAdapter",
+  "intent": "Inspect and refactor the implementation of Unit ConfigurableCustomerVerificationAdapter (Account Lifecycle context, infrastructure layer, package com.apexledger.banking.accounts). CustomerVerificationPort adapter driven by property banking.accounts.verified-customers (default: all verified in dev); unknown customer -> not verified. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-017 not resolvable in queue or complete"
+}

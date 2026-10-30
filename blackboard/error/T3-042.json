@@ -1,0 +1,15 @@
+{
+  "id": "T3-042",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-042"
+  ],
+  "path": "src/main/java/com/apexledger/banking/compliance/domain/ComplianceOverride.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "ComplianceOverride",
+  "intent": "Inspect and refactor the implementation of Unit ComplianceOverride (Transaction Screening context, domain layer, package com.apexledger.banking.compliance). Entity Compliance Override with operatorId, regulatory justification, decision APPROVED/REJECTED and cryptographic audit timestamp (SHA-256 hash). Invariants: operator ID and justification mandatory (blank rejected); immutable audit record. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-042 not resolvable in queue or complete"
+}

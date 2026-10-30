@@ -1,0 +1,15 @@
+{
+  "id": "T3-020",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-020"
+  ],
+  "path": "src/main/java/com/apexledger/banking/ledger/domain/ChartOfAccounts.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "ChartOfAccounts",
+  "intent": "Inspect and refactor the implementation of Unit ChartOfAccounts (Ledger Accounting context, domain layer, package com.apexledger.banking.ledger). Chart of Accounts: LedgerAccountType enum values ASSET, LIABILITY, EQUITY, EXPENSE, INCOME and registry of ledger accounts by code. Invariants: unique codes; lookup of unknown code fails with DomainRuleViolationException. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-020 not resolvable in queue or complete"
+}

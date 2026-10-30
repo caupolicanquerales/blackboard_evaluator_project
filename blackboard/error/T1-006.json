@@ -1,0 +1,15 @@
+{
+  "id": "T1-006",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/apexledger/banking/shared/SpringEventPublisherTest.java",
+  "kind": "test",
+  "layer": "shared",
+  "feature": null,
+  "export": "SpringEventPublisher",
+  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit SpringEventPublisher (Shared kernel context, shared layer, package com.apexledger.banking.shared). Adapter implementing EventPublisher via Spring ApplicationEventPublisher; publishes synchronously in-process and propagates listener failures unchanged. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/shared/SpringEventPublisher.java.",
+  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+}

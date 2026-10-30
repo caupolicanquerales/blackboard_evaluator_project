@@ -1,0 +1,15 @@
+{
+  "id": "T1-057",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/apexledger/banking/payments/application/port/LedgerPostingPortTest.java",
+  "kind": "test",
+  "layer": "application",
+  "feature": null,
+  "export": "LedgerPostingPort",
+  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit LedgerPostingPort (Payment Orchestration context, application layer, package com.apexledger.banking.payments). Outbound port postAuthorization and postSettlement confirmations for a payment; Ledger validates its own balance and period rules. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/payments/application/port/LedgerPostingPort.java.",
+  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+}

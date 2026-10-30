@@ -1,0 +1,15 @@
+{
+  "id": "T1-035",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/apexledger/banking/treasury/application/FxServiceTest.java",
+  "kind": "test",
+  "layer": "application",
+  "feature": null,
+  "export": "FxService",
+  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit FxService (FX Settlement context, application layer, package com.apexledger.banking.treasury). Use cases: requestQuote(pair, lock) (lock <= 30 s), convert(quoteId, Money) refusing expired quotes (a new quote is required), publishing RateUtilizationRecordedEvent per conversion. Uses Clock. Payments treats the returned quote as opaque. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/treasury/application/FxService.java.",
+  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+}

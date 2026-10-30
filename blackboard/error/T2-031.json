@@ -1,0 +1,18 @@
+{
+  "id": "T2-031",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-031",
+    "T2-030",
+    "T2-002",
+    "T2-003"
+  ],
+  "path": "src/main/java/com/apexledger/banking/treasury/domain/ExchangeRateQuote.java",
+  "kind": "code",
+  "layer": "domain",
+  "feature": null,
+  "export": "ExchangeRateQuote",
+  "intent": "Implement Unit ExchangeRateQuote (FX Settlement context, domain layer, package com.apexledger.banking.treasury). Aggregate Exchange Rate Quote: quoteId, CurrencyPair, rate index, spread rate, issuedAt, lockExpiresAt. Invariants: lock duration never exceeds 30 seconds (longer request rejected or capped); positive rate; isValidAt(Instant); convert(Money) uses the exact rate and fails when expired and records local amount, foreign amount and rate index used. Make the tests at src/test/java/com/apexledger/banking/treasury/domain/ExchangeRateQuoteTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "error": "dependsOn T2-003 not resolvable in queue or complete"
+}

@@ -1,0 +1,15 @@
+{
+  "id": "T1-066",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/apexledger/banking/payments/infrastructure/PaymentComplianceEventListenerTest.java",
+  "kind": "test",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "PaymentComplianceEventListener",
+  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit PaymentComplianceEventListener (Payment Orchestration context, infrastructure layer, package com.apexledger.banking.payments). @EventListener consuming ComplianceClearedEvent, ComplianceFlaggedEvent, AccountFrozenEvent, FundsReservedEvent and FundsReleasedEvent and forwarding outcomes to PaymentOrchestrationService; ignores unknown references. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/payments/infrastructure/PaymentComplianceEventListener.java.",
+  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+}

@@ -1,0 +1,16 @@
+{
+  "id": "T2-005",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-005",
+    "T2-004"
+  ],
+  "path": "src/main/java/com/apexledger/banking/shared/EventPublisher.java",
+  "kind": "code",
+  "layer": "shared",
+  "feature": null,
+  "export": "EventPublisher",
+  "intent": "Implement Unit EventPublisher (Shared kernel context, shared layer, package com.apexledger.banking.shared). Outbound port publish(DomainEvent). Domain and application layers depend on this port, never on Spring. Make the tests at src/test/java/com/apexledger/banking/shared/EventPublisherTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "error": "dependsOn T2-004 not resolvable in queue or complete"
+}

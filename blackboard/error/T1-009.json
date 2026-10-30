@@ -1,0 +1,15 @@
+{
+  "id": "T1-009",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/apexledger/banking/accounts/domain/AccountStateTest.java",
+  "kind": "test",
+  "layer": "domain",
+  "feature": null,
+  "export": "AccountState",
+  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit AccountState (Account Lifecycle context, domain layer, package com.apexledger.banking.accounts). Enum PROVISIONAL, ACTIVE, FROZEN, TERMINATED. Allowed transitions only PROVISIONAL->ACTIVE, ACTIVE->FROZEN, FROZEN->ACTIVE, ACTIVE/FROZEN->TERMINATED; canTransitionTo(target) is the single rule source. FROZEN cannot debit but accepts credits. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/accounts/domain/AccountState.java.",
+  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+}

@@ -1,0 +1,16 @@
+{
+  "id": "T2-010",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-010",
+    "T2-002"
+  ],
+  "path": "src/main/java/com/apexledger/banking/accounts/domain/Hold.java",
+  "kind": "code",
+  "layer": "domain",
+  "feature": null,
+  "export": "Hold",
+  "intent": "Implement Unit Hold (Account Lifecycle context, domain layer, package com.apexledger.banking.accounts). Entity/value Hold (Reservation Hold/Lien): holdId, Money amount, paymentReference, status ACTIVE/RELEASED/SETTLED. Invariants: positive amount; release only once; released/settled hold cannot be reactivated. Make the tests at src/test/java/com/apexledger/banking/accounts/domain/HoldTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "error": "dependsOn T1-010 not resolvable in queue or complete"
+}

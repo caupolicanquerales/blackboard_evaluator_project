@@ -1,0 +1,15 @@
+{
+  "id": "T3-063",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-063"
+  ],
+  "path": "src/main/java/com/apexledger/banking/payments/infrastructure/LedgerPostingAdapter.java",
+  "kind": "refactor",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "LedgerPostingAdapter",
+  "intent": "Inspect and refactor the implementation of Unit LedgerPostingAdapter (Payment Orchestration context, infrastructure layer, package com.apexledger.banking.payments). Adapter implementing LedgerPostingPort via GeneralLedgerService.postJournal with balanced entries; failures surface as posting-rejected outcomes. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-063 not resolvable in queue or complete"
+}

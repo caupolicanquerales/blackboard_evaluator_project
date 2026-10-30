@@ -9,15 +9,18 @@ Stack-agnostic core skill for the architect agent. Decide boundaries and contrac
 
 ## Input
 
-Read `blackboard/domain-boundary-analysis.json` with the project reader; do not hand-parse.
+Work one domain at a time. For each `blackboard/domain/domain-boundary-<slug>.json`, read that slice and its `blackboard/context-map/context-map-<slug>.json` with the project reader; do not hand-parse.
 
 ```bash
 python3 .opencode/skills/read-write-file-ddd/reader-file/scripts/reader_file.py \
-  --report blackboard/domain-boundary-analysis.json --expect final --summary
+  --report blackboard/domain/domain-boundary-<slug>.json --expect any --validate-only
+python3 .opencode/skills/read-write-file-ddd/reader-file/scripts/reader_file.py \
+  --report blackboard/context-map/context-map-<slug>.json --expect any --validate-only
 ```
 
-- `--validate-only` = zero-output check; omit `--summary` for the full validated report. Non-zero exit: stop and report. Do not re-run discovery or mapping.
-- Fields: `subdomains.type`; `bounded_contexts.invariants/source_of_truth/publishes/consumes/actors/external_systems`; `context_map.relationship/direction/boundary_protection`; `cross_boundary_flows.consistency_expectation`; `boundary_rationale`; `handoff_notes`; `assumptions`.
+- Drop `--validate-only` to print the full validated report. Non-zero exit: stop and report. Do not re-run discovery or mapping.
+- Slice fields: `subdomain`, `bounded_contexts.invariants/source_of_truth/publishes/consumes/actors/external_systems`, `ubiquitous_language`, `assumptions`.
+- Context-map fields: `context_map.relationship/direction/boundary_protection`; `cross_boundary_flows.consistency_expectation`.
 - One bounded context → one logical module; deployment units separate; never merge/split contexts or move invariants/source of truth without an explicit boundary.
 - `core` gets the deepest model; `generic` gets adapters/reuse. Carry `assumptions` into explicit risks.
 
@@ -68,7 +71,7 @@ Reject; if forced, record the trade-off.
 
 ## Output
 
-Write `blackboard/complete/architecture-plan.md`: context→module and layer maps, dependency-ordered build order, context→unit-of-work task seeds (one test/code/evaluator triple per unit; no code), component/contract/integration catalogs, ownership matrix, flow map, risks.
+For each domain, produce one execution strategy (`blackboard/complete/execution-strategy-<slug>.json`) with modules, layers, build order, and risks, plus that domain's context→unit-of-work task seeds (one test/code/evaluator triple per unit; no code). Component, contract, and integration catalogs, ownership matrix, and flow map stay inside that domain's strategy and task files. Cross-domain links come from the context map only.
 
 Gate: one owner per invariant/source of truth; every boundary has a contract and integration pattern; every flow has consistency/failure/compensation; no unjustified anti-pattern.
 

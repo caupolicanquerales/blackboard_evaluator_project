@@ -1,0 +1,17 @@
+{
+  "id": "T2-048",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-048",
+    "T2-045",
+    "T2-008"
+  ],
+  "path": "src/main/java/com/apexledger/banking/compliance/infrastructure/AccountCreatedEventListener.java",
+  "kind": "code",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "AccountCreatedEventListener",
+  "intent": "Implement Unit AccountCreatedEventListener (Transaction Screening context, infrastructure layer, package com.apexledger.banking.compliance). @EventListener consuming Accounts' AccountCreatedEvent and calling TransactionScreeningService.screenAccountCreated for onboarding screening; receives only the creation fact. Make the tests at src/test/java/com/apexledger/banking/compliance/infrastructure/AccountCreatedEventListenerTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "error": "dependsOn T2-008 not resolvable in queue or complete"
+}

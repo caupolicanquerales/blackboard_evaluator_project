@@ -1,0 +1,15 @@
+{
+  "id": "T3-009",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-009"
+  ],
+  "path": "src/main/java/com/apexledger/banking/accounts/domain/AccountState.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "AccountState",
+  "intent": "Inspect and refactor the implementation of Unit AccountState (Account Lifecycle context, domain layer, package com.apexledger.banking.accounts). Enum PROVISIONAL, ACTIVE, FROZEN, TERMINATED. Allowed transitions only PROVISIONAL->ACTIVE, ACTIVE->FROZEN, FROZEN->ACTIVE, ACTIVE/FROZEN->TERMINATED; canTransitionTo(target) is the single rule source. FROZEN cannot debit but accepts credits. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "error": "dependsOn T2-009 not resolvable in queue or complete"
+}

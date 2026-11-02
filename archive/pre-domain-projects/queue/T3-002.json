@@ -1,0 +1,14 @@
+{
+  "id": "T3-002",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-002"
+  ],
+  "path": "src/main/java/com/enterprise/banking/account/domain/OverdraftBoundary.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "OverdraftBoundary",
+  "intent": "Bounded context Account Lifecycle (account): Inspect and refactor OverdraftBoundary for clean naming, small methods, immutability, null-safety and layer boundaries without changing behavior or weakening these invariants: Immutable value object for an individually approved overdraft limit; rejects negative limits and limits above the regulatory cap for the customer risk tier (cap supplied by a policy argument). Pure Java."
+}

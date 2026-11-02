@@ -1,0 +1,12 @@
+{
+  "id": "T0-019",
+  "targetAgent": "agent-container",
+  "stage": 0,
+  "dependsOn": [],
+  "path": "db/migrations/treasury-fx/flyway.conf",
+  "kind": "bootstrap",
+  "layer": "root",
+  "feature": null,
+  "export": "treasury-fx-config-profile",
+  "intent": "Configuration profile: Flyway runner configuration for the PostgreSQL 16 store of bounded context treasury-fx, settings in db/migrations/treasury-fx/flyway.conf (env-injected connection, schema treasury_fx, locations db/migrations/treasury-fx)."
+}

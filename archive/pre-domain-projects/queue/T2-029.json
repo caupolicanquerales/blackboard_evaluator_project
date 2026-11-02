@@ -1,0 +1,14 @@
+{
+  "id": "T2-029",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-029"
+  ],
+  "path": "src/main/java/com/enterprise/banking/fx/domain/ExchangeRateQuote.java",
+  "kind": "code",
+  "layer": "domain",
+  "feature": null,
+  "export": "ExchangeRateQuote",
+  "intent": "Bounded context FX Settlement (fx): Implement ExchangeRateQuote so tests in src/test/java/com/enterprise/banking/fx/domain/ExchangeRateQuoteTest.java pass: Exchange Rate Quote aggregate: currency pair, rate with spread, lock expiry at most 30 seconds from lock; expired quotes cannot be used; clock injected. Pure Java."
+}

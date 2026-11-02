@@ -5,11 +5,12 @@
   "dependsOn": [
     "T1-020"
   ],
-  "path": "src/main/java/com/apexledger/banking/ledger/domain/ChartOfAccounts.java",
+  "path": "src/main/java/com/bank/ledger/compliance/application/port/out/ComplianceEventPublisherPort.java",
   "kind": "code",
-  "layer": "domain",
+  "export": "ComplianceEventPublisherPort",
+  "intent": "Bounded context Transaction Screening (compliance-risk): implement ComplianceEventPublisherPort so tests in src/test/java/com/bank/ledger/compliance/application/port/out/ComplianceEventPublisherPortTest.java pass: Outbound port interface publishing ComplianceClearedEvent, ComplianceFlaggedEvent and TransactionSuspended.",
+  "layer": "application",
   "feature": null,
-  "export": "ChartOfAccounts",
-  "intent": "Implement Unit ChartOfAccounts (Ledger Accounting context, domain layer, package com.apexledger.banking.ledger). Chart of Accounts: LedgerAccountType enum values ASSET, LIABILITY, EQUITY, EXPENSE, INCOME and registry of ledger accounts by code. Invariants: unique codes; lookup of unknown code fails with DomainRuleViolationException. Make the tests at src/test/java/com/apexledger/banking/ledger/domain/ChartOfAccountsTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "project": "compliance-risk",
   "error": "dependsOn T1-020 not resolvable in queue or complete"
 }

@@ -1,0 +1,14 @@
+{
+  "id": "T2-005",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-005"
+  ],
+  "path": "src/main/java/com/enterprise/banking/account/application/AccountApplicationService.java",
+  "kind": "code",
+  "layer": "application",
+  "feature": null,
+  "export": "AccountApplicationService",
+  "intent": "Bounded context Account Lifecycle (account): Implement AccountApplicationService so tests in src/test/java/com/enterprise/banking/account/application/AccountApplicationServiceTest.java pass: Use cases: open account, activate, freeze, terminate, approve overdraft, place/release hold, convert hold on PaymentSettledEvent idempotently. Depends on ports (AccountRepository, CustomerVerificationPort anticorruption port for KYC, EventPublisher outbox port, ProcessedEventStore); publishes AccountCreated/AccountFrozen/FundsReserved/FundsReleased."
+}

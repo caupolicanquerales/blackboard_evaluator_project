@@ -1,0 +1,14 @@
+{
+  "id": "T3-024",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-024"
+  ],
+  "path": "src/main/java/com/enterprise/banking/payment/domain/SettlementBatch.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "SettlementBatch",
+  "intent": "Bounded context Payment Orchestration (payment): Inspect and refactor SettlementBatch for clean naming, small methods, immutability, null-safety and layer boundaries without changing behavior or weakening these invariants: Settlement Batch aggregate grouping payment orders; members only SETTLE-ready orders, immutable once closed, no duplicate members."
+}

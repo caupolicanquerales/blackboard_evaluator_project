@@ -1,0 +1,14 @@
+{
+  "id": "T2-018",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-018"
+  ],
+  "path": "src/main/java/com/enterprise/banking/ledger/domain/FiscalPeriod.java",
+  "kind": "code",
+  "layer": "domain",
+  "feature": null,
+  "export": "FiscalPeriod",
+  "intent": "Bounded context Double-Entry Ledger (ledger): Implement FiscalPeriod so tests in src/test/java/com/enterprise/banking/ledger/domain/FiscalPeriodTest.java pass: Fiscal Period entity OPEN/CLOSED; posting to a closed period is forbidden; closing is one-way."
+}

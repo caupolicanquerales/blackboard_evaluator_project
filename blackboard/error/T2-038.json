@@ -3,14 +3,14 @@
   "targetAgent": "agent-coder",
   "stage": 2,
   "dependsOn": [
-    "T1-038",
-    "T2-035"
+    "T1-038"
   ],
-  "path": "src/main/java/com/apexledger/banking/treasury/api/FxController.java",
+  "path": "src/main/java/com/bank/ledger/generalledger/application/BalanceQueryService.java",
   "kind": "code",
-  "layer": "interface",
+  "export": "BalanceQueryService",
+  "intent": "Bounded context Ledger Accounting (general-ledger): implement BalanceQueryService so tests in src/test/java/com/bank/ledger/generalledger/application/BalanceQueryServiceTest.java pass: Application service returning book and available balance per account and currency, keeping both values separate.",
+  "layer": "application",
   "feature": null,
-  "export": "FxController",
-  "intent": "Implement Unit FxController (FX Settlement context, interface layer, package com.apexledger.banking.treasury). Thin REST controller /api/v1/fx: POST quotes, POST conversions. DTO records, validation, expired quote -> 409/422 ProblemDetail; no rate logic. Make the tests at src/test/java/com/apexledger/banking/treasury/api/FxControllerTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
-  "error": "dependsOn T2-035 not resolvable in queue or complete"
+  "project": "general-ledger",
+  "error": "dependsOn T1-038 not resolvable in queue or complete"
 }

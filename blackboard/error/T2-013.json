@@ -5,11 +5,12 @@
   "dependsOn": [
     "T1-013"
   ],
-  "path": "src/main/java/com/apexledger/banking/accounts/application/port/CustomerVerificationPort.java",
+  "path": "src/main/java/com/bank/ledger/accounts/interfaces/rest/AccountController.java",
   "kind": "code",
-  "layer": "application",
+  "export": "AccountController",
+  "intent": "Bounded context Account Lifecycle (accounts): implement AccountController so tests in src/test/java/com/bank/ledger/accounts/interfaces/rest/AccountControllerTest.java pass: Thin Spring REST controller exposing open account, state transition, overdraft approval, place/release hold and close account endpoints; validates request DTOs, maps domain exceptions to 4xx problem responses, no business logic.",
+  "layer": "interface",
   "feature": null,
-  "export": "CustomerVerificationPort",
-  "intent": "Implement Unit CustomerVerificationPort (Account Lifecycle context, application layer, package com.apexledger.banking.accounts). Outbound port isVerified(customerId) -> boolean; Accounts only consumes verified status, never customer data. Make the tests at src/test/java/com/apexledger/banking/accounts/application/port/CustomerVerificationPortTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "project": "accounts",
   "error": "dependsOn T1-013 not resolvable in queue or complete"
 }

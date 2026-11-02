@@ -1,0 +1,14 @@
+{
+  "id": "T3-016",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-016"
+  ],
+  "path": "src/main/java/com/enterprise/banking/ledger/domain/LedgerAccount.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "LedgerAccount",
+  "intent": "Bounded context Double-Entry Ledger (ledger): Inspect and refactor LedgerAccount for clean naming, small methods, immutability, null-safety and layer boundaries without changing behavior or weakening these invariants: Chart of Accounts entry with type ASSET/LIABILITY/EQUITY/EXPENSE/INCOME and currency; immutable identity; validates code and type."
+}

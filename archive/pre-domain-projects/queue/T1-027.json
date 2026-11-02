@@ -1,0 +1,14 @@
+{
+  "id": "T1-027",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/enterprise/banking/payment/infrastructure/ClearingNetworkAdapterTest.java",
+  "kind": "test",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "ClearingNetworkAdapterTest",
+  "intent": "Bounded context Payment Orchestration (payment): Write JUnit 5 tests for ClearingNetworkAdapter (path src/main/java/com/enterprise/banking/payment/infrastructure/ClearingNetworkAdapter.java) covering every invariant and expected behavior: Anticorruption adapters for SWIFT, ACH, SEPA behind a ClearingNetworkPort; idempotent dispatch keyed by payment order id; failures surface as domain failure result."
+}

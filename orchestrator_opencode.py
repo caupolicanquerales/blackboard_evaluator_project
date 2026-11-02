@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
 """Blackboard orchestrator (opencode backend) for the evaluator pipeline.
 
-The pipeline runs in four phases over one business description from ``seed/``:
+The pipeline runs in these phases over one business description from ``seed/``:
 
 1. ``domain-boundary-discovery-specialist`` writes one small file per subdomain
    to ``blackboard/domain/domain-boundary-<slug>.json``.
 2. ``domain-context-mapping-specialist`` reads those files and writes one
    context map per slice to ``blackboard/context-map/context-map-<slug>.json``.
-3. ``agent-architect`` reads each slice with its context map, writes one execution
-   strategy per domain to ``blackboard/complete/execution-strategy-<slug>.json`` and
-   queues dependency-ordered tasks.
-4. The blackboard workers drain the queue in stage order:
+3. ``agent-architect`` (strategy phase) writes one execution strategy per domain to
+   ``blackboard/complete/execution-strategy-<slug>.json``.
+4. ``agent-database-architect`` runs once per strategy and queues stage 0 database
+   tasks (``T0-###``) through ``--emit``.
+5. ``agent-architect`` (tasks phase) queues the application tasks (stage 1..3) and
+   lists the database ids in ``dependsOn`` where a unit uses the store.
+6. The blackboard workers drain the queue in stage order:
 
-   stage 0 -> agent-container  (generate the project root / scaffold)
+   stage 0 -> agent-container  (generate the project root / scaffold, database setup)
    stage 1 -> agent-tester     (read the task and create the test)
    stage 2 -> agent-coder      (read the task and create the implementation)
    stage 3 -> agent-evaluator  (inspect the implementation and refactor it)
@@ -20,6 +23,7 @@ The pipeline runs in four phases over one business description from ``seed/``:
 Agents never talk to each other: every hand-off is a validated file on disk.
 """
 import argparse
+import heapq
 import json
 import re
 import subprocess
@@ -53,6 +57,7 @@ PROJECT_ROOT = ROOT
 DISCOVERY_AGENT = "domain-boundary-discovery-specialist"
 MAPPING_AGENT = "domain-context-mapping-specialist"
 ARCHITECT_AGENT = "agent-architect"
+DATABASE_AGENT = "agent-database-architect"
 RUNNER_SCRIPT = "orchestrator_opencode.py"
 
 STAGE_AGENTS = {
@@ -74,7 +79,6 @@ STAGE_INSTRUCTIONS = {
     3: "Read this task, inspect the implementation at `path`, and refactor it.",
 }
 ALLOWED_AGENTS = tuple(STAGE_AGENTS.values())
-REQUIRES = {0: (), 1: (0,), 2: (1,), 3: (2,)}
 REQUIRED_KEYS = (
     "id",
     "targetAgent",
@@ -86,8 +90,10 @@ REQUIRED_KEYS = (
     "feature",
     "export",
     "intent",
+    "project",
 )
-PROMPT_KEYS = ("id", "path", "kind", "layer", "feature", "export", "intent", "dependsOn")
+PROMPT_KEYS = ("id", "path", "kind", "layer", "feature", "export", "intent", "dependsOn", "project")
+PROJECTS_SUBDIR = "services"
 LAYERS = ("root", "domain", "application", "infrastructure", "interface", "shared", "features")
 ID_PATTERN = re.compile(r"^T([0-3])-(\d{3})$")
 
@@ -121,21 +127,47 @@ Do not write application code.
 Finish by confirming the report paths.
 """
 
-ARCHITECT_PROMPT = """You are the blackboard architect for this repository.
-The generated project root is {project_root}: every task `path` resolves relative to it.
+ARCHITECT_STRATEGY_PROMPT = """You are the blackboard architect for this repository. Phase 1 of 2: strategy only.
+The generated project root is {project_root}.
+
+For every slice `{domain_dir}/domain-boundary-<slug>.json`, read it together with its context map
+`{context_map_dir}/context-map-<slug>.json`.
+
+Once per domain:
+1. Write the execution strategy to {strategy_dir}/execution-strategy-<slug>.json with the edit tool.
+   Include the bounded contexts, module/package layout, build order, risks, and a `persistence`
+   object when the context owns data. Use only the slice and its own context map.
+
+2. Emit exactly one separate project scaffold task for THIS domain. Each domain is its own project,
+   rooted at {project_root}/services/<slug>/. Fields:
+   id (the next free T0 id), targetAgent "agent-container", stage 0, dependsOn [],
+   kind "bootstrap", layer "root", feature null, export "project_scaffold",
+   project "<slug>", path "<build marker>" relative to the domain root ("pom.xml" or "package.json"
+   chosen from the stack), intent "Generate the <slug> project root and build scaffold using the matching
+   mcp-server-alternatives skill". Write it to /tmp/tasks/T0-<slug>.json and queue it with:
+   python3 {runner} --emit /tmp/tasks/T0-<slug>.json
+
+Do not create other task files and do not write application code in this phase.
+Finish by listing the strategy file paths and the scaffold task id of each domain.
+"""
+
+ARCHITECT_PROMPT = """You are the blackboard architect for this repository. Phase 2 of 2: tasks.
+Each domain is a separate project under {project_root}/services/<slug>/. Every task `path` resolves
+relative to the root of its own project (the task `project` field).
+Database tasks already queued (stage 0; list them in dependsOn when a unit uses the store):
+{db_ids}
 
 Process each domain separately. For every slice `{domain_dir}/domain-boundary-<slug>.json`,
 read it together with its context map `{context_map_dir}/context-map-<slug>.json`.
 
 Follow these steps exactly, once per domain:
 
-1. Write that domain's execution strategy to {strategy_dir}/execution-strategy-<slug>.json.
-   Include the bounded contexts, module/package layout, build order, risks, and the mapping
-   from bounded context to units of work. Use only the slice and its own context map.
+1. The execution strategy for this domain was written in phase 1 at
+   {strategy_dir}/execution-strategy-<slug>.json. Read it; do not rewrite it.
 
 2. Decompose the plan into blackboard tasks. Every task is a JSON object with exactly
    these keys and no others:
-   id, targetAgent, stage, dependsOn, path, kind, layer, feature, export, intent.
+   id, targetAgent, stage, dependsOn, path, kind, layer, feature, export, intent, project.
 
    Fixed stage/agent/kind mapping:
    - stage 0 -> agent-container, kind "bootstrap": generate the project root/scaffold.
@@ -146,9 +178,10 @@ Follow these steps exactly, once per domain:
    Field rules:
    - id: "T<stage>-<3 digits>" (for example T0-001, T1-001); the suffix must match stage.
      Numbers are unique across all domains; continue the sequence, never reuse an id.
-   - dependsOn: ids of earlier tasks. Stage 1 depends on the stage 0 task; stage 2 depends
+   - dependsOn: ids of earlier tasks. Stage 1 depends on the stage 0 scaffold of the same project; stage 2 depends
      on the matching stage 1 task; stage 3 depends on the matching stage 2 task.
-   - path: path relative to the project root; the file the agent must create or modify.
+   - project: the domain slug <slug>; every task of this domain uses the same project.
+   - path: path relative to that domain's project root; the file the agent must create or modify.
    - layer: one of root, domain, application, infrastructure, interface, shared, features.
    - feature: required only when layer is "features"; otherwise null.
    - export: the primary type, class, or symbol name.
@@ -156,7 +189,8 @@ Follow these steps exactly, once per domain:
      it must protect, and the expected behavior. The tester, coder, and evaluator tasks
      for the same unit must describe the same unit and stay consistent.
 
-   Emit one stage 0 task unless the project root already contains the build scaffold.
+   Do not emit stage 0 tasks; the scaffold and database tasks are already queued. Units that use a store
+   list the matching database ids from the list above in `dependsOn`.
    For every unit of work emit a stage 1 test task, a stage 2 code task, and a stage 3
    evaluator task.
 
@@ -168,6 +202,78 @@ Follow these steps exactly, once per domain:
 
 5. Finish by listing the queued task ids, stages, and target agents.
 """
+
+
+DATABASE_PROMPT = """You are the blackboard database architect for this repository.
+Run your workflow for the bounded context slug `{slug}` only. Its project root is {project_root}/services/{slug}/.
+
+1. Read the strategy file {strategy_path} with the read tool and use only its `persistence` object.
+2. Select the storage technology from the tech-stack skill. Write migration scripts only under
+   {project_root}/services/{slug}/db/migrations/ (absolute path). Task `path` values are relative to the
+   project root of this domain and must be written as db/migrations/<file>.
+3. Write one draft per database concern (store setup, schema migration, configuration, backup) to
+   /tmp/tasks/{slug}-<n>.json with exactly these keys and no others:
+   id, targetAgent, stage, dependsOn, path, kind, layer, feature, export, intent, project.
+   Fixed values: targetAgent "agent-container", stage 0, kind "bootstrap", layer "root", feature null,
+   project "{slug}".
+   dependsOn: ["{scaffold_id}"] (the scaffold task of this domain; every database task waits for it).
+   id: start at {next_id} and increase the number by one per draft.
+   path: the migration or config file under db/migrations/. export: the artifact name.
+   intent: store, technology and version, script path, and the bounded context {slug}.
+4. Queue the batch with one command: python3 {runner} --emit <each draft path>
+   Fix any validation error and re-emit. Never write into blackboard/queue/ directly.
+
+Do not write application code. Finish by reporting the technology, script paths, and queued task ids.
+"""
+
+
+def database_slugs():
+    """Slugs of every execution strategy the architect wrote, in stable order."""
+    return sorted(
+        file.stem.removeprefix("execution-strategy-")
+        for file in COMPLETE_DIR.glob("execution-strategy-*.json")
+    )
+
+
+def next_task_id(stage):
+    """Next free id for a stage, from queue and complete (ids are never reused)."""
+    numbers = []
+    for task_id in load_index():
+        match = ID_PATTERN.match(task_id)
+        if match and int(match.group(1)) == stage:
+            numbers.append(int(match.group(2)))
+    return f"T{stage}-{(max(numbers) + 1 if numbers else 1):03d}"
+
+
+def scaffold_task_id(slug):
+    """Id of the stage 0 scaffold task of one domain project (agent-container, kind bootstrap, no dependencies).
+
+    Database tasks of the domain depend on it, so they cannot run before the domain project exists.
+    """
+    for task_id, task in sorted(load_index().items()):
+        if ID_PATTERN.match(task_id) and task_id.startswith("T0-") and task.get("kind") == "bootstrap" and not task.get("dependsOn") and task.get("project") == slug and "migrations" not in Path(str(task.get("path", ""))).parts:
+            return task_id
+    return "T0-000"
+
+
+def stage_task_summary(stage):
+    lines = []
+    for task_id, task in sorted(load_index().items()):
+        match = ID_PATTERN.match(task_id)
+        if match and int(match.group(1)) == stage:
+            lines.append(f"- {task_id}: {task.get('path')} ({task.get('intent')})")
+    return "\n".join(lines) or "- none"
+
+
+def build_database_prompt(slug, runner=None):
+    return (
+        DATABASE_PROMPT.replace("{slug}", slug)
+        .replace("{strategy_path}", f"{COMPLETE_DIR.relative_to(ROOT)}/execution-strategy-{slug}.json")
+        .replace("{project_root}", str(get_project_root()))
+        .replace("{next_id}", next_task_id(0))
+        .replace("{scaffold_id}", scaffold_task_id(slug))
+        .replace("{runner}", runner or RUNNER_SCRIPT)
+    )
 
 
 def build_discovery_prompt(description_path):
@@ -188,9 +294,11 @@ def build_mapping_prompt():
     ).replace("{context_map_dir}", str(CONTEXT_MAP_DIR.relative_to(ROOT)))
 
 
-def build_architect_prompt(project_root, runner=None):
+def build_architect_prompt(project_root, runner=None, phase="tasks"):
+    template = ARCHITECT_STRATEGY_PROMPT if phase == "strategy" else ARCHITECT_PROMPT
     return (
-        ARCHITECT_PROMPT.replace("{project_root}", str(project_root))
+        template.replace("{project_root}", str(project_root))
+        .replace("{db_ids}", stage_task_summary(0))
         .replace("{domain_dir}", str(DOMAIN_DIR.relative_to(ROOT)))
         .replace("{context_map_dir}", str(CONTEXT_MAP_DIR.relative_to(ROOT)))
         .replace("{strategy_dir}", str(COMPLETE_DIR.relative_to(ROOT)))
@@ -290,9 +398,9 @@ def resolve_output_path(output, description_path):
 
 
 def set_project_root(path):
+    # Only records the path; the folder is created when a task actually runs.
     global PROJECT_ROOT
     PROJECT_ROOT = Path(path).expanduser().resolve()
-    PROJECT_ROOT.mkdir(parents=True, exist_ok=True)
     return PROJECT_ROOT
 
 
@@ -300,8 +408,13 @@ def get_project_root():
     return PROJECT_ROOT
 
 
+def project_root_for(project):
+    """Root folder of one domain project: <generated root>/services/<project>."""
+    return get_project_root() / PROJECTS_SUBDIR / project
+
+
 def task_sort_key(task):
-    return (task["stage"], task["path"])
+    return (task["stage"], task["project"], task["path"])
 
 
 def read_queue():
@@ -338,6 +451,19 @@ def load_index():
     return index
 
 
+def complete_task_ids():
+    """IDs read from the content of completed files (names are T-###-<domain>.json)."""
+    ids = set()
+    for file in COMPLETE_DIR.glob("*.json"):
+        try:
+            task = json.loads(file.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if isinstance(task, dict) and isinstance(task.get("id"), str):
+            ids.add(task["id"])
+    return ids
+
+
 def validate(task, index):
     """Validate one blackboard task against the evaluator pipeline schema."""
     if set(task) != set(REQUIRED_KEYS):
@@ -362,14 +488,16 @@ def validate(task, index):
         return "export must be a non-empty string"
     if not isinstance(task["intent"], str) or not task["intent"].strip():
         return "intent must be a non-empty string"
+    if not isinstance(task["project"], str) or not task["project"].strip() or task["project"] != slugify(task["project"]):
+        return "project must be a domain slug"
 
     if stage == 0:
         if task["layer"] != "root":
             return "stage 0 layer must be root"
         if task["feature"] is not None:
             return "stage 0 feature must be null"
-        if task["dependsOn"]:
-            return "stage 0 dependsOn must be empty"
+        if task["dependsOn"] and "migrations" not in Path(str(task["path"])).parts:
+            return "stage 0 dependsOn must be empty except for database tasks"
         return None
 
     if task["layer"] not in LAYERS:
@@ -407,13 +535,6 @@ def depends_transitively(start, target, index, seen=None):
     if not node or not isinstance(node.get("dependsOn"), list):
         return False
     return any(depends_transitively(dep, target, index, seen) for dep in node["dependsOn"])
-
-
-def claimable(task, queued, complete_ids):
-    if any(dep not in complete_ids for dep in task["dependsOn"]):
-        return False
-    queued_stages = {item["stage"] for item in queued}
-    return all(stage not in queued_stages for stage in REQUIRES[task["stage"]])
 
 
 def send_to_error(file, reason, task):
@@ -573,7 +694,8 @@ def append_feedback(message, task, feedback):
 def invoke_agent(task, auto_approve, timeout, feedback=None):
     instruction = STAGE_INSTRUCTIONS.get(task["stage"], "Complete this blackboard task.")
     message = (
-        f"Project root: {get_project_root()}\n"
+        f"Repository root: {ROOT}\n"
+        f"Project root: {project_root_for(task['project'])}\n"
         f"{instruction}\n"
         "Resolve `path` against the project root above. Task JSON:\n"
     )
@@ -662,18 +784,49 @@ def run_mapping(args):
         return True, ""
 
 
-def run_architect(args):
-    with telemetry.span("blackboard.architect", {"context_maps": str(CONTEXT_MAP_DIR)}) as current:
-        message = build_architect_prompt(get_project_root())
+def run_architect(args, phase="tasks"):
+    """Run the architect in phase 'strategy' (writes execution strategies) or 'tasks' (queues tasks)."""
+    with telemetry.span("blackboard.architect", {"context_maps": str(CONTEXT_MAP_DIR), "phase": phase}) as current:
+        message = build_architect_prompt(get_project_root(), phase=phase)
         command = ["opencode", "run", "--agent", ARCHITECT_AGENT, "--dir", str(ROOT)]
         if not args.no_auto:
             command.append("--auto")
         command.append(message)
-        print(f"[cmd ] opencode run --agent {ARCHITECT_AGENT} --dir {ROOT}")
+        print(f"[cmd ] opencode run --agent {ARCHITECT_AGENT} --dir {ROOT} ({phase})")
+        ok, reason = run_agent(command, args.timeout, ROOT)
+        if ok and phase == "strategy" and not database_slugs():
+            ok, reason = False, "no execution strategy was written"
+        if ok and phase == "tasks" and not any(
+            (match := ID_PATTERN.match(task_id)) and int(match.group(1)) >= 1 for task_id in load_index()
+        ):
+            ok, reason = False, "architect queued no application tasks"
+        if not ok:
+            telemetry.mark_error(current, reason)
+        return ok, reason
+
+
+def run_database(args, slug):
+    """Run the database architect for one context. Returns (ok, reason).
+
+    A stop reported by the agent (for example, application tasks already queued)
+    exits cleanly and is reported to the caller as a normal result.
+    """
+    with telemetry.span("blackboard.database", {"slug": slug}) as current:
+        message = build_database_prompt(slug)
+        command = ["opencode", "run", "--agent", DATABASE_AGENT, "--dir", str(ROOT)]
+        if not args.no_auto:
+            command.append("--auto")
+        command.append(message)
+        print(f"[cmd ] opencode run --agent {DATABASE_AGENT} --dir {ROOT}")
         ok, reason = run_agent(command, args.timeout, ROOT)
         if not ok:
             telemetry.mark_error(current, reason)
         return ok, reason
+
+
+def task_file_name(task):
+    """File name for a queued task: <id>-<domain>.json."""
+    return f"{task['id']}-{task['project']}.json"
 
 
 def emit_tasks(paths):
@@ -704,7 +857,7 @@ def emit_tasks(paths):
             index[task["id"]] = task
             staged.append(task)
         for task in staged:
-            destination = QUEUE_DIR / f"{task['id']}.json"
+            destination = QUEUE_DIR / task_file_name(task)
             with telemetry.span("blackboard.queue", {"file": destination.name, **telemetry.task_attributes(task)}):
                 destination.write_text(json.dumps(task, indent=2) + "\n", encoding="utf-8")
             print(f"[emit] {task['id']} -> queue/{destination.name}")
@@ -738,12 +891,12 @@ def execute_with_tdd(task, invoke, verify):
     return False, reason
 
 
-def run_pass(args):
-    processed = 0
+def load_valid_tasks():
+    """Read the queue and quarantine bad files until the remaining set is stable."""
     while True:
         entries = read_queue()
         if not entries:
-            return processed, []
+            return [], complete_task_ids()
         dirty = False
         tasks = []
         for _, file, task, reason in entries:
@@ -767,33 +920,113 @@ def run_pass(args):
                 kept.append((file, task))
         if dirty:
             continue
-        complete_ids = {file.stem for file in COMPLETE_DIR.glob("*.json")}
-        queued = [task for _, task in kept]
-        ready = [(file, task) for file, task in kept if claimable(task, queued, complete_ids)]
-        if not ready:
-            return processed, [task["id"] for _, task in kept]
-        file, task = ready[0]
-        print(f"[run ] {task['id']} -> {task['targetAgent']} ({task['path']})")
-        def invoke(feedback):
-            ok, reason = invoke_agent(task, not args.no_auto, args.timeout, feedback)
-            if ok and task["stage"] != 0 and not (get_project_root() / task["path"]).exists():
-                return False, f"agent finished but {task['path']} was not created"
-            return ok, reason
+        return kept, complete_task_ids()
 
-        def verify():
-            return run_verification(get_project_root(), args.verify, args.verify_scope, task, args.verify_timeout)
 
-        ok, reason = execute_with_tdd(task, invoke, verify)
-        if ok:
-            with telemetry.span("blackboard.complete", {"file": file.name, **telemetry.task_attributes(task)}):
-                file.replace(COMPLETE_DIR / file.name)
-            print(f"[done] {task['id']}")
-        else:
-            send_to_error(file, reason, task)
-            print(f"[fail] {task['id']}: {reason}")
-        processed += 1
-        if args.limit and processed >= args.limit:
-            return processed, []
+def quarantine_dependents(failed_id, tasks, files, dependents, remaining):
+    """Send every transitive dependent of a failed task to the error queue."""
+    pending = [failed_id]
+    while pending:
+        source = pending.pop()
+        for dependent_id in dependents.get(source, []):
+            if dependent_id not in remaining:
+                continue
+            dependent_task = tasks[dependent_id]
+            if dependent_task["stage"] == 0:
+                continue
+            file = files[dependent_id]
+            reason = f"dependsOn {source} not resolvable in queue or complete"
+            send_to_error(file, reason, dependent_task)
+            print(f"[error] {file.name}: {reason}")
+            remaining.discard(dependent_id)
+            pending.append(dependent_id)
+
+
+def drain_queue(args, invoke_for_task):
+    """Drain the queue once using an in-memory dependency graph and ready heap.
+
+    The queue and completion folders are scanned once per pass. Tasks that become
+    ready after a completion are pushed onto a heap ordered by (stage, project, path),
+    keeping work grouped by domain within each stage.
+
+    ``invoke_for_task(task, feedback)`` runs the backend-specific agent call.
+    """
+    kept, complete_ids = load_valid_tasks()
+    if not kept:
+        return 0, []
+
+    tasks = {task["id"]: task for _, task in kept}
+    files = {task["id"]: file for file, task in kept}
+    by_stage = {}
+    for _, task in kept:
+        by_stage.setdefault(task["stage"], []).append(task["id"])
+
+    pending_deps = {}
+    dependents = {}
+    for task_id, task in tasks.items():
+        unmet = [dep for dep in task["dependsOn"] if dep not in complete_ids]
+        pending_deps[task_id] = len(unmet)
+        for dep in unmet:
+            dependents.setdefault(dep, []).append(task_id)
+
+    processed = 0
+    remaining = set(tasks)
+    for stage in sorted(by_stage):
+        ready = []
+        for task_id in by_stage[stage]:
+            if task_id in remaining and pending_deps[task_id] == 0:
+                heapq.heappush(ready, (task_sort_key(tasks[task_id]), task_id))
+        while ready:
+            _, task_id = heapq.heappop(ready)
+            if task_id not in remaining or pending_deps[task_id] != 0:
+                continue
+            file = files[task_id]
+            task = tasks[task_id]
+            print(f"[run ] {task['id']} -> {task['targetAgent']} ({task['path']})")
+
+            def invoke(feedback):
+                ok, reason = invoke_for_task(task, feedback)
+                if ok and not (project_root_for(task["project"]) / task["path"]).exists():
+                    return False, f"agent finished but {task['path']} was not created"
+                return ok, reason
+
+            def verify():
+                return run_verification(project_root_for(task["project"]), args.verify, args.verify_scope, task, args.verify_timeout)
+
+            ok, reason = execute_with_tdd(task, invoke, verify)
+            if ok:
+                with telemetry.span("blackboard.complete", {"file": file.name, **telemetry.task_attributes(task)}):
+                    file.replace(COMPLETE_DIR / file.name)
+                print(f"[done] {task['id']}")
+                complete_ids.add(task_id)
+                remaining.discard(task_id)
+                for dependent_id in dependents.get(task_id, []):
+                    if dependent_id not in remaining:
+                        continue
+                    pending_deps[dependent_id] -= 1
+                    if pending_deps[dependent_id] == 0 and tasks[dependent_id]["stage"] == stage:
+                        heapq.heappush(ready, (task_sort_key(tasks[dependent_id]), dependent_id))
+            else:
+                send_to_error(file, reason, task)
+                print(f"[fail] {task['id']}: {reason}")
+                remaining.discard(task_id)
+                quarantine_dependents(task_id, tasks, files, dependents, remaining)
+            processed += 1
+            if args.limit and processed >= args.limit:
+                return processed, []
+        if any(task_id in remaining for task_id in by_stage[stage]):
+            blocked = sorted(remaining, key=lambda item: task_sort_key(tasks[item]))
+            return processed, blocked
+    if remaining:
+        blocked = sorted(remaining, key=lambda item: task_sort_key(tasks[item]))
+        return processed, blocked
+    return processed, []
+
+
+def run_pass(args):
+    def invoke_for_task(task, feedback):
+        return invoke_agent(task, not args.no_auto, args.timeout, feedback)
+    return drain_queue(args, invoke_for_task)
 
 
 def main():
@@ -858,12 +1091,27 @@ def main():
             return 1
         print("[ddd ] context maps ready")
 
-    print("[plan] architect reading the validated reports")
-    ok, reason = run_architect(args)
+    print("[plan] architect writing execution strategies")
+    ok, reason = run_architect(args, "strategy")
     if not ok:
-        print(f"[fatal] architect: {reason}")
+        print(f"[fatal] architect strategy: {reason}")
         return 1
-    print("[plan] architect finished; processing queue")
+    for slug in database_slugs():
+        if scaffold_task_id(slug) == "T0-000":
+            print(f"[fatal] architect strategy: no scaffold task for domain {slug}")
+            return 1
+    for slug in database_slugs():
+        ok, reason = run_database(args, slug)
+        print(f"[db  ] {slug}: {'done' if ok else 'failed: ' + reason}")
+        if not ok:
+            print(f"[fatal] database {slug}: {reason}")
+            return 1
+    print("[plan] architect writing application tasks")
+    ok, reason = run_architect(args, "tasks")
+    if not ok:
+        print(f"[fatal] architect tasks: {reason}")
+        return 1
+    print("[plan] strategy, database, and task phases finished; processing queue")
 
     try:
         if args.watch:
@@ -877,11 +1125,12 @@ def main():
         print(f"[blocked] {', '.join(blocked)}")
         return 1
     if args.verify != "none":
-        ok, reason = verify_project(get_project_root(), args.verify, args.verify_timeout)
-        if not ok:
-            print(f"[fatal] {reason}")
-            return 1
-        print(f"[verify] project passes {args.verify}")
+        for slug in database_slugs():
+            ok, reason = verify_project(project_root_for(slug), args.verify, args.verify_timeout)
+            if not ok:
+                print(f"[fatal] {slug}: {reason}")
+                return 1
+            print(f"[verify] {slug} passes {args.verify}")
     print(f"[ok] processed {processed} task(s)")
     return 0
 

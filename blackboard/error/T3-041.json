@@ -5,11 +5,12 @@
   "dependsOn": [
     "T2-041"
   ],
-  "path": "src/main/java/com/apexledger/banking/compliance/domain/ComplianceHold.java",
+  "path": "src/main/java/com/bank/ledger/generalledger/infrastructure/persistence/BalanceProjectionAdapter.java",
   "kind": "refactor",
-  "layer": "domain",
+  "export": "BalanceProjectionAdapter",
+  "intent": "Bounded context Ledger Accounting (general-ledger): inspect and refactor BalanceProjectionAdapter (tests in src/test/java/com/bank/ledger/generalledger/infrastructure/persistence/BalanceProjectionAdapterTest.java) keeping tests green and layer boundaries intact; clean naming, small methods, immutability and null safety; behavior to preserve: JPA adapter implementing BalanceProjectionPort over balance and hold projections and processed events tables; processed-event insert guards idempotency.",
+  "layer": "infrastructure",
   "feature": null,
-  "export": "ComplianceHold",
-  "intent": "Inspect and refactor the implementation of Unit ComplianceHold (Transaction Screening context, domain layer, package com.apexledger.banking.compliance). Entity Compliance Hold (distinct from account Hold) created on a screening match with status ACTIVE/RELEASED/REJECTED. Invariants: only one active hold per transaction; resolved only through an approved or rejected override. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "project": "general-ledger",
   "error": "dependsOn T2-041 not resolvable in queue or complete"
 }

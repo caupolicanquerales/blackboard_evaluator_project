@@ -1,0 +1,14 @@
+{
+  "id": "T2-025",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-025"
+  ],
+  "path": "src/main/java/com/enterprise/banking/payment/application/PaymentSagaService.java",
+  "kind": "code",
+  "layer": "application",
+  "feature": null,
+  "export": "PaymentSagaService",
+  "intent": "Bounded context Payment Orchestration (payment): Implement PaymentSagaService so tests in src/test/java/com/enterprise/banking/payment/application/PaymentSagaServiceTest.java pass: Saga orchestration: request payment, reserve funds, await compliance, authorize, dispatch to clearing, settle, reverse on failure; consumes ComplianceCleared/Flagged, FundsReserved/Released, AccountFrozen idempotently via inbox; publishes PaymentRequested/PaymentSettled."
+}

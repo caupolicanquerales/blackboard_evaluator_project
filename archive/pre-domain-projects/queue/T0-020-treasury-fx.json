@@ -1,0 +1,12 @@
+{
+  "id": "T0-020",
+  "targetAgent": "agent-container",
+  "stage": 0,
+  "dependsOn": [],
+  "path": "db/migrations/treasury-fx/V1__store_setup.sql",
+  "kind": "bootstrap",
+  "layer": "root",
+  "feature": null,
+  "export": "treasury-fx-store-setup",
+  "intent": "Store setup: PostgreSQL 16 store for bounded context treasury-fx; Flyway script db/migrations/treasury-fx/V1__store_setup.sql creates the treasury_fx schema (run first)."
+}

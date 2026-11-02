@@ -5,11 +5,12 @@
   "dependsOn": [
     "T2-056"
   ],
-  "path": "src/main/java/com/apexledger/banking/payments/application/port/HoldPort.java",
+  "path": "src/main/java/com/bank/ledger/payments/infrastructure/messaging/OutboxPaymentEventPublisher.java",
   "kind": "refactor",
-  "layer": "application",
+  "export": "OutboxPaymentEventPublisher",
+  "intent": "Bounded context Payment Orchestration (payments): inspect and refactor OutboxPaymentEventPublisher (tests in src/test/java/com/bank/ledger/payments/infrastructure/messaging/OutboxPaymentEventPublisherTest.java) keeping tests green and layer boundaries intact; clean naming, small methods, immutability and null safety; behavior to preserve: Adapter implementing PaymentEventPublisherPort via payments.outbox_events written in the same transaction, relay publishes unpublished rows at-least-once.",
+  "layer": "infrastructure",
   "feature": null,
-  "export": "HoldPort",
-  "intent": "Inspect and refactor the implementation of Unit HoldPort (Payment Orchestration context, application layer, package com.apexledger.banking.payments). Outbound port reserve(account, Money, paymentRef) and release(holdId); Payments sees only the hold outcome, never Account State or overdraft rules. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "project": "payments",
   "error": "dependsOn T2-056 not resolvable in queue or complete"
 }

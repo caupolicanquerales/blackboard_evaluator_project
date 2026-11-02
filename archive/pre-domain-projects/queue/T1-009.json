@@ -1,0 +1,14 @@
+{
+  "id": "T1-009",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/enterprise/banking/screening/domain/VelocityPolicyTest.java",
+  "kind": "test",
+  "layer": "domain",
+  "feature": null,
+  "export": "VelocityPolicyTest",
+  "intent": "Bounded context Transaction Screening (screening): Write JUnit 5 tests for VelocityPolicy (path src/main/java/com/enterprise/banking/screening/domain/VelocityPolicy.java) covering every invariant and expected behavior: Pure domain policy evaluating transaction velocity against configurable thresholds, returning a flag decision; deterministic and side-effect free."
+}

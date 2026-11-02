@@ -1,0 +1,14 @@
+{
+  "id": "T3-021",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-021"
+  ],
+  "path": "src/main/java/com/enterprise/banking/ledger/infrastructure/JournalPersistenceAdapter.java",
+  "kind": "refactor",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "JournalPersistenceAdapter",
+  "intent": "Bounded context Double-Entry Ledger (ledger): Inspect and refactor JournalPersistenceAdapter for clean naming, small methods, immutability, null-safety and layer boundaries without changing behavior or weakening these invariants: Adapter over general_ledger schema (ledger accounts, fiscal periods, journal entries and lines, balance projection, outbox, processed events); insert-only journal, relies on DB immutability and balanced-entry triggers, serialized fiscal period close."
+}

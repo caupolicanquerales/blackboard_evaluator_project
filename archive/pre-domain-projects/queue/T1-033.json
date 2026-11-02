@@ -1,0 +1,18 @@
+{
+  "id": "T1-033",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T0-019",
+    "T0-020",
+    "T0-021",
+    "T0-022"
+  ],
+  "path": "src/test/java/com/enterprise/banking/fx/infrastructure/FxPersistenceAdapterTest.java",
+  "kind": "test",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "FxPersistenceAdapterTest",
+  "intent": "Bounded context FX Settlement (fx): Write JUnit 5 tests for FxPersistenceAdapter (path src/main/java/com/enterprise/banking/fx/infrastructure/FxPersistenceAdapter.java) covering every invariant and expected behavior: Adapter over treasury_fx schema (exchange_rate_quotes, fx_conversions, treasury_positions, position_movements, outbox_events, inbox_events); atomic quote consumption, outbox same transaction."
+}

@@ -1,0 +1,14 @@
+{
+  "id": "T3-035",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-035"
+  ],
+  "path": "src/main/java/com/enterprise/banking/fx/interfaces/FxController.java",
+  "kind": "refactor",
+  "layer": "interface",
+  "feature": null,
+  "export": "FxController",
+  "intent": "Bounded context FX Settlement (fx): Inspect and refactor FxController for clean naming, small methods, immutability, null-safety and layer boundaries without changing behavior or weakening these invariants: Thin REST controller for FX quotes, locks and conversions delegating to FxSettlementApplicationService."
+}

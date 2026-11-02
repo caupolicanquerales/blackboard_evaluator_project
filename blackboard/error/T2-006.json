@@ -3,14 +3,14 @@
   "targetAgent": "agent-coder",
   "stage": 2,
   "dependsOn": [
-    "T1-006",
-    "T2-005"
+    "T1-006"
   ],
-  "path": "src/main/java/com/apexledger/banking/shared/SpringEventPublisher.java",
+  "path": "src/main/java/com/bank/ledger/accounts/application/port/out/VerifiedCustomerPort.java",
   "kind": "code",
-  "layer": "shared",
+  "export": "VerifiedCustomerPort",
+  "intent": "Bounded context Account Lifecycle (accounts): implement VerifiedCustomerPort so tests in src/test/java/com/bank/ledger/accounts/application/port/out/VerifiedCustomerPortTest.java pass: Outbound port interface answering whether a customer reference has a verified profile (isVerified(customerReference)); customer verification stays outside this context.",
+  "layer": "application",
   "feature": null,
-  "export": "SpringEventPublisher",
-  "intent": "Implement Unit SpringEventPublisher (Shared kernel context, shared layer, package com.apexledger.banking.shared). Adapter implementing EventPublisher via Spring ApplicationEventPublisher; publishes synchronously in-process and propagates listener failures unchanged. Make the tests at src/test/java/com/apexledger/banking/shared/SpringEventPublisherTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
-  "error": "dependsOn T2-005 not resolvable in queue or complete"
+  "project": "accounts",
+  "error": "dependsOn T1-006 not resolvable in queue or complete"
 }

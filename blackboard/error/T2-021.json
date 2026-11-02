@@ -5,11 +5,12 @@
   "dependsOn": [
     "T1-021"
   ],
-  "path": "src/main/java/com/apexledger/banking/ledger/domain/FiscalPeriod.java",
+  "path": "src/main/java/com/bank/ledger/compliance/application/ScreeningService.java",
   "kind": "code",
-  "layer": "domain",
+  "export": "ScreeningService",
+  "intent": "Bounded context Transaction Screening (compliance-risk): implement ScreeningService so tests in src/test/java/com/bank/ledger/compliance/application/ScreeningServiceTest.java pass: Application service screening a transaction (real-time, before authorization completes) using ScreeningPolicy and ListProviderPort; on a match creates a ComplianceHold, adds it to the risk operations queue and publishes ComplianceFlaggedEvent and TransactionSuspended; otherwise publishes ComplianceClearedEvent; idempotent per transaction id.",
+  "layer": "application",
   "feature": null,
-  "export": "FiscalPeriod",
-  "intent": "Implement Unit FiscalPeriod (Ledger Accounting context, domain layer, package com.apexledger.banking.ledger). Fiscal Period with id and date range, state OPEN/CLOSED. Invariants: closed period accepts no postings (assertOpen throws); close is one-way; contains(date). Make the tests at src/test/java/com/apexledger/banking/ledger/domain/FiscalPeriodTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "project": "compliance-risk",
   "error": "dependsOn T1-021 not resolvable in queue or complete"
 }

@@ -3,14 +3,14 @@
   "targetAgent": "agent-coder",
   "stage": 2,
   "dependsOn": [
-    "T1-018",
-    "T2-015"
+    "T1-018"
   ],
-  "path": "src/main/java/com/apexledger/banking/accounts/api/AccountController.java",
+  "path": "src/main/java/com/bank/ledger/compliance/application/port/out/ListProviderPort.java",
   "kind": "code",
-  "layer": "interface",
+  "export": "ListProviderPort",
+  "intent": "Bounded context Transaction Screening (compliance-risk): implement ListProviderPort so tests in src/test/java/com/bank/ledger/compliance/application/port/out/ListProviderPortTest.java pass: Outbound port interface to check a party against sanctions (OFAC, UN) and PEP lists, returning domain match results only.",
+  "layer": "application",
   "feature": null,
-  "export": "AccountController",
-  "intent": "Implement Unit AccountController (Account Lifecycle context, interface layer, package com.apexledger.banking.accounts). Thin REST controller /api/v1/accounts: open, activate, freeze, terminate, overdraft, holds. Request/response DTO records, bean validation; no business logic; DomainRuleViolationException -> 422 ProblemDetail, unknown account -> 404. Never exposes the aggregate. Make the tests at src/test/java/com/apexledger/banking/accounts/api/AccountControllerTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "project": "compliance-risk",
   "error": "dependsOn T1-018 not resolvable in queue or complete"
 }

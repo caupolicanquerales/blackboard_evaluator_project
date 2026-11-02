@@ -5,11 +5,12 @@
   "dependsOn": [
     "T2-002"
   ],
-  "path": "src/main/java/com/apexledger/banking/shared/Money.java",
+  "path": "src/main/java/com/bank/ledger/accounts/domain/OverdraftBoundary.java",
   "kind": "refactor",
-  "layer": "shared",
+  "export": "OverdraftBoundary",
+  "intent": "Bounded context Account Lifecycle (accounts): inspect and refactor OverdraftBoundary (tests in src/test/java/com/bank/ledger/accounts/domain/OverdraftBoundaryTest.java) keeping tests green and layer boundaries intact; clean naming, small methods, immutability and null safety; behavior to preserve: Immutable value object for an individually approved overdraft limit bounded by customer risk tier and a regulatory cap; non-negative money amount, rejects limits above the tier cap or regulatory cap, defensive validation in the constructor.",
+  "layer": "domain",
   "feature": null,
-  "export": "Money",
-  "intent": "Inspect and refactor the implementation of Unit Money (Shared kernel context, shared layer, package com.apexledger.banking.shared). Value object (record) of amount (BigDecimal) and ISO currency. Invariants: non-null amount and currency, amount scale normalised, immutable. Behavior: add, subtract (same currency only, else DomainRuleViolationException), isNegative, isZero, compareTo. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "project": "accounts",
   "error": "dependsOn T2-002 not resolvable in queue or complete"
 }

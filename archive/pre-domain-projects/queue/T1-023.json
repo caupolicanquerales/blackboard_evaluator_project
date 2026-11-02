@@ -1,0 +1,14 @@
+{
+  "id": "T1-023",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/enterprise/banking/payment/domain/PaymentOrderTest.java",
+  "kind": "test",
+  "layer": "domain",
+  "feature": null,
+  "export": "PaymentOrderTest",
+  "intent": "Bounded context Payment Orchestration (payment): Write JUnit 5 tests for PaymentOrder (path src/main/java/com/enterprise/banking/payment/domain/PaymentOrder.java) covering every invariant and expected behavior: Payment Order aggregate and state machine (REQUESTED, SCREENING, RESERVED, AUTHORIZED, CLEARING, SETTLED, FAILED, REVERSED). Invariants: outgoing transfer requires successful reservation first; Authorization precedes Settlement; clearing failure triggers hold release; cross-border above 10,000 USD equivalent needs FX settlement and AML clearance. Pure Java."
+}

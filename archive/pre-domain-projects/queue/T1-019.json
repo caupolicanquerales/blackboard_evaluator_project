@@ -1,0 +1,14 @@
+{
+  "id": "T1-019",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/enterprise/banking/ledger/domain/BalanceCalculatorTest.java",
+  "kind": "test",
+  "layer": "domain",
+  "feature": null,
+  "export": "BalanceCalculatorTest",
+  "intent": "Bounded context Double-Entry Ledger (ledger): Write JUnit 5 tests for BalanceCalculator (path src/main/java/com/enterprise/banking/ledger/domain/BalanceCalculator.java) covering every invariant and expected behavior: Domain service computing Book Balance (settled lines) and Available Balance (book minus active holds) separately; deterministic, BigDecimal arithmetic."
+}

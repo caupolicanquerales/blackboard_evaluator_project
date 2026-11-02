@@ -5,11 +5,12 @@
   "dependsOn": [
     "T2-067"
   ],
-  "path": "src/main/java/com/apexledger/banking/compliance/infrastructure/PaymentRequestedEventListener.java",
+  "path": "src/main/java/com/bank/ledger/treasuryfx/application/FxConversionService.java",
   "kind": "refactor",
-  "layer": "infrastructure",
+  "export": "FxConversionService",
+  "intent": "Bounded context FX Pricing and Conversion (treasury-fx): inspect and refactor FxConversionService (tests in src/test/java/com/bank/ledger/treasuryfx/application/FxConversionServiceTest.java) keeping tests green and layer boundaries intact; clean naming, small methods, immutability and null safety; behavior to preserve: Application service executing a conversion on a locked unexpired quote, storing ConversionRecord with exact rate index and publishing FxRateUtilizationReported for every conversion; idempotent per quote.",
+  "layer": "application",
   "feature": null,
-  "export": "PaymentRequestedEventListener",
-  "intent": "Inspect and refactor the implementation of Unit PaymentRequestedEventListener (Transaction Screening context, infrastructure layer, package com.apexledger.banking.compliance). Transaction Screening @EventListener consuming PaymentRequestedEvent and calling TransactionScreeningService.screen for transfers over USD 5,000 or cross-border before authorization completes. Lives in the compliance infrastructure package; queued with payments because it needs PaymentEvents. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "project": "treasury-fx",
   "error": "dependsOn T2-067 not resolvable in queue or complete"
 }

@@ -3,13 +3,14 @@
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
-    "T0-001"
+    "T0-003"
   ],
-  "path": "src/test/java/com/apexledger/banking/treasury/application/port/QuoteRepositoryTest.java",
+  "path": "src/test/java/com/bank/ledger/generalledger/application/port/out/BalanceProjectionPortTest.java",
   "kind": "test",
+  "export": "BalanceProjectionPortTest",
+  "intent": "Bounded context Ledger Accounting (general-ledger): write JUnit 5 tests for BalanceProjectionPort (path src/main/java/com/bank/ledger/generalledger/application/port/out/BalanceProjectionPort.java) covering every invariant and expected behavior: Outbound port interface to read and update balance projections and to record processed hold event ids for idempotency.",
   "layer": "application",
   "feature": null,
-  "export": "QuoteRepository",
-  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit QuoteRepository (FX Settlement context, application layer, package com.apexledger.banking.treasury). Outbound port: save(ExchangeRateQuote), findById(String) returning Optional. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/treasury/application/port/QuoteRepository.java.",
-  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+  "project": "general-ledger",
+  "error": "dependsOn T0-003 not resolvable in queue or complete"
 }

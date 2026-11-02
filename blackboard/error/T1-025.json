@@ -3,13 +3,16 @@
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
-    "T0-001"
+    "T0-002",
+    "T0-010",
+    "T0-011"
   ],
-  "path": "src/test/java/com/apexledger/banking/ledger/application/GeneralLedgerServiceTest.java",
+  "path": "src/test/java/com/bank/ledger/compliance/infrastructure/messaging/OutboxComplianceEventPublisherTest.java",
   "kind": "test",
-  "layer": "application",
+  "export": "OutboxComplianceEventPublisherTest",
+  "intent": "Bounded context Transaction Screening (compliance-risk): write JUnit 5 tests for OutboxComplianceEventPublisher (path src/main/java/com/bank/ledger/compliance/infrastructure/messaging/OutboxComplianceEventPublisher.java) covering every invariant and expected behavior: Adapter implementing ComplianceEventPublisherPort via the compliance_risk.outbox_events table written in the same transaction, with a relay publishing unpublished rows at-least-once.",
+  "layer": "infrastructure",
   "feature": null,
-  "export": "GeneralLedgerService",
-  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit GeneralLedgerService (Ledger Accounting context, application layer, package com.apexledger.banking.ledger). Use cases: postJournal (validates balance and open period, then publishes JournalPostedEvent), createPending, reverse (Adjustment Journal), closePeriod, bookBalance, availableBalance, registerHold/releaseHold. Uses Clock; immutable entries; rejects posting to closed periods. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/ledger/application/GeneralLedgerService.java.",
-  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+  "project": "compliance-risk",
+  "error": "dependsOn T0-002 not resolvable in queue or complete"
 }

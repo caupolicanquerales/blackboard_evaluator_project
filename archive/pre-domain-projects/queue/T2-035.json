@@ -1,0 +1,14 @@
+{
+  "id": "T2-035",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-035"
+  ],
+  "path": "src/main/java/com/enterprise/banking/fx/interfaces/FxController.java",
+  "kind": "code",
+  "layer": "interface",
+  "feature": null,
+  "export": "FxController",
+  "intent": "Bounded context FX Settlement (fx): Implement FxController so tests in src/test/java/com/enterprise/banking/fx/interfaces/FxControllerTest.java pass: Thin REST controller for FX quotes, locks and conversions delegating to FxSettlementApplicationService."
+}

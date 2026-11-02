@@ -1,0 +1,14 @@
+{
+  "id": "T1-024",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/enterprise/banking/payment/domain/SettlementBatchTest.java",
+  "kind": "test",
+  "layer": "domain",
+  "feature": null,
+  "export": "SettlementBatchTest",
+  "intent": "Bounded context Payment Orchestration (payment): Write JUnit 5 tests for SettlementBatch (path src/main/java/com/enterprise/banking/payment/domain/SettlementBatch.java) covering every invariant and expected behavior: Settlement Batch aggregate grouping payment orders; members only SETTLE-ready orders, immutable once closed, no duplicate members."
+}

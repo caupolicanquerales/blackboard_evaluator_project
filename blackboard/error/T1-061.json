@@ -3,13 +3,14 @@
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
-    "T0-001"
+    "T0-005"
   ],
-  "path": "src/test/java/com/apexledger/banking/payments/infrastructure/InMemoryPaymentOrderRepositoryTest.java",
+  "path": "src/test/java/com/bank/ledger/treasuryfx/domain/ConversionRecordTest.java",
   "kind": "test",
-  "layer": "infrastructure",
+  "export": "ConversionRecordTest",
+  "intent": "Bounded context FX Pricing and Conversion (treasury-fx): write JUnit 5 tests for ConversionRecord (path src/main/java/com/bank/ledger/treasuryfx/domain/ConversionRecord.java) covering every invariant and expected behavior: Immutable conversion record keeping local amount, target foreign amount and the exact rate index used; only an unexpired locked quote can be converted; amounts positive.",
+  "layer": "domain",
   "feature": null,
-  "export": "InMemoryPaymentOrderRepository",
-  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit InMemoryPaymentOrderRepository (Payment Orchestration context, infrastructure layer, package com.apexledger.banking.payments). Thread-safe in-memory PaymentOrderRepository. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/payments/infrastructure/InMemoryPaymentOrderRepository.java.",
-  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+  "project": "treasury-fx",
+  "error": "dependsOn T0-005 not resolvable in queue or complete"
 }

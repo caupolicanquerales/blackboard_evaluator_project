@@ -1,0 +1,14 @@
+{
+  "id": "T2-014",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-014"
+  ],
+  "path": "src/main/java/com/enterprise/banking/screening/infrastructure/WatchlistProviderAdapter.java",
+  "kind": "code",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "WatchlistProviderAdapter",
+  "intent": "Bounded context Transaction Screening (screening): Implement WatchlistProviderAdapter so tests in src/test/java/com/enterprise/banking/screening/infrastructure/WatchlistProviderAdapterTest.java pass: Anticorruption adapter for OFAC, UN and PEP list providers behind a WatchlistPort; translates provider payloads into domain match objects; timeouts fail closed (treated as flagged)."
+}

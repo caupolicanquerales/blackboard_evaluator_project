@@ -5,11 +5,12 @@
   "dependsOn": [
     "T2-006"
   ],
-  "path": "src/main/java/com/apexledger/banking/shared/SpringEventPublisher.java",
+  "path": "src/main/java/com/bank/ledger/accounts/application/port/out/VerifiedCustomerPort.java",
   "kind": "refactor",
-  "layer": "shared",
+  "export": "VerifiedCustomerPort",
+  "intent": "Bounded context Account Lifecycle (accounts): inspect and refactor VerifiedCustomerPort (tests in src/test/java/com/bank/ledger/accounts/application/port/out/VerifiedCustomerPortTest.java) keeping tests green and layer boundaries intact; clean naming, small methods, immutability and null safety; behavior to preserve: Outbound port interface answering whether a customer reference has a verified profile (isVerified(customerReference)); customer verification stays outside this context.",
+  "layer": "application",
   "feature": null,
-  "export": "SpringEventPublisher",
-  "intent": "Inspect and refactor the implementation of Unit SpringEventPublisher (Shared kernel context, shared layer, package com.apexledger.banking.shared). Adapter implementing EventPublisher via Spring ApplicationEventPublisher; publishes synchronously in-process and propagates listener failures unchanged. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "project": "accounts",
   "error": "dependsOn T2-006 not resolvable in queue or complete"
 }

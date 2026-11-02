@@ -3,15 +3,14 @@
   "targetAgent": "agent-coder",
   "stage": 2,
   "dependsOn": [
-    "T1-048",
-    "T2-045",
-    "T2-008"
+    "T1-048"
   ],
-  "path": "src/main/java/com/apexledger/banking/compliance/infrastructure/AccountCreatedEventListener.java",
+  "path": "src/main/java/com/bank/ledger/payments/domain/SettlementBatch.java",
   "kind": "code",
-  "layer": "infrastructure",
+  "export": "SettlementBatch",
+  "intent": "Bounded context Payment Orchestration (payments): implement SettlementBatch so tests in src/test/java/com/bank/ledger/payments/domain/SettlementBatchTest.java pass: Settlement Batch grouping settled payments for one clearing network; same network only, closed batches reject additions, no duplicate payments.",
+  "layer": "domain",
   "feature": null,
-  "export": "AccountCreatedEventListener",
-  "intent": "Implement Unit AccountCreatedEventListener (Transaction Screening context, infrastructure layer, package com.apexledger.banking.compliance). @EventListener consuming Accounts' AccountCreatedEvent and calling TransactionScreeningService.screenAccountCreated for onboarding screening; receives only the creation fact. Make the tests at src/test/java/com/apexledger/banking/compliance/infrastructure/AccountCreatedEventListenerTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
-  "error": "dependsOn T2-008 not resolvable in queue or complete"
+  "project": "payments",
+  "error": "dependsOn T1-048 not resolvable in queue or complete"
 }

@@ -1,0 +1,14 @@
+{
+  "id": "T2-003",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-003"
+  ],
+  "path": "src/main/java/com/enterprise/banking/account/domain/Hold.java",
+  "kind": "code",
+  "layer": "domain",
+  "feature": null,
+  "export": "Hold",
+  "intent": "Bounded context Account Lifecycle (account): Implement Hold so tests in src/test/java/com/enterprise/banking/account/domain/HoldTest.java pass: Hold entity reserving part of an account's funds: positive amount, states ACTIVE/RELEASED/CONVERTED; release and convert-to-debit are idempotent and only valid from ACTIVE. Pure Java."
+}

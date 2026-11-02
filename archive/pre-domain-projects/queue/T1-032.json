@@ -1,0 +1,18 @@
+{
+  "id": "T1-032",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T0-019",
+    "T0-020",
+    "T0-021",
+    "T0-022"
+  ],
+  "path": "src/test/java/com/enterprise/banking/fx/application/FxSettlementApplicationServiceTest.java",
+  "kind": "test",
+  "layer": "application",
+  "feature": null,
+  "export": "FxSettlementApplicationServiceTest",
+  "intent": "Bounded context FX Settlement (fx): Write JUnit 5 tests for FxSettlementApplicationService (path src/main/java/com/enterprise/banking/fx/application/FxSettlementApplicationService.java) covering every invariant and expected behavior: Use cases: quote, lock rate (max 30s), execute conversion, publish FxQuoteLocked/FxConversionExecuted/RateUtilizationPublished via outbox; concurrency-safe against double use of a quote."
+}

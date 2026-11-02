@@ -32,7 +32,7 @@ Every task payload must include:
 
 ## 4. Task Schema Definition
 
-Output one JSON file per task, pushed to the Blackboard. Strict schema, no extra keys:
+Output one JSON file per task, pushed to the Blackboard. File name: `T-###-<domain-slug>.json` where the domain slug comes from `feature`. Strict schema, no extra keys:
 
 ```json
 {

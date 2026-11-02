@@ -5,11 +5,12 @@
   "dependsOn": [
     "T2-003"
   ],
-  "path": "src/main/java/com/apexledger/banking/shared/DomainRuleViolationException.java",
+  "path": "src/main/java/com/bank/ledger/accounts/domain/Hold.java",
   "kind": "refactor",
-  "layer": "shared",
+  "export": "Hold",
+  "intent": "Bounded context Account Lifecycle (accounts): inspect and refactor Hold (tests in src/test/java/com/bank/ledger/accounts/domain/HoldTest.java) keeping tests green and layer boundaries intact; clean naming, small methods, immutability and null safety; behavior to preserve: Hold (lien/reservation) entity with account number, positive amount and status ACTIVE->RELEASED or ACTIVE->CONVERTED; release and convert allowed only from ACTIVE and only once; an unsettled ACTIVE hold blocks termination; pure Java.",
+  "layer": "domain",
   "feature": null,
-  "export": "DomainRuleViolationException",
-  "intent": "Inspect and refactor the implementation of Unit DomainRuleViolationException (Shared kernel context, shared layer, package com.apexledger.banking.shared). Unchecked exception signalling a broken business invariant, carrying a stable message. Thrown by every context's domain; mapped to HTTP 422 at the interface layer. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "project": "accounts",
   "error": "dependsOn T2-003 not resolvable in queue or complete"
 }

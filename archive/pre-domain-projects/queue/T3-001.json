@@ -1,0 +1,14 @@
+{
+  "id": "T3-001",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-001"
+  ],
+  "path": "src/main/java/com/enterprise/banking/account/domain/AccountState.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "AccountState",
+  "intent": "Bounded context Account Lifecycle (account): Inspect and refactor AccountState for clean naming, small methods, immutability, null-safety and layer boundaries without changing behavior or weakening these invariants: Enum/state machine PROVISIONAL->ACTIVE->FROZEN->TERMINATED; only legal transitions allowed, illegal ones throw a domain exception; a FROZEN account blocks outgoing debits but accepts incoming credits. Pure Java, no framework."
+}

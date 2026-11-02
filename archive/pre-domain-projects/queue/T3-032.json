@@ -1,0 +1,14 @@
+{
+  "id": "T3-032",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-032"
+  ],
+  "path": "src/main/java/com/enterprise/banking/fx/application/FxSettlementApplicationService.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "FxSettlementApplicationService",
+  "intent": "Bounded context FX Settlement (fx): Inspect and refactor FxSettlementApplicationService for clean naming, small methods, immutability, null-safety and layer boundaries without changing behavior or weakening these invariants: Use cases: quote, lock rate (max 30s), execute conversion, publish FxQuoteLocked/FxConversionExecuted/RateUtilizationPublished via outbox; concurrency-safe against double use of a quote."
+}

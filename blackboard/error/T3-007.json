@@ -5,11 +5,12 @@
   "dependsOn": [
     "T2-007"
   ],
-  "path": "src/main/java/com/apexledger/banking/shared/BankingConfiguration.java",
+  "path": "src/main/java/com/bank/ledger/accounts/application/port/out/AccountEventPublisherPort.java",
   "kind": "refactor",
-  "layer": "shared",
+  "export": "AccountEventPublisherPort",
+  "intent": "Bounded context Account Lifecycle (accounts): inspect and refactor AccountEventPublisherPort (tests in src/test/java/com/bank/ledger/accounts/application/port/out/AccountEventPublisherPortTest.java) keeping tests green and layer boundaries intact; clean naming, small methods, immutability and null safety; behavior to preserve: Outbound port interface publishing AccountCreatedEvent, AccountFrozenEvent, FundsReservedEvent and FundsReleasedEvent as the published language; must be atomic with state changes (outbox).",
+  "layer": "application",
   "feature": null,
-  "export": "BankingConfiguration",
-  "intent": "Inspect and refactor the implementation of Unit BankingConfiguration (Shared kernel context, shared layer, package com.apexledger.banking.shared). Spring @Configuration providing a Clock bean (system UTC) and wiring EventPublisher to SpringEventPublisher; no business logic. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "project": "accounts",
   "error": "dependsOn T2-007 not resolvable in queue or complete"
 }

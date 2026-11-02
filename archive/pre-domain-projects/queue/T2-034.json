@@ -1,0 +1,14 @@
+{
+  "id": "T2-034",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-034"
+  ],
+  "path": "src/main/java/com/enterprise/banking/fx/infrastructure/RateProviderAdapter.java",
+  "kind": "code",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "RateProviderAdapter",
+  "intent": "Bounded context FX Settlement (fx): Implement RateProviderAdapter so tests in src/test/java/com/enterprise/banking/fx/infrastructure/RateProviderAdapterTest.java pass: Anticorruption adapter for the market rate provider behind a RateProviderPort; maps provider rates to domain rates, rejects stale data."
+}

@@ -1,0 +1,14 @@
+{
+  "id": "T2-022",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-022"
+  ],
+  "path": "src/main/java/com/enterprise/banking/ledger/interfaces/LedgerController.java",
+  "kind": "code",
+  "layer": "interface",
+  "feature": null,
+  "export": "LedgerController",
+  "intent": "Bounded context Double-Entry Ledger (ledger): Implement LedgerController so tests in src/test/java/com/enterprise/banking/ledger/interfaces/LedgerControllerTest.java pass: Thin REST controller and event listeners for the ledger: post/adjust/query endpoints, maps domain errors (unbalanced, closed period) to HTTP 4xx."
+}

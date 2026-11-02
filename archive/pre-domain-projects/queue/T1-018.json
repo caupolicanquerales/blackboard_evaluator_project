@@ -1,0 +1,14 @@
+{
+  "id": "T1-018",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/enterprise/banking/ledger/domain/FiscalPeriodTest.java",
+  "kind": "test",
+  "layer": "domain",
+  "feature": null,
+  "export": "FiscalPeriodTest",
+  "intent": "Bounded context Double-Entry Ledger (ledger): Write JUnit 5 tests for FiscalPeriod (path src/main/java/com/enterprise/banking/ledger/domain/FiscalPeriod.java) covering every invariant and expected behavior: Fiscal Period entity OPEN/CLOSED; posting to a closed period is forbidden; closing is one-way."
+}

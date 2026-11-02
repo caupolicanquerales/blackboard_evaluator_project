@@ -4,14 +4,15 @@
   "stage": 2,
   "dependsOn": [
     "T1-055",
-    "T2-053",
-    "T2-054"
+    "T0-019",
+    "T0-020"
   ],
-  "path": "src/main/java/com/apexledger/banking/payments/application/port/PaymentOrderRepository.java",
+  "path": "src/main/java/com/bank/ledger/payments/infrastructure/persistence/PaymentPersistenceAdapter.java",
   "kind": "code",
-  "layer": "application",
+  "export": "PaymentPersistenceAdapter",
+  "intent": "Bounded context Payment Orchestration (payments): implement PaymentPersistenceAdapter so tests in src/test/java/com/bank/ledger/payments/infrastructure/persistence/PaymentPersistenceAdapterTest.java pass: JPA adapter implementing PaymentOrderRepositoryPort over the payments schema (payment_orders, payment_order_steps, idempotency_keys); duplicate idempotency key returns the stored order.",
+  "layer": "infrastructure",
   "feature": null,
-  "export": "PaymentOrderRepository",
-  "intent": "Implement Unit PaymentOrderRepository (Payment Orchestration context, application layer, package com.apexledger.banking.payments). Outbound port: save/find PaymentOrder by reference, save/open SettlementBatch. Make the tests at src/test/java/com/apexledger/banking/payments/application/port/PaymentOrderRepositoryTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "project": "payments",
   "error": "dependsOn T1-055 not resolvable in queue or complete"
 }

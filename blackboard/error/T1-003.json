@@ -5,11 +5,12 @@
   "dependsOn": [
     "T0-001"
   ],
-  "path": "src/test/java/com/apexledger/banking/shared/DomainRuleViolationExceptionTest.java",
+  "path": "src/test/java/com/bank/ledger/accounts/domain/HoldTest.java",
   "kind": "test",
-  "layer": "shared",
+  "export": "HoldTest",
+  "intent": "Bounded context Account Lifecycle (accounts): write JUnit 5 tests for Hold (path src/main/java/com/bank/ledger/accounts/domain/Hold.java) covering every invariant and expected behavior: Hold (lien/reservation) entity with account number, positive amount and status ACTIVE->RELEASED or ACTIVE->CONVERTED; release and convert allowed only from ACTIVE and only once; an unsettled ACTIVE hold blocks termination; pure Java.",
+  "layer": "domain",
   "feature": null,
-  "export": "DomainRuleViolationException",
-  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit DomainRuleViolationException (Shared kernel context, shared layer, package com.apexledger.banking.shared). Unchecked exception signalling a broken business invariant, carrying a stable message. Thrown by every context's domain; mapped to HTTP 422 at the interface layer. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/shared/DomainRuleViolationException.java.",
-  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+  "project": "accounts",
+  "error": "dependsOn T0-001 not resolvable in queue or complete"
 }

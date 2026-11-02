@@ -1,0 +1,14 @@
+{
+  "id": "T3-030",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-030"
+  ],
+  "path": "src/main/java/com/enterprise/banking/fx/domain/FxConversion.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "FxConversion",
+  "intent": "Bounded context FX Settlement (fx): Inspect and refactor FxConversion for clean naming, small methods, immutability, null-safety and layer boundaries without changing behavior or weakening these invariants: FX Conversion record: stores local amount, foreign amount and exact rate index used; immutable; requires an unexpired locked quote."
+}

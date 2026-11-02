@@ -3,14 +3,14 @@
   "targetAgent": "agent-coder",
   "stage": 2,
   "dependsOn": [
-    "T1-017",
-    "T2-013"
+    "T1-017"
   ],
-  "path": "src/main/java/com/apexledger/banking/accounts/infrastructure/ConfigurableCustomerVerificationAdapter.java",
+  "path": "src/main/java/com/bank/ledger/compliance/domain/OverrideRecord.java",
   "kind": "code",
-  "layer": "infrastructure",
+  "export": "OverrideRecord",
+  "intent": "Bounded context Transaction Screening (compliance-risk): implement OverrideRecord so tests in src/test/java/com/bank/ledger/compliance/domain/OverrideRecordTest.java pass: Immutable append-only override audit record requiring operator id, non-blank regulatory justification and a cryptographic audit timestamp (hash chain); decision APPROVE or REJECT; any missing field is rejected.",
+  "layer": "domain",
   "feature": null,
-  "export": "ConfigurableCustomerVerificationAdapter",
-  "intent": "Implement Unit ConfigurableCustomerVerificationAdapter (Account Lifecycle context, infrastructure layer, package com.apexledger.banking.accounts). CustomerVerificationPort adapter driven by property banking.accounts.verified-customers (default: all verified in dev); unknown customer -> not verified. Make the tests at src/test/java/com/apexledger/banking/accounts/infrastructure/ConfigurableCustomerVerificationAdapterTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
-  "error": "dependsOn T2-013 not resolvable in queue or complete"
+  "project": "compliance-risk",
+  "error": "dependsOn T1-017 not resolvable in queue or complete"
 }

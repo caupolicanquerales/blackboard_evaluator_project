@@ -5,11 +5,12 @@
   "dependsOn": [
     "T2-066"
   ],
-  "path": "src/main/java/com/apexledger/banking/payments/infrastructure/PaymentComplianceEventListener.java",
+  "path": "src/main/java/com/bank/ledger/treasuryfx/application/FxQuotingService.java",
   "kind": "refactor",
-  "layer": "infrastructure",
+  "export": "FxQuotingService",
+  "intent": "Bounded context FX Pricing and Conversion (treasury-fx): inspect and refactor FxQuotingService (tests in src/test/java/com/bank/ledger/treasuryfx/application/FxQuotingServiceTest.java) keeping tests green and layer boundaries intact; clean naming, small methods, immutability and null safety; behavior to preserve: Application service for quote and lock use cases; applies spread to provider rate, enforces the 30-second maximum lock, publishes FxQuoteLocked.",
+  "layer": "application",
   "feature": null,
-  "export": "PaymentComplianceEventListener",
-  "intent": "Inspect and refactor the implementation of Unit PaymentComplianceEventListener (Payment Orchestration context, infrastructure layer, package com.apexledger.banking.payments). @EventListener consuming ComplianceClearedEvent, ComplianceFlaggedEvent, AccountFrozenEvent, FundsReservedEvent and FundsReleasedEvent and forwarding outcomes to PaymentOrchestrationService; ignores unknown references. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "project": "treasury-fx",
   "error": "dependsOn T2-066 not resolvable in queue or complete"
 }

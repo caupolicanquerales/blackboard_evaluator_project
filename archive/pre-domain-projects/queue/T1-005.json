@@ -1,0 +1,18 @@
+{
+  "id": "T1-005",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T0-002",
+    "T0-003",
+    "T0-004",
+    "T0-005"
+  ],
+  "path": "src/test/java/com/enterprise/banking/account/application/AccountApplicationServiceTest.java",
+  "kind": "test",
+  "layer": "application",
+  "feature": null,
+  "export": "AccountApplicationServiceTest",
+  "intent": "Bounded context Account Lifecycle (account): Write JUnit 5 tests for AccountApplicationService (path src/main/java/com/enterprise/banking/account/application/AccountApplicationService.java) covering every invariant and expected behavior: Use cases: open account, activate, freeze, terminate, approve overdraft, place/release hold, convert hold on PaymentSettledEvent idempotently. Depends on ports (AccountRepository, CustomerVerificationPort anticorruption port for KYC, EventPublisher outbox port, ProcessedEventStore); publishes AccountCreated/AccountFrozen/FundsReserved/FundsReleased."
+}

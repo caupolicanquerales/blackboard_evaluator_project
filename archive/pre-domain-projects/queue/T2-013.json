@@ -1,0 +1,14 @@
+{
+  "id": "T2-013",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-013"
+  ],
+  "path": "src/main/java/com/enterprise/banking/screening/infrastructure/ScreeningPersistenceAdapter.java",
+  "kind": "code",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "ScreeningPersistenceAdapter",
+  "intent": "Bounded context Transaction Screening (screening): Implement ScreeningPersistenceAdapter so tests in src/test/java/com/enterprise/banking/screening/infrastructure/ScreeningPersistenceAdapterTest.java pass: Adapter over compliance_risk schema (screening_results, compliance_holds, override_logs append-only, suspicious_activity_reports, outbox_events, processed_events); never updates or deletes override logs; outbox in same transaction."
+}

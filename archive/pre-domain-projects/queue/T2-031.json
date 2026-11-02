@@ -1,0 +1,14 @@
+{
+  "id": "T2-031",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-031"
+  ],
+  "path": "src/main/java/com/enterprise/banking/fx/domain/TreasuryPosition.java",
+  "kind": "code",
+  "layer": "domain",
+  "feature": null,
+  "export": "TreasuryPosition",
+  "intent": "Bounded context FX Settlement (fx): Implement TreasuryPosition so tests in src/test/java/com/enterprise/banking/fx/domain/TreasuryPositionTest.java pass: Treasury Position per currency updated by conversion movements; BigDecimal arithmetic; movements are append-only and reflected in rate utilization metrics."
+}

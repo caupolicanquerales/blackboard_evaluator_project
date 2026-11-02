@@ -1,0 +1,14 @@
+{
+  "id": "T3-014",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-014"
+  ],
+  "path": "src/main/java/com/enterprise/banking/screening/infrastructure/WatchlistProviderAdapter.java",
+  "kind": "refactor",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "WatchlistProviderAdapter",
+  "intent": "Bounded context Transaction Screening (screening): Inspect and refactor WatchlistProviderAdapter for clean naming, small methods, immutability, null-safety and layer boundaries without changing behavior or weakening these invariants: Anticorruption adapter for OFAC, UN and PEP list providers behind a WatchlistPort; translates provider payloads into domain match objects; timeouts fail closed (treated as flagged)."
+}

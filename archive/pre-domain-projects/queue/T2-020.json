@@ -1,0 +1,14 @@
+{
+  "id": "T2-020",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-020"
+  ],
+  "path": "src/main/java/com/enterprise/banking/ledger/application/LedgerApplicationService.java",
+  "kind": "code",
+  "layer": "application",
+  "feature": null,
+  "export": "LedgerApplicationService",
+  "intent": "Bounded context Double-Entry Ledger (ledger): Implement LedgerApplicationService so tests in src/test/java/com/enterprise/banking/ledger/application/LedgerApplicationServiceTest.java pass: Use cases: post journal entry, post adjustment journal, close fiscal period, query balances and trial balance; consumes FundsReserved, FundsReleased, PaymentSettled idempotently; publishes JournalPostedEvent via outbox."
+}

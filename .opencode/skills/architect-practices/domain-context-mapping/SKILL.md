@@ -1,6 +1,6 @@
 ---
 name: domain-context-mapping
-description: "Use after domain-boundary-discovery to build and validate the DDD context map, choose integration relationships and boundary protection, map cross-boundary flows, and assemble the final Domain Boundary Analysis handoff for an architect agent. No code."
+description: "Use after domain-boundary-discovery to build and validate the DDD context map, choose integration relationships and boundary protection, map cross-boundary flows, and write one context map per discovery slice for an architect agent. No code."
 ---
 
 # Domain Context Mapping & Handoff
@@ -14,13 +14,13 @@ Turn a boundary draft into a validated strategic DDD map:
 - Context relationships and integration direction.
 - Boundary protection and model-leak prevention.
 - Cross-boundary flows and consistency expectations.
-- A final **Domain Boundary Analysis** artifact for an architect agent.
+- One context map per slice in `blackboard/context-map/` for an architect agent.
 
 Analysis only; no code, APIs, schemas, or infrastructure.
 
 ## Prerequisite
 
-Use `domain-boundary-discovery` first for the boundary draft (summary, language, subdomains, contexts, invariants, events, questions). If no draft exists, load that skill and create one. Never invent contexts to skip discovery.
+Use `domain-boundary-discovery` first. It writes one slice per subdomain to `blackboard/domain/domain-boundary-<slug>.json`. Read each slice with the reader script; validate it parses. If a slice is missing or invalid, stop and report it. Never invent contexts to skip discovery.
 
 ## Workflow
 
@@ -85,54 +85,31 @@ Do not turn flows into technical sequence or message design.
 - No coupling merely because contexts share an entity name.
 - Core subdomains are not buried under generic integration concerns.
 
-### 7. Assemble the final artifact
+### 7. Write one context map per slice
 
-Carry forward the boundary draft, then add mapping and handoff sections. Use plain text for the overview; no diagram code.
+For each input slice `blackboard/domain/domain-boundary-<slug>.json`, write `blackboard/context-map/context-map-<slug>.json` with the writer script:
 
-```markdown
-# Domain Boundary Analysis
-
-## 1-4. Summary, language, subdomains, bounded contexts
-(carry forward from the boundary draft)
-
-## 5. Context map
-| Upstream | Downstream | Relationship | Direction | Exchanged information | Boundary protection |
-|---|---|---|---|---|---|
-
-### Cross-boundary flows
-| Business process | Contexts involved | Consistency expectation | Notes |
-|---|---|---|---|
-
-### Boundary overview (plain text)
-- <Context A> --> <Context B>: <what flows and why>
-
-## 6. Boundary rationale
-- Why these boundaries and not adjacent alternatives:
-- Rejected splits/merges and the reason:
-- Weakest/riskiest boundaries:
-
-## 7. Assumptions, ambiguities, and open questions
-| Item | Type | Impact on boundaries | Confidence |
-|---|---|---|---|
-
-## 8. Handoff notes for the architect agent
-- Modeling focus (core subdomains first):
-- Areas needing deeper investigation:
-- Coupling or model-leak risks:
-- What must remain outside the next analysis:
+```bash
+python3 .opencode/skills/read-write-file-ddd/writer-file/scripts/writer_file.py \
+  --source - --report-type context-map \
+  --target blackboard/context-map/context-map-<slug>.json <<'JSON'
+{ ...payload for this slice... }
+JSON
 ```
+
+Payload keys only: `schema_version` ("1.0"), `report_type` ("context-map"), `metadata` (`generated_at`, `agent` = "domain-context-mapping-specialist", `source_report` = "blackboard/domain"), `context_map`, `cross_boundary_flows`. Do not copy subdomains, bounded contexts, language, or assumptions.
 
 ### 8. Handle gaps
 
 - Mark undetermined relationships as `Open question` and state the decision needed.
 - Mark conflicting invariant ownership and return it to discovery.
-- If the description is too thin, produce the draft and state that mapping is provisional.
+- Report open questions per slice; do not invent a relationship to close them.
 
 ## Handoff contract
 
-The architect agent needs the context list with responsibilities and out-of-scope boundaries, terms that must not be merged, invariants and source-of-truth ownership, integration direction and protection per boundary, cross-boundary flows with consistency expectations, and explicit unknowns.
+The architect agent receives one context map per slice in `blackboard/context-map/`, plus the matching discovery slices. Each map must state the contexts, responsibilities, out-of-scope boundaries, invariant and source-of-truth ownership, integration direction and protection, cross-boundary flows with consistency expectations, and explicit unknowns.
 
-Stop at this artifact. Do not proceed to tactical design, code, packages, databases, or deployment topology.
+Stop at these artifacts. Do not proceed to tactical design, code, packages, databases, or deployment topology.
 
 ## Constraints
 

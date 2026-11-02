@@ -3,13 +3,14 @@
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
-    "T0-001"
+    "T0-005"
   ],
-  "path": "src/test/java/com/apexledger/banking/payments/application/port/ClearingNetworkPortTest.java",
+  "path": "src/test/java/com/bank/ledger/treasuryfx/domain/CurrencyPairTest.java",
   "kind": "test",
-  "layer": "application",
+  "export": "CurrencyPairTest",
+  "intent": "Bounded context FX Pricing and Conversion (treasury-fx): write JUnit 5 tests for CurrencyPair (path src/main/java/com/bank/ledger/treasuryfx/domain/CurrencyPair.java) covering every invariant and expected behavior: Immutable value object of base and quote ISO-4217 currencies; rejects identical or invalid currencies.",
+  "layer": "domain",
   "feature": null,
-  "export": "ClearingNetworkPort",
-  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit ClearingNetworkPort (Payment Orchestration context, application layer, package com.apexledger.banking.payments). Outbound port submit(PaymentOrder) -> ClearingResult (accepted/failed) for ACH, SWIFT, SEPA; network message models never enter the domain. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/payments/application/port/ClearingNetworkPort.java.",
-  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+  "project": "treasury-fx",
+  "error": "dependsOn T0-005 not resolvable in queue or complete"
 }

@@ -1,0 +1,14 @@
+{
+  "id": "T2-007",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-007"
+  ],
+  "path": "src/main/java/com/enterprise/banking/account/interfaces/AccountController.java",
+  "kind": "code",
+  "layer": "interface",
+  "feature": null,
+  "export": "AccountController",
+  "intent": "Bounded context Account Lifecycle (account): Implement AccountController so tests in src/test/java/com/enterprise/banking/account/interfaces/AccountControllerTest.java pass: Thin REST controller plus PaymentSettledEvent listener for Account Lifecycle: validates input, delegates to AccountApplicationService, maps domain errors to HTTP 4xx; no business logic."
+}

@@ -1,0 +1,14 @@
+{
+  "id": "T3-007",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-007"
+  ],
+  "path": "src/main/java/com/enterprise/banking/account/interfaces/AccountController.java",
+  "kind": "refactor",
+  "layer": "interface",
+  "feature": null,
+  "export": "AccountController",
+  "intent": "Bounded context Account Lifecycle (account): Inspect and refactor AccountController for clean naming, small methods, immutability, null-safety and layer boundaries without changing behavior or weakening these invariants: Thin REST controller plus PaymentSettledEvent listener for Account Lifecycle: validates input, delegates to AccountApplicationService, maps domain errors to HTTP 4xx; no business logic."
+}

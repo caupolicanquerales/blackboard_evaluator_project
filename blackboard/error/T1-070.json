@@ -1,0 +1,18 @@
+{
+  "id": "T1-070",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-005",
+    "T0-023",
+    "T0-024"
+  ],
+  "path": "src/test/java/com/bank/ledger/treasuryfx/infrastructure/messaging/OutboxFxEventPublisherTest.java",
+  "kind": "test",
+  "export": "OutboxFxEventPublisherTest",
+  "intent": "Bounded context FX Pricing and Conversion (treasury-fx): write JUnit 5 tests for OutboxFxEventPublisher (path src/main/java/com/bank/ledger/treasuryfx/infrastructure/messaging/OutboxFxEventPublisher.java) covering every invariant and expected behavior: Adapter implementing FxEventPublisherPort via the treasury_fx outbox table in the same transaction with an at-least-once relay.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "treasury-fx",
+  "error": "dependsOn T0-005 not resolvable in queue or complete"
+}

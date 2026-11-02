@@ -1,0 +1,14 @@
+{
+  "id": "T3-008",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-008"
+  ],
+  "path": "src/main/java/com/enterprise/banking/screening/domain/ScreeningResult.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "ScreeningResult",
+  "intent": "Bounded context Transaction Screening (screening): Inspect and refactor ScreeningResult for clean naming, small methods, immutability, null-safety and layer boundaries without changing behavior or weakening these invariants: Screening result aggregate (transaction id, matches, decision CLEARED/FLAGGED). Invariant: transactions above 5,000 USD or cross-border must be screened; any sanction/PEP match yields FLAGGED and a compliance hold. Pure Java."
+}

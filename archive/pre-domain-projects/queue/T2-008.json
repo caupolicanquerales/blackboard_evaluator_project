@@ -1,0 +1,14 @@
+{
+  "id": "T2-008",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-008"
+  ],
+  "path": "src/main/java/com/enterprise/banking/screening/domain/ScreeningResult.java",
+  "kind": "code",
+  "layer": "domain",
+  "feature": null,
+  "export": "ScreeningResult",
+  "intent": "Bounded context Transaction Screening (screening): Implement ScreeningResult so tests in src/test/java/com/enterprise/banking/screening/domain/ScreeningResultTest.java pass: Screening result aggregate (transaction id, matches, decision CLEARED/FLAGGED). Invariant: transactions above 5,000 USD or cross-border must be screened; any sanction/PEP match yields FLAGGED and a compliance hold. Pure Java."
+}

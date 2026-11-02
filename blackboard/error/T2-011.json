@@ -4,17 +4,15 @@
   "stage": 2,
   "dependsOn": [
     "T1-011",
-    "T2-002",
-    "T2-003",
-    "T2-009",
-    "T2-010",
-    "T2-008"
+    "T0-006",
+    "T0-007"
   ],
-  "path": "src/main/java/com/apexledger/banking/accounts/domain/DepositAccount.java",
+  "path": "src/main/java/com/bank/ledger/accounts/infrastructure/messaging/OutboxAccountEventPublisher.java",
   "kind": "code",
-  "layer": "domain",
+  "export": "OutboxAccountEventPublisher",
+  "intent": "Bounded context Account Lifecycle (accounts): implement OutboxAccountEventPublisher so tests in src/test/java/com/bank/ledger/accounts/infrastructure/messaging/OutboxAccountEventPublisherTest.java pass: Adapter implementing AccountEventPublisherPort that writes events to the accounts.outbox_events table in the caller's transaction and a relay that publishes unpublished rows at-least-once and marks them published.",
+  "layer": "infrastructure",
   "feature": null,
-  "export": "DepositAccount",
-  "intent": "Implement Unit DepositAccount (Account Lifecycle context, domain layer, package com.apexledger.banking.accounts). Aggregate root DepositAccount (Account Lifecycle). Invariants: opened PROVISIONAL for a verified customer; state transitions per AccountState; FROZEN rejects debits/holds but accepts credits; overdraft limit approved individually and <= regulatory cap (rejects above); cannot TERMINATE with non-zero balance or active holds. Behavior: open, activate, freeze, terminate(currentBalance), approveOverdraft, placeHold, releaseHold; collects domain events (AccountCreatedEvent, AccountFrozenEvent, FundsReservedEvent, FundsReleasedEvent). Holds Account State/Overdraft Boundary only, never a balance. Make the tests at src/test/java/com/apexledger/banking/accounts/domain/DepositAccountTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
-  "error": "dependsOn T2-008 not resolvable in queue or complete"
+  "project": "accounts",
+  "error": "dependsOn T1-011 not resolvable in queue or complete"
 }

@@ -1,0 +1,14 @@
+{
+  "id": "T2-001",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-001"
+  ],
+  "path": "src/main/java/com/enterprise/banking/account/domain/AccountState.java",
+  "kind": "code",
+  "layer": "domain",
+  "feature": null,
+  "export": "AccountState",
+  "intent": "Bounded context Account Lifecycle (account): Implement AccountState so tests in src/test/java/com/enterprise/banking/account/domain/AccountStateTest.java pass: Enum/state machine PROVISIONAL->ACTIVE->FROZEN->TERMINATED; only legal transitions allowed, illegal ones throw a domain exception; a FROZEN account blocks outgoing debits but accepts incoming credits. Pure Java, no framework."
+}

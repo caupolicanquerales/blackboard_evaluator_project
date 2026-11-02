@@ -5,11 +5,12 @@
   "dependsOn": [
     "T0-001"
   ],
-  "path": "src/test/java/com/apexledger/banking/shared/DomainEventTest.java",
+  "path": "src/test/java/com/bank/ledger/accounts/domain/DepositAccountTest.java",
   "kind": "test",
-  "layer": "shared",
+  "export": "DepositAccountTest",
+  "intent": "Bounded context Account Lifecycle (accounts): write JUnit 5 tests for DepositAccount (path src/main/java/com/bank/ledger/accounts/domain/DepositAccount.java) covering every invariant and expected behavior: Aggregate root for a deposit account (account number, type, customer reference, AccountState, OverdraftBoundary, holds). Opens PROVISIONAL only for a verified customer; enforces state transitions; frozen account rejects debits but accepts credits; cannot be TERMINATED with non-zero balance or active holds; available funds reduced by active holds; overdraft limit approval validated against boundary.",
+  "layer": "domain",
   "feature": null,
-  "export": "DomainEvent",
-  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit DomainEvent (Shared kernel context, shared layer, package com.apexledger.banking.shared). Marker interface for domain events exposing occurredAt (Instant). Cross-context communication happens only through events implementing it. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/shared/DomainEvent.java.",
-  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+  "project": "accounts",
+  "error": "dependsOn T0-001 not resolvable in queue or complete"
 }

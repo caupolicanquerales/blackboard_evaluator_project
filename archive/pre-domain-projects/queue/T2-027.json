@@ -1,0 +1,14 @@
+{
+  "id": "T2-027",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-027"
+  ],
+  "path": "src/main/java/com/enterprise/banking/payment/infrastructure/ClearingNetworkAdapter.java",
+  "kind": "code",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "ClearingNetworkAdapter",
+  "intent": "Bounded context Payment Orchestration (payment): Implement ClearingNetworkAdapter so tests in src/test/java/com/enterprise/banking/payment/infrastructure/ClearingNetworkAdapterTest.java pass: Anticorruption adapters for SWIFT, ACH, SEPA behind a ClearingNetworkPort; idempotent dispatch keyed by payment order id; failures surface as domain failure result."
+}

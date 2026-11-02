@@ -1,0 +1,14 @@
+{
+  "id": "T3-033",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-033"
+  ],
+  "path": "src/main/java/com/enterprise/banking/fx/infrastructure/FxPersistenceAdapter.java",
+  "kind": "refactor",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "FxPersistenceAdapter",
+  "intent": "Bounded context FX Settlement (fx): Inspect and refactor FxPersistenceAdapter for clean naming, small methods, immutability, null-safety and layer boundaries without changing behavior or weakening these invariants: Adapter over treasury_fx schema (exchange_rate_quotes, fx_conversions, treasury_positions, position_movements, outbox_events, inbox_events); atomic quote consumption, outbox same transaction."
+}

@@ -5,11 +5,12 @@
   "dependsOn": [
     "T2-058"
   ],
-  "path": "src/main/java/com/apexledger/banking/payments/application/port/FxQuotePort.java",
+  "path": "src/main/java/com/bank/ledger/payments/interfaces/rest/PaymentController.java",
   "kind": "refactor",
-  "layer": "application",
+  "export": "PaymentController",
+  "intent": "Bounded context Payment Orchestration (payments): inspect and refactor PaymentController (tests in src/test/java/com/bank/ledger/payments/interfaces/rest/PaymentControllerTest.java) keeping tests green and layer boundaries intact; clean naming, small methods, immutability and null safety; behavior to preserve: Thin REST controller to create payment orders (Idempotency-Key header required), fetch status and request reversal; validates DTOs, maps domain errors to problem responses.",
+  "layer": "interface",
   "feature": null,
-  "export": "FxQuotePort",
-  "intent": "Inspect and refactor the implementation of Unit FxQuotePort (Payment Orchestration context, application layer, package com.apexledger.banking.payments). Outbound port requestQuote and convert returning an opaque quote (id, expiry, converted amounts); Payments never computes rates or spreads. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "project": "payments",
   "error": "dependsOn T2-058 not resolvable in queue or complete"
 }

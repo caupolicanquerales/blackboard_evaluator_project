@@ -3,15 +3,14 @@
   "targetAgent": "agent-coder",
   "stage": 2,
   "dependsOn": [
-    "T1-027",
-    "T2-025",
-    "T2-008"
+    "T1-027"
   ],
-  "path": "src/main/java/com/apexledger/banking/ledger/infrastructure/LedgerHoldEventListener.java",
+  "path": "src/main/java/com/bank/ledger/compliance/interfaces/rest/ScreeningController.java",
   "kind": "code",
-  "layer": "infrastructure",
+  "export": "ScreeningController",
+  "intent": "Bounded context Transaction Screening (compliance-risk): implement ScreeningController so tests in src/test/java/com/bank/ledger/compliance/interfaces/rest/ScreeningControllerTest.java pass: REST controller for the synchronous screening API used by Payments and for risk operations queue and override endpoints; validates DTOs, maps domain errors to problem responses, no business logic.",
+  "layer": "interface",
   "feature": null,
-  "export": "LedgerHoldEventListener",
-  "intent": "Implement Unit LedgerHoldEventListener (Ledger Accounting context, infrastructure layer, package com.apexledger.banking.ledger). Spring @EventListener consuming Accounts' FundsReservedEvent and FundsReleasedEvent and calling GeneralLedgerService.registerHold/releaseHold so Available Balance recovers after release. Idempotent per holdId; reads only the published event fields. Make the tests at src/test/java/com/apexledger/banking/ledger/infrastructure/LedgerHoldEventListenerTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
-  "error": "dependsOn T2-008 not resolvable in queue or complete"
+  "project": "compliance-risk",
+  "error": "dependsOn T1-027 not resolvable in queue or complete"
 }

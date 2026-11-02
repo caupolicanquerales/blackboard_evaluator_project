@@ -1,0 +1,14 @@
+{
+  "id": "T1-022",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/enterprise/banking/ledger/interfaces/LedgerControllerTest.java",
+  "kind": "test",
+  "layer": "interface",
+  "feature": null,
+  "export": "LedgerControllerTest",
+  "intent": "Bounded context Double-Entry Ledger (ledger): Write JUnit 5 tests for LedgerController (path src/main/java/com/enterprise/banking/ledger/interfaces/LedgerController.java) covering every invariant and expected behavior: Thin REST controller and event listeners for the ledger: post/adjust/query endpoints, maps domain errors (unbalanced, closed period) to HTTP 4xx."
+}

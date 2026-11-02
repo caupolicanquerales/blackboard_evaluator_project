@@ -5,11 +5,12 @@
   "dependsOn": [
     "T2-024"
   ],
-  "path": "src/main/java/com/apexledger/banking/ledger/application/port/LedgerRepository.java",
+  "path": "src/main/java/com/bank/ledger/compliance/infrastructure/persistence/ScreeningPersistenceAdapter.java",
   "kind": "refactor",
-  "layer": "application",
+  "export": "ScreeningPersistenceAdapter",
+  "intent": "Bounded context Transaction Screening (compliance-risk): inspect and refactor ScreeningPersistenceAdapter (tests in src/test/java/com/bank/ledger/compliance/infrastructure/persistence/ScreeningPersistenceAdapterTest.java) keeping tests green and layer boundaries intact; clean naming, small methods, immutability and null safety; behavior to preserve: JPA adapter implementing ScreeningRepositoryPort over the compliance_risk schema (screening_results, compliance_holds, overrides); overrides are insert-only, matching the append-only DB triggers.",
+  "layer": "infrastructure",
   "feature": null,
-  "export": "LedgerRepository",
-  "intent": "Inspect and refactor the implementation of Unit LedgerRepository (Ledger Accounting context, application layer, package com.apexledger.banking.ledger). Outbound port: append-only saveEntry(JournalEntry), entries by account, findPeriod/savePeriod, active hold register per account (add/release). No update or delete of entries. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "project": "compliance-risk",
   "error": "dependsOn T2-024 not resolvable in queue or complete"
 }

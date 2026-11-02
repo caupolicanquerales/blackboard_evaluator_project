@@ -5,11 +5,12 @@
   "dependsOn": [
     "T2-043"
   ],
-  "path": "src/main/java/com/apexledger/banking/compliance/application/port/WatchlistPort.java",
+  "path": "src/main/java/com/bank/ledger/generalledger/infrastructure/messaging/HoldEventConsumer.java",
   "kind": "refactor",
-  "layer": "application",
+  "export": "HoldEventConsumer",
+  "intent": "Bounded context Ledger Accounting (general-ledger): inspect and refactor HoldEventConsumer (tests in src/test/java/com/bank/ledger/generalledger/infrastructure/messaging/HoldEventConsumerTest.java) keeping tests green and layer boundaries intact; clean naming, small methods, immutability and null safety; behavior to preserve: Messaging consumer for FundsReservedEvent and FundsReleasedEvent with an anti-corruption mapper delegating to HoldEventHandlerService; tolerant of redelivery and out-of-order delivery.",
+  "layer": "infrastructure",
   "feature": null,
-  "export": "WatchlistPort",
-  "intent": "Inspect and refactor the implementation of Unit WatchlistPort (Transaction Screening context, application layer, package com.apexledger.banking.compliance). Outbound port matchesSanctionsOrPep(subject) and velocityAnomaly(subject) in Screening's own types (anticorruption towards OFAC, UN, PEP provider). Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "project": "general-ledger",
   "error": "dependsOn T2-043 not resolvable in queue or complete"
 }

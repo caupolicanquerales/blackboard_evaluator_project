@@ -5,11 +5,12 @@
   "dependsOn": [
     "T2-023"
   ],
-  "path": "src/main/java/com/apexledger/banking/ledger/domain/BalanceCalculator.java",
+  "path": "src/main/java/com/bank/ledger/compliance/infrastructure/listprovider/ListProviderAdapter.java",
   "kind": "refactor",
-  "layer": "domain",
+  "export": "ListProviderAdapter",
+  "intent": "Bounded context Transaction Screening (compliance-risk): inspect and refactor ListProviderAdapter (tests in src/test/java/com/bank/ledger/compliance/infrastructure/listprovider/ListProviderAdapterTest.java) keeping tests green and layer boundaries intact; clean naming, small methods, immutability and null safety; behavior to preserve: Anti-corruption adapter implementing ListProviderPort that calls OFAC, UN and PEP providers, translates provider formats into domain matches, applies timeouts and fails closed (treated as unscreened/flagged) on provider failure.",
+  "layer": "infrastructure",
   "feature": null,
-  "export": "BalanceCalculator",
-  "intent": "Inspect and refactor the implementation of Unit BalanceCalculator (Ledger Accounting context, domain layer, package com.apexledger.banking.ledger). Stateless domain service: bookBalance(account, posted entries) from settled POSTED lines only; availableBalance = bookBalance minus sum of active holds. Book Balance is always kept separate from Available Balance; never negative holds. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "project": "compliance-risk",
   "error": "dependsOn T2-023 not resolvable in queue or complete"
 }

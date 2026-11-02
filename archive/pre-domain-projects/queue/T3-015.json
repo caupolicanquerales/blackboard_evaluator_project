@@ -1,0 +1,14 @@
+{
+  "id": "T3-015",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-015"
+  ],
+  "path": "src/main/java/com/enterprise/banking/screening/interfaces/ScreeningEventConsumer.java",
+  "kind": "refactor",
+  "layer": "interface",
+  "feature": null,
+  "export": "ScreeningEventConsumer",
+  "intent": "Bounded context Transaction Screening (screening): Inspect and refactor ScreeningEventConsumer for clean naming, small methods, immutability, null-safety and layer boundaries without changing behavior or weakening these invariants: Event listener for PaymentRequestedEvent and AccountCreatedEvent plus REST endpoints for the Risk Operations Queue and overrides; thin, delegates to ScreeningApplicationService."
+}

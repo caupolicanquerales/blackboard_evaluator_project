@@ -5,11 +5,12 @@
   "dependsOn": [
     "T1-051"
   ],
-  "path": "src/main/java/com/apexledger/banking/payments/domain/TransferDirection.java",
+  "path": "src/main/java/com/bank/ledger/payments/application/port/out/ClearingNetworkPort.java",
   "kind": "code",
-  "layer": "domain",
+  "export": "ClearingNetworkPort",
+  "intent": "Bounded context Payment Orchestration (payments): implement ClearingNetworkPort so tests in src/test/java/com/bank/ledger/payments/application/port/out/ClearingNetworkPortTest.java pass: Outbound port interface to dispatch a payment to a clearing network (SWIFT, ACH, SEPA) returning accepted or failed result in domain terms.",
+  "layer": "application",
   "feature": null,
-  "export": "TransferDirection",
-  "intent": "Implement Unit TransferDirection (Payment Orchestration context, domain layer, package com.apexledger.banking.payments). Enum INBOUND, OUTBOUND, INTERNAL. Make the tests at src/test/java/com/apexledger/banking/payments/domain/TransferDirectionTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "project": "payments",
   "error": "dependsOn T1-051 not resolvable in queue or complete"
 }

@@ -1,0 +1,14 @@
+{
+  "id": "T1-007",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/enterprise/banking/account/interfaces/AccountControllerTest.java",
+  "kind": "test",
+  "layer": "interface",
+  "feature": null,
+  "export": "AccountControllerTest",
+  "intent": "Bounded context Account Lifecycle (account): Write JUnit 5 tests for AccountController (path src/main/java/com/enterprise/banking/account/interfaces/AccountController.java) covering every invariant and expected behavior: Thin REST controller plus PaymentSettledEvent listener for Account Lifecycle: validates input, delegates to AccountApplicationService, maps domain errors to HTTP 4xx; no business logic."
+}

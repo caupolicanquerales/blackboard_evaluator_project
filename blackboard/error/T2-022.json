@@ -3,17 +3,14 @@
   "targetAgent": "agent-coder",
   "stage": 2,
   "dependsOn": [
-    "T1-022",
-    "T2-002",
-    "T2-003",
-    "T2-020",
-    "T2-021"
+    "T1-022"
   ],
-  "path": "src/main/java/com/apexledger/banking/ledger/domain/JournalEntry.java",
+  "path": "src/main/java/com/bank/ledger/compliance/application/OverrideService.java",
   "kind": "code",
-  "layer": "domain",
+  "export": "OverrideService",
+  "intent": "Bounded context Transaction Screening (compliance-risk): implement OverrideService so tests in src/test/java/com/bank/ledger/compliance/application/OverrideServiceTest.java pass: Application service for approval or rejection overrides of a ComplianceHold; logs an OverrideRecord with operator id, justification and audit timestamp atomically with the hold decision; publishes ComplianceClearedEvent on approval.",
+  "layer": "application",
   "feature": null,
-  "export": "JournalEntry",
-  "intent": "Implement Unit JournalEntry (Ledger Accounting context, domain layer, package com.apexledger.banking.ledger). Immutable JournalEntry with lines (ledger account, DEBIT/CREDIT, local amount, optional foreign amount and exact FX rate). Invariants: total debits == total credits per currency; at least two lines; no mutation after creation; correction only via reversal() producing an Adjustment Journal with opposite sides; status PENDING/POSTED; cannot be created in a closed FiscalPeriod. Make the tests at src/test/java/com/apexledger/banking/ledger/domain/JournalEntryTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
-  "error": "dependsOn T2-020 not resolvable in queue or complete"
+  "project": "compliance-risk",
+  "error": "dependsOn T1-022 not resolvable in queue or complete"
 }

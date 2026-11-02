@@ -1,0 +1,14 @@
+{
+  "id": "T3-006",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-006"
+  ],
+  "path": "src/main/java/com/enterprise/banking/account/infrastructure/AccountPersistenceAdapter.java",
+  "kind": "refactor",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "AccountPersistenceAdapter",
+  "intent": "Bounded context Account Lifecycle (account): Inspect and refactor AccountPersistenceAdapter for clean naming, small methods, immutability, null-safety and layer boundaries without changing behavior or weakening these invariants: Adapter implementing AccountRepository, outbox and processed-event ports over the accounts PostgreSQL schema (tables accounts, account_holds, outbox_events, processed_events); optimistic locking, outbox written in the same transaction, duplicate event ids ignored."
+}

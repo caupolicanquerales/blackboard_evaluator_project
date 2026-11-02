@@ -1,0 +1,14 @@
+{
+  "id": "T3-012",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-012"
+  ],
+  "path": "src/main/java/com/enterprise/banking/screening/application/ScreeningApplicationService.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "ScreeningApplicationService",
+  "intent": "Bounded context Transaction Screening (screening): Inspect and refactor ScreeningApplicationService for clean naming, small methods, immutability, null-safety and layer boundaries without changing behavior or weakening these invariants: Use cases: screen on PaymentRequestedEvent and AccountCreatedEvent, create Compliance Hold and notify Risk Operations Queue, override with audit log, file SAR; publishes ComplianceCleared/ComplianceFlagged/TransactionSuspended; real-time screening completes before authorization; idempotent event consumption."
+}

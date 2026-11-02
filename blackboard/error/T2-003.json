@@ -5,11 +5,12 @@
   "dependsOn": [
     "T1-003"
   ],
-  "path": "src/main/java/com/apexledger/banking/shared/DomainRuleViolationException.java",
+  "path": "src/main/java/com/bank/ledger/accounts/domain/Hold.java",
   "kind": "code",
-  "layer": "shared",
+  "export": "Hold",
+  "intent": "Bounded context Account Lifecycle (accounts): implement Hold so tests in src/test/java/com/bank/ledger/accounts/domain/HoldTest.java pass: Hold (lien/reservation) entity with account number, positive amount and status ACTIVE->RELEASED or ACTIVE->CONVERTED; release and convert allowed only from ACTIVE and only once; an unsettled ACTIVE hold blocks termination; pure Java.",
+  "layer": "domain",
   "feature": null,
-  "export": "DomainRuleViolationException",
-  "intent": "Implement Unit DomainRuleViolationException (Shared kernel context, shared layer, package com.apexledger.banking.shared). Unchecked exception signalling a broken business invariant, carrying a stable message. Thrown by every context's domain; mapped to HTTP 422 at the interface layer. Make the tests at src/test/java/com/apexledger/banking/shared/DomainRuleViolationExceptionTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "project": "accounts",
   "error": "dependsOn T1-003 not resolvable in queue or complete"
 }

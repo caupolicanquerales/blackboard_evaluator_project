@@ -5,11 +5,12 @@
   "dependsOn": [
     "T2-060"
   ],
-  "path": "src/main/java/com/apexledger/banking/payments/application/PaymentOrchestrationService.java",
+  "path": "src/main/java/com/bank/ledger/treasuryfx/domain/FxQuote.java",
   "kind": "refactor",
-  "layer": "application",
+  "export": "FxQuote",
+  "intent": "Bounded context FX Pricing and Conversion (treasury-fx): inspect and refactor FxQuote (tests in src/test/java/com/bank/ledger/treasuryfx/domain/FxQuoteTest.java) keeping tests green and layer boundaries intact; clean naming, small methods, immutability and null safety; behavior to preserve: Exchange Rate Quote with currency pair, market rate, spread rate and rate index; lockable for at most 30 seconds (Rate Lock Expiry), expired quotes cannot be locked or used; time comes from an injected Clock.",
+  "layer": "domain",
   "feature": null,
-  "export": "PaymentOrchestrationService",
-  "intent": "Inspect and refactor the implementation of Unit PaymentOrchestrationService (Payment Orchestration context, application layer, package com.apexledger.banking.payments). Orchestrates a payment: request (publish PaymentRequestedEvent), reserve hold for outgoing, FX quote for cross-border (> USD 10,000 requires FX and clearance), wait for compliance clearance, authorize, clear, settle with ledger posting; clearing failure releases the hold (Reversal). Handles compliance cleared/flagged and account-frozen outcomes. Idempotent by payment reference. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "project": "treasury-fx",
   "error": "dependsOn T2-060 not resolvable in queue or complete"
 }

@@ -1,0 +1,14 @@
+{
+  "id": "T3-019",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-019"
+  ],
+  "path": "src/main/java/com/enterprise/banking/ledger/domain/BalanceCalculator.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "BalanceCalculator",
+  "intent": "Bounded context Double-Entry Ledger (ledger): Inspect and refactor BalanceCalculator for clean naming, small methods, immutability, null-safety and layer boundaries without changing behavior or weakening these invariants: Domain service computing Book Balance (settled lines) and Available Balance (book minus active holds) separately; deterministic, BigDecimal arithmetic."
+}

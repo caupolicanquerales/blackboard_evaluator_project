@@ -3,14 +3,14 @@
   "targetAgent": "agent-coder",
   "stage": 2,
   "dependsOn": [
-    "T1-036",
-    "T2-034"
+    "T1-036"
   ],
-  "path": "src/main/java/com/apexledger/banking/treasury/infrastructure/InMemoryQuoteRepository.java",
+  "path": "src/main/java/com/bank/ledger/generalledger/application/JournalPostingService.java",
   "kind": "code",
-  "layer": "infrastructure",
+  "export": "JournalPostingService",
+  "intent": "Bounded context Ledger Accounting (general-ledger): implement JournalPostingService so tests in src/test/java/com/bank/ledger/generalledger/application/JournalPostingServiceTest.java pass: Application service posting journal entries (pending and final) and reversing via Adjustment Journals; rejects unbalanced entries and closed periods, updates book balances and publishes JournalPostedEvent atomically; transactional.",
+  "layer": "application",
   "feature": null,
-  "export": "InMemoryQuoteRepository",
-  "intent": "Implement Unit InMemoryQuoteRepository (FX Settlement context, infrastructure layer, package com.apexledger.banking.treasury). Thread-safe in-memory QuoteRepository (ConcurrentHashMap). Make the tests at src/test/java/com/apexledger/banking/treasury/infrastructure/InMemoryQuoteRepositoryTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
-  "error": "dependsOn T2-034 not resolvable in queue or complete"
+  "project": "general-ledger",
+  "error": "dependsOn T1-036 not resolvable in queue or complete"
 }

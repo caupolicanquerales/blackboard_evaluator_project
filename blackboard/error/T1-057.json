@@ -3,13 +3,14 @@
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
-    "T0-001"
+    "T0-004"
   ],
-  "path": "src/test/java/com/apexledger/banking/payments/application/port/LedgerPostingPortTest.java",
+  "path": "src/test/java/com/bank/ledger/payments/infrastructure/messaging/PaymentEventListenerTest.java",
   "kind": "test",
-  "layer": "application",
+  "export": "PaymentEventListenerTest",
+  "intent": "Bounded context Payment Orchestration (payments): write JUnit 5 tests for PaymentEventListener (path src/main/java/com/bank/ledger/payments/infrastructure/messaging/PaymentEventListener.java) covering every invariant and expected behavior: Consumer for ComplianceClearedEvent, ComplianceFlaggedEvent, FundsReservedEvent, FundsReleasedEvent, AccountFrozenEvent and FxQuoteLocked mapped by an anti-corruption mapper to orchestration commands; idempotent on redelivery.",
+  "layer": "infrastructure",
   "feature": null,
-  "export": "LedgerPostingPort",
-  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit LedgerPostingPort (Payment Orchestration context, application layer, package com.apexledger.banking.payments). Outbound port postAuthorization and postSettlement confirmations for a payment; Ledger validates its own balance and period rules. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/payments/application/port/LedgerPostingPort.java.",
-  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+  "project": "payments",
+  "error": "dependsOn T0-004 not resolvable in queue or complete"
 }

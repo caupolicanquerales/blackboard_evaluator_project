@@ -1,0 +1,12 @@
+{
+  "id": "T0-001",
+  "targetAgent": "agent-container",
+  "stage": 0,
+  "dependsOn": [],
+  "path": "pom.xml",
+  "kind": "bootstrap",
+  "layer": "root",
+  "feature": null,
+  "export": "project_scaffold",
+  "intent": "Generate the project root and build scaffold using the matching mcp-server-alternatives skill (Spring Boot 3 Maven, mcp-server-springboot) for enterprise-core-banking-ledger-platform, base package com.enterprise.banking with sub-packages account, screening, ledger, payment and fx."
+}

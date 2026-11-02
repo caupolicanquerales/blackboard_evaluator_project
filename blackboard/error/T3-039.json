@@ -5,11 +5,12 @@
   "dependsOn": [
     "T2-039"
   ],
-  "path": "src/main/java/com/apexledger/banking/compliance/domain/ComplianceEvents.java",
+  "path": "src/main/java/com/bank/ledger/generalledger/application/HoldEventHandlerService.java",
   "kind": "refactor",
-  "layer": "domain",
+  "export": "HoldEventHandlerService",
+  "intent": "Bounded context Ledger Accounting (general-ledger): inspect and refactor HoldEventHandlerService (tests in src/test/java/com/bank/ledger/generalledger/application/HoldEventHandlerServiceTest.java) keeping tests green and layer boundaries intact; clean naming, small methods, immutability and null safety; behavior to preserve: Application service handling FundsReservedEvent and FundsReleasedEvent to adjust available balance without touching book balance; idempotent by event id.",
+  "layer": "application",
   "feature": null,
-  "export": "ComplianceEvents",
-  "intent": "Inspect and refactor the implementation of Unit ComplianceEvents (Transaction Screening context, domain layer, package com.apexledger.banking.compliance). Published language: nested records ComplianceClearedEvent, ComplianceFlaggedEvent, TransactionSuspended (each with paymentReference); Compliance exposes only outcomes, never match details, lists or SAR content. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "project": "general-ledger",
   "error": "dependsOn T2-039 not resolvable in queue or complete"
 }

@@ -1,0 +1,12 @@
+{
+  "id": "T0-002",
+  "targetAgent": "agent-container",
+  "stage": 0,
+  "dependsOn": [],
+  "path": "db/migrations/accounts/V1__store_setup.sql",
+  "kind": "bootstrap",
+  "layer": "root",
+  "feature": null,
+  "export": "accounts-store-setup",
+  "intent": "Store setup: PostgreSQL 16 store for bounded context accounts; Flyway script db/migrations/accounts/V1__store_setup.sql creates the accounts schema (run first)."
+}

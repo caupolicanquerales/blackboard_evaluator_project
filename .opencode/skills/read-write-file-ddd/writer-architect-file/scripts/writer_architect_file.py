@@ -3,7 +3,7 @@
 
 Outputs:
 - blackboard/execution-strategy.json  (command: strategy)
-- blackboard/queue/T-xxx.json         (command: tasks)
+- blackboard/queue/T-xxx-<domain-slug>.json  (command: tasks)
 
 The script is the only sanctioned writer for these files. Invalid payloads are
 rejected, never repaired. Writes are atomic (temp file + os.replace) and
@@ -30,9 +30,22 @@ DEFAULT_TASKS_DIR = "blackboard/queue"
 
 TASK_ID_PATTERN = re.compile(r"^T-\d{3}$")
 TASK_KINDS = frozenset({"record", "class", "interface", "enum"})
-TASK_LAYERS = frozenset({"domain", "application", "infrastructure", "presentation", "shared"})
+TASK_LAYERS = frozenset(
+    {
+        "root",
+        "domain",
+        "application",
+        "infrastructure",
+        "interface",
+        "presentation",
+        "shared",
+        "features",
+    }
+)
 
 STRATEGY_KEYS = ("modules", "layers", "build_order", "risks")
+STRATEGY_OPTIONAL_KEYS = ("persistence", "slug", "bounded_contexts", "module_layout")
+MODULE_LAYOUT_KEYS = ("base_package", "packages", "integration")
 TASK_KEYS = (
     "id",
     "depends_on",
@@ -81,9 +94,14 @@ def validate_relative_path(value, label):
 
 
 def validate_strategy(payload):
-    reason = check_exact_keys(payload, STRATEGY_KEYS, "strategy")
-    if reason:
-        return reason
+    if not isinstance(payload, dict):
+        return "strategy must be an object"
+    missing = [key for key in STRATEGY_KEYS if key not in payload]
+    if missing:
+        return f"strategy is missing key(s): {', '.join(missing)}"
+    unexpected = sorted(set(payload) - set(STRATEGY_KEYS) - set(STRATEGY_OPTIONAL_KEYS))
+    if unexpected:
+        return f"strategy has unsupported key(s): {', '.join(unexpected)}"
     for key in ("modules", "layers", "build_order", "risks"):
         if not is_str_list(payload[key]):
             return f"strategy.{key} must be a list of non-empty strings"
@@ -91,6 +109,25 @@ def validate_strategy(payload):
         return "strategy.modules must not be empty"
     if not payload["build_order"]:
         return "strategy.build_order must not be empty"
+    if "slug" in payload and not is_non_empty_str(payload["slug"]):
+        return "strategy.slug must be a non-empty string when present"
+    if "bounded_contexts" in payload:
+        if not is_str_list(payload["bounded_contexts"]) or not payload["bounded_contexts"]:
+            return "strategy.bounded_contexts must be a non-empty list of non-empty strings"
+    if "module_layout" in payload:
+        layout = payload["module_layout"]
+        reason = check_exact_keys(layout, MODULE_LAYOUT_KEYS, "strategy.module_layout")
+        if reason:
+            return reason
+        if not is_non_empty_str(layout["base_package"]):
+            return "strategy.module_layout.base_package must be a non-empty string"
+        if not is_str_list(layout["packages"]) or not layout["packages"]:
+            return "strategy.module_layout.packages must be a non-empty list of non-empty strings"
+        if not is_non_empty_str(layout["integration"]):
+            return "strategy.module_layout.integration must be a non-empty string"
+    if "persistence" in payload:
+        if not isinstance(payload["persistence"], dict) or not payload["persistence"]:
+            return "strategy.persistence must be a non-empty object when present"
     return None
 
 
@@ -154,10 +191,19 @@ def validate_task(task, label):
     return None
 
 
+def domain_slug(feature):
+    """Filename-safe slug of the task domain (its `feature`)."""
+    return re.sub(r"[^a-z0-9]+", "-", feature.lower()).strip("-")
+
+
+def task_file_name(task):
+    return f"{task['id']}-{domain_slug(task['feature'])}.json"
+
+
 def existing_task_ids(output_dir):
     """IDs already written to the queue or complete folders (upstream domains)."""
     folders = [Path(output_dir), Path(output_dir).parent / "complete"]
-    return {path.stem for folder in folders if folder.is_dir() for path in folder.glob("T-*.json")}
+    return {path.stem[:5] for folder in folders if folder.is_dir() for path in folder.glob("T-*.json")}
 
 
 def validate_task_batch(tasks, external_ids=frozenset()):
@@ -174,6 +220,8 @@ def validate_task_batch(tasks, external_ids=frozenset()):
             return reason
         if task["id"] in ids:
             return f"{label}.id {task['id']!r} duplicates another task"
+        if task["id"] in external_ids:
+            return f"{label}.id {task['id']!r} is already queued or completed"
         ids[task["id"]] = task
 
     for task_id, task in ids.items():
@@ -266,7 +314,7 @@ def cmd_tasks(args):
         return EXIT_INVALID
 
     for _, task in tasks:
-        reason, code = atomic_write(output_dir / f"{task['id']}.json", task, args.force)
+        reason, code = atomic_write(output_dir / task_file_name(task), task, args.force)
         if reason:
             print(f"[writer-architect] {reason}", file=sys.stderr)
             return code

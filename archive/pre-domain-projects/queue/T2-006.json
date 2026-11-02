@@ -1,0 +1,14 @@
+{
+  "id": "T2-006",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-006"
+  ],
+  "path": "src/main/java/com/enterprise/banking/account/infrastructure/AccountPersistenceAdapter.java",
+  "kind": "code",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "AccountPersistenceAdapter",
+  "intent": "Bounded context Account Lifecycle (account): Implement AccountPersistenceAdapter so tests in src/test/java/com/enterprise/banking/account/infrastructure/AccountPersistenceAdapterTest.java pass: Adapter implementing AccountRepository, outbox and processed-event ports over the accounts PostgreSQL schema (tables accounts, account_holds, outbox_events, processed_events); optimistic locking, outbox written in the same transaction, duplicate event ids ignored."
+}

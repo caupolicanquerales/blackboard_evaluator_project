@@ -5,11 +5,12 @@
   "dependsOn": [
     "T2-013"
   ],
-  "path": "src/main/java/com/apexledger/banking/accounts/application/port/CustomerVerificationPort.java",
+  "path": "src/main/java/com/bank/ledger/accounts/interfaces/rest/AccountController.java",
   "kind": "refactor",
-  "layer": "application",
+  "export": "AccountController",
+  "intent": "Bounded context Account Lifecycle (accounts): inspect and refactor AccountController (tests in src/test/java/com/bank/ledger/accounts/interfaces/rest/AccountControllerTest.java) keeping tests green and layer boundaries intact; clean naming, small methods, immutability and null safety; behavior to preserve: Thin Spring REST controller exposing open account, state transition, overdraft approval, place/release hold and close account endpoints; validates request DTOs, maps domain exceptions to 4xx problem responses, no business logic.",
+  "layer": "interface",
   "feature": null,
-  "export": "CustomerVerificationPort",
-  "intent": "Inspect and refactor the implementation of Unit CustomerVerificationPort (Account Lifecycle context, application layer, package com.apexledger.banking.accounts). Outbound port isVerified(customerId) -> boolean; Accounts only consumes verified status, never customer data. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "project": "accounts",
   "error": "dependsOn T2-013 not resolvable in queue or complete"
 }

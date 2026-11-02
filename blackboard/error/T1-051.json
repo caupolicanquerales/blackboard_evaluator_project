@@ -3,13 +3,14 @@
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
-    "T0-001"
+    "T0-004"
   ],
-  "path": "src/test/java/com/apexledger/banking/payments/domain/TransferDirectionTest.java",
+  "path": "src/test/java/com/bank/ledger/payments/application/port/out/ClearingNetworkPortTest.java",
   "kind": "test",
-  "layer": "domain",
+  "export": "ClearingNetworkPortTest",
+  "intent": "Bounded context Payment Orchestration (payments): write JUnit 5 tests for ClearingNetworkPort (path src/main/java/com/bank/ledger/payments/application/port/out/ClearingNetworkPort.java) covering every invariant and expected behavior: Outbound port interface to dispatch a payment to a clearing network (SWIFT, ACH, SEPA) returning accepted or failed result in domain terms.",
+  "layer": "application",
   "feature": null,
-  "export": "TransferDirection",
-  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit TransferDirection (Payment Orchestration context, domain layer, package com.apexledger.banking.payments). Enum INBOUND, OUTBOUND, INTERNAL. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/payments/domain/TransferDirection.java.",
-  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+  "project": "payments",
+  "error": "dependsOn T0-004 not resolvable in queue or complete"
 }

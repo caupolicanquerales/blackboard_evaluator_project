@@ -5,11 +5,12 @@
   "dependsOn": [
     "T2-010"
   ],
-  "path": "src/main/java/com/apexledger/banking/accounts/domain/Hold.java",
+  "path": "src/main/java/com/bank/ledger/accounts/infrastructure/persistence/AccountPersistenceAdapter.java",
   "kind": "refactor",
-  "layer": "domain",
+  "export": "AccountPersistenceAdapter",
+  "intent": "Bounded context Account Lifecycle (accounts): inspect and refactor AccountPersistenceAdapter (tests in src/test/java/com/bank/ledger/accounts/infrastructure/persistence/AccountPersistenceAdapterTest.java) keeping tests green and layer boundaries intact; clean naming, small methods, immutability and null safety; behavior to preserve: Spring Data JPA adapter implementing AccountRepositoryPort against the PostgreSQL accounts schema (deposit_accounts, holds, account_state_transitions); records every state transition for audit and maps entities to domain objects without leaking JPA types.",
+  "layer": "infrastructure",
   "feature": null,
-  "export": "Hold",
-  "intent": "Inspect and refactor the implementation of Unit Hold (Account Lifecycle context, domain layer, package com.apexledger.banking.accounts). Entity/value Hold (Reservation Hold/Lien): holdId, Money amount, paymentReference, status ACTIVE/RELEASED/SETTLED. Invariants: positive amount; release only once; released/settled hold cannot be reactivated. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "project": "accounts",
   "error": "dependsOn T2-010 not resolvable in queue or complete"
 }

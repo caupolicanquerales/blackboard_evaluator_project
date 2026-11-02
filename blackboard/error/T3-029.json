@@ -5,11 +5,12 @@
   "dependsOn": [
     "T2-029"
   ],
-  "path": "src/main/java/com/apexledger/banking/ledger/api/GeneralLedgerController.java",
+  "path": "src/main/java/com/bank/ledger/generalledger/domain/JournalEntry.java",
   "kind": "refactor",
-  "layer": "interface",
+  "export": "JournalEntry",
+  "intent": "Bounded context Ledger Accounting (general-ledger): inspect and refactor JournalEntry (tests in src/test/java/com/bank/ledger/generalledger/domain/JournalEntryTest.java) keeping tests green and layer boundaries intact; clean naming, small methods, immutability and null safety; behavior to preserve: Immutable journal entry aggregate with lines; total debits must equal total credits per currency, at least two lines, supports PENDING and POSTED status; entries never mutate, corrections only via reversing adjustments; defensive copies of lines.",
+  "layer": "domain",
   "feature": null,
-  "export": "GeneralLedgerController",
-  "intent": "Inspect and refactor the implementation of Unit GeneralLedgerController (Ledger Accounting context, interface layer, package com.apexledger.banking.ledger). Thin REST controller /api/v1/ledger: post journal, reverse entry, close period, get book/available balance. DTO records, validation, DomainRuleViolationException -> 422 ProblemDetail; no ledger logic. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "project": "general-ledger",
   "error": "dependsOn T2-029 not resolvable in queue or complete"
 }

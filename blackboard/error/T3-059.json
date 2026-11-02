@@ -5,11 +5,12 @@
   "dependsOn": [
     "T2-059"
   ],
-  "path": "src/main/java/com/apexledger/banking/payments/application/port/ClearingNetworkPort.java",
+  "path": "src/main/java/com/bank/ledger/treasuryfx/domain/CurrencyPair.java",
   "kind": "refactor",
-  "layer": "application",
+  "export": "CurrencyPair",
+  "intent": "Bounded context FX Pricing and Conversion (treasury-fx): inspect and refactor CurrencyPair (tests in src/test/java/com/bank/ledger/treasuryfx/domain/CurrencyPairTest.java) keeping tests green and layer boundaries intact; clean naming, small methods, immutability and null safety; behavior to preserve: Immutable value object of base and quote ISO-4217 currencies; rejects identical or invalid currencies.",
+  "layer": "domain",
   "feature": null,
-  "export": "ClearingNetworkPort",
-  "intent": "Inspect and refactor the implementation of Unit ClearingNetworkPort (Payment Orchestration context, application layer, package com.apexledger.banking.payments). Outbound port submit(PaymentOrder) -> ClearingResult (accepted/failed) for ACH, SWIFT, SEPA; network message models never enter the domain. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "project": "treasury-fx",
   "error": "dependsOn T2-059 not resolvable in queue or complete"
 }

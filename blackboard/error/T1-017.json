@@ -3,13 +3,14 @@
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
-    "T0-001"
+    "T0-002"
   ],
-  "path": "src/test/java/com/apexledger/banking/accounts/infrastructure/ConfigurableCustomerVerificationAdapterTest.java",
+  "path": "src/test/java/com/bank/ledger/compliance/domain/OverrideRecordTest.java",
   "kind": "test",
-  "layer": "infrastructure",
+  "export": "OverrideRecordTest",
+  "intent": "Bounded context Transaction Screening (compliance-risk): write JUnit 5 tests for OverrideRecord (path src/main/java/com/bank/ledger/compliance/domain/OverrideRecord.java) covering every invariant and expected behavior: Immutable append-only override audit record requiring operator id, non-blank regulatory justification and a cryptographic audit timestamp (hash chain); decision APPROVE or REJECT; any missing field is rejected.",
+  "layer": "domain",
   "feature": null,
-  "export": "ConfigurableCustomerVerificationAdapter",
-  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit ConfigurableCustomerVerificationAdapter (Account Lifecycle context, infrastructure layer, package com.apexledger.banking.accounts). CustomerVerificationPort adapter driven by property banking.accounts.verified-customers (default: all verified in dev); unknown customer -> not verified. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/accounts/infrastructure/ConfigurableCustomerVerificationAdapter.java.",
-  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+  "project": "compliance-risk",
+  "error": "dependsOn T0-002 not resolvable in queue or complete"
 }

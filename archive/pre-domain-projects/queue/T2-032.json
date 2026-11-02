@@ -1,0 +1,14 @@
+{
+  "id": "T2-032",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-032"
+  ],
+  "path": "src/main/java/com/enterprise/banking/fx/application/FxSettlementApplicationService.java",
+  "kind": "code",
+  "layer": "application",
+  "feature": null,
+  "export": "FxSettlementApplicationService",
+  "intent": "Bounded context FX Settlement (fx): Implement FxSettlementApplicationService so tests in src/test/java/com/enterprise/banking/fx/application/FxSettlementApplicationServiceTest.java pass: Use cases: quote, lock rate (max 30s), execute conversion, publish FxQuoteLocked/FxConversionExecuted/RateUtilizationPublished via outbox; concurrency-safe against double use of a quote."
+}

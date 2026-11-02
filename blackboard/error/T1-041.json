@@ -3,13 +3,17 @@
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
-    "T0-001"
+    "T0-003",
+    "T0-014",
+    "T0-015",
+    "T0-016"
   ],
-  "path": "src/test/java/com/apexledger/banking/compliance/domain/ComplianceHoldTest.java",
+  "path": "src/test/java/com/bank/ledger/generalledger/infrastructure/persistence/BalanceProjectionAdapterTest.java",
   "kind": "test",
-  "layer": "domain",
+  "export": "BalanceProjectionAdapterTest",
+  "intent": "Bounded context Ledger Accounting (general-ledger): write JUnit 5 tests for BalanceProjectionAdapter (path src/main/java/com/bank/ledger/generalledger/infrastructure/persistence/BalanceProjectionAdapter.java) covering every invariant and expected behavior: JPA adapter implementing BalanceProjectionPort over balance and hold projections and processed events tables; processed-event insert guards idempotency.",
+  "layer": "infrastructure",
   "feature": null,
-  "export": "ComplianceHold",
-  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit ComplianceHold (Transaction Screening context, domain layer, package com.apexledger.banking.compliance). Entity Compliance Hold (distinct from account Hold) created on a screening match with status ACTIVE/RELEASED/REJECTED. Invariants: only one active hold per transaction; resolved only through an approved or rejected override. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/compliance/domain/ComplianceHold.java.",
-  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+  "project": "general-ledger",
+  "error": "dependsOn T0-003 not resolvable in queue or complete"
 }

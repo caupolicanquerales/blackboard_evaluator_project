@@ -1,0 +1,18 @@
+{
+  "id": "T1-006",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T0-002",
+    "T0-003",
+    "T0-004",
+    "T0-005"
+  ],
+  "path": "src/test/java/com/enterprise/banking/account/infrastructure/AccountPersistenceAdapterTest.java",
+  "kind": "test",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "AccountPersistenceAdapterTest",
+  "intent": "Bounded context Account Lifecycle (account): Write JUnit 5 tests for AccountPersistenceAdapter (path src/main/java/com/enterprise/banking/account/infrastructure/AccountPersistenceAdapter.java) covering every invariant and expected behavior: Adapter implementing AccountRepository, outbox and processed-event ports over the accounts PostgreSQL schema (tables accounts, account_holds, outbox_events, processed_events); optimistic locking, outbox written in the same transaction, duplicate event ids ignored."
+}

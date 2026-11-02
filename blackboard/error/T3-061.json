@@ -5,11 +5,12 @@
   "dependsOn": [
     "T2-061"
   ],
-  "path": "src/main/java/com/apexledger/banking/payments/infrastructure/InMemoryPaymentOrderRepository.java",
+  "path": "src/main/java/com/bank/ledger/treasuryfx/domain/ConversionRecord.java",
   "kind": "refactor",
-  "layer": "infrastructure",
+  "export": "ConversionRecord",
+  "intent": "Bounded context FX Pricing and Conversion (treasury-fx): inspect and refactor ConversionRecord (tests in src/test/java/com/bank/ledger/treasuryfx/domain/ConversionRecordTest.java) keeping tests green and layer boundaries intact; clean naming, small methods, immutability and null safety; behavior to preserve: Immutable conversion record keeping local amount, target foreign amount and the exact rate index used; only an unexpired locked quote can be converted; amounts positive.",
+  "layer": "domain",
   "feature": null,
-  "export": "InMemoryPaymentOrderRepository",
-  "intent": "Inspect and refactor the implementation of Unit InMemoryPaymentOrderRepository (Payment Orchestration context, infrastructure layer, package com.apexledger.banking.payments). Thread-safe in-memory PaymentOrderRepository. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "project": "treasury-fx",
   "error": "dependsOn T2-061 not resolvable in queue or complete"
 }

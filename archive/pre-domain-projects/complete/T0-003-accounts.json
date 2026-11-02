@@ -1,0 +1,12 @@
+{
+  "id": "T0-003",
+  "targetAgent": "agent-container",
+  "stage": 0,
+  "dependsOn": [],
+  "path": "db/migrations/accounts/V2__accounts_schema.sql",
+  "kind": "bootstrap",
+  "layer": "root",
+  "feature": null,
+  "export": "accounts-schema",
+  "intent": "Schema migration: PostgreSQL 16, Flyway script db/migrations/accounts/V2__accounts_schema.sql (after V1) creates accounts, account_holds, outbox_events, processed_events with constraints and indexes for bounded context accounts. Expand-only."
+}

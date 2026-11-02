@@ -5,11 +5,12 @@
   "dependsOn": [
     "T2-046"
   ],
-  "path": "src/main/java/com/apexledger/banking/compliance/infrastructure/InMemoryComplianceRepository.java",
+  "path": "src/main/java/com/bank/ledger/payments/domain/PaymentOrder.java",
   "kind": "refactor",
-  "layer": "infrastructure",
+  "export": "PaymentOrder",
+  "intent": "Bounded context Payment Orchestration (payments): inspect and refactor PaymentOrder (tests in src/test/java/com/bank/ledger/payments/domain/PaymentOrderTest.java) keeping tests green and layer boundaries intact; clean naming, small methods, immutability and null safety; behavior to preserve: Payment Order aggregate with direction (INBOUND, OUTBOUND, INTERNAL); outgoing transfers must have a reservation before initiation; flow is Authorization (hold) then Settlement; clearing failure moves to REVERSED and requests hold release; cross-border above 10,000 USD equivalent requires FX settlement and AML clearance before execution.",
+  "layer": "domain",
   "feature": null,
-  "export": "InMemoryComplianceRepository",
-  "intent": "Inspect and refactor the implementation of Unit InMemoryComplianceRepository (Transaction Screening context, infrastructure layer, package com.apexledger.banking.compliance). Thread-safe in-memory ComplianceRepository; overrides are append-only. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "project": "payments",
   "error": "dependsOn T2-046 not resolvable in queue or complete"
 }

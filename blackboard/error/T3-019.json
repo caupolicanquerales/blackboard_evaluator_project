@@ -5,11 +5,12 @@
   "dependsOn": [
     "T2-019"
   ],
-  "path": "src/main/java/com/apexledger/banking/ledger/domain/LedgerEvents.java",
+  "path": "src/main/java/com/bank/ledger/compliance/application/port/out/ScreeningRepositoryPort.java",
   "kind": "refactor",
-  "layer": "domain",
+  "export": "ScreeningRepositoryPort",
+  "intent": "Bounded context Transaction Screening (compliance-risk): inspect and refactor ScreeningRepositoryPort (tests in src/test/java/com/bank/ledger/compliance/application/port/out/ScreeningRepositoryPortTest.java) keeping tests green and layer boundaries intact; clean naming, small methods, immutability and null safety; behavior to preserve: Outbound port interface to save and load ScreeningResult, ComplianceHold and append-only OverrideRecord, and list open holds for the risk operations queue.",
+  "layer": "application",
   "feature": null,
-  "export": "LedgerEvents",
-  "intent": "Inspect and refactor the implementation of Unit LedgerEvents (Ledger Accounting context, domain layer, package com.apexledger.banking.ledger). Ledger published language: nested record JournalPostedEvent (journalId, fiscalPeriod, lines summary). Published only for posted entries; pending entries stay internal. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "project": "compliance-risk",
   "error": "dependsOn T2-019 not resolvable in queue or complete"
 }

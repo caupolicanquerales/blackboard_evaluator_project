@@ -3,19 +3,14 @@
   "targetAgent": "agent-coder",
   "stage": 2,
   "dependsOn": [
-    "T1-015",
-    "T2-011",
-    "T2-012",
-    "T2-013",
-    "T2-014",
-    "T2-005",
-    "T2-007"
+    "T1-015"
   ],
-  "path": "src/main/java/com/apexledger/banking/accounts/application/AccountService.java",
+  "path": "src/main/java/com/bank/ledger/compliance/domain/ScreeningResult.java",
   "kind": "code",
-  "layer": "application",
+  "export": "ScreeningResult",
+  "intent": "Bounded context Transaction Screening (compliance-risk): implement ScreeningResult so tests in src/test/java/com/bank/ledger/compliance/domain/ScreeningResultTest.java pass: Immutable screening result (transaction id, outcome, matched lists, screened-at); records must be created before payment authorization completes; defensive copy of match collections.",
+  "layer": "domain",
   "feature": null,
-  "export": "AccountService",
-  "intent": "Implement Unit AccountService (Account Lifecycle context, application layer, package com.apexledger.banking.accounts). Use cases: openAccount (rejects unverified customer), activate, freeze, terminate (reads balance via LedgerBalancePort, refuses if non-zero or unavailable, or active holds), approveOverdraft, placeHold, releaseHold. Persists then publishes the aggregate's events through EventPublisher. Uses injected Clock; no framework logic beyond transactions. Make the tests at src/test/java/com/apexledger/banking/accounts/application/AccountServiceTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "project": "compliance-risk",
   "error": "dependsOn T1-015 not resolvable in queue or complete"
 }

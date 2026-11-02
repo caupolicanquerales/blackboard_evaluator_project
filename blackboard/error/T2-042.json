@@ -4,13 +4,16 @@
   "stage": 2,
   "dependsOn": [
     "T1-042",
-    "T2-041"
+    "T0-014",
+    "T0-015",
+    "T0-016"
   ],
-  "path": "src/main/java/com/apexledger/banking/compliance/domain/ComplianceOverride.java",
+  "path": "src/main/java/com/bank/ledger/generalledger/infrastructure/messaging/OutboxJournalEventPublisher.java",
   "kind": "code",
-  "layer": "domain",
+  "export": "OutboxJournalEventPublisher",
+  "intent": "Bounded context Ledger Accounting (general-ledger): implement OutboxJournalEventPublisher so tests in src/test/java/com/bank/ledger/generalledger/infrastructure/messaging/OutboxJournalEventPublisherTest.java pass: Adapter implementing LedgerEventPublisherPort via the general_ledger outbox table in the posting transaction with an at-least-once relay.",
+  "layer": "infrastructure",
   "feature": null,
-  "export": "ComplianceOverride",
-  "intent": "Implement Unit ComplianceOverride (Transaction Screening context, domain layer, package com.apexledger.banking.compliance). Entity Compliance Override with operatorId, regulatory justification, decision APPROVED/REJECTED and cryptographic audit timestamp (SHA-256 hash). Invariants: operator ID and justification mandatory (blank rejected); immutable audit record. Make the tests at src/test/java/com/apexledger/banking/compliance/domain/ComplianceOverrideTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
-  "error": "dependsOn T2-041 not resolvable in queue or complete"
+  "project": "general-ledger",
+  "error": "dependsOn T1-042 not resolvable in queue or complete"
 }

@@ -1,0 +1,14 @@
+{
+  "id": "T3-025",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-025"
+  ],
+  "path": "src/main/java/com/enterprise/banking/payment/application/PaymentSagaService.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "PaymentSagaService",
+  "intent": "Bounded context Payment Orchestration (payment): Inspect and refactor PaymentSagaService for clean naming, small methods, immutability, null-safety and layer boundaries without changing behavior or weakening these invariants: Saga orchestration: request payment, reserve funds, await compliance, authorize, dispatch to clearing, settle, reverse on failure; consumes ComplianceCleared/Flagged, FundsReserved/Released, AccountFrozen idempotently via inbox; publishes PaymentRequested/PaymentSettled."
+}

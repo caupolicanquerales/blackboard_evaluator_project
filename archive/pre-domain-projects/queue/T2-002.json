@@ -1,0 +1,14 @@
+{
+  "id": "T2-002",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-002"
+  ],
+  "path": "src/main/java/com/enterprise/banking/account/domain/OverdraftBoundary.java",
+  "kind": "code",
+  "layer": "domain",
+  "feature": null,
+  "export": "OverdraftBoundary",
+  "intent": "Bounded context Account Lifecycle (account): Implement OverdraftBoundary so tests in src/test/java/com/enterprise/banking/account/domain/OverdraftBoundaryTest.java pass: Immutable value object for an individually approved overdraft limit; rejects negative limits and limits above the regulatory cap for the customer risk tier (cap supplied by a policy argument). Pure Java."
+}

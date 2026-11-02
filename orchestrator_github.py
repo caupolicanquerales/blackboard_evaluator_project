@@ -18,11 +18,13 @@ from pathlib import Path
 import telemetry
 from orchestrator_opencode import (
     ARCHITECT_AGENT,
+    DATABASE_AGENT,
     CONTEXT_MAP_DIR,
     COMPLETE_DIR,
     DISCOVERY_AGENT,
     DOMAIN_DIR,
     ERROR_DIR,
+    ID_PATTERN,
     validate_domain_files,
     validate_context_maps,
     MAPPING_AGENT,
@@ -34,20 +36,21 @@ from orchestrator_opencode import (
     VERIFY_MODES,
     append_feedback,
     build_architect_prompt,
+    build_database_prompt,
+    database_slugs,
+    project_root_for,
+    scaffold_task_id,
     build_discovery_prompt,
     build_mapping_prompt,
-    claimable,
+    drain_queue,
     emit_tasks,
     execute_with_tdd,
     get_project_root,
     load_index,
-    read_queue,
     resolve_output_path,
     resolve_seed,
     run_verification,
-    send_to_error,
     set_project_root,
-    validate,
     validate_report,
     verify_project,
 )
@@ -123,7 +126,9 @@ def build_copilot_command(args, profile, message, add_project_root=True):
         "--no-ask-user",
         "--add-dir", str(ROOT),
     ]
-    if add_project_root:
+    # The project folder is created by agent-container (stage 0), never here.
+    # copilot rejects --add-dir for a missing path, so pass it only once it exists.
+    if add_project_root and get_project_root().is_dir():
         command += ["--add-dir", str(get_project_root())]
     command += [
         "--allow-all-tools",
@@ -252,7 +257,7 @@ def run_discovery(args, description_path):
         return False, reason
     with telemetry.span("blackboard.discovery", {"description": str(description_path)}) as current:
         message = build_discovery_prompt(description_path)
-        command = build_copilot_command(args, profile, message)
+        command = build_copilot_command(args, profile, message, add_project_root=False)
         print(f"[cmd ] {args.copilot_bin} -p <description> -s --agent {profile['name']} --no-ask-user --add-dir {ROOT} --allow-all-tools --allow-tool {args.allow_tool} --allow-all-paths")
         ok, reason = run_agent(command, args.timeout, ROOT)
         if ok:
@@ -270,7 +275,7 @@ def run_mapping(args):
         return False, reason
     with telemetry.span("blackboard.mapping", {"domain_dir": str(DOMAIN_DIR)}) as current:
         message = build_mapping_prompt()
-        command = build_copilot_command(args, profile, message)
+        command = build_copilot_command(args, profile, message, add_project_root=False)
         print(f"[cmd ] {args.copilot_bin} -p <draft> -s --agent {profile['name']} --no-ask-user --add-dir {ROOT} --allow-all-tools --allow-tool {args.allow_tool} --allow-all-paths")
         ok, reason = run_agent(command, args.timeout, ROOT)
         if ok:
@@ -282,80 +287,46 @@ def run_mapping(args):
         return True, ""
 
 
-def run_architect(args):
+def run_architect(args, phase="tasks"):
+    """Run the architect in phase 'strategy' (writes execution strategies) or 'tasks' (queues tasks)."""
     profile, reason = resolve_profile(ARCHITECT_AGENT, list_profiles())
     if profile is None:
         return False, reason
-    with telemetry.span("blackboard.architect", {"context_maps": str(CONTEXT_MAP_DIR)}) as current:
-        message = build_architect_prompt(get_project_root(), RUNNER_SCRIPT)
+    with telemetry.span("blackboard.architect", {"context_maps": str(CONTEXT_MAP_DIR), "phase": phase}) as current:
+        message = build_architect_prompt(get_project_root(), RUNNER_SCRIPT, phase=phase)
         command = build_copilot_command(args, profile, message)
-        print(f"[cmd ] {args.copilot_bin} -p <reports> -s --agent {profile['name']} --no-ask-user --add-dir {ROOT} --allow-all-tools --allow-tool {args.allow_tool} --allow-all-paths")
+        print(f"[cmd ] {args.copilot_bin} -p <{phase}> -s --agent {profile['name']} --no-ask-user --add-dir {ROOT} --allow-all-tools --allow-tool {args.allow_tool} --allow-all-paths")
         ok, reason = run_agent(command, args.timeout, ROOT)
-        if ok and not any(COMPLETE_DIR.glob("execution-strategy-*.json")):
+        if ok and phase == "strategy" and not any(COMPLETE_DIR.glob("execution-strategy-*.json")):
             ok, reason = False, "architect finished but no execution-strategy-<slug>.json was created"
-        if ok and not any(QUEUE_DIR.glob("*.json")) and not any(COMPLETE_DIR.glob("*.json")):
-            ok, reason = False, "architect finished but emitted no tasks"
+        if ok and phase == "tasks" and not any(
+            (match := ID_PATTERN.match(task_id)) and int(match.group(1)) >= 1 for task_id in load_index()
+        ):
+            ok, reason = False, "architect finished but queued no application tasks"
+        if not ok:
+            telemetry.mark_error(current, reason)
+        return ok, reason
+
+
+def run_database(args, slug):
+    """Run the database architect for one context. Returns (ok, reason)."""
+    profile, reason = resolve_profile(DATABASE_AGENT, list_profiles())
+    if profile is None:
+        return False, reason
+    with telemetry.span("blackboard.database", {"slug": slug}) as current:
+        message = build_database_prompt(slug)
+        command = build_copilot_command(args, profile, message)
+        print(f"[cmd ] {args.copilot_bin} -p <database> -s --agent {profile['name']} --no-ask-user --add-dir {ROOT} --allow-all-tools --allow-tool {args.allow_tool} --allow-all-paths")
+        ok, reason = run_agent(command, args.timeout, ROOT)
         if not ok:
             telemetry.mark_error(current, reason)
         return ok, reason
 
 
 def run_pass(args):
-    processed = 0
-    while True:
-        entries = read_queue()
-        if not entries:
-            return processed, []
-        dirty = False
-        tasks = []
-        for _, file, task, reason in entries:
-            if reason:
-                send_to_error(file, reason, task)
-                print(f"[error] {file.name}: {reason}")
-                dirty = True
-            else:
-                tasks.append((file, task))
-        if dirty:
-            continue
-        index = load_index()
-        kept = []
-        for file, task in tasks:
-            reason = validate(task, index)
-            if reason:
-                send_to_error(file, reason, task)
-                print(f"[error] {file.name}: {reason}")
-                dirty = True
-            else:
-                kept.append((file, task))
-        if dirty:
-            continue
-        complete_ids = {file.stem for file in COMPLETE_DIR.glob("*.json")}
-        queued = [task for _, task in kept]
-        ready = [(file, task) for file, task in kept if claimable(task, queued, complete_ids)]
-        if not ready:
-            return processed, [task["id"] for _, task in kept]
-        file, task = ready[0]
-        print(f"[run ] {task['id']} -> {task['targetAgent']} ({task['path']})")
-        def invoke(feedback):
-            ok, reason = invoke_agent(task, args, feedback)
-            if ok and task["stage"] != 0 and not (get_project_root() / task["path"]).exists():
-                return False, f"agent finished but {task['path']} was not created"
-            return ok, reason
-
-        def verify():
-            return run_verification(get_project_root(), args.verify, args.verify_scope, task, args.verify_timeout)
-
-        ok, reason = execute_with_tdd(task, invoke, verify)
-        if ok:
-            with telemetry.span("blackboard.complete", {"file": file.name, **telemetry.task_attributes(task)}):
-                file.replace(COMPLETE_DIR / file.name)
-            print(f"[done] {task['id']}")
-        else:
-            send_to_error(file, reason, task)
-            print(f"[fail] {task['id']}: {reason}")
-        processed += 1
-        if args.limit and processed >= args.limit:
-            return processed, []
+    def invoke_for_task(task, feedback):
+        return invoke_agent(task, args, feedback)
+    return drain_queue(args, invoke_for_task)
 
 
 def main():
@@ -425,12 +396,27 @@ def main():
             return 1
         print("[ddd ] context maps ready")
 
-    print("[plan] architect reading the validated reports")
-    ok, reason = run_architect(args)
+    print("[plan] architect writing execution strategies")
+    ok, reason = run_architect(args, "strategy")
     if not ok:
-        print(f"[fatal] architect: {reason}")
+        print(f"[fatal] architect strategy: {reason}")
         return 1
-    print("[plan] architect finished; processing queue")
+    for slug in database_slugs():
+        if scaffold_task_id(slug) == "T0-000":
+            print(f"[fatal] architect strategy: no scaffold task for domain {slug}")
+            return 1
+    for slug in database_slugs():
+        ok, reason = run_database(args, slug)
+        print(f"[db  ] {slug}: {'done' if ok else 'failed: ' + reason}")
+        if not ok:
+            print(f"[fatal] database {slug}: {reason}")
+            return 1
+    print("[plan] architect writing application tasks")
+    ok, reason = run_architect(args, "tasks")
+    if not ok:
+        print(f"[fatal] architect tasks: {reason}")
+        return 1
+    print("[plan] strategy, database, and task phases finished; processing queue")
 
     try:
         if args.watch:
@@ -444,11 +430,12 @@ def main():
         print(f"[blocked] {', '.join(blocked)}")
         return 1
     if args.verify != "none":
-        ok, reason = verify_project(get_project_root(), args.verify, args.verify_timeout)
-        if not ok:
-            print(f"[fatal] {reason}")
-            return 1
-        print(f"[verify] project passes {args.verify}")
+        for slug in database_slugs():
+            ok, reason = verify_project(project_root_for(slug), args.verify, args.verify_timeout)
+            if not ok:
+                print(f"[fatal] {slug}: {reason}")
+                return 1
+            print(f"[verify] {slug} passes {args.verify}")
     print(f"[ok] processed {processed} task(s)")
     return 0
 

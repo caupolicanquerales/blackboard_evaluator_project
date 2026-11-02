@@ -12,6 +12,7 @@ permission:
     "*": deny
     "*reader_file.py*": allow
     "*writer_file.py*": allow
+    "python3 -c*json.load*": allow
   webfetch: deny
   websearch: deny
   task: deny

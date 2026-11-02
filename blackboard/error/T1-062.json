@@ -3,13 +3,14 @@
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
-    "T0-001"
+    "T0-005"
   ],
-  "path": "src/test/java/com/apexledger/banking/payments/infrastructure/AccountsHoldAdapterTest.java",
+  "path": "src/test/java/com/bank/ledger/treasuryfx/domain/RateUtilizationMetricTest.java",
   "kind": "test",
-  "layer": "infrastructure",
+  "export": "RateUtilizationMetricTest",
+  "intent": "Bounded context FX Pricing and Conversion (treasury-fx): write JUnit 5 tests for RateUtilizationMetric (path src/main/java/com/bank/ledger/treasuryfx/domain/RateUtilizationMetric.java) covering every invariant and expected behavior: Immutable rate utilization metric aggregating converted volume per currency pair for treasury hedging.",
+  "layer": "domain",
   "feature": null,
-  "export": "AccountsHoldAdapter",
-  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit AccountsHoldAdapter (Payment Orchestration context, infrastructure layer, package com.apexledger.banking.payments). Anticorruption adapter implementing HoldPort via AccountService.placeHold/releaseHold; translates account rule violations into a hold-rejected outcome. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/payments/infrastructure/AccountsHoldAdapter.java.",
-  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+  "project": "treasury-fx",
+  "error": "dependsOn T0-005 not resolvable in queue or complete"
 }

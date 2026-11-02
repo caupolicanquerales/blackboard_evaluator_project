@@ -1,0 +1,18 @@
+{
+  "id": "T1-069",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-005",
+    "T0-023",
+    "T0-024"
+  ],
+  "path": "src/test/java/com/bank/ledger/treasuryfx/infrastructure/persistence/FxPersistenceAdapterTest.java",
+  "kind": "test",
+  "export": "FxPersistenceAdapterTest",
+  "intent": "Bounded context FX Pricing and Conversion (treasury-fx): write JUnit 5 tests for FxPersistenceAdapter (path src/main/java/com/bank/ledger/treasuryfx/infrastructure/persistence/FxPersistenceAdapter.java) covering every invariant and expected behavior: JPA adapter implementing FxRepositoryPort over the treasury_fx schema (fx quotes, conversions, utilization metrics).",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "treasury-fx",
+  "error": "dependsOn T0-005 not resolvable in queue or complete"
+}

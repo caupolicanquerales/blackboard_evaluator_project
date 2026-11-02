@@ -3,13 +3,14 @@
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
-    "T0-001"
+    "T0-003"
   ],
-  "path": "src/test/java/com/apexledger/banking/ledger/infrastructure/LedgerBalanceAdapterTest.java",
+  "path": "src/test/java/com/bank/ledger/generalledger/domain/JournalLineTest.java",
   "kind": "test",
-  "layer": "infrastructure",
+  "export": "JournalLineTest",
+  "intent": "Bounded context Ledger Accounting (general-ledger): write JUnit 5 tests for JournalLine (path src/main/java/com/bank/ledger/generalledger/domain/JournalLine.java) covering every invariant and expected behavior: Immutable journal line (ledger account, DEBIT or CREDIT side, positive amount, currency); rejects zero or negative amounts and missing currency.",
+  "layer": "domain",
   "feature": null,
-  "export": "LedgerBalanceAdapter",
-  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit LedgerBalanceAdapter (Ledger Accounting context, infrastructure layer, package com.apexledger.banking.ledger). Implements Accounts' LedgerBalancePort by returning GeneralLedgerService.bookBalance for the account; Accounts reads balance only and never keeps its own. Exposes no journal details. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/ledger/infrastructure/LedgerBalanceAdapter.java.",
-  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+  "project": "general-ledger",
+  "error": "dependsOn T0-003 not resolvable in queue or complete"
 }

@@ -3,13 +3,17 @@
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
-    "T0-001"
+    "T0-003",
+    "T0-014",
+    "T0-015",
+    "T0-016"
   ],
-  "path": "src/test/java/com/apexledger/banking/compliance/domain/ComplianceOverrideTest.java",
+  "path": "src/test/java/com/bank/ledger/generalledger/infrastructure/messaging/OutboxJournalEventPublisherTest.java",
   "kind": "test",
-  "layer": "domain",
+  "export": "OutboxJournalEventPublisherTest",
+  "intent": "Bounded context Ledger Accounting (general-ledger): write JUnit 5 tests for OutboxJournalEventPublisher (path src/main/java/com/bank/ledger/generalledger/infrastructure/messaging/OutboxJournalEventPublisher.java) covering every invariant and expected behavior: Adapter implementing LedgerEventPublisherPort via the general_ledger outbox table in the posting transaction with an at-least-once relay.",
+  "layer": "infrastructure",
   "feature": null,
-  "export": "ComplianceOverride",
-  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit ComplianceOverride (Transaction Screening context, domain layer, package com.apexledger.banking.compliance). Entity Compliance Override with operatorId, regulatory justification, decision APPROVED/REJECTED and cryptographic audit timestamp (SHA-256 hash). Invariants: operator ID and justification mandatory (blank rejected); immutable audit record. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/compliance/domain/ComplianceOverride.java.",
-  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+  "project": "general-ledger",
+  "error": "dependsOn T0-003 not resolvable in queue or complete"
 }

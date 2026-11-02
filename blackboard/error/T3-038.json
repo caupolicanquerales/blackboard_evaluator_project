@@ -5,11 +5,12 @@
   "dependsOn": [
     "T2-038"
   ],
-  "path": "src/main/java/com/apexledger/banking/treasury/api/FxController.java",
+  "path": "src/main/java/com/bank/ledger/generalledger/application/BalanceQueryService.java",
   "kind": "refactor",
-  "layer": "interface",
+  "export": "BalanceQueryService",
+  "intent": "Bounded context Ledger Accounting (general-ledger): inspect and refactor BalanceQueryService (tests in src/test/java/com/bank/ledger/generalledger/application/BalanceQueryServiceTest.java) keeping tests green and layer boundaries intact; clean naming, small methods, immutability and null safety; behavior to preserve: Application service returning book and available balance per account and currency, keeping both values separate.",
+  "layer": "application",
   "feature": null,
-  "export": "FxController",
-  "intent": "Inspect and refactor the implementation of Unit FxController (FX Settlement context, interface layer, package com.apexledger.banking.treasury). Thin REST controller /api/v1/fx: POST quotes, POST conversions. DTO records, validation, expired quote -> 409/422 ProblemDetail; no rate logic. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "project": "general-ledger",
   "error": "dependsOn T2-038 not resolvable in queue or complete"
 }

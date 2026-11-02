@@ -3,13 +3,14 @@
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
-    "T0-001"
+    "T0-004"
   ],
-  "path": "src/test/java/com/apexledger/banking/compliance/infrastructure/AccountCreatedEventListenerTest.java",
+  "path": "src/test/java/com/bank/ledger/payments/domain/SettlementBatchTest.java",
   "kind": "test",
-  "layer": "infrastructure",
+  "export": "SettlementBatchTest",
+  "intent": "Bounded context Payment Orchestration (payments): write JUnit 5 tests for SettlementBatch (path src/main/java/com/bank/ledger/payments/domain/SettlementBatch.java) covering every invariant and expected behavior: Settlement Batch grouping settled payments for one clearing network; same network only, closed batches reject additions, no duplicate payments.",
+  "layer": "domain",
   "feature": null,
-  "export": "AccountCreatedEventListener",
-  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit AccountCreatedEventListener (Transaction Screening context, infrastructure layer, package com.apexledger.banking.compliance). @EventListener consuming Accounts' AccountCreatedEvent and calling TransactionScreeningService.screenAccountCreated for onboarding screening; receives only the creation fact. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/compliance/infrastructure/AccountCreatedEventListener.java.",
-  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+  "project": "payments",
+  "error": "dependsOn T0-004 not resolvable in queue or complete"
 }

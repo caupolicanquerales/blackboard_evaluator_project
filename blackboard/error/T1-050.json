@@ -3,13 +3,14 @@
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
-    "T0-001"
+    "T0-004"
   ],
-  "path": "src/test/java/com/apexledger/banking/payments/domain/PaymentEventsTest.java",
+  "path": "src/test/java/com/bank/ledger/payments/application/port/out/AccountsPortTest.java",
   "kind": "test",
-  "layer": "domain",
+  "export": "AccountsPortTest",
+  "intent": "Bounded context Payment Orchestration (payments): write JUnit 5 tests for AccountsPort (path src/main/java/com/bank/ledger/payments/application/port/out/AccountsPort.java) covering every invariant and expected behavior: Outbound port interface to request balance reservation, release reservation and convert hold on settlement in Accounts; no account state is owned here.",
+  "layer": "application",
   "feature": null,
-  "export": "PaymentEvents",
-  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit PaymentEvents (Payment Orchestration context, domain layer, package com.apexledger.banking.payments). Nested record PaymentRequestedEvent (paymentReference, direction, Money amount, currency, parties, crossBorder) published when a payment is requested; the only fact Compliance needs for screening. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/payments/domain/PaymentEvents.java.",
-  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+  "project": "payments",
+  "error": "dependsOn T0-004 not resolvable in queue or complete"
 }

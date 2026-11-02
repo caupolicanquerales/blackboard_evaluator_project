@@ -1,0 +1,14 @@
+{
+  "id": "T2-021",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-021"
+  ],
+  "path": "src/main/java/com/enterprise/banking/ledger/infrastructure/JournalPersistenceAdapter.java",
+  "kind": "code",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "JournalPersistenceAdapter",
+  "intent": "Bounded context Double-Entry Ledger (ledger): Implement JournalPersistenceAdapter so tests in src/test/java/com/enterprise/banking/ledger/infrastructure/JournalPersistenceAdapterTest.java pass: Adapter over general_ledger schema (ledger accounts, fiscal periods, journal entries and lines, balance projection, outbox, processed events); insert-only journal, relies on DB immutability and balanced-entry triggers, serialized fiscal period close."
+}

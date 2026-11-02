@@ -1,0 +1,14 @@
+{
+  "id": "T3-018",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-018"
+  ],
+  "path": "src/main/java/com/enterprise/banking/ledger/domain/FiscalPeriod.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "FiscalPeriod",
+  "intent": "Bounded context Double-Entry Ledger (ledger): Inspect and refactor FiscalPeriod for clean naming, small methods, immutability, null-safety and layer boundaries without changing behavior or weakening these invariants: Fiscal Period entity OPEN/CLOSED; posting to a closed period is forbidden; closing is one-way."
+}

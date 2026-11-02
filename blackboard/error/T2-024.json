@@ -4,14 +4,15 @@
   "stage": 2,
   "dependsOn": [
     "T1-024",
-    "T2-022",
-    "T2-021"
+    "T0-010",
+    "T0-011"
   ],
-  "path": "src/main/java/com/apexledger/banking/ledger/application/port/LedgerRepository.java",
+  "path": "src/main/java/com/bank/ledger/compliance/infrastructure/persistence/ScreeningPersistenceAdapter.java",
   "kind": "code",
-  "layer": "application",
+  "export": "ScreeningPersistenceAdapter",
+  "intent": "Bounded context Transaction Screening (compliance-risk): implement ScreeningPersistenceAdapter so tests in src/test/java/com/bank/ledger/compliance/infrastructure/persistence/ScreeningPersistenceAdapterTest.java pass: JPA adapter implementing ScreeningRepositoryPort over the compliance_risk schema (screening_results, compliance_holds, overrides); overrides are insert-only, matching the append-only DB triggers.",
+  "layer": "infrastructure",
   "feature": null,
-  "export": "LedgerRepository",
-  "intent": "Implement Unit LedgerRepository (Ledger Accounting context, application layer, package com.apexledger.banking.ledger). Outbound port: append-only saveEntry(JournalEntry), entries by account, findPeriod/savePeriod, active hold register per account (add/release). No update or delete of entries. Make the tests at src/test/java/com/apexledger/banking/ledger/application/port/LedgerRepositoryTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "project": "compliance-risk",
   "error": "dependsOn T1-024 not resolvable in queue or complete"
 }

@@ -1,0 +1,14 @@
+{
+  "id": "T3-029",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-029"
+  ],
+  "path": "src/main/java/com/enterprise/banking/fx/domain/ExchangeRateQuote.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "ExchangeRateQuote",
+  "intent": "Bounded context FX Settlement (fx): Inspect and refactor ExchangeRateQuote for clean naming, small methods, immutability, null-safety and layer boundaries without changing behavior or weakening these invariants: Exchange Rate Quote aggregate: currency pair, rate with spread, lock expiry at most 30 seconds from lock; expired quotes cannot be used; clock injected. Pure Java."
+}

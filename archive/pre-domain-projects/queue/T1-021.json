@@ -1,0 +1,19 @@
+{
+  "id": "T1-021",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T0-010",
+    "T0-011",
+    "T0-012",
+    "T0-013",
+    "T0-014"
+  ],
+  "path": "src/test/java/com/enterprise/banking/ledger/infrastructure/JournalPersistenceAdapterTest.java",
+  "kind": "test",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "JournalPersistenceAdapterTest",
+  "intent": "Bounded context Double-Entry Ledger (ledger): Write JUnit 5 tests for JournalPersistenceAdapter (path src/main/java/com/enterprise/banking/ledger/infrastructure/JournalPersistenceAdapter.java) covering every invariant and expected behavior: Adapter over general_ledger schema (ledger accounts, fiscal periods, journal entries and lines, balance projection, outbox, processed events); insert-only journal, relies on DB immutability and balanced-entry triggers, serialized fiscal period close."
+}

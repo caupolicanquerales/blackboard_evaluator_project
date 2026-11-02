@@ -1,0 +1,14 @@
+{
+  "id": "T3-004",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-004"
+  ],
+  "path": "src/main/java/com/enterprise/banking/account/domain/Account.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "Account",
+  "intent": "Bounded context Account Lifecycle (account): Inspect and refactor Account for clean naming, small methods, immutability, null-safety and layer boundaries without changing behavior or weakening these invariants: Account aggregate root (Account Number, state, overdraft boundary, holds). Invariants: opened only for a verified customer; legal state transitions only; FROZEN cannot originate debits; cannot be TERMINATED with non-zero balance or active holds; hold conversion idempotent per settlement id. Pure Java."
+}

@@ -11,14 +11,18 @@ tools: ["read", "search", "execute", "edit"]
 
 # Workflow
 
-1. Load skills `domain-driven-architecture` (includes the per-domain input read) from `.opencode/skills/`, `software-layering-patterns`, `task-decomposition-dag`, then the target tech-stack skill (e.g. `java-springboot3`).
-2. For each `blackboard/domain/domain-boundary-<slug>.json`, read that slice and `blackboard/context-map/context-map-<slug>.json` with the reader (`--expect any`). Draft that domain's strategy (modules, layers, build order, risks) to a temp JSON file, then run `python3 .github/skills/read-write-file-ddd/writer-architect-file/scripts/writer_architect_file.py strategy --input <draft> --output blackboard/complete/execution-strategy-<slug>.json` (fallback: `.opencode/skills/...` with the same arguments).
-3. For each domain, draft one JSON per component/contract (schema from `task-decomposition-dag`) into a temp folder named after the slug, then run `python3 .github/skills/read-write-file-ddd/writer-architect-file/scripts/writer_architect_file.py tasks --input-dir <draft-dir> --output-dir blackboard/queue` (fallback: `.opencode/skills/...`). Task IDs continue from the highest `T-###` already in `blackboard/queue/` and `blackboard/complete/`, never reused. `depends_on` may reference tasks in the same domain batch or tasks already queued or completed by upstream domains (read them from `blackboard/queue/` and `blackboard/complete/`). Link a downstream task to an upstream task only when it needs that task's contract or output; the writer rejects unknown IDs.
-4. If the script rejects a payload, fix the draft and rerun. Never write or edit the blackboard files directly.
+1. Load skills `domain-driven-architecture` (includes the per-domain input read) from `.opencode/skills/`, `software-layering-patterns`, `database-persistence-strategy` (for any context that owns data) from `.opencode/skills/architect-practices/`, `task-decomposition-dag`, then the target tech-stack skill (e.g. `java-springboot3`).
+2. Phase 1 (strategy). For each `blackboard/domain/domain-boundary-<slug>.json`, read that slice and `blackboard/context-map/context-map-<slug>.json` with the reader (`--expect any`). Write `blackboard/complete/execution-strategy-<slug>.json` with the edit tool and these keys:
+   - `modules` (list of strings, non-empty), `layers` (list of strings), `build_order` (list of strings, non-empty), `risks` (list of strings).
+   - `slug` (string, the domain slug matching the file), `bounded_contexts` (list of strings, exact names from the slice), `module_layout` (`base_package`, `packages`, `integration`).
+   - `persistence` (optional, if the context owns data): `drivers`, `storage_paradigm`, `data_model`, `queries`, `migration_plan`, `backup_recovery`, `open_questions`. Abstract only.
+   Do not create task files in this phase.
+3. Phase 2 (tasks). Read each strategy with the read tool; do not rewrite it. Draft one JSON per unit (schema from `task-decomposition-dag`) into `/tmp/tasks/`, using the stage mapping and field rules in the orchestrator prompt. Use the database ids listed in the prompt in `dependsOn` when a unit uses the store. Queue the whole batch with `python3 <runner> --emit <draft files>` (runner given in the prompt). Every task carries the `project` field (the domain slug); each domain's tasks stay in that domain's project root. Use the next free `T<stage>-###` ids given in the prompt; never reuse an id. Persistence and database tasks are already queued by the database step; do not emit them.
+4. If `--emit` rejects a payload, fix the draft and re-emit. Never write or edit blackboard queue files directly.
 
 # Output contract
 
-- Outputs are written only by the writer script, once per domain: `blackboard/complete/execution-strategy-<slug>.json` and `blackboard/queue/T-xxx.json`.
+- Strategy: `blackboard/complete/execution-strategy-<slug>.json` (edit tool). Tasks: queued only through `--emit`, ids from the next-free id in the prompt.
 - Stop at architecture: no application code.
 
 # Report

@@ -5,11 +5,12 @@
   "dependsOn": [
     "T0-001"
   ],
-  "path": "src/test/java/com/apexledger/banking/shared/EventPublisherTest.java",
+  "path": "src/test/java/com/bank/ledger/accounts/application/port/out/AccountRepositoryPortTest.java",
   "kind": "test",
-  "layer": "shared",
+  "export": "AccountRepositoryPortTest",
+  "intent": "Bounded context Account Lifecycle (accounts): write JUnit 5 tests for AccountRepositoryPort (path src/main/java/com/bank/ledger/accounts/application/port/out/AccountRepositoryPort.java) covering every invariant and expected behavior: Outbound port interface to load by account number, save aggregates with holds and state transitions, query active holds by account and accounts by state; returns Optional for missing accounts, no persistence types leaked.",
+  "layer": "application",
   "feature": null,
-  "export": "EventPublisher",
-  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit EventPublisher (Shared kernel context, shared layer, package com.apexledger.banking.shared). Outbound port publish(DomainEvent). Domain and application layers depend on this port, never on Spring. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/shared/EventPublisher.java.",
-  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+  "project": "accounts",
+  "error": "dependsOn T0-001 not resolvable in queue or complete"
 }

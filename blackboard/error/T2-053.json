@@ -3,18 +3,14 @@
   "targetAgent": "agent-coder",
   "stage": 2,
   "dependsOn": [
-    "T1-053",
-    "T2-002",
-    "T2-003",
-    "T2-051",
-    "T2-052",
-    "T2-050"
+    "T1-053"
   ],
-  "path": "src/main/java/com/apexledger/banking/payments/domain/PaymentOrder.java",
+  "path": "src/main/java/com/bank/ledger/payments/application/PaymentOrchestrationService.java",
   "kind": "code",
-  "layer": "domain",
+  "export": "PaymentOrchestrationService",
+  "intent": "Bounded context Payment Orchestration (payments): implement PaymentOrchestrationService so tests in src/test/java/com/bank/ledger/payments/application/PaymentOrchestrationServiceTest.java pass: Application service driving the payment flow: idempotent request creation, publish PaymentRequestedEvent, handle ComplianceCleared/Flagged, FxQuoteLocked, FundsReserved/Released and AccountFrozen events, dispatch to clearing, publish PaymentSettledNotification on settlement and release the hold automatically on clearing failure; uses only ports.",
+  "layer": "application",
   "feature": null,
-  "export": "PaymentOrder",
-  "intent": "Implement Unit PaymentOrder (Payment Orchestration context, domain layer, package com.apexledger.banking.payments). Aggregate Payment Order. Invariants: outgoing transfers require a reservation hold before authorization; execution is two-phase Authorization then Settlement (settle only from AUTHORIZED); clearing failure triggers Reversal (hold release request); cross-border above USD 10,000 equivalent needs FX settlement and AML clearance before execution; compliance flag suspends it; executes only after clearance. Behavior: request, recordCompliance(cleared/flagged), recordHoldReserved, recordFxQuote, authorize, markCleared, settle, fail/reverse; emits PaymentRequestedEvent. Make the tests at src/test/java/com/apexledger/banking/payments/domain/PaymentOrderTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
-  "error": "dependsOn T2-050 not resolvable in queue or complete"
+  "project": "payments",
+  "error": "dependsOn T1-053 not resolvable in queue or complete"
 }

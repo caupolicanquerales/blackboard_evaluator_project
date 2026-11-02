@@ -1,0 +1,14 @@
+{
+  "id": "T1-015",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/enterprise/banking/screening/interfaces/ScreeningEventConsumerTest.java",
+  "kind": "test",
+  "layer": "interface",
+  "feature": null,
+  "export": "ScreeningEventConsumerTest",
+  "intent": "Bounded context Transaction Screening (screening): Write JUnit 5 tests for ScreeningEventConsumer (path src/main/java/com/enterprise/banking/screening/interfaces/ScreeningEventConsumer.java) covering every invariant and expected behavior: Event listener for PaymentRequestedEvent and AccountCreatedEvent plus REST endpoints for the Risk Operations Queue and overrides; thin, delegates to ScreeningApplicationService."
+}

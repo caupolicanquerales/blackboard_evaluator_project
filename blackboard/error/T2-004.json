@@ -5,11 +5,12 @@
   "dependsOn": [
     "T1-004"
   ],
-  "path": "src/main/java/com/apexledger/banking/shared/DomainEvent.java",
+  "path": "src/main/java/com/bank/ledger/accounts/domain/DepositAccount.java",
   "kind": "code",
-  "layer": "shared",
+  "export": "DepositAccount",
+  "intent": "Bounded context Account Lifecycle (accounts): implement DepositAccount so tests in src/test/java/com/bank/ledger/accounts/domain/DepositAccountTest.java pass: Aggregate root for a deposit account (account number, type, customer reference, AccountState, OverdraftBoundary, holds). Opens PROVISIONAL only for a verified customer; enforces state transitions; frozen account rejects debits but accepts credits; cannot be TERMINATED with non-zero balance or active holds; available funds reduced by active holds; overdraft limit approval validated against boundary.",
+  "layer": "domain",
   "feature": null,
-  "export": "DomainEvent",
-  "intent": "Implement Unit DomainEvent (Shared kernel context, shared layer, package com.apexledger.banking.shared). Marker interface for domain events exposing occurredAt (Instant). Cross-context communication happens only through events implementing it. Make the tests at src/test/java/com/apexledger/banking/shared/DomainEventTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "project": "accounts",
   "error": "dependsOn T1-004 not resolvable in queue or complete"
 }

@@ -5,11 +5,12 @@
   "dependsOn": [
     "T2-027"
   ],
-  "path": "src/main/java/com/apexledger/banking/ledger/infrastructure/LedgerHoldEventListener.java",
+  "path": "src/main/java/com/bank/ledger/compliance/interfaces/rest/ScreeningController.java",
   "kind": "refactor",
-  "layer": "infrastructure",
+  "export": "ScreeningController",
+  "intent": "Bounded context Transaction Screening (compliance-risk): inspect and refactor ScreeningController (tests in src/test/java/com/bank/ledger/compliance/interfaces/rest/ScreeningControllerTest.java) keeping tests green and layer boundaries intact; clean naming, small methods, immutability and null safety; behavior to preserve: REST controller for the synchronous screening API used by Payments and for risk operations queue and override endpoints; validates DTOs, maps domain errors to problem responses, no business logic.",
+  "layer": "interface",
   "feature": null,
-  "export": "LedgerHoldEventListener",
-  "intent": "Inspect and refactor the implementation of Unit LedgerHoldEventListener (Ledger Accounting context, infrastructure layer, package com.apexledger.banking.ledger). Spring @EventListener consuming Accounts' FundsReservedEvent and FundsReleasedEvent and calling GeneralLedgerService.registerHold/releaseHold so Available Balance recovers after release. Idempotent per holdId; reads only the published event fields. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "project": "compliance-risk",
   "error": "dependsOn T2-027 not resolvable in queue or complete"
 }

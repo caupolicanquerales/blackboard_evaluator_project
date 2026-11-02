@@ -3,13 +3,16 @@
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
-    "T0-001"
+    "T0-001",
+    "T0-006",
+    "T0-007"
   ],
-  "path": "src/test/java/com/apexledger/banking/accounts/domain/HoldTest.java",
+  "path": "src/test/java/com/bank/ledger/accounts/infrastructure/persistence/AccountPersistenceAdapterTest.java",
   "kind": "test",
-  "layer": "domain",
+  "export": "AccountPersistenceAdapterTest",
+  "intent": "Bounded context Account Lifecycle (accounts): write JUnit 5 tests for AccountPersistenceAdapter (path src/main/java/com/bank/ledger/accounts/infrastructure/persistence/AccountPersistenceAdapter.java) covering every invariant and expected behavior: Spring Data JPA adapter implementing AccountRepositoryPort against the PostgreSQL accounts schema (deposit_accounts, holds, account_state_transitions); records every state transition for audit and maps entities to domain objects without leaking JPA types.",
+  "layer": "infrastructure",
   "feature": null,
-  "export": "Hold",
-  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit Hold (Account Lifecycle context, domain layer, package com.apexledger.banking.accounts). Entity/value Hold (Reservation Hold/Lien): holdId, Money amount, paymentReference, status ACTIVE/RELEASED/SETTLED. Invariants: positive amount; release only once; released/settled hold cannot be reactivated. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/accounts/domain/Hold.java.",
-  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+  "project": "accounts",
+  "error": "dependsOn T0-001 not resolvable in queue or complete"
 }

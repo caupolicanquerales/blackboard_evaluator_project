@@ -1,0 +1,16 @@
+{
+  "id": "T2-071",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-071"
+  ],
+  "path": "src/main/java/com/bank/ledger/treasuryfx/interfaces/rest/FxController.java",
+  "kind": "code",
+  "export": "FxController",
+  "intent": "Bounded context FX Pricing and Conversion (treasury-fx): implement FxController so tests in src/test/java/com/bank/ledger/treasuryfx/interfaces/rest/FxControllerTest.java pass: Thin REST controller for quote, lock and execute conversion endpoints; validates DTOs and maps domain errors (expired quote) to problem responses.",
+  "layer": "interface",
+  "feature": null,
+  "project": "treasury-fx",
+  "error": "dependsOn T1-071 not resolvable in queue or complete"
+}

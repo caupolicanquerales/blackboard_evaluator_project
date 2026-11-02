@@ -4,13 +4,15 @@
   "stage": 2,
   "dependsOn": [
     "T1-056",
-    "T2-002"
+    "T0-019",
+    "T0-020"
   ],
-  "path": "src/main/java/com/apexledger/banking/payments/application/port/HoldPort.java",
+  "path": "src/main/java/com/bank/ledger/payments/infrastructure/messaging/OutboxPaymentEventPublisher.java",
   "kind": "code",
-  "layer": "application",
+  "export": "OutboxPaymentEventPublisher",
+  "intent": "Bounded context Payment Orchestration (payments): implement OutboxPaymentEventPublisher so tests in src/test/java/com/bank/ledger/payments/infrastructure/messaging/OutboxPaymentEventPublisherTest.java pass: Adapter implementing PaymentEventPublisherPort via payments.outbox_events written in the same transaction, relay publishes unpublished rows at-least-once.",
+  "layer": "infrastructure",
   "feature": null,
-  "export": "HoldPort",
-  "intent": "Implement Unit HoldPort (Payment Orchestration context, application layer, package com.apexledger.banking.payments). Outbound port reserve(account, Money, paymentRef) and release(holdId); Payments sees only the hold outcome, never Account State or overdraft rules. Make the tests at src/test/java/com/apexledger/banking/payments/application/port/HoldPortTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
+  "project": "payments",
   "error": "dependsOn T1-056 not resolvable in queue or complete"
 }

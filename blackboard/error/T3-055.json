@@ -5,11 +5,12 @@
   "dependsOn": [
     "T2-055"
   ],
-  "path": "src/main/java/com/apexledger/banking/payments/application/port/PaymentOrderRepository.java",
+  "path": "src/main/java/com/bank/ledger/payments/infrastructure/persistence/PaymentPersistenceAdapter.java",
   "kind": "refactor",
-  "layer": "application",
+  "export": "PaymentPersistenceAdapter",
+  "intent": "Bounded context Payment Orchestration (payments): inspect and refactor PaymentPersistenceAdapter (tests in src/test/java/com/bank/ledger/payments/infrastructure/persistence/PaymentPersistenceAdapterTest.java) keeping tests green and layer boundaries intact; clean naming, small methods, immutability and null safety; behavior to preserve: JPA adapter implementing PaymentOrderRepositoryPort over the payments schema (payment_orders, payment_order_steps, idempotency_keys); duplicate idempotency key returns the stored order.",
+  "layer": "infrastructure",
   "feature": null,
-  "export": "PaymentOrderRepository",
-  "intent": "Inspect and refactor the implementation of Unit PaymentOrderRepository (Payment Orchestration context, application layer, package com.apexledger.banking.payments). Outbound port: save/find PaymentOrder by reference, save/open SettlementBatch. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "project": "payments",
   "error": "dependsOn T2-055 not resolvable in queue or complete"
 }

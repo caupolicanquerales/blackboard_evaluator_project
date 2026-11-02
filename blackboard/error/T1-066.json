@@ -3,13 +3,14 @@
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
-    "T0-001"
+    "T0-005"
   ],
-  "path": "src/test/java/com/apexledger/banking/payments/infrastructure/PaymentComplianceEventListenerTest.java",
+  "path": "src/test/java/com/bank/ledger/treasuryfx/application/FxQuotingServiceTest.java",
   "kind": "test",
-  "layer": "infrastructure",
+  "export": "FxQuotingServiceTest",
+  "intent": "Bounded context FX Pricing and Conversion (treasury-fx): write JUnit 5 tests for FxQuotingService (path src/main/java/com/bank/ledger/treasuryfx/application/FxQuotingService.java) covering every invariant and expected behavior: Application service for quote and lock use cases; applies spread to provider rate, enforces the 30-second maximum lock, publishes FxQuoteLocked.",
+  "layer": "application",
   "feature": null,
-  "export": "PaymentComplianceEventListener",
-  "intent": "Write JUnit 5 tests (AssertJ, Mockito where ports are needed) for Unit PaymentComplianceEventListener (Payment Orchestration context, infrastructure layer, package com.apexledger.banking.payments). @EventListener consuming ComplianceClearedEvent, ComplianceFlaggedEvent, AccountFrozenEvent, FundsReservedEvent and FundsReleasedEvent and forwarding outcomes to PaymentOrchestrationService; ignores unknown references. One failing test per public behavior and per invariant; test class must compile against the main class at src/main/java/com/apexledger/banking/payments/infrastructure/PaymentComplianceEventListener.java.",
-  "error": "profile .github/agents/agent-tester.agent.md is empty or missing a frontmatter 'name'"
+  "project": "treasury-fx",
+  "error": "dependsOn T0-005 not resolvable in queue or complete"
 }

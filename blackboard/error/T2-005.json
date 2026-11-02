@@ -3,14 +3,14 @@
   "targetAgent": "agent-coder",
   "stage": 2,
   "dependsOn": [
-    "T1-005",
-    "T2-004"
+    "T1-005"
   ],
-  "path": "src/main/java/com/apexledger/banking/shared/EventPublisher.java",
+  "path": "src/main/java/com/bank/ledger/accounts/application/port/out/AccountRepositoryPort.java",
   "kind": "code",
-  "layer": "shared",
+  "export": "AccountRepositoryPort",
+  "intent": "Bounded context Account Lifecycle (accounts): implement AccountRepositoryPort so tests in src/test/java/com/bank/ledger/accounts/application/port/out/AccountRepositoryPortTest.java pass: Outbound port interface to load by account number, save aggregates with holds and state transitions, query active holds by account and accounts by state; returns Optional for missing accounts, no persistence types leaked.",
+  "layer": "application",
   "feature": null,
-  "export": "EventPublisher",
-  "intent": "Implement Unit EventPublisher (Shared kernel context, shared layer, package com.apexledger.banking.shared). Outbound port publish(DomainEvent). Domain and application layers depend on this port, never on Spring. Make the tests at src/test/java/com/apexledger/banking/shared/EventPublisherTest.java pass; Java 21, Spring Boot 3, constructor injection, one public type per file, no placeholders; no imports from another context's domain/application layer.",
-  "error": "dependsOn T2-004 not resolvable in queue or complete"
+  "project": "accounts",
+  "error": "dependsOn T1-005 not resolvable in queue or complete"
 }

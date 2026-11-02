@@ -5,11 +5,12 @@
   "dependsOn": [
     "T2-030"
   ],
-  "path": "src/main/java/com/apexledger/banking/treasury/domain/CurrencyPair.java",
+  "path": "src/main/java/com/bank/ledger/generalledger/domain/FiscalPeriod.java",
   "kind": "refactor",
+  "export": "FiscalPeriod",
+  "intent": "Bounded context Ledger Accounting (general-ledger): inspect and refactor FiscalPeriod (tests in src/test/java/com/bank/ledger/generalledger/domain/FiscalPeriodTest.java) keeping tests green and layer boundaries intact; clean naming, small methods, immutability and null safety; behavior to preserve: Fiscal period with OPEN and CLOSED states; posting into a closed period is forbidden; closing is irreversible; checks that an entry date falls in the period.",
   "layer": "domain",
   "feature": null,
-  "export": "CurrencyPair",
-  "intent": "Inspect and refactor the implementation of Unit CurrencyPair (FX Settlement context, domain layer, package com.apexledger.banking.treasury). Value object (record) base/quote ISO currencies. Invariants: both non-null, valid and different; inverse(); stable symbol like EUR/USD. Keep behavior and tests green; enforce small single-responsibility methods, immutability, null safety and layer/context boundary rules.",
+  "project": "general-ledger",
   "error": "dependsOn T2-030 not resolvable in queue or complete"
 }

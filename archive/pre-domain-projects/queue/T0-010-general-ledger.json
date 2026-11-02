@@ -1,0 +1,12 @@
+{
+  "id": "T0-010",
+  "targetAgent": "agent-container",
+  "stage": 0,
+  "dependsOn": [],
+  "path": "db/migrations/general-ledger/V1__store_setup.sql",
+  "kind": "bootstrap",
+  "layer": "root",
+  "feature": null,
+  "export": "general-ledger-store-setup",
+  "intent": "Store setup: PostgreSQL 16 store for bounded context general-ledger; Flyway script db/migrations/general-ledger/V1__store_setup.sql creates the general_ledger schema (run first)."
+}

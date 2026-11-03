@@ -33,10 +33,13 @@ Outcomes:
 ## Step 2: Collect parameters
 - `dependencies` (required): comma-separated Spring Initializr IDs, for example `web,data-jpa,postgresql`. Ask if missing.
 - `bootVersion` (optional): leave empty so Initializr uses its default GA. Pass a value only if the user asks, without `.RELEASE`.
+- Java version: default to 21. The MCP tool does not accept a `javaVersion` argument, so apply it to the generated POM as described in Step 3.
 - `groupId` (optional, for example `com.example`); `artifactId` (optional, default `demo`, letters, digits, `-`, `_`, `.`).
 
 ## Step 3: Invoke the tool
 Call `generateSpringBootProject` on `http://localhost:$SPRINGBOOT_MCP_PORT/sse` (default `8900`). It generates the project into `/workspace/projects/<artifactId>-<timestamp>` and runs `mvn clean install -X`, logging to `mvn-build.log` in that folder.
+
+After generation, set `<java.version>21</java.version>` in the generated `pom.xml`, then run `./mvnw clean install` from the generated project to verify Java 21 before moving or reporting the scaffold. Do not pass `javaVersion` to the MCP tool; its current schema rejects additional properties.
 
 If Initializr rejects `bootVersion` (HTTP 400 or a version error), tell the user, ask for another GA version or offer the default, and do not halt.
 

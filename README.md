@@ -12,6 +12,7 @@ The same workflow can run with either **OpenCode** or **GitHub Copilot CLI**.
 - Creates an execution strategy and a separate project for each discovered domain.
 - Selects persistence technologies and queues database migration tasks.
 - Breaks application work into dependency-aware test, code, and evaluation tasks.
+- Runs each new test in **red phase**, records the result, and extracts **AST context** for the target class/method to guide the coder.
 - Processes tasks with an in-memory dependency graph instead of repeatedly searching the queue after every task.
 - Groups ready work by domain to improve execution locality and make logs easier to follow.
 - Gives every task a stable, readable filename such as `T0-023-treasury-fx.json`.
@@ -39,7 +40,13 @@ Business description (seed/*.md)
  Application task decomposition
               |
               v
-      Validated blackboard queue
+   Red-phase test execution
+              |
+              v
+   AST context extraction
+              |
+              v
+       Validated blackboard queue
               |
               v
  Dependency-aware, domain-grouped execution
@@ -50,11 +57,12 @@ Business description (seed/*.md)
 
 ### Processing stages
 
-| Stage | Agent | Responsibility |
+| Stage | Agent / Tool | Responsibility |
 | --- | --- | --- |
 | 0 | `agent-container` | Generate the domain project scaffold and database artifacts. |
-| 1 | `agent-tester` | Create tests for one implementation-ready unit. |
-| 2 | `agent-coder` | Implement the unit described by the task. |
+| 1 | `agent-tester` | Write tests for one implementation-ready unit, run the red-phase check, and record the result. |
+| - | `ast-dispatcher` | Extract AST context for the target class/method into `blackboard/ast-context/<id>.json`. |
+| 2 | `agent-coder` | Implement the unit described by the task, guided by the test and AST context. |
 | 3 | `agent-evaluator` | Inspect and refactor the implementation. |
 
 Before these stages, two specialists create the DDD artifacts:
@@ -64,6 +72,33 @@ Before these stages, two specialists create the DDD artifacts:
 - `agent-architect` writes execution strategies and decomposes the work into tasks.
 - `agent-database-architect` selects storage technologies and queues database tasks.
 
+### Red-phase checks and AST context extraction
+
+Stage 1 is not just "write a test". The tester agent:
+
+1. Loads the matching `tester-framework/<language-framework>/SKILL.md` (for example `java-junit5`).
+2. Writes the test at the task `path`.
+3. Runs only that test through `tester-framework/run-test-tool.py`, which parses the output and classifies it as `passed`, `compile_error`, `assertion_failure`, or `not_run`.
+4. Persists the result with `read-write-file-ddd/writer-red-phase/write-red-phase.py` as `blackboard/red-phase/<id>.json`. The file must contain `{"executed": true}` for the orchestrator to proceed.
+
+After validating the red-phase record, the OpenCode orchestrator invokes the **AST dispatcher**:
+
+```text
+python3 .opencode/skills/ast-dispatcher/ast-dispatcher.py \
+  --root <project_root> --task-id <id>
+```
+
+The dispatcher:
+
+- Detects the language/framework from project files (`pom.xml`, `package.json`, `go.mod`, etc.).
+- Selects the matching builder from `ast-dispatcher/builders/` (Java, Go, Python, TypeScript).
+- Merges the task context from `blackboard/queue/<id>.json` (target class via `export`) and `blackboard/red-phase/<id>.json` (target method from missing symbols or assertion failures).
+- Runs the configured AST executable and writes the result to `blackboard/ast-context/<id>.json`.
+
+For Java/Spring Boot projects, the executable is the fat JAR located by `AST_TOOL_ROOT` and `AST_JAR_NAME` in `.env`. The bundled Java extractor is at `ast_tools/ast_extractor/target/ast_extractor-0.0.1-SNAPSHOT.jar`; point `.env` to the extractor you want to use.
+
+A dispatcher failure is logged but does not block `agent-coder`; the context is treated as optional guidance.
+
 ## Repository layout
 
 ```text
@@ -72,19 +107,28 @@ Before these stages, two specialists create the DDD artifacts:
 ├── orchestrator_github.py         # GitHub Copilot CLI backend
 ├── telemetry.py                   # Optional OpenTelemetry integration
 ├── seed/                          # Input business descriptions
+├── ast_tools/                     # Language-specific AST extractors (e.g. Java)
 ├── blackboard/
 │   ├── domain/                    # Discovered domain boundaries
 │   ├── context-map/               # DDD context maps
 │   ├── queue/                     # Tasks waiting to run
 │   ├── complete/                  # Completed tasks and execution strategies
-│   └── error/                     # Invalid or failed tasks with error details
+│   ├── error/                     # Invalid or failed tasks with error details
+│   ├── red-phase/                 # Red-phase test-run records produced by agent-tester
+│   └── ast-context/               # AST context extracted for each stage-1 task
 ├── projects/                      # Generated source code
 ├── .opencode/
 │   ├── agents/                    # OpenCode agent definitions
-│   └── skills/                    # Architecture, stack, and coding guidance
+│   └── skills/                    # Architecture, stack, coding, testing, and AST guidance
+│       ├── tester-framework/      # Language/framework testing skills + run-test-tool.py
+│       ├── ast-dispatcher/        # Language detection and AST executable dispatch
+│       ├── read-write-file-ddd/   # Blackboard file writers (red-phase, architect, etc.)
+│       ├── architect-practices/   # DDD and architecture skills
+│       ├── tech-stack/            # Technology selection and migration skills
+│       └── java-standard-best-practices/
 ├── .github/
 │   ├── agents/                    # Copilot agent profiles
-│   └── skills/                    # Copilot-accessible skills
+│   └── skills/                    # Copilot-accessible skills (mirrored layout)
 └── mcp_server/                    # MCP server images for project scaffolding
 ```
 
@@ -96,8 +140,16 @@ Before these stages, two specialists create the DDD artifacts:
   - [GitHub Copilot CLI](https://docs.github.com/en/copilot) available as `copilot`.
 - Docker when using the containerized MCP scaffolding servers.
 - The build tools required by the generated projects, such as Maven/Gradle, Node.js, or another stack selected during planning.
+- Java 21 if you use the bundled Java AST extractor.
 
 The orchestrators themselves use the Python standard library. OpenTelemetry packages are optional.
+
+Configure the AST extractor location in `.env`:
+
+```dotenv
+AST_TOOL_ROOT=<path-to-extractor-project>
+AST_JAR_NAME=<extractor-jar-name>
+```
 
 ## Quick start
 
@@ -241,6 +293,9 @@ The OpenTelemetry SDK and an OTLP HTTP or gRPC trace exporter must also be insta
 
 - **Business input:** add or replace files in `seed/`.
 - **Agent behavior:** edit `.opencode/agents/` and the matching `.github/agents/` profiles.
+- **Test conventions:** update `agent-tester` and the skills under `tester-framework/<language-framework>/`.
+- **Red-phase record:** change `read-write-file-ddd/writer-red-phase/write-red-phase.py` or the orchestrator validation in `orchestrator_opencode.py`.
+- **AST extraction:** add builders under `ast-dispatcher/builders/` and configure `AST_TOOL_ROOT`/`AST_JAR_NAME` in `.env`.
 - **Architecture rules:** update the skills under `.opencode/skills/architect-practices/`.
 - **Technology choices:** update `.opencode/skills/tech-stack/` and the MCP scaffolding configuration.
 - **Coding standards:** update the relevant language and framework skills.

@@ -34,8 +34,9 @@ Skills live in `.github/skills/mcp-server-alternatives/` (same content as `.open
 | `mcp-server-springboot` | `artifactId` (never `project_name`) |
 | `mcp-server-fastapi`, `mcp-server-nestjs` | `project_name` |
 
-4. Output lands in `mcp_workspace/projects/<name>-<timestamp>`. Move the scaffold to the task `path` under the project root. Skip `mvn-build.log` and `node_modules`. If `path` is a file, place the scaffold file there only when the task requires it.
-5. Never overwrite existing project files. If `pom.xml`, `requirements.txt`, or `package.json` already exists at the destination, stop and report.
+4. For Spring Boot scaffolds using `data-jpa`, `postgresql`, or `flyway`, include `h2` in the initial MCP dependencies so the generated `contextLoads` test runs without an external database. Do not remove persistence dependencies to make the build pass.
+5. Output lands in `mcp_workspace/projects/<name>-<timestamp>`. Move the scaffold to the task `path` under the project root. Skip `mvn-build.log` and `node_modules`. When `path` is a build marker such as `pom.xml`, move the entire scaffold contents into that marker's parent directory and ensure the marker exists there.
+6. Never overwrite existing project files. If `pom.xml`, `requirements.txt`, or `package.json` already exists at the destination, stop and report.
 
 ## Output
 - Task id and skill used.

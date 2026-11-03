@@ -240,7 +240,7 @@ def invoke_agent(task, args, feedback=None):
     print(f"[    ] profile {profile['file'].relative_to(ROOT)} -> --agent {profile['name']}")
     instruction = STAGE_INSTRUCTIONS.get(task["stage"], "Complete this blackboard task.")
     message = (
-        f"Project root: {get_project_root()}\n"
+        f"Project root: {project_root_for(task['project'])}\n"
         f"{instruction}\n"
         "Resolve `path` against the project root above. Task JSON:\n"
     )

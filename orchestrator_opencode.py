@@ -100,6 +100,9 @@ ID_PATTERN = re.compile(r"^T([0-3])-(\d{3})$")
 VERIFY_MODES = ("none", "typecheck", "build")
 MAX_TDD_RETRIES = 3
 TDD_STAGE = 2
+TESTER_STAGE = 1
+AST_DISPATCHER = ROOT / ".opencode" / "skills" / "ast-dispatcher" / "ast-dispatcher.py"
+AST_DISPATCH_TIMEOUT = 600
 
 FEEDBACK_TEMPLATE = """
 Previous attempt FAILED verification. Fix the implementation at `{path}` so the build and tests pass.
@@ -866,6 +869,54 @@ def emit_tasks(paths):
     return None
 
 
+def red_phase_problem(task):
+    """Return a reason string if blackboard/red-phase/<id>.json is missing or invalid, else None."""
+    path = ROOT / "blackboard" / "red-phase" / f"{task['id']}.json"
+    if not path.is_file():
+        return f"red-phase file missing: {path.name}"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return f"red-phase file unreadable: {exc}"
+    if not isinstance(data, dict) or not data:
+        return f"red-phase file is empty or not an object: {path.name}"
+    if data.get("executed") is not True:
+        return f"red-phase not executed: {path.name}"
+    return None
+
+
+def run_ast_dispatcher(task):
+    """Run the AST dispatcher once agent-tester finishes, then mark agent-coder as ready.
+
+    The dispatcher reads <ROOT>/blackboard and writes blackboard/ast-context/<id>.json.
+    A dispatcher failure is reported but does not block agent-coder.
+    """
+    command = [sys.executable, str(AST_DISPATCHER), "--root", str(ROOT), "--task-id", task["id"]]
+    print(f"[ast ] {task['id']} running ast-dispatcher")
+    with telemetry.span("blackboard.ast_dispatcher", {"task": task["id"]}) as current:
+        try:
+            result = subprocess.run(
+                command,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                timeout=AST_DISPATCH_TIMEOUT,
+                cwd=str(ROOT),
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            telemetry.mark_error(current, str(exc))
+            print(f"[ast ] {task['id']} dispatcher could not run: {exc}")
+            return False
+        if result.returncode != 0:
+            telemetry.mark_error(current, f"dispatcher exit {result.returncode}")
+            print(f"[ast ] {task['id']} dispatcher exit {result.returncode}: {_verify_tail(result.stdout)}")
+            return False
+    print(f"[ast ] {task['id']} context saved to blackboard/ast-context/{task['id']}.json")
+    print(f"[next] {task['id']} tester done; agent-coder notified to start")
+    return True
+
+
 def execute_with_tdd(task, invoke, verify):
     """Run one task. Stage 2 retries the coder with the verification log, up to MAX_TDD_RETRIES.
 
@@ -988,6 +1039,11 @@ def drain_queue(args, invoke_for_task):
                 ok, reason = invoke_for_task(task, feedback)
                 if ok and not (project_root_for(task["project"]) / task["path"]).exists():
                     return False, f"agent finished but {task['path']} was not created"
+                if ok and task["stage"] == TESTER_STAGE:
+                    problem = red_phase_problem(task)
+                    if problem:
+                        return False, problem
+                    run_ast_dispatcher(task)
                 return ok, reason
 
             def verify():

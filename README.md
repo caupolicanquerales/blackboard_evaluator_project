@@ -63,7 +63,8 @@ Business description (seed/*.md)
 | 1 | `agent-tester` | Write tests for one implementation-ready unit, run the red-phase check, and record the result. |
 | - | `ast-dispatcher` | Extract AST context for the target class/method into `blackboard/ast-context/<id>.json`. |
 | 2 | `agent-coder` | Implement the unit described by the task, guided by the test and AST context. |
-| 3 | `agent-evaluator` | Inspect and refactor the implementation. |
+| - | `code-weaver-dispatcher` | Splice the coder payload into the source tree and record `blackboard/weave-results/<id>.json`. |
+| 3 | `agent-evaluator` | TDD refactor: audit clean code, architecture, performance, and security while keeping the recorded test green; record `blackboard/evaluate-results/<id>.json`. |
 
 Before these stages, two specialists create the DDD artifacts:
 
@@ -99,13 +100,64 @@ For Java/Spring Boot projects, the executable is the fat JAR located by `AST_TOO
 
 A dispatcher failure is logged but does not block `agent-coder`; the context is treated as optional guidance.
 
+### Green-phase code weaving
+
+Stage 2 is not just "write the implementation": `agent-coder` never touches production code. It records the pure method body and return type (`returns`) in `blackboard/coder-changes/<id>.json` (via `read-write-file-ddd/writer-coder-changes/write-coder-changes.py`, which sets `executed: true`). The orchestrator then runs the weaver as part of the stage 2 verification gate, before the build/test command:
+
+```text
+python3 .opencode/skills/code-weaver-dispatcher/code-weaver-dispatcher.py \
+  --root <repo_root> --project-root <project_root> --task-id <id>
+```
+
+The dispatcher:
+
+- Loads builders from `code-weaver-dispatcher/builders/` at runtime (Java, Go, Python, TypeScript) and selects one by the payload `language`, falling back to project detection.
+- Validates `blackboard/coder-changes/<id>.json` (required keys, `targetFile` stays inside the project root; a missing target file is allowed because the weaver creates it) and hands the payload file to the weaver executable.
+- For Java/Spring Boot, the executable is the `ast_weaver_java` fat JAR located by `WEAVER_TOOL_ROOT` and `WEAVER_JAR_NAME` in `.env`; it replaces the target method body through JavaParser with lexical preservation, adding `imports` and leaving the rest of the file untouched.
+- Create-if-missing: when the target class or overload does not exist yet (the usual red for new units), the JAR creates the file (package from the FQ `export` or the Maven path), the type, and the method using payload `returns` (`void` when blank), optional `kind` (`class|interface|enum|record`) and `members` (constructor/fields, abstract signatures, enum constants, record components). Member injection is idempotent (normalized-text dedupe), so deferred re-weaves never duplicate fields or ctors. Existing methods keep lexical-preserving edits; created nodes print with the default formatter.
+- Writes the run record to `blackboard/weave-results/<id>.json` with `executed: true`.
+
+A weaving failure is not fatal noise: its compact reason (e.g. body parse error, no overload matching the signature) becomes `agent-coder` retry feedback, so the coder re-emits the payload with `--retry` and the orchestrator weaves again before re-running the gate.
+
+### Green-phase test gate
+
+Immediately after weaving, the orchestrator re-executes the tester's scoped test command through the shared `tester-framework/run-test-tool.py` — no agent involvement. The command is read from the `command` key that `write-red-phase.py` records in `blackboard/red-phase/<id>.json`. Gate outcomes:
+
+| Result | Orchestrator behavior |
+| --- | --- |
+| `status: passed` | continue to the build gate, then mark the task complete (stage 3 `agent-evaluator` becomes ready) |
+| `assertion_failure` / `compile_error` / `error` | retry the stage 2 coder with the compact failure log (up to `MAX_TDD_RETRIES` = 3 attempts) |
+| `not_run` (silent exit-0, or a `&&`/`$VAR` command refused by the argv-only guard) | treated as failure and retried: an unexecuted suite never passes the gate |
+| still failing after 3 attempts | the task moves to `blackboard/error/` and its dependents are quarantined |
+| no `command` recorded (older red-phase files) | the gate is skipped with a warning; the build gate still applies |
+| classification | patterns cover Maven/Surefire, Gradle, Jest/ts-jest, pytest, unittest, `go test`, and cargo; the tool ships its own suite in `run-test-tool-tests.py` |
+
+Stage 3 reuses the same mechanism: `agent-evaluator` refactors against the test command recorded in `blackboard/red-phase/<T1-id>.json` (resolved through the task `dependsOn` chain), re-runs it through `run-test-tool.py` after every step, and persists an `evaluate-results` artifact via `writer-evaluate-results.py` — which refuses to write when the final test is not green. The hand-off back to the orchestrator is deterministic: (1) `evaluate_result_problem` checks that `blackboard/evaluate-results/<id>.json` exists, is `executed`, and reports `final_test.status == "passed"`; (2) the stage-3 verify step runs the final **global** compile/check gate for the domain project (`verify_project`, skipped under `--verify none`); (3) only then is the task moved from `blackboard/queue/` to `blackboard/complete/`. Any step failing sends the task to `blackboard/error/` with the reason.
+
+The tester agent keeps deciding *which* test command proves the unit red (it needs domain judgment); the orchestrator owns *re-running* it for green (pure mechanics). Both use the same generic script, so the red and green executions are identical commands parsed by identical regexes.
+
 ## Repository layout
 
 ```text
 .
-├── orchestrator_opencode.py       # Shared pipeline and OpenCode backend
-├── orchestrator_github.py         # GitHub Copilot CLI backend
-├── telemetry.py                   # Optional OpenTelemetry integration
+├── orchestrators/                 # Pipeline implementation, split by responsibility
+│   ├── orchestrator_opencode.py   # Entry point: OpenCode backend
+│   ├── orchestrator_github.py     # Entry point: GitHub Copilot CLI backend
+│   ├── pipeline.py                # Shared CLI shape and full phase order
+│   ├── settings.py                # Repository layout, stages, schema, timeouts
+│   ├── workspace.py               # Seed and project-root resolution
+│   ├── prompts.py                 # Agent prompt templates and builders
+│   ├── tasks.py                   # Task schema validation and ordering
+│   ├── task_queue.py              # Queue files: read, index, emit, quarantine
+│   ├── ddd.py                     # Discovery, context-map and strategy gates
+│   ├── verification.py            # Framework build/check gates
+│   ├── dispatchers.py             # red-phase, ast-dispatcher, code-weaver-dispatcher
+│   ├── test_gate.py               # Green-phase re-run of the recorded test command
+│   ├── agent_runners.py           # Subprocess plumbing and log tails
+│   ├── tdd_engine.py              # execute_with_tdd and drain_queue
+│   ├── opencode_backend.py        # ``opencode run`` phase runners
+│   ├── copilot_backend.py         # Copilot CLI profiles and phase runners
+│   └── telemetry.py               # Optional OpenTelemetry integration
 ├── seed/                          # Input business descriptions
 ├── ast_tools/                     # Language-specific AST extractors (e.g. Java)
 ├── blackboard/
@@ -115,13 +167,17 @@ A dispatcher failure is logged but does not block `agent-coder`; the context is 
 │   ├── complete/                  # Completed tasks and execution strategies
 │   ├── error/                     # Invalid or failed tasks with error details
 │   ├── red-phase/                 # Red-phase test-run records produced by agent-tester
-│   └── ast-context/               # AST context extracted for each stage-1 task
+│   ├── ast-context/               # AST context extracted for each stage-1 task
+│   ├── coder-changes/             # Pure method-body payloads produced by agent-coder
+│   ├── weave-results/             # Code-weaver runs applied to the source tree
+│   └── evaluate-results/          # Stage-3 refactor reports (final green test attached)
 ├── projects/                      # Generated source code
 ├── .opencode/
 │   ├── agents/                    # OpenCode agent definitions
 │   └── skills/                    # Architecture, stack, coding, testing, and AST guidance
 │       ├── tester-framework/      # Language/framework testing skills + run-test-tool.py
 │       ├── ast-dispatcher/        # Language detection and AST executable dispatch
+│       ├── code-weaver-dispatcher/ # Language detection and code-weaver dispatch
 │       ├── read-write-file-ddd/   # Blackboard file writers (red-phase, architect, etc.)
 │       ├── architect-practices/   # DDD and architecture skills
 │       ├── tech-stack/            # Technology selection and migration skills
@@ -162,25 +218,25 @@ The repository includes `seed/001_description.md`, an example core banking platf
 ### 2. Run with OpenCode
 
 ```bash
-python3 orchestrator_opencode.py --seed seed/001_description.md
+python3 orchestrators/orchestrator_opencode.py --seed seed/001_description.md
 ```
 
 ### Or run with GitHub Copilot CLI
 
 ```bash
-python3 orchestrator_github.py --seed seed/001_description.md
+python3 orchestrators/orchestrator_github.py --seed seed/001_description.md
 ```
 
 To keep polling for newly emitted tasks, add `--watch`:
 
 ```bash
-python3 orchestrator_github.py --seed seed/001_description.md --watch
+python3 orchestrators/orchestrator_github.py --seed seed/001_description.md --watch
 ```
 
 By default, output is written below `projects/<seed-title>/`. Use `--output` to choose another location:
 
 ```bash
-python3 orchestrator_opencode.py \
+python3 orchestrators/orchestrator_opencode.py \
   --seed seed/001_description.md \
   --output projects/my-banking-platform
 ```
@@ -216,7 +272,7 @@ Both orchestrators expose the same main pipeline options:
 
 OpenCode also supports `--no-auto` to omit automatic approval. The GitHub backend supports `--copilot-bin` and `--allow-tool`; their defaults can also be set with `COPILOT_BIN` and `COPILOT_ALLOW_TOOL`.
 
-Run `python3 orchestrator_opencode.py --help` or `python3 orchestrator_github.py --help` for the complete CLI reference.
+Run `python3 orchestrators/orchestrator_opencode.py --help` or `python3 orchestrators/orchestrator_github.py --help` for the complete CLI reference.
 
 ## The blackboard task model
 
@@ -249,7 +305,7 @@ Important conventions:
 Tasks can be emitted manually through either backend:
 
 ```bash
-python3 orchestrator_opencode.py --emit /tmp/tasks/T0-023.json
+python3 orchestrators/orchestrator_opencode.py --emit /tmp/tasks/T0-023.json
 ```
 
 The orchestrator validates the complete schema before writing to `blackboard/queue/`; task files should not be copied into the queue directly.
@@ -294,12 +350,13 @@ The OpenTelemetry SDK and an OTLP HTTP or gRPC trace exporter must also be insta
 - **Business input:** add or replace files in `seed/`.
 - **Agent behavior:** edit `.opencode/agents/` and the matching `.github/agents/` profiles.
 - **Test conventions:** update `agent-tester` and the skills under `tester-framework/<language-framework>/`.
-- **Red-phase record:** change `read-write-file-ddd/writer-red-phase/write-red-phase.py` or the orchestrator validation in `orchestrator_opencode.py`.
+- **Red-phase record:** change `read-write-file-ddd/writer-red-phase/write-red-phase.py` or `orchestrators/dispatchers.py`.
 - **AST extraction:** add builders under `ast-dispatcher/builders/` and configure `AST_TOOL_ROOT`/`AST_JAR_NAME` in `.env`.
+- **Code weaving:** add weavers under `code-weaver-dispatcher/builders/` and configure `WEAVER_TOOL_ROOT`/`WEAVER_JAR_NAME` in `.env`.
 - **Architecture rules:** update the skills under `.opencode/skills/architect-practices/`.
 - **Technology choices:** update `.opencode/skills/tech-stack/` and the MCP scaffolding configuration.
 - **Coding standards:** update the relevant language and framework skills.
-- **Queue behavior:** change the shared implementation in `orchestrator_opencode.py`; the GitHub backend reuses it.
+- **Queue behavior:** change `orchestrators/task_queue.py` and `orchestrators/tdd_engine.py`; both backends reuse them.
 
 Keep both backends' agent profiles aligned when changing the workflow.
 

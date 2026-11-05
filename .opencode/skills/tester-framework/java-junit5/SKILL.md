@@ -42,11 +42,13 @@ description: Use when the agent-tester writes or reviews Java unit tests with JU
 ## Red phase
 - Reference intent's API; if missing, keep reference and report symbol. No stubs or placeholder classes.
 - Expect compile error or assertion failure; a passing test is invalid.
-- Run via tool, never raw Maven:
-  `python3 .opencode/skills/tester-framework/run-test-tool.py --cwd <project_root> --cmd "./mvnw -q -Dtest=<TestClass> test"`
+- `--cmd` is argv-only (no shell): no `&&`, `;`, `|`, redirects, or `$VAR`.
+- Run via tool, never raw Maven; keep the test summary in the output (no `-q` on the green
+  re-run: the tool needs execution evidence and reports a silent exit-0 as `not_run`):
+  `python3 .opencode/skills/tester-framework/run-test-tool.py --cwd <project_root> --cmd "./mvnw -Dtest=<TestClass> test"`
 - Use its JSON as the red-phase result: `status`, `missing_symbols`, `failures`, `counts`.
 - Persist it (overwrites on each loop), piping the tool output into the writer:
-  `... run-test-tool.py ... | python3 .github/skills/read-write-file-ddd/writer-red-phase/write-red-phase.py --root <project_root> --task-id <id>`
+  `... run-test-tool.py ... | python3 .github/skills/read-write-file-ddd/writer-red-phase/write-red-phase.py --root <project_root> --task-id <id> --cmd "<the same test command>"`
 - Writer creates `blackboard/red-phase/<id>.json` with `executed: true`; the orchestrator continues only after this file exists.
 
 ## BANNED

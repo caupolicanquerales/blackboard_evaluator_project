@@ -4,9 +4,9 @@
 Called by the orchestrator right after agent-tester reports that its job is done.
 
 Usage:
-  python3 .opencode/skills/ast-dispatcher/ast-dispatcher.py --root <project_root> --task-id <id> \
-      [--tool-root <ast_tool_dir_or_jar>] [--language <name>] [--framework <name>] \
-      [--timeout <seconds>] [--builders-dir <dir>] [--list-builders]
+  python3 .opencode/skills/ast-dispatcher/ast-dispatcher.py --root <blackboard_root> --task-id <id> \
+      [--project-root <generated_project_root>] [--tool-root <ast_tool_dir_or_jar>] [--language <name>] \
+      [--framework <name>] [--timeout <seconds>] [--builders-dir <dir>] [--list-builders]
 
 Flow:
   1. Load every builder module in builders/ at runtime (Strategy + Registry).
@@ -16,6 +16,7 @@ Flow:
   4. Ask the builder for the command, run it, write blackboard/ast-context/<id>.json
      with "executed": true, and print the run summary as JSON to stdout.
 
+Exit codes: 0 executed, 1 not executed (unsupported/error), 2 invalid root.
 Standard library only.
 """
 import argparse
@@ -27,6 +28,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parent / "builders"))
 from base import AstBuilder, load_project_env  # noqa: E402
 
@@ -36,29 +38,49 @@ BUILDERS_DIR = Path(__file__).resolve().parent / "builders"
 NON_BUILDER_MODULES = {"base"}
 DEFAULT_TIMEOUT_SECONDS = 600
 
+# The tester names every test as `method_condition_expected` (java-junit5 skill).
+RE_METHOD_CALL = re.compile(r"\b([a-z][A-Za-z0-9_]*)\s*\(")
 
-def discover_builders(directory: Path) -> list[AstBuilder]:
-    """Load each builder module in the folder at runtime; each module exposes BUILDER."""
-    builders = []
+
+def discover_builders(directory: Path) -> tuple[list[AstBuilder], list[str]]:
+    """Load each builder module in the folder at runtime; each module exposes BUILDER.
+
+    A module that fails to import is reported and skipped: one broken builder
+    must not stop dispatch for the remaining languages.
+    """
+    builders, errors = [], []
     for path in sorted(directory.glob("*.py")):
         if path.stem.startswith("_") or path.stem in NON_BUILDER_MODULES:
             continue
         spec = importlib.util.spec_from_file_location(f"ast_builder_{path.stem}", path)
         if spec is None or spec.loader is None:
+            errors.append(f"{path.name}: no importable module")
             continue
         module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
+        try:
+            spec.loader.exec_module(module)
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"{path.name}: {exc}")
+            continue
         builder = getattr(module, "BUILDER", None)
         if isinstance(builder, AstBuilder):
             builders.append(builder)
-    return builders
+        else:
+            errors.append(f"{path.name}: no BUILDER instance of AstBuilder")
+    return builders, errors
 
 
 class BuilderRegistry:
     """Registry of builders, keyed by language. Selection delegates detection to each strategy."""
 
-    def __init__(self, builders: list[AstBuilder]):
+    def __init__(self, builders: list[AstBuilder], errors: list[str] | None = None):
         self._builders = builders
+        self.errors = errors or []
+
+    @classmethod
+    def load(cls, directory: Path) -> "BuilderRegistry":
+        builders, errors = discover_builders(directory)
+        return cls(builders, errors)
 
     def names(self) -> list[str]:
         return [builder.language for builder in self._builders]
@@ -66,7 +88,8 @@ class BuilderRegistry:
     def by_language(self, language: str) -> AstBuilder | None:
         return next((b for b in self._builders if b.language == language), None)
 
-    def select(self, root: Path, language: str | None, framework: str | None) -> tuple[AstBuilder | None, str | None]:
+    def select(self, root: Path, language: str | None,
+               framework: str | None) -> tuple[AstBuilder | None, str | None]:
         """Return (builder, framework). An explicit language skips detection."""
         if language:
             builder = self.by_language(language)
@@ -80,17 +103,21 @@ class BuilderRegistry:
         return None, None
 
 
-RE_METHOD_CALL = re.compile(r"\b([a-z][A-Za-z0-9_]*)\s*\(")
-
-
 def _read_json(path: Path) -> dict:
     if not path.is_file():
         return {}
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, OSError):
         return {}
     return data if isinstance(data, dict) else {}
+
+
+def _clean_name(value) -> str | None:
+    """Normalize a possible method name: drop parameters and whitespace."""
+    if not isinstance(value, str) or not value.strip():
+        return None
+    return value.split("(")[0].strip() or None
 
 
 def _method_from_symbols(missing: list) -> str | None:
@@ -98,18 +125,31 @@ def _method_from_symbols(missing: list) -> str | None:
     for item in missing:
         name = item.get("name") if isinstance(item, dict) else item
         if isinstance(name, str) and name and name[0].islower():
-            return name.split("(")[0].strip()
+            cleaned = _clean_name(name)
+            if cleaned:
+                return cleaned
     return None
 
 
+def _method_from_test_name(test: str) -> str | None:
+    """Apply the tester naming convention: `method_condition_expected`, optionally class-qualified."""
+    candidate = test.rsplit(".", 1)[-1].split("_", 1)[0].strip()
+    return candidate if candidate and candidate[0].islower() else None
+
+
 def _method_from_failures(failures: list) -> str | None:
-    """Assertion failures: take the first method name called in the failure text or the item's method field."""
+    """First method hinted by a failure: explicit keys, the test-name convention, then call syntax."""
     for item in failures:
         if isinstance(item, dict):
             for key in ("method", "target_method", "name"):
-                value = item.get(key)
-                if isinstance(value, str) and value:
-                    return value.split("(")[0].strip()
+                cleaned = _clean_name(item.get(key))
+                if cleaned:
+                    return cleaned
+            test = item.get("test")
+            if isinstance(test, str) and test.strip():
+                cleaned = _method_from_test_name(test.strip())
+                if cleaned:
+                    return cleaned
             text = json.dumps(item)
         else:
             text = str(item)
@@ -119,18 +159,31 @@ def _method_from_failures(failures: list) -> str | None:
     return None
 
 
+def _method_from_queue(queue: dict) -> str | None:
+    """Queue intent: the first ast_hints method signature, then the first tdd case method."""
+    hints = queue.get("ast_hints") if isinstance(queue.get("ast_hints"), dict) else {}
+    for entry in hints.get("methods") or []:
+        if isinstance(entry, dict):
+            signature = entry.get("signature")
+            if isinstance(signature, str) and signature.strip():
+                method = signature.split("(")[0].split()[-1].strip()
+                if method:
+                    return method
+    tdd = queue.get("tdd") if isinstance(queue.get("tdd"), dict) else {}
+    for case in tdd.get("cases") or []:
+        if isinstance(case, dict):
+            cleaned = _clean_name(case.get("method"))
+            if cleaned:
+                return cleaned
+    return None
+
+
 def _target_method(red: dict, queue: dict) -> str | None:
     """Resolve the method: missing_symbols, then failures (assertion case), then queue intent."""
-    method = _method_from_symbols(red.get("missing_symbols") or [])
-    if method is None:
-        method = _method_from_failures(red.get("failures") or [])
-    if method is None:
-        for key in ("target_method", "method"):
-            value = queue.get(key)
-            if isinstance(value, str) and value:
-                method = value.split("(")[0].strip()
-                break
-    return method
+    return (_method_from_symbols(red.get("missing_symbols") or [])
+            or _method_from_failures(red.get("failures") or [])
+            or _method_from_queue(queue)
+            or _clean_name(queue.get("target_method") or queue.get("method")))
 
 
 def load_task_context(root: Path, task_id: str) -> dict:
@@ -163,15 +216,14 @@ def write_ast_context(root: Path, task_id: str, result: dict) -> Path:
         "stderr": result.get("stderr", ""),
         "executed": True,
     }
-    with open(path, "w", encoding="utf-8") as fh:
-        json.dump(payload, fh, indent=2, ensure_ascii=False)
+    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     return path
 
 
 def run(argv: list, cwd: Path, timeout: int) -> dict:
     try:
         proc = subprocess.run(argv, cwd=cwd, capture_output=True, text=True, timeout=timeout)
-    except FileNotFoundError as exc:
+    except OSError as exc:
         return {"status": "error", "exit_code": None, "stdout": "", "stderr": str(exc)}
     except subprocess.TimeoutExpired:
         return {"status": "error", "exit_code": None, "stdout": "", "stderr": "timeout"}
@@ -186,6 +238,7 @@ def run(argv: list, cwd: Path, timeout: int) -> dict:
 @dataclass(frozen=True)
 class Options:
     root: Path
+    project_root: Path
     task_id: str
     tool_root: Path | None
     language: str | None
@@ -195,11 +248,13 @@ class Options:
 
 
 def dispatch(options: Options) -> dict:
-    root, task_id = options.root, options.task_id
-    registry = BuilderRegistry(discover_builders(options.builders_dir))
-    result = {"task_id": task_id, "root": str(root)}
+    root, project_root, task_id = options.root, options.project_root, options.task_id
+    registry = BuilderRegistry.load(options.builders_dir)
+    result = {"task_id": task_id, "root": str(root), "project_root": str(project_root)}
+    if registry.errors:
+        result["builder_errors"] = registry.errors
 
-    builder, framework = registry.select(root, options.language, options.framework)
+    builder, framework = registry.select(project_root, options.language, options.framework)
     if builder is None:
         result["status"] = "unsupported"
         result["reason"] = f"no builder matched; registered: {registry.names()}"
@@ -208,7 +263,12 @@ def dispatch(options: Options) -> dict:
     result["framework"] = framework
 
     ctx = load_task_context(root, task_id)
-    argv = builder.build(root, ctx, options.tool_root)
+    try:
+        argv = builder.build(root, ctx, options.tool_root)
+    except Exception as exc:  # noqa: BLE001
+        result["status"] = "error"
+        result["reason"] = f"{builder.language} builder crashed: {exc}"
+        return result
     if argv is None:
         result["status"] = "unsupported"
         result["reason"] = (
@@ -218,14 +278,15 @@ def dispatch(options: Options) -> dict:
         return result
 
     result["command"] = argv
-    result.update(run(argv, root, options.timeout))
+    result.update(run(argv, project_root, options.timeout))
     result["context_file"] = str(write_ast_context(root, task_id, result))
     return result
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Dispatch the AST executable by language and framework.")
-    parser.add_argument("--root", help="Project root directory")
+    parser.add_argument("--root", help="Repository root holding blackboard/")
+    parser.add_argument("--project-root", help="Generated project root to scan (default: --root)")
     parser.add_argument("--task-id", help="Task name executed by agent-tester")
     parser.add_argument("--tool-root", default=os.environ.get("AST_TOOL_ROOT"),
                         help="AST tool directory or JAR (default: $AST_TOOL_ROOT)")
@@ -244,8 +305,11 @@ def main() -> int:
     args = parse_args()
 
     if args.list_builders:
-        registry = BuilderRegistry(discover_builders(args.builders_dir))
-        print(json.dumps({"builders": registry.names()}, indent=2))
+        registry = BuilderRegistry.load(args.builders_dir.resolve())
+        summary = {"builders": registry.names()}
+        if registry.errors:
+            summary["errors"] = registry.errors
+        print(json.dumps(summary, indent=2))
         return 0
 
     root = Path(args.root).resolve()
@@ -253,8 +317,14 @@ def main() -> int:
         print(json.dumps({"status": "error", "reason": f"root not found: {root}"}))
         return 2
 
+    project_root = Path(args.project_root).resolve() if args.project_root else root
+    if not project_root.is_dir():
+        print(json.dumps({"status": "error", "reason": f"project root not found: {project_root}"}))
+        return 2
+
     options = Options(
         root=root,
+        project_root=project_root,
         task_id=args.task_id,
         tool_root=Path(args.tool_root).resolve() if args.tool_root else None,
         language=args.language,

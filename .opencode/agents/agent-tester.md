@@ -46,7 +46,8 @@ permission:
 - Never write production code, scaffolds, migrations, or refactors.
 
 ## Input
-- `Project root`: `path` resolves against it.
+- `Project root`: `path` resolves against it and the `--cwd` of run-test-tool.
+- `Repository root`: owns `blackboard/`; every writer/reader script takes `--root` of it.
 - Task JSON: `id`, `path`, `kind`, `layer`, `feature`, `export`, `intent`, `dependsOn`, `project`.
 - Orchestrator only checks file existence and compiles main sources.
 
@@ -75,8 +76,8 @@ permission:
 - Forbidden: skipped tests, always-true asserts, empty tests, sleeps, unseeded random.
 
 ## Red-phase check
-- Run only new test via `run-test-tool.py` (skill `tester-framework/`), never raw build commands.
-- Persist its JSON via `read-write-file-ddd/writer-red-phase/write-red-phase.py --root <project_root> --task-id <id>` (overwrites; writes `blackboard/red-phase/<id>.json`, `executed: true`).
+- Run only new test via `run-test-tool.py` (skill `tester-framework/`), never raw build commands. The `--cmd` is argv-only: no `&&`, `;`, `|`, redirects, or `$VAR`.
+- Persist its JSON via `read-write-file-ddd/writer-red-phase/write-red-phase.py --root <repository root> --task-id <id> --cmd "<the test command>"` (overwrites; writes `blackboard/red-phase/<id>.json` with `executed: true` and the `command` the orchestrator re-runs in the green phase).
 - Expect compile errors (missing symbols) or assertion failures.
 - Passing test invalid: fix or report. Never edit production code to go green.
 

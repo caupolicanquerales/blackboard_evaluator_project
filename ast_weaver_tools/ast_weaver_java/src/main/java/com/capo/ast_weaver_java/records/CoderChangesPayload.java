@@ -20,6 +20,8 @@ public record CoderChangesPayload(
     List<String> imports,
     String body,
     List<String> missing,
+    List<String> annotations,
+    List<String> methodAnnotations,
     boolean executed
 ) {
 
@@ -31,5 +33,15 @@ public record CoderChangesPayload(
         imports = imports == null ? List.of() : List.copyOf(imports);
         missing = missing == null ? List.of() : List.copyOf(missing);
         members = members == null ? List.of() : List.copyOf(members);
+        annotations = annotations == null ? List.of() : List.copyOf(annotations);
+        methodAnnotations = methodAnnotations == null ? List.of() : List.copyOf(methodAnnotations);
+    }
+
+    public CoderChangesPayload(String id, String project, String targetFile, String export, String method,
+            String language, String framework, String signature, String returns, String kind,
+            List<String> members, List<String> imports, String body, List<String> missing,
+            boolean executed) {
+        this(id, project, targetFile, export, method, language, framework, signature, returns, kind,
+            members, imports, body, missing, List.of(), List.of(), executed);
     }
 }

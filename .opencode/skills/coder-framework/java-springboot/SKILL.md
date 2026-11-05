@@ -10,6 +10,15 @@ description: Coder rules for Java 17+ with Spring Boot 3. Method body generation
 - Body only. No signature, braces of the method, annotations, or class.
 - Whole type missing in the red (`cannot find symbol: class`): provide `kind` + `members`
   (ctor/fields, abstract signatures, enum constants, record components) alongside the body.
+- The type is created by the weaver, so framework annotations go in the dedicated payload fields,
+  never inside `signature`: `annotations` for the type (`RestController`, `Service`,
+  `Repository`, `Configuration`, `ControllerAdvice`) and `methodAnnotations` for the method
+  (`GetMapping("/x")`, `PostMapping("/x")`, `RequestBody`, `Valid`, `ExceptionHandler(X.class)`).
+  Write them without `@`, and list the class each one needs in `imports`. Parameter annotations
+  (`@Valid`, `@RequestBody`, `@PathVariable`) stay in `signature`: they belong to the parameter, and
+  the weaver preserves them.
+- Web annotations live in `org.springframework.web.bind.annotation.*`; reactive types in
+  `reactor.core.publisher` (`Mono`, `Flux`).
 - Use `var` only when the type is obvious from the right side.
 - Return type and checked exceptions match the AST signature exactly.
 
@@ -32,7 +41,8 @@ description: Coder rules for Java 17+ with Spring Boot 3. Method body generation
 - Business logic stays pure: no field mutation unless `intent` requires it.
 
 ## Spring Boot 3 in the body
-- Class, annotations, and constructor already exist. Never emit class-level or method-level annotations.
+- Type and method annotations belong in `annotations` / `methodAnnotations`, never in `signature`;
+  parameter annotations stay in `signature`. Never write an annotation in the body.
 - Use only injected fields and collaborators named in the AST context.
 - Transactions are handled by the proxy. Do not open or commit transactions in the body.
 - Time: use the injected `Clock`. Never `Instant.now()`.

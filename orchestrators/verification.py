@@ -1,10 +1,43 @@
 """Framework verification gates: detect the stack and run the build/check command."""
+import shutil
 import subprocess
 import sys
 
 import agent_runners
 import settings
 import telemetry
+
+
+DOCKER_HINT = (
+    "stage 0 scaffolds generate the project through the MCP servers that run in Docker, so the "
+    "agents need a usable daemon. No sudo is required during a run: do it once from a terminal, "
+    "'sudo usermod -aG docker <user>' for future sessions plus "
+    "'sudo setfacl -m u:<user>:rw /var/run/docker.sock' to grant the already open session right "
+    "now, then relaunch the orchestrator. If ACLs are unavailable, 'sudo chmod 666 /var/run/docker.sock' "
+    "works until the daemon restarts. Never put a sudo password in .env or in any prompt: the agent "
+    "logs would carry it."
+)
+
+
+def docker_access(timeout=20):
+    """(ok, reason): can this process (and therefore the agents it spawns) reach the Docker daemon?"""
+    if shutil.which("docker") is None:
+        return False, f"docker CLI not found on PATH. {DOCKER_HINT}"
+    try:
+        result = subprocess.run(("docker", "info", "--format", "{{.ServerVersion}}"),
+                                capture_output=True, text=True, timeout=timeout)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return False, f"docker info failed: {exc}. {DOCKER_HINT}"
+    if result.returncode != 0:
+        lines = (result.stderr or result.stdout or "").strip().splitlines()
+        return False, f"{lines[0] if lines else 'docker info failed'}. {DOCKER_HINT}"
+    return True, ""
+
+
+def stage_zero_queued():
+    """True while a stage 0 scaffold task is still waiting in the queue."""
+    return any(file.name.startswith("T0-") for file in settings.QUEUE_DIR.glob("*.json"))
+
 
 
 def get_framework_verification_commands(project_root, mode):

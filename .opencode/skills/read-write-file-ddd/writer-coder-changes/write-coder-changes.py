@@ -49,6 +49,13 @@ def validate(payload, task_id):
         elif not isinstance(payload[key], list) or not all(isinstance(i, str) for i in payload[key]):
             errors.append("%s must be an array of strings" % key)
 
+    for key in ("annotations", "methodAnnotations"):
+        entries = payload.get(key)
+        if entries is None:
+            continue
+        if not isinstance(entries, list) or not all(isinstance(a, str) and a.strip() for a in entries):
+            errors.append("%s must be a non-empty array of annotation strings" % key)
+
     kind = payload.get("kind")
     if kind is not None and kind not in KINDS:
         errors.append("kind must be one of %s" % list(KINDS))

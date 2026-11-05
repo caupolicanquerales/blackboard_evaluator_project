@@ -5,15 +5,18 @@ launched with JSON event output, and only a ``result`` event with exit code 0
 counts as a successful run.
 """
 import json
+import re
 import subprocess
 import threading
 
 import contextlib
 import os
 import shutil
+import time
 
 import ddd
 import prompts
+import session_audit
 import settings
 import task_queue
 import tdd_engine
@@ -113,11 +116,17 @@ def build_copilot_command(args, profile, message, add_project_root=True):
 
 
 def run_agent(command, timeout, cwd):
+    """Run one headless session; returns (ok, reason, tool_calls)."""
     with telemetry.span("blackboard.agent", {"agent": _agent_name(command), "timeout": timeout}) as current:
-        ok, reason = _run_agent(command, timeout, cwd)
+        ok, reason, calls = _run_agent(command, timeout, cwd)
+        if current is not None:
+            try:
+                current.set_attribute("agent.tool_calls", calls)
+            except Exception:  # noqa: BLE001
+                pass
         if not ok:
             telemetry.mark_error(current, reason)
-        return ok, reason
+        return ok, reason, calls
 
 
 def _agent_name(command):
@@ -148,6 +157,8 @@ def _handle_copilot_event(line, result):
         content = data.get("content")
         if content:
             print(f"    | {content}")
+    elif event_type and str(event_type).startswith("tool.execution_start"):
+        result["calls"] = result.get("calls", 0) + 1
     elif event_type == "result":
         result["seen"] = True
         try:
@@ -164,6 +175,7 @@ def _handle_copilot_event(line, result):
 
 
 def _run_agent(command, timeout, cwd):
+    """Run one headless session. Returns (ok, reason, tool_calls)."""
     try:
         process = subprocess.Popen(
             command,
@@ -175,7 +187,7 @@ def _run_agent(command, timeout, cwd):
             cwd=str(cwd),
         )
     except OSError as exc:
-        return False, f"cannot launch {command[0]}: {exc}"
+        return False, f"cannot launch {command[0]}: {exc}", 0
     timed_out = {"flag": False}
 
     def kill_on_timeout():
@@ -185,7 +197,7 @@ def _run_agent(command, timeout, cwd):
     watchdog = threading.Timer(timeout, kill_on_timeout)
     watchdog.start()
     stderr_lines = []
-    result = {"seen": False, "exitCode": None}
+    result = {"seen": False, "exitCode": None, "calls": 0}
 
     def read_stderr():
         for line in process.stderr:
@@ -201,20 +213,37 @@ def _run_agent(command, timeout, cwd):
     finally:
         watchdog.cancel()
         stderr_thread.join(timeout=5)
+    if result.get("calls"):
+        print(f"    [calls] {result['calls']} tool call(s) in this session")
     if timed_out["flag"]:
-        return False, f"agent timed out after {timeout}s"
+        return False, f"agent timed out after {timeout}s", result.get("calls", 0)
     stderr_tail = "".join(stderr_lines).strip()[-1000:]
     if process.returncode != 0:
-        return False, f"agent exited {process.returncode}: {stderr_tail}"
+        return False, f"agent exited {process.returncode}: {stderr_tail}", result.get("calls", 0)
     if not result["seen"]:
-        return False, f"copilot produced no result event: {stderr_tail or 'no output'}"
+        return False, f"copilot produced no result event: {stderr_tail or 'no output'}", result.get("calls", 0)
     if result["exitCode"] != 0:
-        return False, f"copilot result exitCode={result['exitCode']}: {stderr_tail}"
-    return True, ""
+        return False, f"copilot result exitCode={result['exitCode']}: {stderr_tail}", result.get("calls", 0)
+    return True, "", result.get("calls", 0)
+
+
+
+
+def prompt_marker(message):
+    """Something early and unique in the prompt, to find the session record afterwards."""
+    match = re.search(r"T[0-3]-\d{3}", message)
+    return match.group(0) if match else " ".join(message.split())[:48]
+
+
+def measured_calls(start_ts, message, streamed_calls):
+    """Tool calls of the session that just ran: from the stream when visible, else from records."""
+    if streamed_calls:
+        return streamed_calls
+    return session_audit.latest_calls_since(start_ts, prompt_marker(message)) or 0
 
 
 def _run_phase(agent, message, args, post_check=None, span_name=None,
-               span_attributes=None, cmd_note=""):
+               span_attributes=None, cmd_note="", timeout=None, units=1):
     profile, reason = resolve_profile(agent, list_profiles())
     if profile is None:
         return False, reason
@@ -225,7 +254,18 @@ def _run_phase(agent, message, args, post_check=None, span_name=None,
         print(f"[cmd ] {args.copilot_bin} -p <{cmd_note or 'task'}> -s --agent {profile['name']} "
               f"--no-ask-user --add-dir {settings.ROOT} --allow-all-tools "
               f"--allow-tool {args.allow_tool} --allow-all-paths")
-        ok, reason = run_agent(command, args.timeout, settings.ROOT)
+        started = time.time()
+        ok, reason, calls = run_agent(command, timeout or args.timeout, settings.ROOT)
+        calls = measured_calls(started, message, calls)
+        budget = settings.call_budget(agent, units)
+        if budget is not None and calls > budget:
+            print(f"[budget] {agent}: {calls} tool calls against a budget of {budget} "
+                  f"(each extra call re-sends the whole transcript)")
+            if current is not None:
+                try:
+                    current.set_attribute("agent.over_budget_by", calls - budget)
+                except Exception:  # noqa: BLE001
+                    pass
         if ok and post_check is not None:
             reason = post_check()
             ok = reason is None
@@ -288,7 +328,8 @@ def run_database(args, slug):
 
 def invoke_agent_batch(tasks, args, feedback=None):
     message = prompts.build_batch_message(tasks, feedback)
-    return _run_phase(tasks[0]["targetAgent"], message, args, cmd_note=f"batch x{len(tasks)}")
+    return _run_phase(tasks[0]["targetAgent"], message, args, cmd_note=f"batch x{len(tasks)}",
+                      timeout=settings.batch_timeout(args.timeout, len(tasks)), units=len(tasks))
 
 
 def run_pass(args):

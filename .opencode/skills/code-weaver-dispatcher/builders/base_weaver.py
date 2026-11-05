@@ -5,8 +5,69 @@ BUILDER instance of a subclass of CodeWeaver. The dispatcher discovers those
 modules at runtime; it never imports a language by name.
 """
 import os
+import shutil
+import subprocess
+import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
+
+TOOL_BUILD_TIMEOUT_SECONDS = int(os.environ.get("TOOL_BUILD_TIMEOUT", "900"))
+
+BUILD_MARKERS = ("pom.xml", "build.gradle", "build.gradle.kts")
+
+
+def tool_project_dir(tool_root: Path) -> Path | None:
+    """Project folder able to rebuild the tool, from a JAR path, a target/ or a project dir."""
+    tool_root = tool_root.expanduser().resolve()
+    if tool_root.is_file():
+        parent = tool_root.parent
+        return parent.parent if parent.name == "target" else None
+    if tool_root.name == "target":
+        return tool_root.parent if any((tool_root.parent / marker).is_file()
+                                       for marker in BUILD_MARKERS) else None
+    if (tool_root / "target").is_dir() or any((tool_root / marker).is_file() for marker in BUILD_MARKERS):
+        return tool_root
+    return None
+
+
+def _build_command(project: Path) -> list[str] | None:
+    """Maven or Gradle command that produces the tool artifact without running its tests."""
+    if (project / "pom.xml").is_file():
+        args, script, binary = ["-q", "-DskipTests", "package"], "mvnw", "mvn"
+    elif (project / "build.gradle").is_file() or (project / "build.gradle.kts").is_file():
+        args, script, binary = ["-q", "build", "-x", "test"], "gradlew", "gradle"
+    else:
+        return None
+    wrapper = project / script
+    if wrapper.is_file():
+        return ([str(wrapper)] if os.access(wrapper, os.X_OK) else ["sh", str(wrapper)]) + args
+    return [binary, *args] if shutil.which(binary) else None
+
+
+def build_tool_project(tool_root: Path, timeout: int = TOOL_BUILD_TIMEOUT_SECONDS) -> bool:
+    """Compile the weaver tool when its JAR is absent (a fresh clone ships sources only).
+
+    Messages go to stderr: the dispatcher writes its JSON contract on stdout and any
+    extra line there would corrupt it.
+    """
+    project = tool_project_dir(tool_root)
+    command = _build_command(project) if project else None
+    if command is None:
+        print(f"[tool] no Maven/Gradle project found from {tool_root}; cannot generate the JAR",
+              file=sys.stderr)
+        return False
+    print(f"[tool] {project.name}: JAR missing, building with {' '.join(command)}", file=sys.stderr)
+    try:
+        result = subprocess.run(command, cwd=str(project), capture_output=True, text=True,
+                                timeout=timeout)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        print(f"[tool] build failed: {exc}", file=sys.stderr)
+        return False
+    if result.returncode != 0:
+        tail = (result.stdout + "\n" + result.stderr).strip().splitlines()[-8:]
+        print(f"[tool] build exit {result.returncode}: {' | '.join(tail)}", file=sys.stderr)
+        return False
+    return True
 
 
 def load_project_env(start: Path | None = None) -> Path | None:
@@ -48,3 +109,8 @@ class CodeWeaver(ABC):
         changes is the validated coder-changes payload; changes_path its JSON file,
         which self-contained weavers (e.g. the Java JAR) may consume directly.
         """
+
+    def missing_command_reason(self, root: Path, changes: dict, changes_path: Path,
+                               tool_root: Path | None) -> str:
+        """Why build() returned None, as one actionable line; empty when unknown."""
+        return ""

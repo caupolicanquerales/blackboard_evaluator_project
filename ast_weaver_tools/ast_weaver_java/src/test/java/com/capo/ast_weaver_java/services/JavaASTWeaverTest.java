@@ -207,6 +207,77 @@ class JavaASTWeaverTest {
             "spring-boot", signature, returns, kind, members, List.of(imports), body, List.of(), true);
     }
 
+    @Test
+    void weave_newController_appliesTypeAndMethodAnnotationsOnce() throws IOException {
+        Path file = tempDir.resolve("src/main/java/com/x/IngressPacketController.java");
+        Files.createDirectories(file.getParent());
+
+        JavaASTWeaver.weave(file, annotatedPayload("IngressPacketController", "ingress",
+            "ingress(IngressPacketDto packet)", "Mono<ResponseEntity<Void>>", "class",
+            List.of("public IngressPacketController(IngestTelemetryService service) { }"),
+            "return service.ingest(packet.samples()).then(Mono.just(ResponseEntity.accepted().build()));",
+            List.of("RestController"), List.of("PostMapping(\"/ingress\")")));
+
+        String once = Files.readString(file);
+        assertThat(once).contains("@RestController").contains("@PostMapping(\"/ingress\")");
+
+        JavaASTWeaver.weave(file, annotatedPayload("IngressPacketController", "ingress",
+            "ingress(IngressPacketDto packet)", "Mono<ResponseEntity<Void>>", "class",
+            List.of("public IngressPacketController(IngestTelemetryService service) { }"),
+            "return service.ingest(packet.samples()).then(Mono.just(ResponseEntity.accepted().build()));",
+            List.of("RestController"), List.of("PostMapping(\"/ingress\")")));
+
+        String twice = Files.readString(file);
+        assertThat(countOf(twice, "@RestController")).isEqualTo(1L);
+        assertThat(countOf(twice, "@PostMapping")).isEqualTo(1L);
+    }
+
+    @Test
+    void weave_fieldMemberWithoutTerminator_stillParses() throws IOException {
+        Path file = tempDir.resolve("src/main/java/com/x/Holder.java");
+        Files.createDirectories(file.getParent());
+
+        JavaASTWeaver.weave(file, payload("Holder", "value", "value()", "String", "class",
+            List.of("private final String name", "public Holder(String name) { this.name = name; }"),
+            "return name;"));
+
+        String result = Files.readString(file);
+        assertThat(result).contains("private final String name;").contains("return name;");
+    }
+
+    @Test
+    void weave_annotatedParameter_keepsItOnTheParameter() throws IOException {
+        Path file = tempDir.resolve("src/main/java/com/x/Binder.java");
+        Files.createDirectories(file.getParent());
+
+        JavaASTWeaver.weave(file, payload("Binder", "bind", "bind(@Valid Request request)", "void", "class",
+            List.of(), "// bound"));
+
+        assertThat(Files.readString(file)).contains("bind(@Valid Request request)");
+    }
+
+    @Test
+    void weave_unparsableMember_namesTheMember() {
+        Path file = tempDir.resolve("src/main/java/com/x/Broken.java");
+        assertThatThrownBy(() -> {
+            try {
+                Files.createDirectories(file.getParent());
+                JavaASTWeaver.weave(file, payload("Broken", "run", "run()", "void", "class",
+                    List.of("private final = ;"), "return;"));
+            } catch (IOException io) {
+                throw new IllegalStateException(io);
+            }
+        }).hasMessageContaining("member:");
+    }
+
+    private static CoderChangesPayload annotatedPayload(String export, String method, String signature,
+            String returns, String kind, List<String> members, String body,
+            List<String> annotations, List<String> methodAnnotations) {
+        return new CoderChangesPayload("T-1", "proj", "ignored.java", export, method, "java",
+            "spring-boot", signature, returns, kind, members, List.of(), body, List.of(),
+            annotations, methodAnnotations, true);
+    }
+
     private static long countOf(String text, String token) {
         return text.split(Pattern.quote(token), -1).length - 1L;
     }

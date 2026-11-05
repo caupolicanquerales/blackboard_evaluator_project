@@ -30,14 +30,26 @@ def build_parser(description):
     parser.add_argument("--parallel", type=int, default=1,
                         help="concurrent domains during drain (one task per project in flight)")
     parser.add_argument("--emit", nargs="+", metavar="FILE", help="validate and emit task JSON files to queue, then exit")
+    parser.add_argument("--retry", nargs="*", metavar="ID", default=None,
+                        help="move quarantined tasks back to the queue (all, or only ids matching these patterns), then continue")
+    parser.add_argument("--skip-docker-check", action="store_true",
+                        help="do not gate the queue drain on a reachable Docker daemon")
     return parser
 
 
-def _database_artifact(slug):
-    """True when the database architect left queued migration tasks for the domain."""
-    index = task_queue.load_index()
-    return any(task.get("project") == slug and "migrations" in str(task.get("path", ""))
-               for task in index.values())
+def _migration_files(slug):
+    """True when the database architect left real migration scripts on disk."""
+    migrations = workspace.project_root_for(slug) / "db" / "migrations"
+    return migrations.is_dir() and any(f.is_file() for f in migrations.rglob("*"))
+
+
+def _database_reason(slug):
+    """None when the database phase produced both of its artifacts."""
+    if not task_queue.database_task_ids(slug):
+        return "database architect queued no stage 0 database tasks"
+    if not _migration_files(slug):
+        return "database architect wrote no migration scripts"
+    return None
 
 
 def _application_tasks_queued():
@@ -74,6 +86,9 @@ def run(args, backend):
         return 0
 
     description = workspace.resolve_seed(args.seed)
+    if args.retry is not None:
+        restored = task_queue.retry_error_tasks(args.retry)
+        print(f"[retry] {len(restored)} quarantined task(s) back in the queue")
     if description is None or not description.is_file():
         print(f"[fatal] no seed description found in {settings.SEED_DIR} (use --seed FILE)")
         return 2
@@ -92,6 +107,20 @@ def run(args, backend):
         code = preflight(args)
         if code:
             return code
+
+    def docker_gate():
+        """Stop before spending agent runs when a scaffold cannot reach Docker."""
+        if args.skip_docker_check or not verification.stage_zero_queued():
+            return 0
+        ok, reason = verification.docker_access()
+        if ok:
+            return 0
+        print(f"[fatal] docker gate: {reason}")
+        return 2
+
+    blocked_by_docker = docker_gate()
+    if blocked_by_docker:
+        return blocked_by_docker
 
     if ddd.validate_domain_files() is None and not args.force:
         print(f"[skip] discovery files already valid: {settings.DOMAIN_DIR.relative_to(settings.ROOT)}/")
@@ -129,12 +158,13 @@ def run(args, backend):
             return 1
     for slug in ddd.database_slugs():
         migrations = workspace.project_root_for(slug) / "db" / "migrations"
-        if migrations.is_dir() and any(migrations.iterdir()):
-            print(f"[skip] database {slug}: migrations already written in {migrations}")
+        if task_queue.database_task_ids(slug) and _migration_files(slug):
+            print(f"[skip] database {slug}: tasks queued and migrations written in {migrations}")
             continue
         ok, reason = backend.run_database(args, slug)
-        if ok and not _database_artifact(slug):
-            ok, reason = False, "no database tasks queued and no migration files written"
+        if ok:
+            reason = _database_reason(slug)
+            ok = reason is None
         print(f"[db  ] {slug}: {'done' if ok else 'failed: ' + reason}")
         if not ok:
             print(f"[fatal] database {slug}: {reason}")
@@ -148,6 +178,12 @@ def run(args, backend):
             print(f"[fatal] architect tasks: {reason}")
             return 1
     print("[plan] strategy, database, and task phases finished; processing queue")
+
+    blocked_by_docker = docker_gate()
+    if blocked_by_docker:
+        print(f"[hint ] nothing ran: fix the environment and relaunch with --retry to restore "
+              f"{len(list(settings.ERROR_DIR.glob('*.json')))} quarantined task(s)")
+        return blocked_by_docker
 
     blocked = _closure_blockers()
     if blocked:

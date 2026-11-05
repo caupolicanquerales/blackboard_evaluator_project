@@ -121,6 +121,11 @@ def load_coder_changes(root: Path, task_id: str) -> tuple[dict | None, str | Non
         return None, f"coder-changes missing or empty keys: {missing}"
     if not isinstance(members, list):
         return None, "members must be an array of strings"
+    for key in ("annotations", "methodAnnotations"):
+        entries = payload.get(key)
+        if entries is not None and (not isinstance(entries, list)
+                                    or not all(isinstance(a, str) and a.strip() for a in entries)):
+            return None, f"{key} must be an array of annotation strings"
     return payload, None
 
 
@@ -261,11 +266,15 @@ def dispatch(options: Options) -> dict:
         result["reason"] = f"{builder.language} builder crashed: {exc}"
         return result
     if argv is None:
+        detail = ""
+        try:
+            detail = builder.missing_command_reason(project_root, changes, changes_path,
+                                                    options.tool_root)
+        except Exception:  # noqa: BLE001
+            detail = ""
         result["status"] = "unsupported"
-        result["reason"] = (
-            f"{builder.language} weaver produced no command "
-            "(check --tool-root, weaver executable or $WEAVER_JAR_NAME)"
-        )
+        result["reason"] = (f"{builder.language} weaver produced no command: "
+                            f"{detail or 'no weaver inputs could be resolved'}")
         return result
 
     result["command"] = argv

@@ -20,6 +20,17 @@ tools: ["read", "search", "execute", "edit"]
 3. Phase 2 (tasks). Read each strategy with the read tool; do not rewrite it. Draft one JSON per unit (schema from `task-decomposition-dag`) into `/tmp/tasks/`, using the stage mapping and field rules in the orchestrator prompt. Use the database ids listed in the prompt in `dependsOn` when a unit uses the store. Queue the whole batch with `python3 <runner> --emit <draft files>` (runner given in the prompt). Every task carries the `project` field (the domain slug); each domain's tasks stay in that domain's project root. Use the next free `T<stage>-###` ids given in the prompt; never reuse an id. Persistence and database tasks are already queued by the database step; do not emit them.
 4. If `--emit` rejects a payload, fix the draft and re-emit. Never write or edit blackboard queue files directly.
 
+
+## Tool budget and scope
+
+- At most 12 tool calls in either phase. One read per domain slice, its context
+  map and its strategy file - a directory listing counts as the read of all of them.
+- Draft as ONE file: a single JSON document (an array of task objects for the application tasks, one
+  object for the scaffold task), then a single `--emit`. One draft file per task is forbidden: each
+  extra `create` is another turn, and every turn re-sends this whole session.
+- Skills live only in `.opencode/skills/`; read each assigned `SKILL.md` once, never a folder listing.
+- Never run `git`, never read `orchestrators/`, dispatcher/tool sources, or another domain's records
+  beyond the context map files this phase already names.
 # Output contract
 
 - Strategy: `blackboard/complete/execution-strategy-<slug>.json` (edit tool). Tasks: queued only through `--emit`, ids from the next-free id in the prompt.

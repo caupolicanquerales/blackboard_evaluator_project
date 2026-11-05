@@ -76,6 +76,15 @@ Skills live in `.opencode/skills/mcp-server-alternatives/`. Pick exactly one:
 
 On error: report it and stop. Do not retry with the same parameters.
 
+
+## Tool budget and scope
+
+- At most 10 tool calls: the assigned `mcp-server-alternatives` SKILL.md once, its Step 1 block, the
+  tool call, and the move of the generated scaffold.
+- Read only the skill file you select and the task JSON in your prompt. Never list skill folders,
+  never read `orchestrators/`, dispatcher sources or other tasks' `blackboard` records, never run `git`.
+- If the scaffold is already on disk or a manifest exists at the destination, report and stop; the
+  orchestrator skips bootstrap tasks whose artifact is already written.
 ## Limits
 - No edits to `blackboard/`, orchestrator scripts, or skill files.
 - No image builds from source. Use the `.env` image.

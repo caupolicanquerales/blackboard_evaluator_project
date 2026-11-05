@@ -13,7 +13,7 @@ Stage 0 bootstrap: generate the base project for one blackboard task using one `
 Message from the orchestrator: `Project root` (absolute; task `path` resolves against it), the instruction, and task JSON (`id`, `targetAgent`, `stage`, `dependsOn`, `path`, `kind`, `layer`, `feature`, `export`, `intent`). Decide the skill from `intent`, `export`, and `path`.
 
 ## Skill selection
-Skills live in `.github/skills/mcp-server-alternatives/` (same content as `.opencode/skills/`). Pick exactly one:
+Skills live in `.opencode/skills/mcp-server-alternatives/`. Pick exactly one:
 
 | Requirement signal | Skill |
 |---|---|
@@ -46,6 +46,15 @@ Skills live in `.github/skills/mcp-server-alternatives/` (same content as `.open
 
 On error: report it and stop. Do not retry with the same parameters.
 
+
+## Tool budget and scope
+
+- At most 10 tool calls: the assigned `mcp-server-alternatives` SKILL.md once, its Step 1 block, the
+  tool call, and the move of the generated scaffold.
+- Read only the skill file you select and the task JSON in your prompt. Never list skill folders,
+  never read `orchestrators/`, dispatcher sources or other tasks' `blackboard` records, never run `git`.
+- If the scaffold is already on disk or a manifest exists at the destination, report and stop; the
+  orchestrator skips bootstrap tasks whose artifact is already written.
 ## Limits
 - No edits to `blackboard/`, orchestrator scripts, or skill files.
 - No image builds from source. Use the `.env` image.

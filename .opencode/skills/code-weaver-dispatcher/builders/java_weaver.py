@@ -7,7 +7,7 @@ builder only validates the file reference and resolves the executable.
 import os
 from pathlib import Path
 
-from base_weaver import CodeWeaver
+from base_weaver import CodeWeaver, build_tool_project
 
 JAR_NAME_KEY = "WEAVER_JAR_NAME"
 
@@ -40,6 +40,21 @@ def resolve_executable_jar(tool_root: Path) -> Path | None:
     return max(candidates, key=lambda jar: jar.stat().st_mtime)
 
 
+def ensure_executable_jar(tool_root: Path) -> Path | None:
+    """Resolve the weaver JAR, compiling the tool project when the clone has no target/.
+
+    A fresh clone ships the weaver as sources only, so a missing JAR is normal: the
+    build runs once here and the lookup is retried. A failed build is reported as
+    unavailable, never as a stale path.
+    """
+    jar = resolve_executable_jar(tool_root)
+    if jar is not None:
+        return jar
+    if not build_tool_project(tool_root):
+        return None
+    return resolve_executable_jar(tool_root)
+
+
 class JavaWeaver(CodeWeaver):
     language = "java"
 
@@ -57,7 +72,7 @@ class JavaWeaver(CodeWeaver):
               tool_root: Path | None) -> list[str] | None:
         if tool_root is None:
             return None
-        jar = resolve_executable_jar(tool_root)
+        jar = ensure_executable_jar(tool_root)
         if jar is None:
             return None
         return [
@@ -65,6 +80,17 @@ class JavaWeaver(CodeWeaver):
             "--root", str(root),
             "--changes-json", str(changes_path),
         ]
+
+    def missing_command_reason(self, root: Path, changes: dict, changes_path: Path,
+                               tool_root: Path | None) -> str:
+        if tool_root is None:
+            return "--tool-root or $WEAVER_TOOL_ROOT is not set"
+        if resolve_executable_jar(tool_root) is None:
+            return (f"no weaver JAR under {tool_root} and its automatic build produced none "
+                    "(run mvn -DskipTests package in that folder and check the [tool] lines)")
+        if not changes_path.is_file():
+            return f"coder payload not found: {changes_path}"
+        return ""
 
 
 BUILDER = JavaWeaver()

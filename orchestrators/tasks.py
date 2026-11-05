@@ -1,8 +1,34 @@
 """Blackboard task schema: validation and ordering keys (pure, no I/O state)."""
+import re
 from pathlib import Path
 
 import settings
 import workspace
+
+
+CAMEL_TYPE_RE = re.compile(r"\b[A-Z][A-Za-z0-9]{2,}\b")
+
+
+def is_type_shape(name):
+    """A Java type is CamelCase; an ALL-CAPS token in an intent is a constant or a unit (BPM, RPM)."""
+    return bool(name) and not name.isupper()
+
+
+def produced_types(task):
+    """Types one task owns: its export plus the CamelCase types its intent names.
+
+    A unit normally ships secondary types its own export does not name (an enum, a value
+    object, an outcome record). Both the closure gate and the stage-2 peer-deferral rule
+    have to know them, or they blame a sibling task for a type another task already plans
+    to write.
+    """
+    names = set()
+    export = task.get("export")
+    if isinstance(export, str) and export.strip():
+        names.add(export.strip().split(".")[-1])
+    names.update(name for name in CAMEL_TYPE_RE.findall(str(task.get("intent", "")))
+                 if is_type_shape(name))
+    return names
 
 
 def task_sort_key(task):

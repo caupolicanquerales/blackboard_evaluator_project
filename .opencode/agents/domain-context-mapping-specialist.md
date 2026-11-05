@@ -97,6 +97,12 @@ JSON
 - Exit codes: `0` written; `1` schema or unknown context (fix payload, retry); `2` missing
   per-domain source; `3` write error or file exists without `--force`.
 
+
+## Tool budget and scope
+
+- At most 10 tool calls: list the slices directory once, read each slice, then one map file per slice.
+- Skills live only in `.opencode/skills/`; the assigned `SKILL.md` is read once, never a folder listing.
+- Never run `git`; never read `orchestrators/`, dispatcher/tool sources, or application sources.
 # Report
 
 Paths per slice, relationship and flow counts, open questions. Do not paste JSON.

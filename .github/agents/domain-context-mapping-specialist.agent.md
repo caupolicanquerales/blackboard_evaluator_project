@@ -70,7 +70,7 @@ Do not copy `ubiquitous_language`, `subdomains`, `bounded_contexts`, `assumption
 - Run once per slice, slug from the input file name:
 
 ```bash
-python3 .github/skills/read-write-file-ddd/writer-file/scripts/writer_file.py \
+python3 .opencode/skills/read-write-file-ddd/writer-file/scripts/writer_file.py \
   --source - --report-type context-map \
   --target blackboard/context-map/context-map-<slug>.json <<'JSON'
 { ...payload for this slice... }
@@ -82,6 +82,12 @@ JSON
 - Exit codes: `0` written; `1` schema or unknown context (fix payload, retry); `2` missing
   per-domain source; `3` write error or file exists without `--force`.
 
+
+## Tool budget and scope
+
+- At most 10 tool calls: list the slices directory once, read each slice, then one map file per slice.
+- Skills live only in `.opencode/skills/`; the assigned `SKILL.md` is read once, never a folder listing.
+- Never run `git`; never read `orchestrators/`, dispatcher/tool sources, or application sources.
 # Report
 
 Paths per slice, relationship and flow counts, open questions. Do not paste JSON.

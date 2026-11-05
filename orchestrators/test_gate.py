@@ -91,9 +91,19 @@ def repair_test_imports(project_root):
     return repaired
 
 
+def _tester_id(task):
+    """The stage-1 id whose red-phase record gates this unit (the record is keyed by it)."""
+    return next((str(dep) for dep in task.get("dependsOn", [])
+                 if str(dep).startswith("T1-")), None)
+
+
 def red_phase_record(task):
-    """The tester's persisted result, or None when absent/unreadable (stage 1 gates presence)."""
-    path = workspace.project_root_for(task["project"]) / "blackboard" / "red-phase" / f"{task['id']}.json"
+    """The tester's persisted result, or None when absent/unreadable (stage 1 gates presence).
+
+    The red-phase record lives on the repository blackboard (what the tester writes
+    through its writer script) and is keyed by the stage-1 task, not by the unit.
+    """
+    path = settings.RED_PHASE_DIR / f"{_tester_id(task) or task['id']}.json"
     if not path.is_file():
         return None
     try:

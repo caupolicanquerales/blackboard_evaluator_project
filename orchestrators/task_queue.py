@@ -116,34 +116,77 @@ def send_to_error(file, reason, task):
         file.unlink()
 
 
+def retry_error_tasks(patterns=()):
+    """Move quarantined task files from blackboard/error back into the queue.
+
+    Returns the restored ids. A file is restored when it still carries a valid
+    task id; without patterns every error file moves, with patterns only the ids
+    or file names matching one of them. Transient failures (a missing tool, an
+    unreachable daemon) quarantine a whole dependency chain; this is how the
+    chain comes back once the environment is fixed.
+    """
+    index = load_index()
+    restored = []
+    for file in sorted(settings.ERROR_DIR.glob("*.json")):
+        try:
+            task = json.loads(file.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(task, dict) or not settings.ID_PATTERN.match(str(task.get("id", ""))):
+            continue
+        haystacks = (str(task["id"]), file.name)
+        if patterns and not any(pattern in name for pattern in patterns for name in haystacks):
+            continue
+        if task["id"] in index:
+            file.unlink()
+            print(f"[skip ] {task['id']}: already in queue or complete")
+            continue
+        task.pop("error", None)
+        destination = settings.QUEUE_DIR / tasks.task_file_name(task)
+        destination.write_text(json.dumps(task, indent=2) + "\n", encoding="utf-8")
+        file.unlink()
+        index[task["id"]] = task
+        restored.append(task["id"])
+        print(f"[retry] {task['id']} -> queue/{destination.name}")
+    return restored
+
+
 def emit_tasks(paths):
-    """Validate a batch of task files against the schema, then write them to the queue."""
+    """Validate a batch of task files against the schema, then write them to the queue.
+
+    A path may hold one task object or an array of them: the architect drafts its whole
+    decomposition in a single file, which keeps its session at two tool calls instead of
+    one create per task.
+    """
     index = load_index()
     staged = []
     with telemetry.span("blackboard.emit", {"tasks.requested": len(paths)}) as current:
         for raw in paths:
             source = Path(raw)
             try:
-                task = json.loads(source.read_text(encoding="utf-8"))
+                loaded = json.loads(source.read_text(encoding="utf-8"))
             except (OSError, json.JSONDecodeError) as exc:
                 reason = f"{source}: unreadable JSON: {exc}"
                 telemetry.mark_error(current, reason)
                 return reason
-            if not isinstance(task, dict):
-                reason = f"{source}: task must be a JSON object"
-                telemetry.mark_error(current, reason)
-                return reason
-            reason = tasks.validate(task, index)
-            if reason:
-                reason = f"{source}: {reason}"
-                telemetry.mark_error(current, reason)
-                return reason
-            if task["id"] in index:
-                reason = f"{task['id']}: id already exists in queue or complete"
-                telemetry.mark_error(current, reason)
-                return reason
-            index[task["id"]] = task
-            staged.append(task)
+            batch = loaded if isinstance(loaded, list) else [loaded]
+            for position, task in enumerate(batch, start=1):
+                label = f"{source}" if isinstance(loaded, dict) else f"{source}[{position}]"
+                if not isinstance(task, dict):
+                    reason = f"{label}: task must be a JSON object"
+                    telemetry.mark_error(current, reason)
+                    return reason
+                reason = tasks.validate(task, index)
+                if reason:
+                    reason = f"{label}: {reason}"
+                    telemetry.mark_error(current, reason)
+                    return reason
+                if task["id"] in index:
+                    reason = f"{task['id']}: id already exists in queue or complete"
+                    telemetry.mark_error(current, reason)
+                    return reason
+                index[task["id"]] = task
+                staged.append(task)
         for task in staged:
             destination = settings.QUEUE_DIR / tasks.task_file_name(task)
             with telemetry.span("blackboard.queue", {"file": destination.name,

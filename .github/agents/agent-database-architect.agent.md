@@ -12,7 +12,7 @@ tools: ["read", "search", "execute", "edit"]
 
 # Workflow
 
-1. Load skills `database-persistence-strategy`, `task-decomposition-dag` from `.github/skills/architect-practices/` (fallback: `.opencode/skills/architect-practices/`), and `database-technology-selection`, `concrete-database-migration` from `.github/skills/tech-stack/` (fallback: `.opencode/skills/tech-stack/`). The tech-stack skill is the only source of technology names.
+1. Load skills `database-persistence-strategy`, `task-decomposition-dag` from `.opencode/skills/architect-practices/`, and `database-technology-selection`, `concrete-database-migration` from `.opencode/skills/tech-stack/`. The tech-stack skill is the only source of technology names.
 2. Input: the slug of the bounded context is given by the orchestrator. Read `blackboard/complete/execution-strategy-<slug>.json` with the read tool and use only its `persistence` object. If the file is missing or has no `persistence` key, stop and report it; never repair. Ask the user if no active stack is known.
 3. Apply `database-technology-selection` to the strategy to produce the per-context selection record (primary store, secondary stores, performance drivers, rationale, risks). Versions come from the tech-stack skill.
 4. Apply `concrete-database-migration` to the selection record to write migration scripts under `services/<slug>/db/migrations/`, in the tool and dialect required by the tech-stack skill. Follow its expand-only rule and output contract.
@@ -20,6 +20,14 @@ tools: ["read", "search", "execute", "edit"]
 6. Queue the batch with `python3 <runner> --emit <each draft path>` (runner given in the prompt). If the runner rejects a payload, fix the draft and re-emit. Never write into `blackboard/` directly.
 7. Do not re-check or redo queued application tasks; the orchestrator runs this step before them.
 
+
+## Tool budget and scope
+
+- At most 10 tool calls: read the strategy once, the two tech-stack skills once, write the migration
+  and configuration files, one array draft file and one `--emit`.
+- Draft every stage 0 task in ONE JSON array file, then a single `--emit`. Never one file per task.
+- Skills live only in `.opencode/skills/`; read each assigned `SKILL.md` once, never a folder listing.
+- Never run `git`, never read `orchestrators/`, dispatcher or tool sources, or other contexts' records.
 # Output contract
 
 - Migration scripts: `db/migrations/<slug>/` only.

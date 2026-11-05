@@ -9,6 +9,10 @@ import com.github.javaparser.ast.body.BodyDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
+import com.github.javaparser.ast.body.RecordDeclaration;
+import com.github.javaparser.ast.Node;
+import com.github.javaparser.ast.body.TypeDeclaration;
+import com.github.javaparser.ast.nodeTypes.NodeWithAnnotations;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.type.Type;
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
@@ -55,18 +59,22 @@ public final class JavaASTWeaver {
         }
 
         addImports(cu, payload.imports());
-        ClassOrInterfaceDeclaration owner = findOrCreateType(cu, simpleTypeName, kind, payload);
+        TypeDeclaration<?> owner = findOrCreateType(cu, simpleTypeName, kind, payload);
         if (owner == null) {
             writeIfChanged(targetPath, render(cu, createdType));
             return;
         }
         createdType = createdType || addMissingMembers(owner, payload.members());
+        applyAnnotations(owner, payload.annotations());
 
         if (!"interface".equals(kind) && !payload.body().isBlank()) {
             MethodDeclaration target = findOrCreateMethod(owner, payload);
+            applyAnnotations(target, payload.methodAnnotations());
             target.setBody(parseMethodBody(payload.body()));
         } else if ("interface".equals(kind)) {
-            createdType |= addAbstractMethod(owner, payload);
+            Optional<MethodDeclaration> declared = addAbstractMethod(owner, payload);
+            declared.ifPresent(method -> applyAnnotations(method, payload.methodAnnotations()));
+            createdType |= declared.isPresent();
         }
 
         writeIfChanged(targetPath, render(cu, createdType));
@@ -88,16 +96,19 @@ public final class JavaASTWeaver {
         return value;
     }
 
+    private static final java.util.regex.Pattern RECORD_COMPONENT =
+        java.util.regex.Pattern.compile("^(?:final\\s+)?[\\w.$]+(?:<[\\w.$,<>\\[]\\s]*>)?\\s+[\\w$]+$");
+
     private static CompilationUnit parseSkeleton(Path targetPath, CoderChangesPayload payload,
             String kind, String type) {
         String packageName = packageOf(payload.export(), targetPath);
-        String members = String.join("\n", payload.members());
+        List<String> members = terminatedMembers(payload.members());
         String body = switch (kind) {
-            case "interface" -> " {\n" + members + "\n}";
-            case "enum" -> " {\n" + (members.isBlank() ? "" : String.join(",\n", payload.members())) + ";\n}";
-            case "record" -> "(" + String.join(", ", payload.members()) + ") {\n}";
-            case "exception" -> " extends RuntimeException {\n" + members + "\n}";
-            default -> " {\n" + members + "\n}";
+            case "interface" -> " {\n" + String.join("\n", members) + "\n}";
+            case "enum" -> " {\n" + String.join(",\n", members) + ";\n}";
+            case "record" -> recordSkeletonBody(payload);
+            case "exception" -> " extends RuntimeException {\n" + String.join("\n", members) + "\n}";
+            default -> " {\n" + String.join("\n", members) + "\n}";
         };
         String keyword = switch (kind) {
             case "interface" -> "public interface ";
@@ -107,28 +118,93 @@ public final class JavaASTWeaver {
         };
         String source = (packageName.isBlank() ? "" : "package %s;\n\n".formatted(packageName))
             + keyword + type + body;
-        return StaticJavaParser.parse(source);
+        try {
+            return StaticJavaParser.parse(source);
+        } catch (RuntimeException ex) {
+            throw new IllegalArgumentException("Payload members do not parse inside " + kind + " " + type
+                + ": " + firstLineOf(ex.getMessage()) + " | first member: "
+                + head(payload.members().isEmpty() ? "(none)" : payload.members().get(0)), ex);
+        }
     }
 
-    private static ClassOrInterfaceDeclaration findOrCreateType(CompilationUnit cu, String type,
-            String kind, CoderChangesPayload payload) {
-        Optional<ClassOrInterfaceDeclaration> existing = cu.findFirst(ClassOrInterfaceDeclaration.class,
-                c -> c.getNameAsString().equals(type));
-        if (existing.isPresent()) {
-            return existing.get();
+    /**
+     * Payload members arrive as text lines, and a field without its ';' is the most common
+     * omission. Terminating them here costs nothing and saves the retry session that a parse
+     * error would otherwise burn.
+     */
+    private static List<String> terminatedMembers(List<String> members) {
+        List<String> out = new ArrayList<>();
+        for (String member : members) {
+            if (member == null || member.isBlank()) {
+                continue;
+            }
+            String text = member.trim();
+            if (!text.endsWith(";") && !text.endsWith("}") && !text.endsWith("{")
+                    && !text.endsWith(")") && !text.endsWith(",")) {
+                text = text + ";";
+            }
+            out.add(text);
         }
-        if ("record".equals(kind) || "enum".equals(kind)) {
+        return out;
+    }
+
+    private static String head(String text) {
+        String line = text.strip().lines().findFirst().orElse("");
+        return line.length() <= 80 ? line : line.substring(0, 80) + "...";
+    }
+
+    /**
+     * Record header components and record body members are different things, and the coder
+     * payload carries both in `members`. Pasting every entry into the header makes any compact
+     * constructor or extra method a parse error, so the entry is routed by shape: a bare
+     * `Type name` becomes a component and anything else stays a body member.
+     */
+    private static String recordSkeletonBody(CoderChangesPayload payload) {
+        List<String> components = new ArrayList<>();
+        List<String> members = new ArrayList<>();
+        for (String entry : payload.members()) {
+            if (entry == null || entry.isBlank()) {
+                continue;
+            }
+            String component = recordComponentOf(entry.trim());
+            if (component == null) {
+                String text = entry.trim();
+                members.add(text.endsWith("}") || text.endsWith(";") ? text : text + ";");
+            } else {
+                components.add(component);
+            }
+        }
+        String header = "(" + String.join(", ", components) + ")";
+        return members.isEmpty() ? header + " {\n}" : header + " {\n" + String.join("\n", members) + "\n}";
+    }
+
+    /** A record component is a bare `Type name`; anything else is a body member. */
+    private static String recordComponentOf(String entry) {
+        String stripped = (entry.endsWith(";") ? entry.substring(0, entry.length() - 1) : entry).trim();
+        String candidate = stripped.replaceAll("^(?:private|public|protected|static)\\s+", "")
+            .replaceAll("^final\\s+", "").trim();
+        return RECORD_COMPONENT.matcher(candidate).matches() ? candidate : null;
+    }
+
+    private static TypeDeclaration<?> findOrCreateType(CompilationUnit cu, String type,
+            String kind, CoderChangesPayload payload) {
+        for (TypeDeclaration<?> candidate : cu.findAll(TypeDeclaration.class)) {
+            if (candidate.getNameAsString().equals(type)) {
+                return candidate;
+            }
+        }
+        if ("record".equals(kind)) {
             return null;
         }
         String source = "interface".equals(kind)
             ? "public interface %s { }".formatted(type)
             : "public class %s { }".formatted(type);
-        ClassOrInterfaceDeclaration created = (ClassOrInterfaceDeclaration) StaticJavaParser.parseTypeDeclaration(source);
+        TypeDeclaration<?> created = StaticJavaParser.parseTypeDeclaration(source);
         cu.addType(created);
-        return (ClassOrInterfaceDeclaration) cu.getType(cu.getTypes().size() - 1);
+        return cu.getType(cu.getTypes().size() - 1);
     }
 
-    private static boolean addMissingMembers(ClassOrInterfaceDeclaration owner, List<String> members) {
+    private static boolean addMissingMembers(TypeDeclaration<?> owner, List<String> members) {
         if (members.isEmpty()) {
             return false;
         }
@@ -137,8 +213,11 @@ public final class JavaASTWeaver {
             present.add(normalizeCode(member.toString()));
         }
         boolean added = false;
-        for (String declaration : members) {
-            if (declaration == null || declaration.isBlank() || present.contains(normalizeCode(declaration))) {
+        for (String declaration : terminatedMembers(members)) {
+            if (present.contains(normalizeCode(declaration))) {
+                continue;
+            }
+            if (owner instanceof RecordDeclaration && recordComponentOf(declaration) != null) {
                 continue;
             }
             for (BodyDeclaration<?> parsed : parseMemberDeclarations(declaration, owner.getNameAsString())) {
@@ -155,27 +234,72 @@ public final class JavaASTWeaver {
             return new ArrayList<>(StaticJavaParser
                 .parseTypeDeclaration("class WeaverProbe {" + declaration + "\n}")
                 .getMembers());
-        } catch (RuntimeException ex) {
-            throw new IllegalArgumentException("Payload member does not parse inside " + typeName + ": "
-                + firstLineOf(ex.getMessage()), ex);
+        } catch (RuntimeException classShape) {
+            try {
+                return new ArrayList<>(StaticJavaParser
+                    .parseTypeDeclaration("record WeaverProbe(String component) {" + declaration + "\n}")
+                    .getMembers());
+            } catch (RuntimeException recordShape) {
+                throw new IllegalArgumentException("Payload member does not parse inside " + typeName + ": "
+                    + firstLineOf(classShape.getMessage()) + " | member: " + head(declaration), classShape);
+            }
         }
     }
 
-    private static boolean addAbstractMethod(ClassOrInterfaceDeclaration owner, CoderChangesPayload payload) {
-        if (!owner.isInterface() || !owner.getMethodsByName(payload.method()).isEmpty()) {
-            return false;
+    private static Optional<MethodDeclaration> addAbstractMethod(TypeDeclaration<?> owner,
+            CoderChangesPayload payload) {
+        List<MethodDeclaration> existing = owner.getMethodsByName(payload.method());
+        if (!(owner instanceof ClassOrInterfaceDeclaration declared) || !declared.isInterface()) {
+            return Optional.empty();
+        }
+        if (!existing.isEmpty()) {
+            return Optional.of(existing.get(0));
         }
         if (payload.signature() == null || !payload.signature().contains("(")) {
-            return false;
+            return Optional.empty();
         }
         String declaration = "public %s %s(%s);".formatted(safeReturnType(payload.returns()),
             payload.method().trim(), rawParameters(payload.signature()));
         try {
-            owner.addMember(StaticJavaParser.parseMethodDeclaration(declaration));
-            return true;
+            MethodDeclaration created = StaticJavaParser.parseMethodDeclaration(declaration);
+            owner.addMember(created);
+            return Optional.of(created);
         } catch (RuntimeException ex) {
             throw new IllegalArgumentException("Payload signature does not parse as a method declaration: "
                 + firstLineOf(ex.getMessage()), ex);
+        }
+    }
+
+    /**
+     * The payload carries the annotations a framework needs (`@RestController`,
+     * `@PostMapping("/ingress")`) because a greenfield type is created here: without them the
+     * coder has nowhere to put them, and the unit compiles but never gets wired.
+     * Existing annotations with the same name are left alone, so re-weaving stays idempotent.
+     */
+    private static void applyAnnotations(Node target, List<String> annotations) {
+        if (!(target instanceof NodeWithAnnotations<?> holder)) {
+            return;
+        }
+        for (String raw : annotations) {
+            if (raw == null || raw.isBlank()) {
+                continue;
+            }
+            String text = raw.trim();
+            if (text.startsWith("@")) {
+                text = text.substring(1);
+            }
+            String name = text.split("[(\\s]")[0].trim();
+            boolean present = holder.getAnnotations().stream()
+                .anyMatch(annotation -> annotation.getNameAsString().equals(name));
+            if (present || name.isEmpty()) {
+                continue;
+            }
+            try {
+                holder.addAnnotation(StaticJavaParser.parseAnnotation("@" + text));
+            } catch (RuntimeException ex) {
+                throw new IllegalArgumentException("Payload annotation does not parse: " + raw
+                    + " (" + firstLineOf(ex.getMessage()) + ")", ex);
+            }
         }
     }
 
@@ -204,7 +328,7 @@ public final class JavaASTWeaver {
             .forEach(cu::addImport);
     }
 
-    private static MethodDeclaration findOrCreateMethod(ClassOrInterfaceDeclaration owner,
+    private static MethodDeclaration findOrCreateMethod(TypeDeclaration<?> owner,
             CoderChangesPayload payload) {
         List<MethodDeclaration> candidates = owner.getMethodsByName(payload.method());
         Optional<List<Parameter>> expectedParams = parseSignatureParameters(payload.signature());
@@ -226,7 +350,7 @@ public final class JavaASTWeaver {
         return createMethod(owner, payload);
     }
 
-    private static MethodDeclaration createMethod(ClassOrInterfaceDeclaration owner,
+    private static MethodDeclaration createMethod(TypeDeclaration<?> owner,
             CoderChangesPayload payload) {
         if (payload.signature() == null || !payload.signature().contains("(")) {
             throw new IllegalStateException("Cannot create method '%s': payload signature is missing or malformed"

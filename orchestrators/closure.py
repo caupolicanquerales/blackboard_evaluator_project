@@ -23,6 +23,8 @@ from pathlib import Path
 
 import settings
 import task_queue
+import tasks
+import test_gate
 import workspace
 
 MAX_REPORT = 6
@@ -77,24 +79,60 @@ def _declared_in_file(text: str) -> set:
     return set(re.findall(r"\b(?:class|interface|enum|record)\s+([A-Z]\w*)", text))
 
 
+STRING_LITERAL_RE = re.compile(r'"(?:[^"\\]|\\.)*"')
+LINE_COMMENT_RE = re.compile(r"//[^\n]*")
+BLOCK_COMMENT_RE = re.compile(r"/\*.*?\*/", re.S)
+
+
+def _code_only(text: str) -> str:
+    """Drop literals and comments: SQL inside a string is not a reference to a Java type."""
+    return LINE_COMMENT_RE.sub("", BLOCK_COMMENT_RE.sub("", STRING_LITERAL_RE.sub('""', text)))
+
+
+def _is_type_shape(name: str) -> bool:
+    """A Java type is CamelCase; an ALL-CAPS token is a SQL keyword or a constant."""
+    return tasks.is_type_shape(name)
+
+
 def _used_without_import(text: str, imported_or_same: set, declared: set) -> set:
     """Uppercase names appearing in type position that the file neither imports nor declares."""
     found = set()
+    code = _code_only(text)
     for pattern in TYPE_POSITIONS:
-        found |= set(re.findall(pattern, text))
+        found |= set(re.findall(pattern, code))
     blocklist = {"Test", "BeforeEach", "AfterEach", "BeforeAll", "AfterAll", "Nested",
                  "DisplayName", "TempDir", "Timeout", "RepeatedTest", "EnumSource",
                  "CsvSource", "MethodSource", "ValueSource", "Mock"}
-    blocklist |= {"String", "UUID", "List", "Map", "Set", "Optional", "LocalDate",
+    blocklist |= {"UUID", "List", "Map", "Set", "Optional", "LocalDate",
                   "LocalDateTime", "ZoneId", "LocalTime", "Instant", "Duration", "BigDecimal",
-                  "BigInteger", "Integer", "Long", "Double", "Object", "Class", "Exception",
-                  "RuntimeException", "Thread", "Arrays", "Collections", "ChronoUnit",
-                  "Collectors", "Stream", "IllegalArgumentException", "IllegalStateException",
+                  "BigInteger", "ChronoUnit", "Collectors", "Stream",
+                  "IllegalArgumentException", "IllegalStateException",
                   "NullPointerException", "UnsupportedOperationException", "NumberFormatException",
                   "ClassCastException", "ArithmeticException", "IndexOutOfBoundsException",
-                  "ConcurrentModificationException", "TimeoutException", "Iterable", "Enum",
-                  "Record", "Void", "Boolean", "Byte", "Short", "Character", "Comparable"}
-    return found - imported_or_same - declared - blocklist
+                  "ConcurrentModificationException", "TimeoutException"}
+    # java.lang is never importable-by-name in a test and never needs a producer task:
+    # StringBuilder there was reported as an unclosed import of the domain.
+    blocklist |= test_gate.JAVA_LANG_NAMES
+    return {name for name in (found - imported_or_same - declared - blocklist)
+            if _is_type_shape(name)}
+
+
+def _outer_types(produced: set, index: dict, slug: str, main_stems: set) -> set:
+    """Names that can host a nested type: real task exports and existing source files."""
+    exports = {task["export"].split(".")[-1] for task in index.values()
+               if task.get("project") == slug and isinstance(task.get("stage"), int)
+               and task["stage"] == settings.TDD_STAGE and isinstance(task.get("export"), str)}
+    return exports | main_stems
+
+
+def _is_nested_type(package: str, cls: str, outer: set) -> bool:
+    """True when `cls` is imported as Outer.Inner, i.e. its package ends in an owned type.
+
+    A nested enum is part of the unit that owns its outer class, not a file of its own:
+    emitting it as a producer task would create `Outer/Inner.java` and duplicate ownership.
+    """
+    parts = [part for part in package.split(".") if part]
+    return len(parts) >= 2 and parts[-1] in outer and parts[-1] != cls
 
 
 def gaps(service_root: Path, slug: str, index: dict) -> list:
@@ -103,10 +141,14 @@ def gaps(service_root: Path, slug: str, index: dict) -> list:
     main_root = service_root / "src" / "main" / "java"
     if not test_root.is_dir():
         return []
-    produced = {task["export"].split(".")[-1] for task in index.values()
-                if task.get("project") == slug and isinstance(task.get("stage"), int)
-                and task["stage"] == settings.TDD_STAGE}
-    produced |= {f.stem for f in main_root.rglob("*.java")}
+    produced = set()
+    for task in index.values():
+        if task.get("project") == slug and isinstance(task.get("stage"), int) \
+                and task["stage"] == settings.TDD_STAGE:
+            produced |= tasks.produced_types(task)
+    main_stems = {f.stem for f in main_root.rglob("*.java")}
+    produced |= main_stems
+    outer = _outer_types(produced, index, slug, main_stems)
     missing = {}
     for f in test_root.rglob("*.java"):
         text = f.read_text(encoding="utf-8", errors="ignore")
@@ -118,10 +160,11 @@ def gaps(service_root: Path, slug: str, index: dict) -> list:
             for n in (_declared_in_file(other.read_text(encoding="utf-8", errors="ignore"))
                       if other.parent == f.parent else set())}
         for cls, pkg in _imported_classes(f):
-            if cls not in produced and cls not in missing:
-                missing[cls] = {"class": cls, "package": pkg, "test": f.name}
+            if cls in produced or cls in missing or _is_nested_type(pkg, cls, outer):
+                continue
+            missing[cls] = {"class": cls, "package": pkg, "test": f.name}
         for cls in _used_without_import(text, imported_simple | produced, declared):
-            if cls not in missing:
+            if cls not in missing and not _is_nested_type(own_pkg, cls, outer):
                 missing[cls] = {"class": cls, "package": own_pkg, "test": f.name}
     return list(missing.values())
 

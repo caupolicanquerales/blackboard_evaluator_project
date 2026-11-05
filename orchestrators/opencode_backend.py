@@ -111,7 +111,8 @@ def run_pass(args):
         return invoke_agent(task, not args.no_auto, args.timeout, feedback)
 
     def invoke_batch(tasks):
-        return invoke_agent_batch(tasks, not args.no_auto, args.timeout)
+        return invoke_agent_batch(tasks, not args.no_auto,
+                                  settings.batch_timeout(args.timeout, len(tasks)))
 
     invoke_for_task.batch = invoke_batch
     return tdd_engine.drain_queue(args, invoke_for_task)

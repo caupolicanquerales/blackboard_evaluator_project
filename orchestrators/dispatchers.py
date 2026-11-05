@@ -88,7 +88,9 @@ def run_ast_dispatcher(task):
     """Run the AST dispatcher once agent-tester finishes, then mark agent-coder as ready.
 
     The dispatcher reads <root>/blackboard and writes blackboard/ast-context/<id>.json.
-    A dispatcher failure is reported but does not block agent-coder.
+    `unsupported` is an outcome, not a failure: a brand-new unit has no production source
+    to extract yet, and agent-coder proceeds from the red-phase record. A dispatcher
+    failure is reported but does not block agent-coder.
     """
     command = [sys.executable, str(settings.AST_DISPATCHER),
                "--root", str(settings.ROOT),
@@ -102,7 +104,18 @@ def run_ast_dispatcher(task):
     if code is None:
         print(f"[ast ] {task['id']} dispatcher could not run: {stdout}")
         return False
-    if code != 0:
+    status = ""
+    detail = ""
+    try:
+        payload = json.loads(stdout)
+        status = str(payload.get("status") or "")
+        detail = str(payload.get("reason") or "")
+    except (TypeError, json.JSONDecodeError):
+        pass
+    if status == "unsupported":
+        print(f"[ast ] {task['id']} no context yet (coder proceeds from red-phase): {detail[:200]}")
+        return True
+    if code != 0 or status not in ("ok", ""):
         print(f"[ast ] {task['id']} dispatcher exit {code}: {agent_runners.verify_tail(stdout)}")
         return False
     print(f"[ast ] {task['id']} context saved to blackboard/ast-context/{task['id']}.json")

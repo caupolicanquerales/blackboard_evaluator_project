@@ -178,23 +178,93 @@ def _method_from_queue(queue: dict) -> str | None:
     return None
 
 
-def _target_method(red: dict, queue: dict) -> str | None:
-    """Resolve the method: missing_symbols, then failures (assertion case), then queue intent."""
+RE_TEST_METHOD = re.compile(r"\bvoid\s+([a-z][A-Za-z0-9_]*)\s*\(")
+
+
+def _method_from_test_file(project_root: Path, queue: dict) -> str | None:
+    """First method under test, from the tester's own naming convention.
+
+    The tester names every case `method_condition_expected` (java-junit5 skill), so a
+    red phase that only reports missing TYPES still says which production method the
+    unit is about. Only the unit's test file is read, never a sibling's.
+    """
+    relative = queue.get("path")
+    if not isinstance(relative, str) or not relative.strip():
+        return None
+    test_file = project_root / relative
+    if not test_file.is_file():
+        return None
+    for name in RE_TEST_METHOD.findall(_read_text(test_file)):
+        candidate = name.split("_", 1)[0].strip()
+        if candidate and candidate[0].islower():
+            return candidate
+    return None
+
+
+def _read_text(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        return ""
+
+
+def _target_method(red: dict, queue: dict, project_root: Path | None = None,
+                   test_task: dict | None = None) -> str | None:
+    """Resolve the method: missing_symbols, then failures, then queue intent, then test name.
+
+    The test-name fallback reads the tester's file, so it uses `test_task` (the stage-1
+    record) rather than the production task whose `path` points at the code under build.
+    """
     return (_method_from_symbols(red.get("missing_symbols") or [])
             or _method_from_failures(red.get("failures") or [])
             or _method_from_queue(queue)
-            or _clean_name(queue.get("target_method") or queue.get("method")))
+            or _clean_name(queue.get("target_method") or queue.get("method"))
+            or (_method_from_test_file(project_root, test_task or queue) if project_root else None))
 
 
-def load_task_context(root: Path, task_id: str) -> dict:
-    """Merge queue (target class) and red-phase (missing method) records for the task."""
+def _task_files(root: Path) -> list[Path]:
+    """Every task record: queue first, then complete and error."""
+    return sorted((root / "blackboard" / "queue").glob("*.json")) \
+        + sorted((root / "blackboard" / "complete").glob("T*.json")) \
+        + sorted((root / "blackboard" / "error").glob("T*.json"))
+
+
+def _producer_of(root: Path, tester_id: str) -> dict:
+    """The stage-2 task that implements the unit tested by `tester_id`.
+
+    A tester task exports the TEST class; the AST context the coder needs describes
+    the production class, which is the export of the stage-2 task depending on it.
+    """
+    for file in _task_files(root):
+        task = _read_json(file)
+        if task.get("stage") == 2 and tester_id in (task.get("dependsOn") or []):
+            return task
+    return {}
+
+
+def load_task_context(root: Path, task_id: str, project_root: Path | None = None) -> dict:
+    """Merge queue (target class) and red-phase (missing method) records for the task.
+
+    The queue file is normally still in blackboard/queue while agent-tester runs, but
+    on a resume the tester task is already in blackboard/complete, so both are read.
+    """
     queue = _read_json(root / "blackboard" / "queue" / f"{task_id}.json")
+    if not queue:
+        for folder in (root / "blackboard" / "complete", root / "blackboard" / "error"):
+            for candidate in sorted(folder.glob(f"{task_id}-*.json")):
+                queue = _read_json(candidate)
+                if queue:
+                    break
+            if queue:
+                break
     red = _read_json(root / "blackboard" / "red-phase" / f"{task_id}.json")
-    target_class = queue.get("export") or queue.get("target_class") or red.get("target_class")
+    producer = _producer_of(root, task_id) if queue.get("stage") == 1 else queue
+    target_class = (producer.get("export") or producer.get("target_class")
+                    or queue.get("export") or queue.get("target_class") or red.get("target_class"))
     return {
         "target_class": target_class,
-        "target_method": _target_method(red, queue),
-        "sources": {"queue": bool(queue), "red_phase": bool(red)},
+        "target_method": _target_method(red, producer or queue, project_root, queue),
+        "sources": {"queue": bool(queue), "red_phase": bool(red), "producer": bool(producer)},
     }
 
 
@@ -262,19 +332,23 @@ def dispatch(options: Options) -> dict:
     result["language"] = builder.language
     result["framework"] = framework
 
-    ctx = load_task_context(root, task_id)
+    ctx = load_task_context(root, task_id, project_root)
     try:
-        argv = builder.build(root, ctx, options.tool_root)
+        argv = builder.build(project_root, ctx, options.tool_root)
     except Exception as exc:  # noqa: BLE001
         result["status"] = "error"
         result["reason"] = f"{builder.language} builder crashed: {exc}"
         return result
     if argv is None:
+        detail = ""
+        try:
+            detail = builder.missing_command_reason(project_root, ctx, options.tool_root)
+        except Exception:  # noqa: BLE001
+            detail = ""
         result["status"] = "unsupported"
-        result["reason"] = (
-            f"{builder.language} builder produced no command "
-            "(check --tool-root, executable, target_class and target_method)"
-        )
+        result["context"] = None
+        result["reason"] = (f"{builder.language} builder produced no command: "
+                            f"{detail or 'no extractor inputs could be resolved'}")
         return result
 
     result["command"] = argv
@@ -334,7 +408,9 @@ def main() -> int:
     )
     result = dispatch(options)
     print(json.dumps(result, indent=2))
-    return 0 if result.get("status") == "ok" else 1
+    # "unsupported" means there is nothing to extract yet (a brand-new unit has no
+    # production source to read): an informational outcome, not a dispatcher failure.
+    return 0 if result.get("status") in ("ok", "unsupported") else 1
 
 
 if __name__ == "__main__":

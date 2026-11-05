@@ -21,17 +21,27 @@ def build_discovery_prompt(description_path):
         DISCOVERY_PROMPT.replace("{description}", str(description_path))
         .replace("{domain_dir}", str(settings.DOMAIN_DIR.relative_to(settings.ROOT)))
         .replace("{content}", content)
+        + _discipline(settings.DISCOVERY_AGENT,
+                      "One read of the description, one of the skill, then one write per subdomain.")
     )
 
 
 def build_mapping_prompt():
-    return MAPPING_PROMPT.replace(
+    return (MAPPING_PROMPT.replace(
         "{domain_dir}", str(settings.DOMAIN_DIR.relative_to(settings.ROOT))
     ).replace("{context_map_dir}", str(settings.CONTEXT_MAP_DIR.relative_to(settings.ROOT)))
+        + _discipline(settings.MAPPING_AGENT,
+                      "Read the slices directory once (never file by file), then one map file per slice.")
+    )
 
 
 def build_architect_prompt(project_root, runner, phase="tasks"):
     template = ARCHITECT_STRATEGY_PROMPT if phase == "strategy" else ARCHITECT_TASKS_PROMPT
+    draft_rule = ("DRAFT AS ONE FILE: write a single JSON document (an array with every task object of "
+                  "the domain) and call `--emit` once. One create call per task file is forbidden: each "
+                  "extra call is another turn, and every turn re-sends the whole transcript."
+                  if phase == "tasks" else
+                  "One strategy file per domain, one scaffold draft, one `--emit`.")
     return (
         template.replace("{project_root}", str(project_root))
         .replace("{db_ids}", task_queue.stage_task_summary(0))
@@ -39,6 +49,7 @@ def build_architect_prompt(project_root, runner, phase="tasks"):
         .replace("{context_map_dir}", str(settings.CONTEXT_MAP_DIR.relative_to(settings.ROOT)))
         .replace("{strategy_dir}", str(settings.COMPLETE_DIR.relative_to(settings.ROOT)))
         .replace("{runner}", runner)
+        + _discipline(settings.ARCHITECT_AGENT, extra=draft_rule)
     )
 
 
@@ -51,6 +62,36 @@ def build_database_prompt(slug, runner):
         .replace("{next_id}", task_queue.next_task_id(0))
         .replace("{scaffold_id}", task_queue.scaffold_task_id(slug))
         .replace("{runner}", runner)
+        + _discipline(settings.DATABASE_AGENT,
+                      "Read the strategy and the two tech-stack skills once, write the migration and "
+                      "configuration files, then one array draft file and one `--emit`.")
+    )
+
+
+def _coder_contract(task_ids):
+    """The only accepted coder output, spelled out with absolute paths.
+
+    A batch session that improvises its own draft folder produces nothing the
+    orchestrator can read (the weaver looks only at blackboard/coder-changes), so the
+    whole session is paid for and thrown away. The command below is what lands.
+    """
+    ids = ", ".join(task_ids)
+    return (
+        "\nOUTPUT CONTRACT: for each task id below, run exactly once, from the repository root:\n"
+        f"  python3 {settings.CODER_WRITER} --root {settings.ROOT} --task-id <id> "
+        "--input <draft.json>\n"
+        "The accepted result is blackboard/coder-changes/<id>.json; a draft written anywhere "
+        f"else (including any agent scratch or session folder) is invisible to the orchestrator. "
+        f"Task ids of this session: {ids}. Run the writer for every one of them before finishing.\n"
+        "WEAVER SHAPE (do not go read the weaver to discover it): `kind` is class|interface|enum|"
+        "record|exception. For a record, `members` may mix components (`Type name`) and body members "
+        "(compact constructor, factories, extra methods): the weaver routes the bare ones to the header "
+        "and the rest to the record body. Framework annotations go in `annotations` (type level) and "
+        "`methodAnnotations` (method level), without the `@`, never inside `signature`; parameter "
+        "annotations stay inside `signature`, which the weaver preserves. Keep the shape "
+        "the `intent` asks for; never downgrade a record to a class to dodge a rejection. If a payload "
+        "is rejected, the writer or weaver message names the field to fix: change that payload field "
+        "and re-emit with `--retry`."
     )
 
 
@@ -74,6 +115,8 @@ def build_task_message(task, feedback=None):
             message += (f"\nUnit artifacts: mandatory `blackboard/red-phase/{t1}.json`; "
                         f"`blackboard/ast-context/{t1}.json` if present.")
             message += f"\nUnit brief: {_unit_brief(task, t1)}"
+        message += _coder_contract([task["id"]])
+    message += _discipline(task["targetAgent"])
     return append_feedback(message, task, feedback)
 
 
@@ -128,13 +171,25 @@ def build_batch_message(tasks, feedback=None):
             extra = (f"\nUnit artifacts: mandatory `blackboard/red-phase/{t1}.json`"
                      f" | {_unit_brief(task, t1)}")
         message += f"--- task {task['id']} ---\n{block}{extra}\n"
+    if first["stage"] == settings.TDD_STAGE:
+        message += _coder_contract([task["id"] for task in tasks])
+    shared = (f"The budget is shared by all {len(tasks)} units of this session. Detect the stack and "
+              "load the skills ONCE and reuse them: reading a skill or a manifest again per task is the "
+              "single most expensive mistake here.")
+    message += _discipline(first["targetAgent"], units=len(tasks), extra=shared)
     return append_feedback(message, first, feedback)
 
 
 def append_feedback(message, task, feedback):
+    """Retry instructions, told in the language of the role that has to act on them.
+
+    A stage-2 coder must not "fix the implementation at path": it has no business editing source.
+    It re-emits its payload, and the writer only accepts that with --retry.
+    """
     if not feedback:
         return message
-    return message + FEEDBACK_TEMPLATE.format(path=task["path"], log=feedback)
+    template = FEEDBACK_TEMPLATE_CODER if task["stage"] == settings.TDD_STAGE else FEEDBACK_TEMPLATE
+    return message + template.format(path=task["path"], id=task["id"], log=feedback)
 
 
 DISCOVERY_PROMPT = """You are the domain boundary discovery specialist for this repository.
@@ -222,9 +277,11 @@ Follow these steps exactly, once per domain:
    For every unit of work emit a stage 1 test task, a stage 2 code task, and a stage 3
    evaluator task.
 
-3. Write the task JSON files under /tmp/tasks/ and queue the whole batch with one command:
-   python3 {runner} --emit /tmp/tasks/T0-001.json /tmp/tasks/T1-001.json ...
-   Fix any validation error and re-emit. Never write into blackboard/queue/ directly.
+3. Write ONE file /tmp/tasks/<slug>-tasks.json holding a JSON ARRAY of all the task objects of
+   this domain, then queue the whole batch with a single command:
+   python3 {runner} --emit /tmp/tasks/<slug>-tasks.json
+   Fix any validation error by editing that one file and re-emit. Never write into
+   blackboard/queue/ directly, and never one draft file per task.
 
 4. Do not create or modify application source files.
 
@@ -238,22 +295,82 @@ Run your workflow for the bounded context slug `{slug}` only. Its project root i
 2. Select the storage technology from the tech-stack skill. Write the migration and configuration
    scripts yourself, only under {project_root}/services/{slug}/db/migrations/ (absolute path). You own
    the database files of this domain: setup, schema migration, configuration, and backup.
-3. Do NOT queue any task. Database work is executed by you in this phase, not by stage 0 agents.
-   Never write into blackboard/queue/ or /tmp/tasks/ for the database.
+3. Queue one stage 0 bootstrap task per database concern (store setup, schema migration, configuration
+   profile, backup/recovery). Write ONE array file /tmp/tasks/{slug}-db-tasks.json holding every task
+   object, with exactly the keys of your output contract, ids starting at {next_id}, each with dependsOn
+   ["{scaffold_id}"] and path db/migrations/<file> relative to the domain project root, then queue them
+   with: `python3 {runner} --emit /tmp/tasks/{slug}-db-tasks.json`. Never write into blackboard/ directly.
+   Application tasks queued later reference these ids.
 
-Do not write application code. Finish by reporting the technology and the script paths you wrote.
+Do not write application code. Finish by reporting the technology, the script paths and the task ids.
 """
 
 STAGE_INSTRUCTIONS = {
     0: "Generate the project root and scaffold described by this task.",
     1: "Read this task and create the test at `path`.",
-    2: "Read this task and create the implementation at `path`.",
+    2: ("Emit the payload of this unit through the coder writer script into "
+        "`blackboard/coder-changes/<id>.json`. Never create, edit or delete the file at "
+        "`path`, and never write a payload anywhere else."),
     3: "Read this task, inspect the implementation at `path`, and refactor it.",
 }
+
+BUDGET_SHAPES = {
+    1: "skill read, task/manifest read, one test write, run-test-tool (max twice), red-phase writer",
+    2: "assigned skill, red-phase read, one draft write, one writer call",
+    3: "one skill, baseline test run, up to two refactor steps with a re-run each, evaluate writer",
+    0: "one skill, the MCP session, the scaffold move",
+}
+
+# Every turn re-sends the whole transcript, so a stray `cat` of our own tooling is paid for again
+# on every following call. These rules are stated in the prompt because the profiles alone were
+# not enough to keep agents inside their inputs.
+SCOPE_RULES = (
+    "SCOPE: skills live only in `.opencode/skills/` and the SKILL.md named by your role is read once; "
+    "do not list or search skill folders. Never read or grep `orchestrators/`, `ast_tools/`, "
+    "`ast_weaver_tools/`, `.opencode/skills/read-write-file-ddd/**` sources, other tasks' "
+    "`blackboard/queue|complete|error` records, or any agent scratch/session folder; never run `git`. "
+    "The facts of this unit are in the message above: read a source file only to copy an exact signature, "
+    "and then with a line-bounded `grep -n`, never a whole-file `cat`."
+)
+
+
+def _budget_line(target_agent, units=1, extra=""):
+    """`TOOL BUDGET` sentence built from the single source of truth in settings."""
+    budget = settings.call_budget(target_agent, units)
+    if budget is None:
+        return extra
+    word = "call" if budget == 1 else "calls"
+    shape = BUDGET_SHAPES.get(_stage_of(target_agent), "")
+    lead = (f"TOOL BUDGET: at most {budget} tool {word} in this session "
+            f"({shape})." if shape else f"TOOL BUDGET: at most {budget} tool {word} in this session.")
+    return "\n".join(part for part in (lead, extra) if part)
+
+
+def _stage_of(target_agent):
+    """Stage number of an agent name, or -1 for the planning agents."""
+    return next((stage for stage, agent in settings.STAGE_AGENTS.items()
+                 if agent == target_agent), -1)
+
+
+def _discipline(target_agent, units=1, extra=""):
+    """Per-agent tool budget plus the shared scope rules, appended to every agent message."""
+    return "\n" + "\n".join(part for part in (_budget_line(target_agent, units, extra),
+                                              SCOPE_RULES) if part)
 
 FEEDBACK_TEMPLATE = """
 Previous attempt FAILED verification. Fix the implementation at `{path}` so the build and tests pass.
 Do not change unrelated files. Verification output:
+```
+{log}
+```
+"""
+
+FEEDBACK_TEMPLATE_CODER = """
+Previous attempt FAILED verification. Do not edit the file at `{path}`: re-emit the payload of task
+`{id}` through the writer script with `--retry`, changing only the payload field the message names
+(`body`, `signature`, `returns`, `kind`, `members`, `annotations`, `methodAnnotations` or `imports`).
+Same budget as before: one draft write plus one writer call.
+Verification output:
 ```
 {log}
 ```

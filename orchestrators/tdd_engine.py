@@ -21,19 +21,26 @@ _ERROR_FILE_RE = __import__("re").compile(r"\[ERROR\] (\S+\.java):\[\d+")
 
 
 BATCH_MIN_PEERS = 4
-BATCH_MAX = 12
+BATCH_MAX = 4
 
 
-def _pending_exports_of(project, exclude_id):
-    """Simple export names of still-queued stage-2 tasks of one domain."""
+def _pending_symbols_of(project, exclude_id):
+    """Types a queued sibling task still has to produce for this domain.
+
+    One unit often needs a secondary type owned by another task (an enum or value
+    object named in the sibling's `intent`, not in its `export`). Surefire compiles
+    the whole test source set, so that missing type looks like a failure of this
+    unit; only the sibling can resolve it, so the orchestrator defers instead of
+    burning the coder attempts.
+    """
     names = set()
     for f in settings.QUEUE_DIR.glob(f"T2-*-{project}.json"):
         try:
             peer = json.loads(f.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             continue
-        if peer.get("id") != exclude_id and isinstance(peer.get("export"), str):
-            names.add(peer["export"].split(".")[-1])
+        if isinstance(peer, dict) and peer.get("id") != exclude_id:
+            names |= tasks.produced_types(peer)
     return names
 
 
@@ -53,6 +60,30 @@ def _payloadless_peers(task):
     ordered = [task] + sorted((p for p in same if p.get("id") != task["id"]),
                               key=lambda p: str(p.get("path")))
     return ordered
+
+
+def _sibling_payloads_pending(task):
+    """Ids of queued stage-2 tasks of this domain that still have no coder payload.
+
+    Surefire compiles every test source of the module, so a gate run while a sibling unit is
+    still un-implemented can only fail on that sibling's symbols. Weaving is cheap and the gate
+    is not: the orchestrator defers the gate until every payload of the domain exists, then one
+    wave of gates decides the units. Without this, a pass costs one full build per unit and the
+    domain never converges, because each unit's failure belongs to a peer that was never run.
+    """
+    project = task.get("project", "")
+    pending = []
+    for f in settings.QUEUE_DIR.glob(f"T2-*-{project}.json"):
+        try:
+            peer = json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        peer_id = peer.get("id")
+        if not isinstance(peer_id, str) or peer_id == task["id"]:
+            continue
+        if not (settings.ROOT / "blackboard" / "coder-changes" / f"{peer_id}.json").is_file():
+            pending.append(peer_id)
+    return pending
 
 
 class DeferredTask(Exception):
@@ -104,7 +135,7 @@ def _blocked_by_peers(result, task):
         return False
     if result.get("status") == "compile_error":
         missing_tokens = _identifier_tokens(" ".join(str(item) for item in (result.get("missing_symbols") or [])))
-        if missing_tokens & _pending_exports_of(task["project"], task["id"]):
+        if missing_tokens & _pending_symbols_of(task["project"], task["id"]):
             return True          # a queued peer will resolve this symbol; do not burn attempts
     excerpt_lines = [str(line) for line in (result.get("excerpt") or [])]
     files = [m.group(1) for line in excerpt_lines if (m := _ERROR_FILE_RE.search(line))]
@@ -177,13 +208,37 @@ def drain_queue(args, invoke_for_task):
             dependents.setdefault(dep, []).append(task_id)
 
     processed = {"count": 0}
+    attempted = set()
     remaining = set(by_id)
+    deferred_ids = set()
+
+    def eligible(task_id):
+        """Attemptable: every dependency is complete, or a same-stage peer already attempted.
+
+        A stage-2 unit defers when the whole-module compile fails on a sibling's symbols. Blocking
+        that sibling afterwards would freeze the domain: nothing gets woven, so the failure repeats.
+        Attempt eligibility therefore travels inside the stage, while completion (what the evaluator
+        stage needs) still requires the dependency to be genuinely done.
+        """
+        task = by_id[task_id]
+        for dep in task["dependsOn"]:
+            if dep in complete_ids:
+                continue
+            if dep in deferred_ids and by_id.get(dep, {}).get("stage") == task["stage"]:
+                continue
+            return False
+        return True
 
     def closures_for(task):
         def invoke(feedback):
             payload = settings.ROOT / "blackboard" / "coder-changes" / f"{task['id']}.json"
             if (task["stage"] == settings.TDD_STAGE and feedback is None and payload.is_file()):
                 print(f"[skip-agent] {task['id']} coder payload already recorded; going straight to verify")
+                return True, ""
+            if (task["stage"] == 0 and feedback is None
+                    and (workspace.project_root_for(task["project"]) / task["path"]).is_file()):
+                print(f"[skip-agent] {task['id']} bootstrap artifact already on disk "
+                      f"({task['path']}); no agent session needed")
                 return True, ""
             if task["stage"] == settings.TDD_STAGE and feedback is None and not payload.is_file():
                 batch = getattr(invoke_for_task, "batch", None)
@@ -192,9 +247,15 @@ def drain_queue(args, invoke_for_task):
                     picked = siblings[:BATCH_MAX]
                     print(f"[batch ] {task['id']} batching coder payloads for {len(picked)} tasks of {task['project']}")
                     try:
-                        batch(picked)
+                        ok_batch, reason_batch = batch(picked)
                     except Exception as exc:  # noqa: BLE001
-                        print(f"[batch ] batch session failed ({exc}); falling back to per-task")
+                        ok_batch, reason_batch = False, str(exc)
+                    if payload.is_file():
+                        print(f"[batch ] {task['id']} payload written by the batch session; "
+                              f"skipping the duplicate single-task session")
+                        return True, ""
+                    print(f"[batch ] {task['id']} batch wrote no payload"
+                          f"{'' if ok_batch else ' (' + reason_batch[:120] + ')'}; falling back to per-task")
             ok, reason = invoke_for_task(task, feedback)
             expected = workspace.project_root_for(task["project"]) / task["path"]
             if ok and task["stage"] != settings.TDD_STAGE and not expected.exists():
@@ -218,6 +279,11 @@ def drain_queue(args, invoke_for_task):
                 problem = dispatchers.run_code_weaver_dispatcher(task)
                 if problem:
                     return False, problem
+                waiting = _sibling_payloads_pending(task)
+                if waiting:
+                    raise DeferredTask(f"{len(waiting)} sibling payload(s) still pending "
+                                       f"({', '.join(waiting[:3])}); gate deferred until the "
+                                       "domain is fully woven")
                 problem, result = test_gate.green_test_result(task)
                 if problem:
                     if _blocked_by_peers(result, task):
@@ -249,15 +315,16 @@ def drain_queue(args, invoke_for_task):
                 file.replace(settings.COMPLETE_DIR / file.name)
             print(f"[done] {task['id']}")
             complete_ids.add(task_id)
+            deferred_ids.discard(task_id)
             remaining.discard(task_id)
             for dependent_id in dependents.get(task_id, []):
-                if dependent_id not in remaining:
-                    continue
                 pending_deps[dependent_id] -= 1
-                if pending_deps[dependent_id] == 0 and by_id[dependent_id]["stage"] == stage:
-                    heapq.heappush(ready, (tasks.task_sort_key(by_id[dependent_id]), dependent_id))
+            push_eligible(task_id, stage, ready)
         elif outcome == "defer":
             print(f"[wait  ] {task['id']} waiting for peers: {detail[:120]}")
+            deferred_ids.add(task_id)
+            push_eligible(task_id, stage, ready)
+            return
         else:
             task_queue.send_to_error(file, detail, task)
             print(f"[fail] {task['id']}: {detail}")
@@ -267,27 +334,37 @@ def drain_queue(args, invoke_for_task):
 
     workers = max(1, int(getattr(args, "parallel", 1) or 1))
 
+    def push_eligible(task_id, stage, ready):
+        """Queue the dependents that this task's outcome may have made attemptable."""
+        for dependent_id in dependents.get(task_id, []):
+            if (dependent_id in remaining and dependent_id not in attempted
+                    and by_id[dependent_id]["stage"] == stage and eligible(dependent_id)):
+                heapq.heappush(ready, (tasks.task_sort_key(by_id[dependent_id]), dependent_id))
+
     def next_ready(stage, ready, busy):
-        parked = []
-        picked = None
+        """Pop the next attemptable item.
+
+        Items that are not attemptable are dropped rather than parked: every event that can change
+        eligibility (a completion or a deferral) re-queues the dependents it affects, and a task
+        already attempted this pass is never attempted twice. That is what keeps the stage loop from
+        spinning on the whole-module gate failures of a domain that is still being woven.
+        """
         while ready:
             item = heapq.heappop(ready)
             _, task_id = item
-            if task_id not in remaining or pending_deps[task_id] != 0:
+            if task_id not in remaining or task_id in attempted or not eligible(task_id):
                 continue
             if workers > 1 and by_id[task_id]["project"] in busy:
-                parked.append(item)
-                continue
-            picked = item
-            break
-        for item in parked:
-            heapq.heappush(ready, item)
-        return picked
+                heapq.heappush(ready, item)
+                return None
+            attempted.add(task_id)
+            return item
+        return None
 
     for stage in sorted(by_stage):
         ready = []
         for task_id in by_stage[stage]:
-            if task_id in remaining and pending_deps[task_id] == 0:
+            if task_id in remaining and eligible(task_id):
                 heapq.heappush(ready, (tasks.task_sort_key(by_id[task_id]), task_id))
 
         if workers == 1:

@@ -47,6 +47,14 @@ permission:
 6. Queue the batch with `python3 <runner> --emit <each draft path>` (runner given in the prompt). If the runner rejects a payload, fix the draft and re-emit. Never write into `blackboard/` directly.
 7. Do not re-check or redo queued application tasks; the orchestrator runs this step before them.
 
+
+## Tool budget and scope
+
+- At most 10 tool calls: read the strategy once, the two tech-stack skills once, write the migration
+  and configuration files, one array draft file and one `--emit`.
+- Draft every stage 0 task in ONE JSON array file, then a single `--emit`. Never one file per task.
+- Skills live only in `.opencode/skills/`; read each assigned `SKILL.md` once, never a folder listing.
+- Never run `git`, never read `orchestrators/`, dispatcher or tool sources, or other contexts' records.
 # Output contract
 
 - Migration scripts: `services/<slug>/db/migrations/` only.

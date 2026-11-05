@@ -51,7 +51,7 @@ permission:
 
 ## Stack and skills
 - Detect `<language>-<framework>` from manifests (`pom.xml`, `build.gradle`, `package.json`, `go.mod`, `pyproject.toml`) and `path` extension.
-- Load from `.opencode/skills/`: `coder-framework/<language>-<framework>/SKILL.md` (fallback language-only; no match: list folder, report, stop); `tester-framework/<language>-<test-framework>/SKILL.md`; `architect-practices/software-layering-patterns` and `architect-practices/domain-driven-architecture` when present.
+- Load ONE skill from `.opencode/skills/`: `coder-framework/<language>-<framework>/SKILL.md`, falling back to the language-only skill; no match: list the folder once, report, stop. Layering and DDD rules are already summarized in the audit list below: do not load those skills, they cost two extra reads per unit.
 
 ## Test command (never invent, never global)
 - Walk `dependsOn` (T3 -> T2 -> T1) through `blackboard/complete/` and `blackboard/queue/`; take the stage 1 task of the same unit.
@@ -78,6 +78,17 @@ permission:
 - Task id, stack, skills, test command; findings per area; applied refactors; reverts.
 - `REFACTORED (green)`, `CLEAN (green)`, or `STOPPED (reason)`. Only the first two with a persisted artifact count as done.
 
+
+## Tool budget and scope
+
+- At most 12 tool calls and at most 3 test re-runs (baseline plus two refactor steps). Beyond that,
+  record what remains as findings and stop: a fourth re-run costs a full turn each and never pays off.
+- Load only the coder-framework overlay for the detected stack (language base rules if there is no
+  overlay). Do not load tester, layering or DDD skills for a single unit refactor.
+- Skills live only in `.opencode/skills/`; each file read once, no folder listings.
+- Never run `git`; never read `orchestrators/`, `ast_tools/`, `ast_weaver_tools/`, other tasks'
+  `blackboard` records, or sources outside your unit and its same-layer collaborators.
+- Out of budget or blocked: report the task id and the reason, and stop without persisting.
 ## Limits
 - Edit only production sources of the unit and same-layer collaborators.
 - No new dependencies, manifest edits, migrations, scaffolds, or network beyond existing project tooling.

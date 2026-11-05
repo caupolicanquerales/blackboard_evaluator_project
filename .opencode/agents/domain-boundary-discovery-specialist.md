@@ -52,6 +52,13 @@ permission:
 7. Record uncertainty as `Assumption`, `Ambiguity`, or `Open question`.
 8. Write the report.
 
+
+## Tool budget and scope
+
+- At most 10 tool calls: read the business description once, the assigned skill once, then one write
+  per subdomain slice.
+- Skills live only in `.opencode/skills/`; the assigned `SKILL.md` is read once, never a folder listing.
+- Never run `git`; never read `orchestrators/`, dispatcher/tool sources, or other blackboard folders.
 # Output contract
 
 - Write one small JSON file per subdomain to `blackboard/domain/domain-boundary-<subdomain-slug>.json` (slug: lowercase, non-alphanumerics replaced by `-`). No aggregate draft file is written.

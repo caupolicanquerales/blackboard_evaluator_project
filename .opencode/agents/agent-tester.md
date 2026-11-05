@@ -57,7 +57,7 @@ permission:
 - Key: `<language>-<framework>` (e.g. `java-junit5`).
 
 ## Step 2: Load skill
-- Read `tester-framework/<key>/SKILL.md` from `.opencode/skills/`, then `.github/skills/`.
+- Read `tester-framework/<key>/SKILL.md` from `.opencode/skills/`.
 - No match: list `tester-framework/*` in both, report stack and folders, stop.
 
 ## Analysis
@@ -87,6 +87,16 @@ permission:
 - Missing libraries, symbols, ambiguities.
 - On error: report task id and reason, stop, no retry.
 
+
+## Tool budget and scope
+
+- At most 8 tool calls: assigned skill, task/manifest read, one test write, `run-test-tool` (twice
+  at most: red run plus one fix), red-phase writer.
+- Skills live only in `.opencode/skills/`; read the assigned `SKILL.md` once, never a folder listing.
+- Never run `git`; never read `orchestrators/`, `ast_tools/`, `ast_weaver_tools/`, or another unit's
+  test file or `blackboard` record. Existing production sources of YOUR unit are the only extra read.
+- The task `intent` fixes the API. Do not explore the module to infer more than the unit under test.
+- Out of budget or blocked: report the task id and the reason, and stop.
 ## Limits
 - Edit only file at `path`.
 - No edits to `blackboard/`, scripts, skills, manifests, production code.

@@ -41,6 +41,9 @@ tools: ["read", "write", "search", "execute"]
 
 ## Body rules
 - Body only: no method signature, braces, `def`, class, or header.
+- Type and method annotations are payload fields (`annotations`, `methodAnnotations`), never text
+  inside `signature`. Parameter annotations (`@Valid`, `@RequestBody`) stay in `signature`, where the
+  weaver keeps them.
 - When the red says `cannot find symbol: class/interface X` (whole type missing), shape it: `kind`
   (`class|interface|enum|record|exception`) and `members` — fields + constructor for a class, abstract
   signatures for an interface (`body` then empty), constants for an enum, components for a record.
@@ -50,8 +53,8 @@ tools: ["read", "write", "search", "execute"]
 - Relative indentation: first line unindented, 4 spaces per nesting level.
 
 ## Output
-- Run: `python3 .github/skills/read-write-file-ddd/writer-coder-changes/write-coder-changes.py --root <repository root> --task-id <id> --input <payload.json>`. Add `--retry` only on orchestrator request.
-- Payload keys: `id`, `project`, `targetFile`, `export`, `method`, `language`, `framework`, `skill`, `signature`, `returns`, `body`, `imports`, `missing`, plus optional `kind` and `members`. `returns` is the method return type (`void` when none): the weaver uses it to create the class/method when the unit is new. The script sets `stage` and `executed`.
+- Run: `python3 .opencode/skills/read-write-file-ddd/writer-coder-changes/write-coder-changes.py --root <repository root> --task-id <id> --input <payload.json>`. Add `--retry` only on orchestrator request.
+- Payload keys: `id`, `project`, `targetFile`, `export`, `method`, `language`, `framework`, `skill`, `signature`, `returns`, `body`, `imports`, `missing`, plus optional `kind`, `members`, `annotations` (type level) and `methodAnnotations` (method level). `returns` is the method return type (`void` when none): the weaver uses it to create the class/method when the unit is new. The script sets `stage` and `executed`.
 - Exit 0: done. Exit 1: fix payload per errors and resubmit. Exit 2: file exists, stop and report.
 - Retry on verification feedback: change only `body`.
 - Write no other file.
@@ -61,6 +64,21 @@ tools: ["read", "write", "search", "execute"]
 - End turn. Do not run the weaver or tests.
 - On error: report reason, write nothing, stop.
 
+
+## Tool budget and scope
+
+- Single task: at most 5 tool calls (assigned skill, red-phase read, one draft write, one writer
+  call, one clarification read). Batch mode: 4 + 3 calls per task, shared by the session; detect
+  the stack and load the skills ONCE and reuse them for every unit.
+- Skills live only in `.opencode/skills/`; read the assigned `SKILL.md` once. Never list or search
+  skill folders. Never read the weaver, dispatchers, orchestrator scripts or writer-script sources:
+  the payload shape is given in your prompt (WEAVER SHAPE).
+- Never run `git`. Never open another task's `blackboard/queue|complete|error` record; the only
+  blackboard file you read is your unit's red-phase record (and its ast-context when present).
+- The Unit brief in your prompt is authoritative. Open the test file only when a signature is
+  missing from it, and then with a line-bounded `grep -n`, never a whole-file `cat`.
+- A rejected payload names the field to fix: change that field, re-emit with `--retry`, stop there.
+- Out of budget or blocked: report the task id and the reason, write nothing else, and stop.
 ## Limits
 - Write only `blackboard/coder-changes/<id>.json`, via the script.
 - Read-only elsewhere. No installs, network, builds, or tests.

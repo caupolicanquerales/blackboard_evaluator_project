@@ -1,0 +1,15 @@
+{
+  "id": "T3-020",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-020"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ledger/domain/TelemetryRevisionAppended.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "TelemetryRevisionAppended",
+  "intent": "Bounded context telemetry-ingestion-and-processing: define TelemetryRevisionAppended (domain collaborator defined from its test usages only) in package com.pulsestream.telemetry.ledger.domain. Contract is fixed by its usage in AppendRevisionUseCaseTest.java; implement the smallest correct type that satisfies every usage.",
+  "project": "telemetry-ingestion-and-processing"
+}

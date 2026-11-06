@@ -1,0 +1,15 @@
+{
+  "id": "T1-002",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/intake/domain/MetricBoundaryPolicyTest.java",
+  "kind": "test",
+  "layer": "domain",
+  "feature": null,
+  "export": "MetricBoundaryPolicyTest",
+  "intent": "Context Telemetry Intake & Validation. Test MetricBoundaryPolicy.validate(sample): in-range value yields VALID, out-of-range yields OUT_OF_BOUNDS (never dropped), metric without configured boundary yields UNDEFINED_BOUNDARY; boundaries are configuration, inclusive min/max.",
+  "project": "telemetry-ingestion-and-processing"
+}

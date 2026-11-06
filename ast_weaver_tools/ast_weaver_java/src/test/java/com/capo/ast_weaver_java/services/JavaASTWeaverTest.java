@@ -190,6 +190,82 @@ class JavaASTWeaverTest {
         assertThat(result).contains("// keep-me comment").contains("return    42;").contains("return 7;");
     }
 
+    @Test
+    void weave_memberMethodAlreadyPresent_replacesSignatureTwinInsteadOfDuplicating() throws IOException {
+        Path file = givenSource("""
+            public class Ledger {
+                public String id() {
+                    return "TODO";
+                }
+
+                public String post(String ref) {
+                    return "stale body";
+                }
+            }
+            """);
+
+        JavaASTWeaver.weave(file, payload("Ledger", "id", "id()", "String", null,
+            List.of("public String post(String ref) { return \"fresh body\"; }"), "return \"L\";"));
+
+        String result = Files.readString(file);
+        assertThat(result).contains("fresh body").doesNotContain("stale body").doesNotContain("TODO");
+        assertThat(Pattern.compile("String post\\(").matcher(result).results().count())
+            .as("a retried member with an existing signature replaces, never duplicates")
+            .isEqualTo(1);
+    }
+
+    @Test
+    void weave_recordCompactConstructor_becomesPublic() throws IOException {
+        Path file = tempDir.resolve("Source.java");
+        JavaASTWeaver.weave(file, payload("Sensor", "Sensor", "Sensor(int value)", "void", "record",
+            List.of("int value", "Sensor { if (value < 0) throw new IllegalArgumentException(); }"), ""));
+
+        String result = Files.readString(file);
+        assertThat(result)
+            .contains("public record Sensor(int value)")
+            .contains("public Sensor {")
+            .doesNotContain("\n    Sensor {");
+    }
+
+    @Test
+    void weave_recordCompactConstructorAlreadyBare_replacedNotDuplicated() throws IOException {
+        Path file = givenSource("""
+            package com.acme;
+
+            public record Sensor(int value) {
+                Sensor { if (value < 0) throw new IllegalArgumentException(); }
+            }
+            """);
+
+        JavaASTWeaver.weave(file, payload("com.acme.Sensor", "Sensor", "Sensor(int value)", "void", "record",
+            List.of("int value", "Sensor { if (value < 0) throw new IllegalArgumentException(); }"), ""));
+
+        String result = Files.readString(file);
+        assertThat(Pattern.compile("(?m)^\\s*(public )?Sensor \\{").matcher(result).results().count())
+            .as("the compact constructor is normalized once, never doubled").isEqualTo(1L);
+        assertThat(result).contains("public Sensor {");
+    }
+
+    @Test
+    void weave_nestedRecordMemberTwice_replacesInsteadOfDuplicating() throws IOException {
+        Path file = givenSource("""
+            package com.acme;
+
+            public class Service {
+                public record Result(String ok) { }
+
+                public void run() { }
+            }
+            """);
+
+        JavaASTWeaver.weave(file, payload("com.acme.Service", "run", "run()", "void", "class",
+            List.of("public record Result(String ok) { }"), "{ }"));
+
+        String result = Files.readString(file);
+        assertThat(Pattern.compile("record Result").matcher(result).results().count())
+            .as("a re-woven nested type replaces its twin").isEqualTo(1L);
+    }
+
     private Path givenSource(String source) throws IOException {
         Path file = tempDir.resolve("Source.java");
         Files.writeString(file, source);

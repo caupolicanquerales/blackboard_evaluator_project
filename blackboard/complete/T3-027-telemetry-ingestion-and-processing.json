@@ -1,0 +1,15 @@
+{
+  "id": "T3-027",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-027"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/intake/domain/ValidationStatus.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "ValidationStatus",
+  "intent": "Bounded context telemetry-ingestion-and-processing: define ValidationStatus (domain enum/aggregate the tests reference) in package com.pulsestream.telemetry.intake.domain. Contract is fixed by its usage in MetricBoundaryPolicy.java; implement the smallest correct type that satisfies every usage.",
+  "project": "telemetry-ingestion-and-processing"
+}

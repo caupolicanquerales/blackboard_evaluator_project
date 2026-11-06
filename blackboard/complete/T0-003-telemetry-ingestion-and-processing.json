@@ -1,0 +1,15 @@
+{
+  "id": "T0-003",
+  "targetAgent": "agent-container",
+  "stage": 0,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "db/migrations/V2__event_revisions_schema.sql",
+  "kind": "bootstrap",
+  "layer": "root",
+  "feature": null,
+  "export": "V2__event_revisions_schema.sql",
+  "intent": "Schema migration: PostgreSQL 16 Flyway script db/migrations/V2__event_revisions_schema.sql creating append-only time-partitioned telemetry.event_revisions for context telemetry-ingestion-and-processing.",
+  "project": "telemetry-ingestion-and-processing"
+}

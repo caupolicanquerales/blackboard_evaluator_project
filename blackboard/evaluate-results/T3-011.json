@@ -1,0 +1,26 @@
+{
+  "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/reordering/domain/TelemetryBackfillDetected.java",
+  "stack": "java-springboot",
+  "skill": "java-springboot",
+  "summary": "Minimal immutable domain record; no framework imports, no hacks. Clean; baseline from gate-cache T2-011 (unit unchanged since).",
+  "findings": [],
+  "changes": [],
+  "reverts": [],
+  "final_test": {
+    "status": "passed",
+    "exit_code": 0,
+    "missing_symbols": [],
+    "missing_packages": [],
+    "failures": [],
+    "counts": {
+      "run": 6,
+      "failures": 0,
+      "errors": 0
+    }
+  },
+  "task_id": "T3-011",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-06T20:09:50.665019+00:00"
+}

@@ -1,0 +1,33 @@
+{
+  "id": "T2-008",
+  "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ledger/domain/EventRevision.java",
+  "export": "EventRevision",
+  "method": "nextRevision",
+  "language": "java",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "kind": "record",
+  "signature": "EventRevision nextRevision()",
+  "returns": "EventRevision",
+  "body": "return new EventRevision(deviceId, metric, tDevice, revision + 1, tIngress, validationStatus, rawPayload);",
+  "members": [
+    "String deviceId",
+    "String metric",
+    "Instant tDevice",
+    "long revision",
+    "Instant tIngress",
+    "String validationStatus",
+    "String rawPayload",
+    "public EventRevision {\n    Objects.requireNonNull(deviceId, \"deviceId\");\n    Objects.requireNonNull(metric, \"metric\");\n    Objects.requireNonNull(tDevice, \"tDevice\");\n    Objects.requireNonNull(tIngress, \"tIngress\");\n    Objects.requireNonNull(validationStatus, \"validationStatus\");\n    Objects.requireNonNull(rawPayload, \"rawPayload\");\n    if (revision < 1) {\n        throw new IllegalArgumentException(\"revision must be >= 1\");\n    }\n}",
+    "public EventRevision(String deviceId, String metric, Instant tDevice, long revision, double value) {\n    this(deviceId, metric, tDevice, revision, tDevice, \"VALID\", String.valueOf(value));\n}"
+  ],
+  "imports": [
+    "java.time.Instant",
+    "java.util.Objects"
+  ],
+  "missing": [],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-06T19:40:49.854885+00:00"
+}

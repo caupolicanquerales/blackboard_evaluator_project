@@ -1,0 +1,16 @@
+{
+  "id": "T3-003",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-003"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/intake/infrastructure/R2dbcMetricBoundaryRepository.java",
+  "kind": "refactor",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "R2dbcMetricBoundaryRepository",
+  "intent": "Context Telemetry Intake & Validation. Review reactive boundary adapter: read-only, no blocking calls, correct mapping; keep its tests green.",
+  "project": "telemetry-ingestion-and-processing",
+  "error": "dependsOn T2-003 not resolvable in queue or complete"
+}

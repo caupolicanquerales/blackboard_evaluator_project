@@ -1,0 +1,15 @@
+{
+  "id": "T3-002",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-002"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/intake/domain/MetricBoundaryPolicy.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "MetricBoundaryPolicy",
+  "intent": "Context Telemetry Intake & Validation. Review MetricBoundaryPolicy: inclusive bounds, never drops samples, pure domain; refactor for clarity keeping MetricBoundaryPolicyTest green.",
+  "project": "telemetry-ingestion-and-processing"
+}

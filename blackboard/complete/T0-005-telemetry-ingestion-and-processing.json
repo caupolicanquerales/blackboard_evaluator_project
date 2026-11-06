@@ -1,0 +1,15 @@
+{
+  "id": "T0-005",
+  "targetAgent": "agent-container",
+  "stage": 0,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "db/migrations/backup_recovery.conf",
+  "kind": "bootstrap",
+  "layer": "root",
+  "feature": null,
+  "export": "backup_recovery.conf",
+  "intent": "Backup/recovery: PostgreSQL 16 WAL archiving and point-in-time recovery settings in db/migrations/backup_recovery.conf for context telemetry-ingestion-and-processing.",
+  "project": "telemetry-ingestion-and-processing"
+}

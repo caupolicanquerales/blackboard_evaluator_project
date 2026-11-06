@@ -1,0 +1,37 @@
+{
+  "id": "T2-003",
+  "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/intake/infrastructure/R2dbcMetricBoundaryRepository.java",
+  "export": "R2dbcMetricBoundaryRepository",
+  "method": "findAll",
+  "language": "java",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "kind": "class",
+  "annotations": [
+    "Repository"
+  ],
+  "signature": "Flux<MetricBoundary> findAll()",
+  "returns": "Flux<MetricBoundary>",
+  "body": "return databaseClient.sql(\"SELECT metric, min, max FROM telemetry.metric_boundaries\")\n    .fetch()\n    .all()\n    .map(R2dbcMetricBoundaryRepository::toBoundary);",
+  "members": [
+    "private final DatabaseClient databaseClient;",
+    "public R2dbcMetricBoundaryRepository(DatabaseClient databaseClient) {\n    this.databaseClient = Objects.requireNonNull(databaseClient, \"databaseClient\");\n}",
+    "public Mono<MetricBoundary> findByMetric(String metric) {\n    Objects.requireNonNull(metric, \"metric\");\n    return databaseClient.sql(\"SELECT metric, min, max FROM telemetry.metric_boundaries WHERE metric = :metric\")\n        .bind(\"metric\", Parameter.from(metric))\n        .fetch()\n        .all()\n        .map(R2dbcMetricBoundaryRepository::toBoundary)\n        .next();\n}",
+    "private static MetricBoundary toBoundary(Map<String, Object> row) {\n    return new MetricBoundary(\n        (String) row.get(\"metric\"),\n        ((Number) row.get(\"min\")).doubleValue(),\n        ((Number) row.get(\"max\")).doubleValue());\n}"
+  ],
+  "imports": [
+    "com.pulsestream.telemetry.intake.domain.MetricBoundary",
+    "java.util.Map",
+    "java.util.Objects",
+    "org.springframework.r2dbc.core.DatabaseClient",
+    "org.springframework.r2dbc.core.Parameter",
+    "org.springframework.stereotype.Repository",
+    "reactor.core.publisher.Flux",
+    "reactor.core.publisher.Mono"
+  ],
+  "missing": [],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-06T19:47:38.398092+00:00"
+}

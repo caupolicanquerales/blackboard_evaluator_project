@@ -1,0 +1,32 @@
+{
+  "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/reordering/application/ReorderingService.java",
+  "stack": "java-springboot",
+  "skill": "coder-framework/java-springboot",
+  "summary": "Audit clean: reactive, deferred per-subscription state, port-only dependencies, retry via backoff without discarding events.",
+  "findings": [
+    "Minor: closeWindow typed Function<String,Object>; could be TelemetryWindowOrdered (cosmetic, left unchanged).",
+    "Retry exhaustion propagates error (no discard); no dead-letter port available in unit."
+  ],
+  "changes": [],
+  "reverts": [],
+  "final_test": {
+    "status": "passed",
+    "exit_code": 0,
+    "missing_symbols": [],
+    "missing_packages": [],
+    "failures": [],
+    "counts": {
+      "run": 6,
+      "failures": 0,
+      "errors": 0
+    },
+    "command": "./mvnw -Dtest=ReorderingServiceTest test",
+    "task_id": "T3-007",
+    "source": "gate-cache T2-007"
+  },
+  "task_id": "T3-007",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-06T20:08:43.957168+00:00"
+}

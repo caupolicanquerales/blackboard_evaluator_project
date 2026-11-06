@@ -1,0 +1,15 @@
+{
+  "id": "T3-009",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-009"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ledger/infrastructure/R2dbcEventRevisionRepository.java",
+  "kind": "refactor",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "R2dbcEventRevisionRepository",
+  "intent": "Context Telemetry Event Ledger. Review repository: INSERT-only append, parameterized SQL, efficient time-range queries matching the partitioned schema; keep tests green.",
+  "project": "telemetry-ingestion-and-processing"
+}

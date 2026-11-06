@@ -1,0 +1,15 @@
+{
+  "id": "T2-004",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-004"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/intake/application/IntakeTelemetryUseCase.java",
+  "kind": "code",
+  "layer": "application",
+  "feature": null,
+  "export": "IntakeTelemetryUseCase",
+  "intent": "Context Telemetry Intake & Validation. ingest(sample): Mono<Void> that stamps tIngress, validates via MetricBoundaryPolicy, and publishes TelemetrySampleValidated or ValidationFailed to the reordering event port (bounded Sinks buffer with backpressure; never drops). Validation status opaque downstream.",
+  "project": "telemetry-ingestion-and-processing"
+}

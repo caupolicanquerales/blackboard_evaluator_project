@@ -36,12 +36,14 @@ STAGE_AGENTS = {
     1: "agent-tester",
     2: "agent-coder",
     3: "agent-evaluator",
+    4: "agent-assembly",
 }
 STAGE_KINDS = {
     0: ("bootstrap",),
     1: ("test",),
     2: ("code",),
     3: ("refactor",),
+    4: ("assembly",),
 }
 ALLOWED_AGENTS = tuple(STAGE_AGENTS.values())
 
@@ -52,6 +54,7 @@ AGENT_CALL_BUDGETS = {
     STAGE_AGENTS[1]: 8,
     STAGE_AGENTS[2]: 6,
     STAGE_AGENTS[3]: 12,
+    STAGE_AGENTS[4]: 12,
     ARCHITECT_AGENT: 12,
     DATABASE_AGENT: 10,
     DISCOVERY_AGENT: 10,
@@ -70,6 +73,13 @@ def call_budget(target_agent, units=1):
         return CODER_BATCH_FIRST_CALLS + CODER_BATCH_CALLS_PER_UNIT * units
     return budget
 
+
+# A session streaming past this multiple of its budget is KILLED mid-run: every extra turn
+# re-sends the whole transcript, so an overshooting agent is not a warning, it is the burn.
+# Degrades to the after-the-fact warning when the CLI stream exposes no tool events.
+BUDGET_HARD_KILL_FACTOR = 2.0
+BUDGET_HARD_KILL_SLACK = 4
+
 REQUIRED_KEYS = (
     "id",
     "targetAgent",
@@ -86,13 +96,14 @@ REQUIRED_KEYS = (
 PROMPT_KEYS = ("id", "path", "kind", "layer", "feature", "export", "intent", "dependsOn", "project")
 PROJECTS_SUBDIR = "services"
 LAYERS = ("root", "domain", "application", "infrastructure", "interface", "shared", "features")
-ID_PATTERN = re.compile(r"^T([0-3])-(\d{3})$")
+ID_PATTERN = re.compile(r"^T([0-4])-(\d{3})$")
 
 VERIFY_MODES = ("none", "typecheck", "build")
 MAX_TDD_RETRIES = 3
 TDD_STAGE = 2
 TESTER_STAGE = 1
 EVALUATOR_STAGE = 3
+ASSEMBLY_STAGE = 4
 AST_DISPATCH_TIMEOUT = 1800
 WEAVER_DISPATCH_TIMEOUT = 1800
 TEST_GATE_TIMEOUT = 600

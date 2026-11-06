@@ -31,10 +31,21 @@ SHELL_OPERATOR_TOKENS = ("&&", "||", ";", "|", "&", ">", "<", "$", "`")
 
 # javac / maven / tsc: [ERROR] path.java:[12,5] cannot find symbol | error TS2554:
 RE_COMPILE_HEAD = re.compile(
-    r"cannot find symbol|cannot access|package .* does not exist|error: |error TS\d+"
+    r"cannot find symbol|cannot access|package .* does not exist|No module named|"
+    r"[Cc]annot find module|could not import|no required module provides|error: |error TS\d+"
 )
 # javac symbol line: "  symbol:   class Foo"
 RE_SYMBOL = re.compile(r"^\s*symbol:\s+(?:class|variable|method|interface|enum|package)?\s*(.+?)\s*$")
+# A missing PACKAGE/MODULE (not a symbol) means the dependency is not on the classpath/module
+# path and no coder payload can add it: the orchestrator aborts on these instead of burning
+# sessions. Every toolchain phrasing is normalized HERE, so consumers read one field.
+RE_MISSING_PACKAGE = re.compile(
+    r"package ([a-z][\w.]*) does not exist"                 # javac
+    r"|No module named ['\"]([\w.]+)['\"]"                  # python
+    r"|[Cc]annot find module ['\"]([^'\"]+)['\"]"           # tsc / node
+    r"|could not import ([\w./\-]+)"                        # go
+    r"|no required module provides package ([\w./\-]+)"      # go
+)
 # python: NameError / ImportError / ModuleNotFoundError
 RE_PY_MISSING = re.compile(r"(?:NameError|ImportError|ModuleNotFoundError): (.+)")
 # go: undefined: Foo
@@ -138,7 +149,7 @@ def _follow_message(lines, i):
 
 def parse(output):
     lines = output.splitlines()
-    missing, failures, compile_hit = [], [], False
+    missing, missing_packages, failures, compile_hit = [], [], [], False
 
     for i, line in enumerate(lines):
         if RE_COMPILE_HEAD.search(line):
@@ -147,6 +158,11 @@ def parse(output):
                 m = RE_SYMBOL.match(follow)
                 if m:
                     missing.append(m.group(1))
+            m = RE_MISSING_PACKAGE.search(line)
+            if m:
+                pkg = next((g for g in m.groups() if g), None)
+                if pkg:
+                    missing_packages.append(pkg)
         m = RE_PY_MISSING.search(line)
         if m:
             compile_hit = True
@@ -177,7 +193,7 @@ def parse(output):
         if not matched_failure and RE_ASSERT.search(line) and "Tests run" not in line:
             failures.append({"test": "", "message": line.strip()[:300]})
 
-    return compile_hit, unique(missing), failures[:MAX_LIST], parse_counts(output)
+    return compile_hit, unique(missing), unique(missing_packages), failures[:MAX_LIST], parse_counts(output)
 
 
 def parse_counts(output):
@@ -233,12 +249,13 @@ def main():
         print(json.dumps(result, indent=2))
         return 1
 
-    compile_hit, missing, failures, counts = parse(output)
+    compile_hit, missing, missing_packages, failures, counts = parse(output)
     status = classify(exit_code, compile_hit, missing, failures, counts, output)
     result = {
         "status": status,
         "exit_code": exit_code,
         "missing_symbols": missing,
+        "missing_packages": missing_packages,
         "failures": failures,
         "counts": counts,
     }

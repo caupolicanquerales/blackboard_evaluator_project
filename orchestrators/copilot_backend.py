@@ -115,10 +115,11 @@ def build_copilot_command(args, profile, message, add_project_root=True):
     return command
 
 
-def run_agent(command, timeout, cwd):
+def run_agent(command, timeout, cwd, hard_calls=None):
     """Run one headless session; returns (ok, reason, tool_calls)."""
-    with telemetry.span("blackboard.agent", {"agent": _agent_name(command), "timeout": timeout}) as current:
-        ok, reason, calls = _run_agent(command, timeout, cwd)
+    with telemetry.span("blackboard.agent", {"agent": _agent_name(command), "timeout": timeout,
+                                             "hard_budget_calls": hard_calls}) as current:
+        ok, reason, calls = _run_agent(command, timeout, cwd, hard_calls)
         if current is not None:
             try:
                 current.set_attribute("agent.tool_calls", calls)
@@ -174,8 +175,13 @@ def _handle_copilot_event(line, result):
             print(f"    [tokens] {usage}")
 
 
-def _run_agent(command, timeout, cwd):
-    """Run one headless session. Returns (ok, reason, tool_calls)."""
+def _run_agent(command, timeout, cwd, hard_calls=None):
+    """Run one headless session. Returns (ok, reason, tool_calls).
+
+    When `hard_calls` is set and the session streams that many tool-call events, the process
+    is killed there and then: every further turn re-sends the whole transcript, so a runaway
+    agent must be stopped mid-run, not audited after the fact.
+    """
     try:
         process = subprocess.Popen(
             command,
@@ -189,6 +195,7 @@ def _run_agent(command, timeout, cwd):
     except OSError as exc:
         return False, f"cannot launch {command[0]}: {exc}", 0
     timed_out = {"flag": False}
+    budget_killed = {"flag": False}
 
     def kill_on_timeout():
         timed_out["flag"] = True
@@ -209,6 +216,11 @@ def _run_agent(command, timeout, cwd):
     try:
         for line in process.stdout:
             _handle_copilot_event(line, result)
+            if (hard_calls and not budget_killed["flag"] and not result.get("seen")
+                    and result.get("calls", 0) > hard_calls):
+                budget_killed["flag"] = True
+                process.kill()
+                break
         process.wait()
     finally:
         watchdog.cancel()
@@ -217,6 +229,9 @@ def _run_agent(command, timeout, cwd):
         print(f"    [calls] {result['calls']} tool call(s) in this session")
     if timed_out["flag"]:
         return False, f"agent timed out after {timeout}s", result.get("calls", 0)
+    if budget_killed["flag"]:
+        return False, (f"agent killed at the hard tool budget: {result.get('calls', 0)} calls, "
+                       f"cap {hard_calls} (each further turn re-sends the whole transcript)"), result.get("calls", 0)
     stderr_tail = "".join(stderr_lines).strip()[-1000:]
     if process.returncode != 0:
         return False, f"agent exited {process.returncode}: {stderr_tail}", result.get("calls", 0)
@@ -254,10 +269,15 @@ def _run_phase(agent, message, args, post_check=None, span_name=None,
         print(f"[cmd ] {args.copilot_bin} -p <{cmd_note or 'task'}> -s --agent {profile['name']} "
               f"--no-ask-user --add-dir {settings.ROOT} --allow-all-tools "
               f"--allow-tool {args.allow_tool} --allow-all-paths")
-        started = time.time()
-        ok, reason, calls = run_agent(command, timeout or args.timeout, settings.ROOT)
-        calls = measured_calls(started, message, calls)
         budget = settings.call_budget(agent, units)
+        hard = None
+        if budget is not None:
+            hard = max(budget + settings.BUDGET_HARD_KILL_SLACK,
+                       int(budget * settings.BUDGET_HARD_KILL_FACTOR))
+            print(f"[live] hard kill armed at {hard} tool calls (budget {budget})")
+        started = time.time()
+        ok, reason, calls = run_agent(command, timeout or args.timeout, settings.ROOT, hard_calls=hard)
+        calls = measured_calls(started, message, calls)
         if budget is not None and calls > budget:
             print(f"[budget] {agent}: {calls} tool calls against a budget of {budget} "
                   f"(each extra call re-sends the whole transcript)")

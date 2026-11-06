@@ -1,0 +1,17 @@
+{
+  "id": "T2-009",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-009",
+    "T0-002",
+    "T0-003"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ledger/infrastructure/R2dbcEventRevisionRepository.java",
+  "kind": "code",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "R2dbcEventRevisionRepository",
+  "intent": "Context Telemetry Event Ledger. R2DBC DatabaseClient adapter for telemetry.event_revisions: append (INSERT only), history by device/metric/time range, latest revision per sample. No UPDATE or DELETE.",
+  "project": "telemetry-ingestion-and-processing"
+}

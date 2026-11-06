@@ -24,12 +24,14 @@ SESSION_GLOB = "~/.copilot/session-state/*/events.jsonl"
 
 BUDGETS = {
     "discovery": 10, "mapping": 10, "architect": 12, "database": 10,
-    "container": 10, "tester": 8, "coder": 5, "evaluator": 12,
+    "container": 10, "tester": 8, "coder": 6, "evaluator": 12, "assembly": 12,
 }
 
 PATTERNS = (
-    ("skills_folder_listing", re.compile(r"(ls|find|glob|tree|echo \*)[^\n]*skills/?")),
-    ("tooling_source_read", re.compile(r"(grep|cat|sed|head|tail|awk)[^\n]*(orchestrators/|ast_tools/|ast_weaver_tools/|code-weaver-dispatcher|ast-dispatcher)")),
+    # verbs must be whole words at a command position: ".opencode/skills/run-test-tool.py"
+    # (required tool paths) must not read as a folder listing through the "ls" inside "skills".
+    ("skills_folder_listing", re.compile(r"(?:^|[\s;&|])(ls|find|glob|tree|echo \*)\s[^\n]*skills/?")),
+    ("tooling_source_read", re.compile(r"(?:^|[\s;&|])(grep|cat|sed|head|tail|awk)\s[^\n]*(orchestrators/|ast_tools/|ast_weaver_tools/|code-weaver-dispatcher|ast-dispatcher)")),
     ("other_task_record", re.compile(r"blackboard/(queue|complete|error)/T[0-3]-")),
     ("git", re.compile(r"\bgit (status|diff|log|show)\b")),
     ("agent_scratch", re.compile(r"\.copilot/session-state")),
@@ -37,7 +39,7 @@ PATTERNS = (
     ("writer_call", re.compile(r"write-(coder-changes|red-phase|evaluate-results|architect-file)\.py")),
 )
 
-UNIT_RE = re.compile(r"\bT([0-3])-(\d{3})\b")
+UNIT_RE = re.compile(r"\bT([0-4])-(\d{3})\b")
 BATCH_UNITS = re.compile(r"BATCH MODE.*?(\d+) tasks below", re.S)
 VIOLATIONS = ("skills_folder_listing", "tooling_source_read", "other_task_record",
               "git", "agent_scratch", "src_full_read")
@@ -52,6 +54,7 @@ ROLE_MARKERS = (
     ("coder", "create the implementation at"),
     ("tester", "create the test at"),
     ("evaluator", "inspect the implementation at"),
+    ("assembly", "boot the generated application"),
     ("container", "generate the project root and scaffold"),
 )
 
@@ -143,14 +146,35 @@ def read_session(events_path):
             "violations": dict(violations), "in": in_tok, "out": out_tok}
 
 
+def first_user_message(events_path):
+    """The session's real prompt from its event record.
+
+    workspace.yaml truncates the prompt, so a BATCH MODE session loses its marker there and
+    gets audited against the single-task budget: an artifact that cries wolf. The events file
+    holds the full first user message; classify from that when available.
+    """
+    for line in open(events_path, encoding="utf-8", errors="ignore"):
+        try:
+            event = json.loads(line)
+        except ValueError:
+            continue
+        if event.get("type") == "user.message":
+            content = (event.get("data") or {}).get("content")
+            if isinstance(content, str) and content.strip():
+                return content
+    return ""
+
+
 def collect(since_hours):
     cutoff = time.time() - since_hours * 3600
     rows = []
     for events_path in glob.glob(os.path.expanduser(SESSION_GLOB)):
         if not Path(events_path).is_file() or Path(events_path).stat().st_mtime < cutoff:
             continue
-        yaml_path = Path(events_path).with_name("workspace.yaml")
-        prompt = yaml_path.read_text(encoding="utf-8", errors="ignore") if yaml_path.is_file() else ""
+        prompt = first_user_message(events_path)
+        if not prompt:
+            yaml_path = Path(events_path).with_name("workspace.yaml")
+            prompt = yaml_path.read_text(encoding="utf-8", errors="ignore") if yaml_path.is_file() else ""
         role, unit = classify(prompt)
         stats = read_session(events_path)
         if stats["calls"] or stats["turns"]:

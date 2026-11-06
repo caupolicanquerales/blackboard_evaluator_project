@@ -1,0 +1,15 @@
+{
+  "id": "T3-004",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-004"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/intake/application/IntakeTelemetryUseCase.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "IntakeTelemetryUseCase",
+  "intent": "Context Telemetry Intake & Validation. Review use case: no blocking, bounded buffer with backpressure, no sample dropped, invalid samples flagged; keep tests green.",
+  "project": "telemetry-ingestion-and-processing"
+}

@@ -1,0 +1,13 @@
+{
+  "id": "T4-001",
+  "targetAgent": "agent-assembly",
+  "stage": 4,
+  "dependsOn": [],
+  "path": "src/main/java/com/pulsestream/telemetry/TelemetryIngestionAndProcessingApplication.java",
+  "kind": "assembly",
+  "layer": "root",
+  "feature": null,
+  "export": "TelemetryIngestionAndProcessingApplication",
+  "intent": "Bounded context telemetry-ingestion-and-processing: boot the application. The scaffold smoke test TelemetryIngestionAndProcessingApplicationTests must pass: every injected collaborator of the woven production classes must resolve to a real bean (annotations, adapters for ports, configuration). Assembly gate command (argv-only, run it through run-test-tool, never invent another): ./mvnw -Dtest=TelemetryIngestionAndProcessingApplicationTests test. Edit only files under src/main (java and resources); never touch src/test, the build file, migrations, or another domain.",
+  "project": "telemetry-ingestion-and-processing"
+}

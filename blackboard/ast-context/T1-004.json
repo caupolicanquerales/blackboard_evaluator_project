@@ -1,0 +1,37 @@
+{
+  "task_id": "T1-004",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "IntakeTelemetryUseCase",
+    "constructors": [
+      [
+        "policy",
+        "port",
+        "CLOCK"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "useCase",
+        "method": "ingest",
+        "args": [
+          "sample()"
+        ]
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class IntakeTelemetryUseCaseTest {",
+      "private final IntakeTelemetryUseCase useCase = new IntakeTelemetryUseCase(policy, port, CLOCK);",
+      "StepVerifier.create(useCase.ingest(sample())).verifyComplete();",
+      "StepVerifier.create(useCase.ingest(sample())).verifyComplete();",
+      "StepVerifier.create(useCase.ingest(sample())).verifyComplete();",
+      "StepVerifier.create(useCase.ingest(sample())).verifyComplete();",
+      "StepVerifier.create(useCase.ingest(sample()))"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

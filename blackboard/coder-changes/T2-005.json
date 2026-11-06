@@ -1,0 +1,46 @@
+{
+  "id": "T2-005",
+  "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/intake/api/TelemetryIngressController.java",
+  "export": "TelemetryIngressController",
+  "method": "ingest",
+  "language": "java",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "kind": "class",
+  "annotations": [
+    "RestController",
+    "RequestMapping(\"/telemetry\")"
+  ],
+  "methodAnnotations": [
+    "PostMapping(\"/samples\")",
+    "ResponseStatus(HttpStatus.ACCEPTED)"
+  ],
+  "signature": "public Mono<Void> ingest(@Valid @RequestBody TelemetrySampleRequest request)",
+  "returns": "Mono<Void>",
+  "body": "return useCase.ingest(new TelemetrySample(\n        request.deviceId(), request.metric(), request.value(), request.timestamp()));",
+  "members": [
+    "private final IntakeTelemetryUseCase useCase;",
+    "public TelemetryIngressController(IntakeTelemetryUseCase useCase) {\n    this.useCase = useCase;\n}",
+    "public record TelemetrySampleRequest(\n        @NotBlank String deviceId,\n        @NotBlank String metric,\n        @NotNull Double value,\n        @NotNull Instant timestamp) {\n}"
+  ],
+  "imports": [
+    "java.time.Instant",
+    "jakarta.validation.Valid",
+    "jakarta.validation.constraints.NotBlank",
+    "jakarta.validation.constraints.NotNull",
+    "org.springframework.http.HttpStatus",
+    "org.springframework.web.bind.annotation.PostMapping",
+    "org.springframework.web.bind.annotation.RequestBody",
+    "org.springframework.web.bind.annotation.RequestMapping",
+    "org.springframework.web.bind.annotation.ResponseStatus",
+    "org.springframework.web.bind.annotation.RestController",
+    "reactor.core.publisher.Mono",
+    "com.pulsestream.telemetry.intake.application.IntakeTelemetryUseCase",
+    "com.pulsestream.telemetry.intake.domain.TelemetrySample"
+  ],
+  "missing": [],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-06T19:02:07.988658+00:00"
+}

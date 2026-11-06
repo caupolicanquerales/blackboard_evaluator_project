@@ -1,0 +1,25 @@
+{
+  "id": "T2-021",
+  "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ledger/application/AppendRevisionCommand.java",
+  "export": "AppendRevisionCommand",
+  "method": "AppendRevisionCommand",
+  "language": "java",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "signature": "record AppendRevisionCommand",
+  "returns": "void",
+  "body": "",
+  "imports": [
+    "com.pulsestream.telemetry.ledger.domain.TelemetryEventKey"
+  ],
+  "missing": [],
+  "kind": "record",
+  "members": [
+    "TelemetryEventKey key",
+    "double value"
+  ],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-06T19:20:41.081056+00:00"
+}

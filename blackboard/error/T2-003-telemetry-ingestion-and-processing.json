@@ -1,0 +1,17 @@
+{
+  "id": "T2-003",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-003",
+    "T0-004"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/intake/infrastructure/R2dbcMetricBoundaryRepository.java",
+  "kind": "code",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "R2dbcMetricBoundaryRepository",
+  "intent": "Context Telemetry Intake & Validation. Reactive read-only adapter over DatabaseClient reading telemetry.metric_boundaries into MetricBoundary(metric,min,max) as Flux; implements an application-level boundary provider port.",
+  "project": "telemetry-ingestion-and-processing",
+  "error": "TDD failed after 3 attempts: test gate: status=assertion_failure; exit_code=1; tests=4 failures=1 errors=0"
+}

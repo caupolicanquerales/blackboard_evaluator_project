@@ -156,10 +156,13 @@ def emit_tasks(paths):
 
     A path may hold one task object or an array of them: the architect drafts its whole
     decomposition in a single file, which keeps its session at two tool calls instead of
-    one create per task.
+    one create per task. Every validation error is reported in ONE message: the agent
+    fixes the draft in one rewrite. Stopping at the first error makes the agent edit,
+    re-emit, edit again: every extra turn re-sends the whole transcript.
     """
     index = load_index()
     staged = []
+    errors = []
     with telemetry.span("blackboard.emit", {"tasks.requested": len(paths)}) as current:
         for raw in paths:
             source = Path(raw)
@@ -173,20 +176,26 @@ def emit_tasks(paths):
             for position, task in enumerate(batch, start=1):
                 label = f"{source}" if isinstance(loaded, dict) else f"{source}[{position}]"
                 if not isinstance(task, dict):
-                    reason = f"{label}: task must be a JSON object"
-                    telemetry.mark_error(current, reason)
-                    return reason
+                    errors.append(f"{label}: task must be a JSON object")
+                    continue
                 reason = tasks.validate(task, index)
                 if reason:
-                    reason = f"{label}: {reason}"
-                    telemetry.mark_error(current, reason)
-                    return reason
+                    errors.append(f"{label}: {reason}")
+                    if isinstance(task.get("id"), str) and task["id"] not in index:
+                        # Still resolve same-batch dependsOn against it: otherwise every sibling
+                        # task gets a cascading "not resolvable" error that hides the real one.
+                        index[task["id"]] = task
+                    continue
                 if task["id"] in index:
-                    reason = f"{task['id']}: id already exists in queue or complete"
-                    telemetry.mark_error(current, reason)
-                    return reason
+                    errors.append(f"{task['id']}: id already exists in queue or complete")
+                    continue
                 index[task["id"]] = task
                 staged.append(task)
+        if errors:
+            reason = "\n".join(errors + [
+                "Fix EVERY error above with one rewrite of the draft file, then re-emit once."])
+            telemetry.mark_error(current, reason)
+            return reason
         for task in staged:
             destination = settings.QUEUE_DIR / tasks.task_file_name(task)
             with telemetry.span("blackboard.queue", {"file": destination.name,

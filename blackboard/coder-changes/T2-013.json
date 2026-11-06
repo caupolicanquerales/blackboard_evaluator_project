@@ -1,0 +1,26 @@
+{
+  "id": "T2-013",
+  "project": "telemetry-ingestion-and-processing",
+  "language": "java",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "signature": "ValidatedTelemetryEvent(String metric, Instant timestamp, double value)",
+  "returns": "void",
+  "body": "",
+  "missing": [],
+  "targetFile": "src/main/java/com/pulsestream/telemetry/reordering/domain/ValidatedTelemetryEvent.java",
+  "export": "ValidatedTelemetryEvent",
+  "method": "ValidatedTelemetryEvent",
+  "kind": "record",
+  "members": [
+    "String metric",
+    "Instant timestamp",
+    "double value"
+  ],
+  "imports": [
+    "java.time.Instant"
+  ],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-06T19:23:27.317051+00:00"
+}

@@ -1,0 +1,15 @@
+{
+  "id": "T1-004",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/intake/application/IntakeTelemetryUseCaseTest.java",
+  "kind": "test",
+  "layer": "application",
+  "feature": null,
+  "export": "IntakeTelemetryUseCaseTest",
+  "intent": "Context Telemetry Intake & Validation. Test IntakeTelemetryUseCase.ingest(sample) with StepVerifier: stamps tIngress, validates via MetricBoundaryPolicy, publishes TelemetrySampleValidated or ValidationFailed (invalid samples are flagged and still published, never discarded) to the reordering event port; bounded buffer applies backpressure instead of dropping.",
+  "project": "telemetry-ingestion-and-processing"
+}

@@ -1,0 +1,15 @@
+{
+  "id": "T3-010",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-010"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ledger/application/AppendRevisionUseCase.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "AppendRevisionUseCase",
+  "intent": "Context Telemetry Event Ledger. Review use case: revision numbering, event publication, error propagation, port-only dependencies; keep tests green.",
+  "project": "telemetry-ingestion-and-processing"
+}

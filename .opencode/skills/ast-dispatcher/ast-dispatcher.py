@@ -179,6 +179,7 @@ def _method_from_queue(queue: dict) -> str | None:
 
 
 RE_TEST_METHOD = re.compile(r"\bvoid\s+([a-z][A-Za-z0-9_]*)\s*\(")
+LIFECYCLE_HELPERS = {"setup", "teardown", "beforeeach", "aftereach", "init", "cleanup", "main"}
 
 
 def _method_from_test_file(project_root: Path, queue: dict) -> str | None:
@@ -186,7 +187,9 @@ def _method_from_test_file(project_root: Path, queue: dict) -> str | None:
 
     The tester names every case `method_condition_expected` (java-junit5 skill), so a
     red phase that only reports missing TYPES still says which production method the
-    unit is about. Only the unit's test file is read, never a sibling's.
+    unit is about: only underscore-convention names qualify, and lifecycle helpers
+    (setUp/tearDown) are never the unit. Only the unit's test file is read, never a
+    sibling's.
     """
     relative = queue.get("path")
     if not isinstance(relative, str) or not relative.strip():
@@ -194,7 +197,10 @@ def _method_from_test_file(project_root: Path, queue: dict) -> str | None:
     test_file = project_root / relative
     if not test_file.is_file():
         return None
-    for name in RE_TEST_METHOD.findall(_read_text(test_file)):
+    names = [n for n in RE_TEST_METHOD.findall(_read_text(test_file))
+             if n.split("_", 1)[0].strip().lower() not in LIFECYCLE_HELPERS]
+    conventional = [n for n in names if "_" in n]
+    for name in conventional or names:
         candidate = name.split("_", 1)[0].strip()
         if candidate and candidate[0].islower():
             return candidate
@@ -250,7 +256,11 @@ def load_task_context(root: Path, task_id: str, project_root: Path | None = None
     """
     queue = _read_json(root / "blackboard" / "queue" / f"{task_id}.json")
     if not queue:
-        for folder in (root / "blackboard" / "complete", root / "blackboard" / "error"):
+        # Queue files carry the domain slug ("<id>-<project>.json"), and the dispatch runs
+        # while the task is STILL in the queue: the slug-named fallback must cover queue too,
+        # or stage-1 tasks resolve to {}, the producer lookup is skipped and no context lands.
+        for folder in (root / "blackboard" / "queue", root / "blackboard" / "complete",
+                       root / "blackboard" / "error"):
             for candidate in sorted(folder.glob(f"{task_id}-*.json")):
                 queue = _read_json(candidate)
                 if queue:
@@ -264,6 +274,7 @@ def load_task_context(root: Path, task_id: str, project_root: Path | None = None
     return {
         "target_class": target_class,
         "target_method": _target_method(red, producer or queue, project_root, queue),
+        "test_path": queue.get("path") if queue.get("stage") == 1 else None,
         "sources": {"queue": bool(queue), "red_phase": bool(red), "producer": bool(producer)},
     }
 
@@ -317,6 +328,25 @@ class Options:
     builders_dir: Path
 
 
+def _apply_contract(result: dict, root: Path, task_id: str, ctx: dict, builder, reason: str) -> bool:
+    """Write the test-derived contract into result + blackboard/ast-context; False if none exists.
+
+    The test IS the executable specification when the extractor has nothing (or nothing
+    valid) to read: each language builder reads its own syntax from it (the base offers a
+    neutral fallback), so the stage-2 coder never codes from bare symbol names.
+    """
+    contract = builder.test_contract(Path(result["project_root"]), ctx)
+    if contract is None:
+        return False
+    synth = {"status": "test_contract", "exit_code": 0,
+             "stdout": json.dumps(contract, ensure_ascii=False), "stderr": ""}
+    result["status"] = "test_contract"
+    result["reason"] = reason
+    result["context"] = contract
+    result["context_file"] = str(write_ast_context(root, task_id, synth))
+    return True
+
+
 def dispatch(options: Options) -> dict:
     root, project_root, task_id = options.root, options.project_root, options.task_id
     registry = BuilderRegistry.load(options.builders_dir)
@@ -345,6 +375,10 @@ def dispatch(options: Options) -> dict:
             detail = builder.missing_command_reason(project_root, ctx, options.tool_root)
         except Exception:  # noqa: BLE001
             detail = ""
+        if _apply_contract(result, root, task_id, ctx, builder,
+                           "production class not written yet: contract extracted from the unit's own test "
+                           f"({ctx.get('test_path')})"):
+            return result
         result["status"] = "unsupported"
         result["context"] = None
         result["reason"] = (f"{builder.language} builder produced no command: "
@@ -353,6 +387,11 @@ def dispatch(options: Options) -> dict:
 
     result["command"] = argv
     result.update(run(argv, project_root, options.timeout))
+    if result.get("status") != "ok" and _apply_contract(
+            result, root, task_id, ctx, builder,
+            "extractor could not read the production source; contract extracted from the unit's own test "
+            f"({ctx.get('test_path')}) instead"):
+        return result
     result["context_file"] = str(write_ast_context(root, task_id, result))
     return result
 
@@ -408,9 +447,10 @@ def main() -> int:
     )
     result = dispatch(options)
     print(json.dumps(result, indent=2))
-    # "unsupported" means there is nothing to extract yet (a brand-new unit has no
-    # production source to read): an informational outcome, not a dispatcher failure.
-    return 0 if result.get("status") in ("ok", "unsupported") else 1
+    # "unsupported" means there is nothing to extract and no test to read either.
+    # "test_contract" is the greenfield outcome: the contract landed in blackboard/ast-context,
+    # derived mechanically from the unit's test. Both are informational, not dispatcher failures.
+    return 0 if result.get("status") in ("ok", "unsupported", "test_contract") else 1
 
 
 if __name__ == "__main__":

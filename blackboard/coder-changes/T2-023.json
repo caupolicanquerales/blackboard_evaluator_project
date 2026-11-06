@@ -1,0 +1,25 @@
+{
+  "id": "T2-023",
+  "project": "telemetry-ingestion-and-processing",
+  "language": "java",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "signature": "ReleasedSample(TelemetrySample sample, boolean backfill)",
+  "returns": "void",
+  "body": "",
+  "missing": [],
+  "targetFile": "src/main/java/com/pulsestream/telemetry/reordering/domain/ReleasedSample.java",
+  "export": "ReleasedSample",
+  "method": "ReleasedSample",
+  "kind": "record",
+  "members": [
+    "TelemetrySample sample",
+    "boolean backfill"
+  ],
+  "imports": [
+    "com.pulsestream.telemetry.intake.domain.TelemetrySample"
+  ],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-06T19:23:27.111700+00:00"
+}

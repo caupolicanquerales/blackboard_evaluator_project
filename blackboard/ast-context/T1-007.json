@@ -1,0 +1,30 @@
+{
+  "task_id": "T1-007",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "ReorderingService",
+    "constructors": [
+      [
+        "port",
+        "WINDOW"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [],
+    "verified": [],
+    "usage_lines": [
+      "class ReorderingServiceTest {",
+      "private static ReorderingService service(FakeLedgerEventPort port) {",
+      "return new ReorderingService(port, WINDOW);",
+      "StepVerifier.withVirtualTime(() -> service(port).process(source))",
+      "StepVerifier.withVirtualTime(() -> service(port).process(source))",
+      "StepVerifier.withVirtualTime(() -> service(port).process(source))",
+      "StepVerifier.withVirtualTime(() -> service(port).process(source))",
+      "StepVerifier.withVirtualTime(() -> service(port).process(source))",
+      "StepVerifier.withVirtualTime(() -> service(port).process(source))"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

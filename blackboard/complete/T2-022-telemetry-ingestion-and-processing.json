@@ -1,0 +1,16 @@
+{
+  "id": "T2-022",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T0-001",
+    "T1-007"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/reordering/application/LedgerEventPort.java",
+  "kind": "code",
+  "layer": "application",
+  "feature": null,
+  "export": "LedgerEventPort",
+  "intent": "Bounded context telemetry-ingestion-and-processing: define LedgerEventPort (domain port interface with exactly the methods the tests invoke or stub) in package com.pulsestream.telemetry.reordering.application. Contract is fixed by its usage in ReorderingService.java; implement the smallest correct type that satisfies every usage.",
+  "project": "telemetry-ingestion-and-processing"
+}

@@ -56,7 +56,7 @@ permission:
 ## Test command (never invent, never global)
 - Walk `dependsOn` (T3 -> T2 -> T1) through `blackboard/complete/` and `blackboard/queue/`; take the stage 1 task of the same unit.
 - Read `blackboard/red-phase/<T1-id>.json`; `command` is the scoped single-test-class argv (e.g. `./mvnw -Dtest=GreeterTest test`). Missing record or tester task: report, stop.
-- Baseline: `python3 .opencode/skills/tester-framework/run-test-tool.py --cwd <project_root> --cmd "<command>"` (argv-only: no `&&`, `;`, `|`, `$VAR`). Status != `passed`: report, stop. Never refactor over red.
+First check `blackboard/gate-cache/<T2-id>.json` (the id in your own `dependsOn`): if it shows `result.status == "passed"` and `find <path> -newer blackboard/gate-cache/<T2-id>.json` returns nothing, the unit is green untouched and that verdict is your baseline: do NOT re-run Maven. Otherwise run `python3 .opencode/skills/tester-framework/run-test-tool.py --cwd <project_root> --cmd "<command>"` (argv-only: no `&&`, `;`, `|`, `$VAR`). Status != `passed`: report, stop. Never refactor over red.
 
 ## Audit (fix small-scope in unit + same-layer collaborators)
 - Clean code: duplicate blocks; redundant/unreachable checks; defensive code duplicating framework guarantees; green-phase hacks (hardcoded expected values, test-specific branches, swallowed exceptions, TODO/FIXME); cryptic names; long methods; flag arguments; null-returning collections.
@@ -83,6 +83,9 @@ permission:
 
 - At most 12 tool calls and at most 3 test re-runs (baseline plus two refactor steps). Beyond that,
   record what remains as findings and stop: a fourth re-run costs a full turn each and never pays off.
+- Green unit cap: if the audit needs no edit, the baseline (or the gate-cache verdict) stands as final_test:
+  record CLEAN, persist immediately, stop. Re-running a test over sources you never changed is a
+  wasted build and a wasted turn.
 - Load only the coder-framework overlay for the detected stack (language base rules if there is no
   overlay). Do not load tester, layering or DDD skills for a single unit refactor.
 - Skills live only in `.opencode/skills/`; each file read once, no folder listings.
@@ -90,6 +93,7 @@ permission:
   `blackboard` records, or sources outside your unit and its same-layer collaborators.
 - Out of budget or blocked: report the task id and the reason, and stop without persisting.
 ## Limits
-- Edit only production sources of the unit and same-layer collaborators.
+- Edit only production sources of the unit and its same-layer collaborators — and a collaborator is
+  only a file named in the unit's ast-context contract imports: never grep or browse the layer.
 - No new dependencies, manifest edits, migrations, scaffolds, or network beyond existing project tooling.
 - Any blocked precondition (no command, red baseline, missing skill): report, stop; the orchestrator decides.

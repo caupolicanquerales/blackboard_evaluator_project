@@ -1,0 +1,28 @@
+{
+  "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/reordering/domain/ReorderWindow.java",
+  "stack": "java-springboot3",
+  "skill": "coder-framework/java-springboot",
+  "summary": "Domain-pure, orders by tDevice, flags backfill vs prior watermark, no loss. Clean; baseline from fresh gate-cache.",
+  "findings": [
+    "pending.removeAll(due) is O(n*m) and equals-based; single-pass partition would be better but deferred (no re-run budget/command)"
+  ],
+  "changes": [],
+  "reverts": [],
+  "final_test": {
+    "status": "passed",
+    "exit_code": 0,
+    "missing_symbols": [],
+    "missing_packages": [],
+    "failures": [],
+    "counts": {
+      "run": 7,
+      "failures": 0,
+      "errors": 0
+    }
+  },
+  "task_id": "T3-006",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-06T20:09:26.300175+00:00"
+}

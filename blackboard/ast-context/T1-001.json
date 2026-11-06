@@ -1,0 +1,76 @@
+{
+  "task_id": "T1-001",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "TelemetrySample",
+    "constructors": [
+      [
+        "deviceId",
+        "metric",
+        "21.5",
+        "tDevice",
+        "tIngress"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "s",
+        "method": "deviceId",
+        "args": []
+      },
+      {
+        "receiver": "s",
+        "method": "metric",
+        "args": []
+      },
+      {
+        "receiver": "s",
+        "method": "value",
+        "args": []
+      },
+      {
+        "receiver": "s",
+        "method": "tDevice",
+        "args": []
+      },
+      {
+        "receiver": "s",
+        "method": "tIngress",
+        "args": []
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class TelemetrySampleTest {",
+      "private static TelemetrySample sample(String deviceId, String metric, Instant tDevice, Instant tIngress) {",
+      "return new TelemetrySample(deviceId, metric, 21.5, tDevice, tIngress);",
+      "TelemetrySample s = sample(\"dev-1\", \"temperature\", T_DEVICE, T_INGRESS);",
+      "assertThat(s.deviceId()).isEqualTo(\"dev-1\");",
+      "assertThat(s.metric()).isEqualTo(\"temperature\");",
+      "assertThat(s.value()).isEqualTo(21.5);",
+      "assertThat(s.tDevice()).isEqualTo(T_DEVICE);",
+      "assertThat(s.tIngress()).isEqualTo(T_INGRESS);",
+      "assertThatThrownBy(() -> sample(null, \"temperature\", T_DEVICE, T_INGRESS))",
+      "assertThatThrownBy(() -> sample(blank, \"temperature\", T_DEVICE, T_INGRESS))",
+      "assertThatThrownBy(() -> sample(\"dev-1\", null, T_DEVICE, T_INGRESS))",
+      "assertThatThrownBy(() -> sample(\"dev-1\", blank, T_DEVICE, T_INGRESS))",
+      "assertThatThrownBy(() -> sample(\"dev-1\", \"temperature\", null, T_INGRESS))",
+      "assertThatThrownBy(() -> sample(\"dev-1\", \"temperature\", T_DEVICE, null))",
+      "TelemetrySample a = sample(\"dev-1\", \"temperature\", T_DEVICE, T_INGRESS);",
+      "TelemetrySample b = sample(\"dev-1\", \"temperature\", T_DEVICE, T_INGRESS);",
+      "assertThat(a).isEqualTo(b).hasSameHashCodeAs(b);",
+      "TelemetrySample a = sample(\"dev-1\", \"temperature\", T_DEVICE, T_INGRESS);",
+      "TelemetrySample b = sample(\"dev-1\", \"temperature\", T_DEVICE, T_INGRESS.plusSeconds(1));",
+      "assertThat(a).isNotEqualTo(b);",
+      "TelemetrySample s = sample(\"dev-1\", \"temperature\", T_DEVICE, T_INGRESS);",
+      "assertThat(s.tDevice()).isNotEqualTo(s.tIngress()).isEqualTo(T_DEVICE);",
+      "TelemetrySample s = sample(\"dev-1\", \"temperature\", T_DEVICE, T_DEVICE);",
+      "assertThat(s.tDevice()).isEqualTo(T_DEVICE);",
+      "assertThat(s.tIngress()).isEqualTo(T_DEVICE);"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

@@ -1,0 +1,59 @@
+{
+  "task_id": "T1-010",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "AppendRevisionUseCase",
+    "constructors": [
+      [
+        "repository",
+        "publisher"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "useCase",
+        "method": "execute",
+        "args": [
+          "new AppendRevisionCommand(key, 21.5)"
+        ],
+        "returns": "TelemetryRevision"
+      },
+      {
+        "receiver": "useCase",
+        "method": "execute",
+        "args": [
+          "new AppendRevisionCommand(key, 22.0)"
+        ],
+        "returns": "TelemetryRevision"
+      },
+      {
+        "receiver": "useCase",
+        "method": "execute",
+        "args": [
+          "new AppendRevisionCommand(key, 22.0)"
+        ]
+      },
+      {
+        "receiver": "useCase",
+        "method": "execute",
+        "args": [
+          "new AppendRevisionCommand(key, 21.5)"
+        ]
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class AppendRevisionUseCaseTest {",
+      "private AppendRevisionUseCase useCase;",
+      "useCase = new AppendRevisionUseCase(repository, publisher);",
+      "TelemetryRevision result = useCase.execute(new AppendRevisionCommand(key, 21.5));",
+      "TelemetryRevision result = useCase.execute(new AppendRevisionCommand(key, 22.0));",
+      "useCase.execute(new AppendRevisionCommand(key, 22.0));",
+      "assertThatThrownBy(() -> useCase.execute(new AppendRevisionCommand(key, 21.5)))"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

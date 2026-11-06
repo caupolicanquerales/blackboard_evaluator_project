@@ -1,0 +1,16 @@
+{
+  "id": "T2-023",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T0-001",
+    "T1-006"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/reordering/domain/ReleasedSample.java",
+  "kind": "code",
+  "layer": "domain",
+  "feature": null,
+  "export": "ReleasedSample",
+  "intent": "Bounded context telemetry-ingestion-and-processing: define ReleasedSample (domain collaborator defined from its test usages only) in package com.pulsestream.telemetry.reordering.domain. Contract is fixed by its usage in ReorderWindow.java; implement the smallest correct type that satisfies every usage.",
+  "project": "telemetry-ingestion-and-processing"
+}

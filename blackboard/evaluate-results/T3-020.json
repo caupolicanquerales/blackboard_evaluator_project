@@ -1,0 +1,26 @@
+{
+  "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ledger/domain/TelemetryRevisionAppended.java",
+  "stack": "java-springboot",
+  "skill": "none (record unit, no framework surface)",
+  "summary": "CLEAN: minimal immutable domain record, no framework imports; gate-cache verdict of T2-020 (passed, 4 run) used as baseline, file unchanged.",
+  "findings": [],
+  "changes": [],
+  "reverts": [],
+  "final_test": {
+    "status": "passed",
+    "exit_code": 0,
+    "missing_symbols": [],
+    "missing_packages": [],
+    "failures": [],
+    "counts": {
+      "run": 4,
+      "failures": 0,
+      "errors": 0
+    }
+  },
+  "task_id": "T3-020",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-06T20:07:34.982191+00:00"
+}

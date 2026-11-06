@@ -1,0 +1,19 @@
+{
+  "task_id": "T1-005",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "TelemetryIngressController",
+    "constructors": [],
+    "static_calls": [],
+    "calls": [],
+    "verified": [],
+    "usage_lines": [
+      "@WebFluxTest(TelemetryIngressController.class)",
+      "@Import(TelemetryIngressControllerTest.UseCaseDouble.class)",
+      "class TelemetryIngressControllerTest {"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

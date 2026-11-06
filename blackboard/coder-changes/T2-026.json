@@ -1,0 +1,27 @@
+{
+  "id": "T2-026",
+  "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ledger/application/TelemetryLedgerRepository.java",
+  "export": "TelemetryLedgerRepository",
+  "method": "TelemetryLedgerRepository",
+  "language": "java",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "signature": "List<TelemetryRevision> findRevisions(TelemetryEventKey key)",
+  "returns": "void",
+  "body": "",
+  "kind": "interface",
+  "members": [
+    "List<TelemetryRevision> findRevisions(TelemetryEventKey key);",
+    "TelemetryRevision append(TelemetryRevision revision);"
+  ],
+  "imports": [
+    "com.pulsestream.telemetry.ledger.domain.TelemetryEventKey",
+    "com.pulsestream.telemetry.ledger.domain.TelemetryRevision",
+    "java.util.List"
+  ],
+  "missing": [],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-06T19:21:22.956654+00:00"
+}

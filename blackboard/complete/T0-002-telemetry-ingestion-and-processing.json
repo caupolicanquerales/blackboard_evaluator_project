@@ -1,0 +1,15 @@
+{
+  "id": "T0-002",
+  "targetAgent": "agent-container",
+  "stage": 0,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "db/migrations/V1__store_setup.sql",
+  "kind": "bootstrap",
+  "layer": "root",
+  "feature": null,
+  "export": "V1__store_setup.sql",
+  "intent": "Store setup: PostgreSQL 16 with Flyway; creates schema telemetry. Script db/migrations/V1__store_setup.sql for context telemetry-ingestion-and-processing.",
+  "project": "telemetry-ingestion-and-processing"
+}

@@ -1,0 +1,28 @@
+{
+  "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ledger/application/AppendRevisionUseCase.java",
+  "stack": "java-springboot",
+  "skill": "java-springboot",
+  "summary": "CLEAN: port-only dependencies, null guards, revision numbering max+1, publish after append, exceptions propagate. No edits needed.",
+  "findings": [
+    "Revision numbering reads all revisions to compute max; acceptable, atomicity/concurrency belongs to repository port (not changed)."
+  ],
+  "changes": [],
+  "reverts": [],
+  "final_test": {
+    "status": "passed",
+    "exit_code": 0,
+    "missing_symbols": [],
+    "missing_packages": [],
+    "failures": [],
+    "counts": {
+      "run": 4,
+      "failures": 0,
+      "errors": 0
+    }
+  },
+  "task_id": "T3-010",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-06T20:05:05.417509+00:00"
+}

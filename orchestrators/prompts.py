@@ -84,9 +84,12 @@ def _coder_contract(task_ids):
         f"else (including any agent scratch or session folder) is invisible to the orchestrator. "
         f"Task ids of this session: {ids}. Run the writer for every one of them before finishing.\n"
         "WEAVER SHAPE (do not go read the weaver to discover it): `kind` is class|interface|enum|"
-        "record|exception. For a record, `members` may mix components (`Type name`) and body members "
-        "(compact constructor, factories, extra methods): the weaver routes the bare ones to the header "
-        "and the rest to the record body. Framework annotations go in `annotations` (type level) and "
+        "record|exception. For a record, `members` is an array with ONE entry per part: every "
+        "component its own element (`\"String deviceId\"`, `\"Instant tDevice\"`) and every body "
+        "member (compact constructor, factory, extra method) another element - NEVER one joined "
+        "string like \"String a, int b\": the weaver parses each element alone and rejects the "
+        "joined form. The weaver routes the bare components to the header and the rest to the "
+        "record body. Framework annotations go in `annotations` (type level) and "
         "`methodAnnotations` (method level), without the `@`, never inside `signature`; parameter "
         "annotations stay inside `signature`, which the weaver preserves. Keep the shape "
         "the `intent` asks for; never downgrade a record to a class to dodge a rejection. If a payload "
@@ -112,8 +115,9 @@ def build_task_message(task, feedback=None):
     if task["stage"] == settings.TDD_STAGE:
         t1 = next((d for d in task.get("dependsOn", []) if str(d).startswith("T1-")), None)
         if t1:
-            message += (f"\nUnit artifacts: mandatory `blackboard/red-phase/{t1}.json`; "
-                        f"`blackboard/ast-context/{t1}.json` if present.")
+            message += (f"\nUnit artifacts (both mandatory): `blackboard/red-phase/{t1}.json`; "
+                        f"`blackboard/ast-context/{t1}.json` - the exact constructors, calls and stubbed "
+                        f"returns the test demands.")
             message += f"\nUnit brief: {_unit_brief(task, t1)}"
         message += _coder_contract([task["id"]])
     message += _discipline(task["targetAgent"])
@@ -147,7 +151,9 @@ def _unit_brief(task, t1_id):
     main_root = root / "src" / "main"
     count = len(list(main_root.rglob("*.java"))) if main_root.is_dir() else 0
     parts.append(f"main_sources_present={count}")
-    parts.append("write the payload from these facts; read the test file only if a detail is missing")
+    parts.append("write the payload from these facts plus your unit's blackboard/ast-context "
+                 "<T1-id>.json (the exact constructors/calls/returns the test demands); "
+                 "open the test file only if the contract is missing a fact")
     return " | ".join(parts)
 
 
@@ -168,7 +174,8 @@ def build_batch_message(tasks, feedback=None):
         block = json.dumps({key: task[key] for key in settings.PROMPT_KEYS}, indent=2)
         extra = ""
         if t1:
-            extra = (f"\nUnit artifacts: mandatory `blackboard/red-phase/{t1}.json`"
+            extra = (f"\nUnit artifacts: mandatory `blackboard/red-phase/{t1}.json` and "
+                     f"`blackboard/ast-context/{t1}.json`"
                      f" | {_unit_brief(task, t1)}")
         message += f"--- task {task['id']} ---\n{block}{extra}\n"
     if first["stage"] == settings.TDD_STAGE:
@@ -188,7 +195,12 @@ def append_feedback(message, task, feedback):
     """
     if not feedback:
         return message
-    template = FEEDBACK_TEMPLATE_CODER if task["stage"] == settings.TDD_STAGE else FEEDBACK_TEMPLATE
+    if task["stage"] == settings.TDD_STAGE:
+        template = FEEDBACK_TEMPLATE_CODER
+    elif task["stage"] == settings.ASSEMBLY_STAGE:
+        template = FEEDBACK_TEMPLATE_ASSEMBLY
+    else:
+        template = FEEDBACK_TEMPLATE
     return message + template.format(path=task["path"], id=task["id"], log=feedback)
 
 
@@ -227,7 +239,11 @@ Once per domain:
    kind "bootstrap", layer "root", feature null, export "project_scaffold",
    project "<slug>", path "<build marker>" relative to the domain root ("pom.xml" or "package.json"
    chosen from the stack), intent "Generate the <slug> project root and build scaffold using the matching
-   mcp-server-alternatives skill". Write it to /tmp/tasks/T0-<slug>.json and queue it with:
+   mcp-server-alternatives skill, with dependencies <the exact starter artifactIds from your strategy's tech stack>".
+   The intent MUST list the build dependencies the strategy names (for Java: e.g. "spring-boot-starter-webflux,
+   spring-boot-starter-data-r2dbc, reactor-test" plus every test artifact). agent-container cannot guess them,
+   and a scaffold whose classpath lacks a package makes every later green gate impossible.
+   Write it to /tmp/tasks/T0-<slug>.json and queue it with:
    python3 {runner} --emit /tmp/tasks/T0-<slug>.json
 
 Do not create other task files and do not write application code in this phase.
@@ -297,8 +313,9 @@ Run your workflow for the bounded context slug `{slug}` only. Its project root i
    the database files of this domain: setup, schema migration, configuration, and backup.
 3. Queue one stage 0 bootstrap task per database concern (store setup, schema migration, configuration
    profile, backup/recovery). Write ONE array file /tmp/tasks/{slug}-db-tasks.json holding every task
-   object, with exactly the keys of your output contract, ids starting at {next_id}, each with dependsOn
-   ["{scaffold_id}"] and path db/migrations/<file> relative to the domain project root, then queue them
+   object, with exactly the keys of your output contract (every `export` a non-empty file base name,
+   never null), ids starting at {next_id}, each with dependsOn ["{scaffold_id}"] and path
+   db/migrations/<file> relative to the domain project root, then queue them
    with: `python3 {runner} --emit /tmp/tasks/{slug}-db-tasks.json`. Never write into blackboard/ directly.
    Application tasks queued later reference these ids.
 
@@ -312,11 +329,14 @@ STAGE_INSTRUCTIONS = {
         "`blackboard/coder-changes/<id>.json`. Never create, edit or delete the file at "
         "`path`, and never write a payload anywhere else."),
     3: "Read this task, inspect the implementation at `path`, and refactor it.",
+    4: ("Boot the generated application: detect the stack, load your assembly skill, run "
+        "the assembly command named in the task intent through run-test-tool, close every "
+        "wiring gap in production sources only, and repeat until the smoke test is green."),
 }
 
 BUDGET_SHAPES = {
     1: "skill read, task/manifest read, one test write, run-test-tool (max twice), red-phase writer",
-    2: "assigned skill, red-phase read, one draft write, one writer call",
+    2: "assigned skill, red-phase read, ast-context read, one draft write, one writer call",
     3: "one skill, baseline test run, up to two refactor steps with a re-run each, evaluate writer",
     0: "one skill, the MCP session, the scaffold move",
 }
@@ -360,6 +380,16 @@ def _discipline(target_agent, units=1, extra=""):
 FEEDBACK_TEMPLATE = """
 Previous attempt FAILED verification. Fix the implementation at `{path}` so the build and tests pass.
 Do not change unrelated files. Verification output:
+```
+{log}
+```
+"""
+
+FEEDBACK_TEMPLATE_ASSEMBLY = """
+Previous attempt FAILED the assembly gate: the application still does not boot. Close the
+remaining wiring gaps in production sources following your assembly skill (framework
+registration, providers/adapters for interfaces, driver configuration). Never edit tests,
+build manifests, or another task's contract. Verification output:
 ```
 {log}
 ```

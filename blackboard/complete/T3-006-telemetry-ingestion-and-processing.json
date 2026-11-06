@@ -1,0 +1,15 @@
+{
+  "id": "T3-006",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-006"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/reordering/domain/ReorderWindow.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "ReorderWindow",
+  "intent": "Context Backfill Reordering. Review ReorderWindow: ordering by tDevice, backfill flagging, no loss, pure domain; keep tests green.",
+  "project": "telemetry-ingestion-and-processing"
+}

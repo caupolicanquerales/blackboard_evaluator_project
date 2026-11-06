@@ -1,0 +1,26 @@
+{
+  "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/intake/domain/ValidationFailed.java",
+  "stack": "java-springboot",
+  "skill": "coder-framework/java-springboot",
+  "summary": "Immutable record with one component and a delegating accessor; no framework imports, no duplication or hacks. Clean.",
+  "findings": [],
+  "changes": [],
+  "reverts": [],
+  "final_test": {
+    "status": "passed",
+    "exit_code": 0,
+    "missing_symbols": [],
+    "missing_packages": [],
+    "failures": [],
+    "counts": {
+      "run": 5,
+      "failures": 0,
+      "errors": 0
+    }
+  },
+  "task_id": "T3-016",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-06T20:03:59.633968+00:00"
+}

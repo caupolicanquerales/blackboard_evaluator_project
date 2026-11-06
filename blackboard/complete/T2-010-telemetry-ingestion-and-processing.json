@@ -1,0 +1,16 @@
+{
+  "id": "T2-010",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-010",
+    "T0-003"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ledger/application/AppendRevisionUseCase.java",
+  "kind": "code",
+  "layer": "application",
+  "feature": null,
+  "export": "AppendRevisionUseCase",
+  "intent": "Context Telemetry Event Ledger. Translates ordered/backfill events into EventRevision: revision 1 for new keys, N+1 for late backfill, appends via repository port, publishes TelemetryRevisionAppended; errors propagate, no silent loss.",
+  "project": "telemetry-ingestion-and-processing"
+}

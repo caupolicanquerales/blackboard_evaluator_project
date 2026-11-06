@@ -1,0 +1,15 @@
+{
+  "id": "T3-001",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-001"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/intake/domain/TelemetrySample.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "TelemetrySample",
+  "intent": "Context Telemetry Intake & Validation. Review TelemetrySample record: immutability, validation, no framework imports; refactor without changing behavior and keep TelemetrySampleTest green.",
+  "project": "telemetry-ingestion-and-processing"
+}

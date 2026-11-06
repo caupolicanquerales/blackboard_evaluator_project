@@ -1,0 +1,74 @@
+{
+  "task_id": "T1-002",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "MetricBoundaryPolicy",
+    "constructors": [
+      [
+        "Map.of(\"temperature\", new MetricBoundary(-10.0, 50.0))"
+      ],
+      [
+        "Map.of()"
+      ],
+      [
+        "Map.of(\"temperature\", new MetricBoundary(100.0, 200.0))"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "custom",
+        "method": "validate",
+        "args": [
+          "sample(\"temperature\", 20.0)"
+        ]
+      },
+      {
+        "receiver": "empty",
+        "method": "validate",
+        "args": [
+          "sample(\"temperature\", 20.0)"
+        ]
+      },
+      {
+        "receiver": "policy",
+        "method": "validate",
+        "args": [
+          "sample(\"temperature\", 20.0)"
+        ]
+      },
+      {
+        "receiver": "policy",
+        "method": "validate",
+        "args": [
+          "sample(\"temperature\", value)"
+        ]
+      },
+      {
+        "receiver": "policy",
+        "method": "validate",
+        "args": [
+          "sample(\"humidity\", 10.0)"
+        ]
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class MetricBoundaryPolicyTest {",
+      "private final MetricBoundaryPolicy policy =",
+      "new MetricBoundaryPolicy(Map.of(\"temperature\", new MetricBoundary(-10.0, 50.0)));",
+      "assertThat(policy.validate(sample(\"temperature\", 20.0))).isEqualTo(ValidationStatus.VALID);",
+      "assertThat(policy.validate(sample(\"temperature\", value))).isEqualTo(ValidationStatus.VALID);",
+      "assertThat(policy.validate(sample(\"temperature\", value))).isEqualTo(ValidationStatus.OUT_OF_BOUNDS);",
+      "assertThat(policy.validate(sample(\"humidity\", 10.0))).isEqualTo(ValidationStatus.UNDEFINED_BOUNDARY);",
+      "MetricBoundaryPolicy empty = new MetricBoundaryPolicy(Map.of());",
+      "assertThat(empty.validate(sample(\"temperature\", 20.0))).isEqualTo(ValidationStatus.UNDEFINED_BOUNDARY);",
+      "MetricBoundaryPolicy custom =",
+      "new MetricBoundaryPolicy(Map.of(\"temperature\", new MetricBoundary(100.0, 200.0)));",
+      "assertThat(custom.validate(sample(\"temperature\", 20.0))).isEqualTo(ValidationStatus.OUT_OF_BOUNDS);"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

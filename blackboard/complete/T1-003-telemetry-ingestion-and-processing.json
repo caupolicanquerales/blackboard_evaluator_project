@@ -1,0 +1,16 @@
+{
+  "id": "T1-003",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T0-004"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/intake/infrastructure/R2dbcMetricBoundaryRepositoryTest.java",
+  "kind": "test",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "R2dbcMetricBoundaryRepositoryTest",
+  "intent": "Context Telemetry Intake & Validation. Test R2dbcMetricBoundaryRepository (reactive, DatabaseClient mocked) loading boundaries from telemetry.metric_boundaries as Flux/Mono of MetricBoundary(metric,min,max); empty result for unknown metric; read-only access.",
+  "project": "telemetry-ingestion-and-processing"
+}

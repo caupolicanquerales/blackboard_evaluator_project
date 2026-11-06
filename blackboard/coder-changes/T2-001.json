@@ -1,0 +1,29 @@
+{
+  "id": "T2-001",
+  "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/intake/domain/TelemetrySample.java",
+  "export": "TelemetrySample",
+  "method": "TelemetrySample",
+  "language": "java",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "kind": "record",
+  "signature": "TelemetrySample(String deviceId, String metric, double value, Instant tDevice, Instant tIngress)",
+  "returns": "void",
+  "body": "if (deviceId == null || deviceId.isBlank()) {\n    throw new IllegalArgumentException(\"deviceId must not be blank\");\n}\nif (metric == null || metric.isBlank()) {\n    throw new IllegalArgumentException(\"metric must not be blank\");\n}\nif (tDevice == null) {\n    throw new IllegalArgumentException(\"tDevice must not be null\");\n}\nif (tIngress == null) {\n    throw new IllegalArgumentException(\"tIngress must not be null\");\n}",
+  "members": [
+    "String deviceId",
+    "String metric",
+    "double value",
+    "Instant tDevice",
+    "Instant tIngress",
+    "public TelemetrySample {\n    if (deviceId == null || deviceId.isBlank()) {\n        throw new IllegalArgumentException(\"deviceId must not be blank\");\n    }\n    if (metric == null || metric.isBlank()) {\n        throw new IllegalArgumentException(\"metric must not be blank\");\n    }\n    if (tDevice == null) {\n        throw new IllegalArgumentException(\"tDevice must not be null\");\n    }\n    if (tIngress == null) {\n        throw new IllegalArgumentException(\"tIngress must not be null\");\n    }\n}"
+  ],
+  "imports": [
+    "java.time.Instant"
+  ],
+  "missing": [],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-06T19:45:51.171525+00:00"
+}

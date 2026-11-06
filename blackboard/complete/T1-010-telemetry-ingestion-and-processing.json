@@ -1,0 +1,16 @@
+{
+  "id": "T1-010",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T0-003"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/ledger/application/AppendRevisionUseCaseTest.java",
+  "kind": "test",
+  "layer": "application",
+  "feature": null,
+  "export": "AppendRevisionUseCaseTest",
+  "intent": "Context Telemetry Event Ledger. Test AppendRevisionUseCase with mocked repository port: first sample gets revision 1, late backfill for existing key appends revision N+1 preserving history, publishes TelemetryRevisionAppended, repository failure propagates as error (no silent loss).",
+  "project": "telemetry-ingestion-and-processing"
+}

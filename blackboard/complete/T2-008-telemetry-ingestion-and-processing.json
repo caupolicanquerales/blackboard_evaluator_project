@@ -1,0 +1,15 @@
+{
+  "id": "T2-008",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-008"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ledger/domain/EventRevision.java",
+  "kind": "code",
+  "layer": "domain",
+  "feature": null,
+  "export": "EventRevision",
+  "intent": "Context Telemetry Event Ledger. Immutable record EventRevision(deviceId, metric, tDevice, revision, tIngress, validationStatus, rawPayload); revision >= 1; nextRevision(...) returns a new instance with revision+1; append-only, never mutated.",
+  "project": "telemetry-ingestion-and-processing"
+}

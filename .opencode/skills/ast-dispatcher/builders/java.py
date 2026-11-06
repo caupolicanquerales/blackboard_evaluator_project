@@ -3,9 +3,102 @@
 The extractor location comes from the --tool-root option. Nothing is hardcoded here.
 """
 import os
+import re
 from pathlib import Path
 
 from base import AstBuilder, build_tool_project
+
+
+MAX_FACTS = 20
+MAX_USAGE_LINES = 40
+
+
+def _split_top_level(args_text: str) -> list[str]:
+    """Split a call's argument list at top-level commas (nested parens/braces kept)."""
+    parts, depth, current = [], 0, []
+    for ch in args_text:
+        if ch in "(<[{":
+            depth += 1
+        elif ch in ")>]}":
+            depth -= 1
+        if ch == "," and depth == 0:
+            parts.append("".join(current).strip())
+            current = []
+        else:
+            current.append(ch)
+    if "".join(current).strip():
+        parts.append("".join(current).strip())
+    return parts
+
+
+def _args_after(text: str, open_index: int) -> str:
+    """Raw argument text inside the balanced parentheses opening at `open_index`."""
+    depth = 0
+    for i in range(open_index, len(text)):
+        ch = text[i]
+        if ch == "(":
+            depth += 1
+        elif ch == ")":
+            depth -= 1
+            if depth == 0:
+                return text[open_index + 1:i]
+    return text[open_index + 1:]
+
+
+def extract_java_contract(test_text: str, simple_type: str) -> dict | None:
+    """The API a brand-new Java unit must implement, read mechanically from its own test.
+
+    The production class cannot exist yet (that is the red phase), and the extractor JAR
+    describes only classes already on disk: the executable specification is the test.
+    Every construction, invocation and stub of the unit's type is collected so the coder
+    writes exactly the API the tests demand instead of guessing signatures from bare names.
+    """
+    if not simple_type or not test_text.strip():
+        return None
+    constructors: list[list[str]] = []
+    static_calls: list[dict] = []
+    calls: list[dict] = []
+    verified: list[str] = []
+    for match in re.finditer(rf"\bnew\s+{simple_type}\s*\(", test_text):
+        args = [a[:80] for a in _split_top_level(_args_after(test_text, match.end() - 1))][:8]
+        if args not in constructors:
+            constructors.append(args)
+    for match in re.finditer(rf"\b{simple_type}\s*\.\s*([a-z]\w*)\s*\(", test_text):
+        entry = {"method": match.group(1),
+                 "args": [a[:80] for a in _split_top_level(_args_after(test_text, match.end() - 1))][:8]}
+        if entry not in static_calls:
+            static_calls.append(entry)
+    variables = set(re.findall(rf"\b{simple_type}\s+([a-z]\w*)\b", test_text))
+    for var in sorted(variables):
+        for match in re.finditer(rf"\b{var}\s*\.\s*([a-z]\w*)\s*\(", test_text):
+            entry = {"receiver": var, "method": match.group(1),
+                     "args": [a[:80] for a in _split_top_level(_args_after(test_text, match.end() - 1))][:8]}
+            line_start = test_text.rfind("\n", 0, match.start()) + 1
+            line = test_text[line_start:test_text.find("\n", match.start())]
+            lhs = re.search(rf"([A-Z][\w<>,\s.]*?)\s+\w+\s*=\s*{var}\.{match.group(1)}\(", line)
+            if lhs:
+                entry["returns"] = " ".join(lhs.group(1).split())
+            stub = re.search(rf"{var}\.{match.group(1)}\([^;]*?\)\)?\s*\.thenReturn\((.+?)\)\s*[;,]", line)
+            if stub:
+                entry["stubbed_to"] = stub.group(1).strip()[:80]
+            if entry not in calls:
+                calls.append(entry)
+        for match in re.finditer(rf"\bverify(?:NoMoreInteractions|Never)?\s*\([^)]*{var}[^)]*\)\s*(?:\.\w+\([^)]*\))?\s*\.\s*([a-z]\w*)\s*\(", test_text):
+            if match.group(1) not in verified:
+                verified.append(match.group(1))
+    usage_lines = []
+    for raw in test_text.splitlines():
+        line = raw.strip()
+        if not line or line.startswith(("import ", "package ", "//")):
+            continue
+        if simple_type in line or any(re.search(rf"\b{v}\b", line) for v in variables):
+            usage_lines.append(line[:160])
+    contract = {"type": simple_type, "constructors": constructors[:MAX_FACTS],
+                "static_calls": static_calls[:MAX_FACTS], "calls": calls[:MAX_FACTS],
+                "verified": verified[:MAX_FACTS], "usage_lines": usage_lines[:MAX_USAGE_LINES]}
+    if not (constructors or static_calls or calls or verified or usage_lines):
+        return None
+    return contract
 
 
 def _read(path: Path) -> str:
@@ -56,6 +149,21 @@ def ensure_executable_jar(tool_root: Path) -> Path | None:
 
 class JavaBuilder(AstBuilder):
     language = "java"
+
+    def test_contract(self, project_root: Path, ctx: dict) -> dict | None:
+        """Precise Java extraction: overrides the language-neutral base with the test AST facts."""
+        relative = ctx.get("test_path")
+        target = ctx.get("target_class")
+        if not isinstance(relative, str) or not relative.strip() or not target:
+            return None
+        test_file = project_root / relative
+        if not test_file.is_file():
+            return None
+        try:
+            text = test_file.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            return None
+        return extract_java_contract(text, str(target).split(".")[-1])
 
     def detect(self, root: Path) -> str | None:
         pom = root / "pom.xml"

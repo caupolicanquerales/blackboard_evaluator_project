@@ -1,0 +1,177 @@
+{
+  "task_id": "T1-006",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "ReorderWindow",
+    "constructors": [
+      [
+        "WINDOW"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "window",
+        "method": "offer",
+        "args": [
+          "sample(\"d1\", 30)"
+        ]
+      },
+      {
+        "receiver": "window",
+        "method": "offer",
+        "args": [
+          "sample(\"d1\", 10)"
+        ]
+      },
+      {
+        "receiver": "window",
+        "method": "offer",
+        "args": [
+          "sample(\"d1\", 20)"
+        ]
+      },
+      {
+        "receiver": "window",
+        "method": "release",
+        "args": [
+          "T0.plusSeconds(200)"
+        ],
+        "returns": "List<ReleasedSample>"
+      },
+      {
+        "receiver": "window",
+        "method": "offer",
+        "args": [
+          "sample(\"d1\", 100)"
+        ]
+      },
+      {
+        "receiver": "window",
+        "method": "release",
+        "args": [
+          "T0.plusSeconds(120)"
+        ],
+        "returns": "List<ReleasedSample>"
+      },
+      {
+        "receiver": "window",
+        "method": "release",
+        "args": [
+          "T0.plusSeconds(300)"
+        ]
+      },
+      {
+        "receiver": "window",
+        "method": "offer",
+        "args": [
+          "sample(\"d1\", 5)"
+        ]
+      },
+      {
+        "receiver": "window",
+        "method": "release",
+        "args": [
+          "T0.plusSeconds(400)"
+        ],
+        "returns": "List<ReleasedSample>"
+      },
+      {
+        "receiver": "window",
+        "method": "offer",
+        "args": [
+          "sample(\"d1\", 50)"
+        ]
+      },
+      {
+        "receiver": "window",
+        "method": "offer",
+        "args": [
+          "sample(\"d2\", 40)"
+        ]
+      },
+      {
+        "receiver": "window",
+        "method": "release",
+        "args": [
+          "T0.plusSeconds(200)"
+        ]
+      },
+      {
+        "receiver": "window",
+        "method": "offer",
+        "args": [
+          "sample(\"d1\", 1)"
+        ]
+      },
+      {
+        "receiver": "window",
+        "method": "offer",
+        "args": [
+          "sample(\"d2\", 300)"
+        ]
+      },
+      {
+        "receiver": "window",
+        "method": "release",
+        "args": [
+          "T0.plusSeconds(500)"
+        ]
+      },
+      {
+        "receiver": "window",
+        "method": "offer",
+        "args": [
+          "first"
+        ]
+      },
+      {
+        "receiver": "window",
+        "method": "offer",
+        "args": [
+          "second"
+        ]
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class ReorderWindowTest {",
+      "ReorderWindow window = new ReorderWindow(WINDOW);",
+      "window.offer(sample(\"d1\", 30));",
+      "window.offer(sample(\"d1\", 10));",
+      "window.offer(sample(\"d1\", 20));",
+      "List<ReleasedSample> released = window.release(T0.plusSeconds(200));",
+      "ReorderWindow window = new ReorderWindow(WINDOW);",
+      "window.offer(sample(\"d1\", 100));",
+      "List<ReleasedSample> released = window.release(T0.plusSeconds(120));",
+      "ReorderWindow window = new ReorderWindow(WINDOW);",
+      "window.offer(sample(\"d1\", 10));",
+      "window.offer(sample(\"d1\", 20));",
+      "List<ReleasedSample> released = window.release(T0.plusSeconds(200));",
+      "ReorderWindow window = new ReorderWindow(WINDOW);",
+      "window.offer(sample(\"d1\", 100));",
+      "window.release(T0.plusSeconds(300));",
+      "window.offer(sample(\"d1\", 5));",
+      "List<ReleasedSample> released = window.release(T0.plusSeconds(400));",
+      "ReorderWindow window = new ReorderWindow(WINDOW);",
+      "window.offer(sample(\"d1\", 100));",
+      "window.release(T0.plusSeconds(300));",
+      "window.offer(sample(\"d1\", 100));",
+      "List<ReleasedSample> released = window.release(T0.plusSeconds(400));",
+      "ReorderWindow window = new ReorderWindow(WINDOW);",
+      "window.offer(sample(\"d1\", 50));",
+      "window.offer(sample(\"d2\", 40));",
+      "all.addAll(window.release(T0.plusSeconds(200)));",
+      "window.offer(sample(\"d1\", 1));",
+      "window.offer(sample(\"d2\", 300));",
+      "all.addAll(window.release(T0.plusSeconds(500)));",
+      "ReorderWindow window = new ReorderWindow(WINDOW);",
+      "window.offer(first);",
+      "window.offer(second);",
+      "List<ReleasedSample> released = window.release(T0.plusSeconds(200));"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

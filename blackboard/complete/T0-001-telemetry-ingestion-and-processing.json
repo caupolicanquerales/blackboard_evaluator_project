@@ -1,0 +1,13 @@
+{
+  "id": "T0-001",
+  "targetAgent": "agent-container",
+  "stage": 0,
+  "dependsOn": [],
+  "kind": "bootstrap",
+  "layer": "root",
+  "feature": null,
+  "export": "project_scaffold",
+  "project": "telemetry-ingestion-and-processing",
+  "path": "pom.xml",
+  "intent": "Generate the telemetry-ingestion-and-processing project root and build scaffold using the mcp-server-springboot skill (Java 17, Spring Boot 3, Maven, base package com.pulsestream.telemetry), under /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/, with dependencies spring-boot-starter-webflux, spring-boot-starter-validation, spring-boot-starter-actuator, spring-boot-starter-data-r2dbc, r2dbc-postgresql, flyway-core, flyway-database-postgresql, postgresql, spring-boot-starter-jdbc, spring-boot-starter-test, reactor-test"
+}

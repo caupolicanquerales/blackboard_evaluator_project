@@ -1,0 +1,17 @@
+{
+  "id": "T1-009",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T0-002",
+    "T0-003"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/ledger/infrastructure/R2dbcEventRevisionRepositoryTest.java",
+  "kind": "test",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "R2dbcEventRevisionRepositoryTest",
+  "intent": "Context Telemetry Event Ledger. Test R2dbcEventRevisionRepository (DatabaseClient mocked): append inserts into telemetry.event_revisions only (no UPDATE/DELETE statements), history query by device/metric and time range ordered by revision, latest-revision query, duplicate key surfaces as error.",
+  "project": "telemetry-ingestion-and-processing"
+}

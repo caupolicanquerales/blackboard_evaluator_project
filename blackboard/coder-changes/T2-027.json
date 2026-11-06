@@ -1,0 +1,24 @@
+{
+  "id": "T2-027",
+  "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/intake/domain/ValidationStatus.java",
+  "export": "ValidationStatus",
+  "method": "ValidationStatus",
+  "language": "java",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "signature": "enum ValidationStatus",
+  "returns": "void",
+  "body": "",
+  "imports": [],
+  "missing": [],
+  "kind": "enum",
+  "members": [
+    "VALID",
+    "OUT_OF_BOUNDS",
+    "UNDEFINED_BOUNDARY"
+  ],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-06T19:20:41.015240+00:00"
+}

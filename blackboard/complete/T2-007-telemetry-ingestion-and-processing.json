@@ -1,0 +1,15 @@
+{
+  "id": "T2-007",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-007"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/reordering/application/ReorderingService.java",
+  "kind": "code",
+  "layer": "application",
+  "feature": null,
+  "export": "ReorderingService",
+  "intent": "Context Backfill Reordering. Reactive service consuming validated events from the intake port, applying ReorderWindow, emitting TelemetryWindowOrdered and TelemetryBackfillDetected to the ledger port; retries downstream failures with backoff, never discards.",
+  "project": "telemetry-ingestion-and-processing"
+}

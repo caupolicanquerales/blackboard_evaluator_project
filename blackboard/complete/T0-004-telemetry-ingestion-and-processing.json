@@ -1,0 +1,15 @@
+{
+  "id": "T0-004",
+  "targetAgent": "agent-container",
+  "stage": 0,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "db/migrations/V3__configuration_profile.sql",
+  "kind": "bootstrap",
+  "layer": "root",
+  "feature": null,
+  "export": "V3__configuration_profile.sql",
+  "intent": "Configuration profile: PostgreSQL 16 Flyway script db/migrations/V3__configuration_profile.sql creating telemetry.metric_boundaries for context telemetry-ingestion-and-processing.",
+  "project": "telemetry-ingestion-and-processing"
+}

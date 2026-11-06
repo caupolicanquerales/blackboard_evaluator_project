@@ -1,0 +1,38 @@
+{
+  "id": "T2-009",
+  "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ledger/infrastructure/R2dbcEventRevisionRepository.java",
+  "export": "R2dbcEventRevisionRepository",
+  "method": "append",
+  "language": "java",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "kind": "class",
+  "annotations": [
+    "Repository"
+  ],
+  "signature": "Mono<Long> append(EventRevision revision)",
+  "returns": "Mono<Long>",
+  "body": "Objects.requireNonNull(revision, \"revision\");\nreturn client.sql(\"INSERT INTO telemetry.event_revisions (device_id, metric, t_device, revision, t_ingress, validation_status, raw_payload) VALUES (:deviceId, :metric, :tDevice, :revision, :tIngress, :validationStatus, :rawPayload)\")\n    .bind(\"deviceId\", revision.deviceId())\n    .bind(\"metric\", revision.metric())\n    .bind(\"tDevice\", revision.tDevice())\n    .bind(\"revision\", revision.revision())\n    .bind(\"tIngress\", revision.tIngress())\n    .bind(\"validationStatus\", revision.validationStatus())\n    .bind(\"rawPayload\", revision.rawPayload())\n    .fetch()\n    .rowsUpdated();",
+  "members": [
+    "private final DatabaseClient client;",
+    "public R2dbcEventRevisionRepository(DatabaseClient client) {\n    this.client = Objects.requireNonNull(client, \"client\");\n}",
+    "public Flux<EventRevision> history(String deviceId, String metric, Instant from, Instant to) {\n    return client.sql(\"SELECT device_id, metric, t_device, revision, t_ingress, validation_status, raw_payload FROM telemetry.event_revisions WHERE device_id = :deviceId AND metric = :metric AND t_device >= :from AND t_device <= :to ORDER BY t_device, revision\")\n        .bind(\"deviceId\", deviceId)\n        .bind(\"metric\", metric)\n        .bind(\"from\", from)\n        .bind(\"to\", to)\n        .map((row, metadata) -> toRevision(row))\n        .all();\n}",
+    "public Mono<EventRevision> latest(String deviceId, String metric, Instant tDevice) {\n    return client.sql(\"SELECT device_id, metric, t_device, revision, t_ingress, validation_status, raw_payload FROM telemetry.event_revisions WHERE device_id = :deviceId AND metric = :metric AND t_device = :tDevice ORDER BY revision DESC LIMIT 1\")\n        .bind(\"deviceId\", deviceId)\n        .bind(\"metric\", metric)\n        .bind(\"tDevice\", tDevice)\n        .map((row, metadata) -> toRevision(row))\n        .first();\n}",
+    "private static EventRevision toRevision(Row row) {\n    return new EventRevision(\n        row.get(\"device_id\", String.class),\n        row.get(\"metric\", String.class),\n        row.get(\"t_device\", Instant.class),\n        row.get(\"revision\", Long.class),\n        row.get(\"t_ingress\", Instant.class),\n        row.get(\"validation_status\", String.class),\n        row.get(\"raw_payload\", String.class));\n}"
+  ],
+  "imports": [
+    "com.pulsestream.telemetry.ledger.domain.EventRevision",
+    "io.r2dbc.spi.Row",
+    "java.time.Instant",
+    "java.util.Objects",
+    "org.springframework.r2dbc.core.DatabaseClient",
+    "org.springframework.stereotype.Repository",
+    "reactor.core.publisher.Flux",
+    "reactor.core.publisher.Mono"
+  ],
+  "missing": [],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-06T19:03:17.808500+00:00"
+}

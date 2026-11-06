@@ -1,0 +1,26 @@
+{
+  "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ledger/application/AppendRevisionCommand.java",
+  "stack": "java-springboot",
+  "skill": "java-springboot",
+  "summary": "Minimal immutable record; no violations. Baseline taken from gate-cache T2-021 (passed, source unchanged).",
+  "findings": [],
+  "changes": [],
+  "reverts": [],
+  "final_test": {
+    "status": "passed",
+    "exit_code": 0,
+    "missing_symbols": [],
+    "missing_packages": [],
+    "failures": [],
+    "counts": {
+      "run": 4,
+      "failures": 0,
+      "errors": 0
+    }
+  },
+  "task_id": "T3-021",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-06T20:04:43.130005+00:00"
+}

@@ -1,0 +1,15 @@
+{
+  "id": "T1-006",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/reordering/domain/ReorderWindowTest.java",
+  "kind": "test",
+  "layer": "domain",
+  "feature": null,
+  "export": "ReorderWindowTest",
+  "intent": "Context Backfill Reordering. Test ReorderWindow (60s): out-of-order samples are released ordered by tDevice; samples older than the already-released watermark are flagged as backfill (not dropped); no sample is lost; same-device ordering is stable.",
+  "project": "telemetry-ingestion-and-processing"
+}

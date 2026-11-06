@@ -1,0 +1,15 @@
+{
+  "id": "T3-025",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-025"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ledger/application/TelemetryRevisionEventPublisher.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "TelemetryRevisionEventPublisher",
+  "intent": "Bounded context telemetry-ingestion-and-processing: define TelemetryRevisionEventPublisher (domain port interface with exactly the methods the tests invoke or stub) in package com.pulsestream.telemetry.ledger.application. Contract is fixed by its usage in AppendRevisionUseCase.java; implement the smallest correct type that satisfies every usage.",
+  "project": "telemetry-ingestion-and-processing"
+}

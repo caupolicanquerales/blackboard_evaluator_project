@@ -1,0 +1,15 @@
+{
+  "id": "T2-006",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-006"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/reordering/domain/ReorderWindow.java",
+  "kind": "code",
+  "layer": "domain",
+  "feature": null,
+  "export": "ReorderWindow",
+  "intent": "Context Backfill Reordering. Domain 60s reorder window: accepts samples, releases them ordered by tDevice once past the window, flags samples behind the watermark as backfill instead of dropping them. Pure domain, injectable clock/duration.",
+  "project": "telemetry-ingestion-and-processing"
+}

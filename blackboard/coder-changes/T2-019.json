@@ -1,0 +1,24 @@
+{
+  "id": "T2-019",
+  "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ledger/domain/TelemetryRevision.java",
+  "export": "TelemetryRevision",
+  "method": "TelemetryRevision",
+  "language": "java",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "signature": "TelemetryRevision",
+  "returns": "void",
+  "body": "",
+  "imports": [],
+  "missing": [],
+  "kind": "record",
+  "members": [
+    "TelemetryEventKey key",
+    "long revision",
+    "double value"
+  ],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-06T19:22:13.929177+00:00"
+}

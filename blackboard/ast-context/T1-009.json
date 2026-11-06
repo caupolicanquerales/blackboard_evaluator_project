@@ -1,0 +1,54 @@
+{
+  "task_id": "T1-009",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "R2dbcEventRevisionRepository",
+    "constructors": [
+      [
+        "client"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "repository",
+        "method": "append",
+        "args": [
+          "revision(1)"
+        ]
+      },
+      {
+        "receiver": "repository",
+        "method": "history",
+        "args": [
+          "\"device-1\"",
+          "\"temperature\"",
+          "FROM",
+          "TO"
+        ]
+      },
+      {
+        "receiver": "repository",
+        "method": "latest",
+        "args": [
+          "\"device-1\"",
+          "\"temperature\"",
+          "FROM.plusSeconds(60)"
+        ]
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class R2dbcEventRevisionRepositoryTest {",
+      "private R2dbcEventRevisionRepository repository;",
+      "repository = new R2dbcEventRevisionRepository(client);",
+      "StepVerifier.create(repository.append(revision(1))).expectNextCount(1).verifyComplete();",
+      "StepVerifier.create(repository.append(revision(1)))",
+      "StepVerifier.create(repository.history(\"device-1\", \"temperature\", FROM, TO))",
+      "StepVerifier.create(repository.latest(\"device-1\", \"temperature\", FROM.plusSeconds(60)))"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

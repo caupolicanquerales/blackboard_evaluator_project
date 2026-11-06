@@ -1,0 +1,26 @@
+{
+  "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/reordering/domain/ReleasedSample.java",
+  "stack": "java-springboot",
+  "skill": "java-springboot",
+  "summary": "Minimal immutable record; no framework imports; no issues.",
+  "findings": [],
+  "changes": [],
+  "reverts": [],
+  "final_test": {
+    "status": "passed",
+    "exit_code": 0,
+    "missing_symbols": [],
+    "missing_packages": [],
+    "failures": [],
+    "counts": {
+      "run": 7,
+      "failures": 0,
+      "errors": 0
+    }
+  },
+  "task_id": "T3-023",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-06T20:09:02.332876+00:00"
+}

@@ -114,7 +114,12 @@ def red_phase_record(task):
 
 
 def _failure_detail(result):
-    """Compact summary of a non-passing run-test-tool result, safe for retry feedback."""
+    """Compact summary of a non-passing run-test-tool result, safe for retry feedback.
+
+    Includes up to three javac BLAME blocks (file:[line,col], symbol, location): without
+    them a coder re-emits an unchanged payload because it cannot see WHICH call on WHICH
+    type failed - each blind re-emit costs a session plus a full module build.
+    """
     counts = result.get("counts") or {}
     parts = [f"status={result.get('status')}", f"exit_code={result.get('exit_code')}"]
     if counts:
@@ -122,6 +127,9 @@ def _failure_detail(result):
     missing = result.get("missing_symbols") or []
     if missing:
         parts.append("missing=" + ", ".join(str(item)[:80] for item in missing[:3]))
+    blame = _blame_lines(result)
+    if blame:
+        parts.append("blame: " + " || ".join(blame))
     for failure in (result.get("failures") or [])[:2]:
         if isinstance(failure, dict):
             parts.append(f"failed {failure.get('test', '?')}: {failure.get('message', '')}")
@@ -132,6 +140,75 @@ def _failure_detail(result):
     if excerpt and len(parts) == 1:
         parts.append("output tail: " + " | ".join(str(line) for line in excerpt[-4:]))
     return "; ".join(parts)
+
+
+# Compile/test error locations across toolchains: javac "Foo.java:[12,3]", tsc "foo.ts(12,5)",
+# go "main.go:12:5", pytest "test_foo.py:12:5", kotlinc "Foo.kt: (12, 3)". One generic pattern
+# so the orchestrator's blame/defer logic is not Maven-only: any source file + line (+col).
+SOURCE_EXT = (r"(?:java|kt|kts|scala|groovy|ts|tsx|js|jsx|mjs|cjs|go|py|rs|rb|php|c|h|cc|cpp|hpp|cs|m|swift|vue|svelte)")
+FILE_REFERENCE_RE = re.compile(rf"([^\s:()\[\]]+\.{SOURCE_EXT})[\s\[\(:]+(\d+)\s*[,:]\s*(\d+)?")
+
+# Phrases that mark a CASCADING error (a symbol missing because a FOREIGN file is broken),
+# not a structural defect of the blamed file itself.
+CASCADE_PHRASES = ("cannot find symbol", "undefined:", "is not defined", "cannot find name",
+                   "no module named", "could not resolve", "not found", "unresolved reference",
+                   "cannot resolve")
+
+SOURCE_SUFFIXES = {".java", ".kt", ".kts", ".scala", ".groovy", ".ts", ".tsx", ".js", ".jsx",
+                   ".mjs", ".cjs", ".go", ".py", ".rs", ".rb", ".php", ".c", ".h", ".cc",
+                   ".cpp", ".hpp", ".cs", ".m", ".swift", ".vue", ".svelte"}
+
+
+def error_locations(result, limit=8):
+    """[(file basename, message tail)] for every source-file location in the excerpt."""
+    found = []
+    for line in (result.get("excerpt") or []):
+        if len(found) >= limit:
+            break
+        text = str(line)
+        for match in FILE_REFERENCE_RE.finditer(text):
+            name = match.group(1).split("/")[-1].lstrip(".")
+            tail = text[match.end():].replace("[ERROR]", "").strip().lstrip("]): ").strip()[:80]
+            found.append((name, tail))
+            break
+    return found
+
+
+def is_cascade(message):
+    lowered = (message or "").lower()
+    return any(phrase in lowered for phrase in CASCADE_PHRASES)
+
+
+def source_files(folder):
+    """Every source file under a folder, in any supported language (never build output)."""
+    if not folder.is_dir():
+        return []
+    return [f for f in folder.rglob("*")
+            if f.suffix in SOURCE_SUFFIXES and f.is_file()
+            and not {".git", "target", "build", "dist", "node_modules", "__pycache__", ".venv", "venv"}
+            & set(f.parts)]
+
+
+def _blame_lines(result, limit=3):
+    """(file:line[,col] message [+ javac symbol/location detail]) blocks, toolchain-agnostic."""
+    lines = [str(line) for line in (result.get("excerpt") or [])]
+    blame = []
+    for index, line in enumerate(lines):
+        if len(blame) >= limit:
+            break
+        match = FILE_REFERENCE_RE.search(line)
+        if not match:
+            continue
+        name = match.group(1).split("/")[-1].lstrip(".")
+        col = f",{match.group(3)}" if match.group(3) else ""
+        tail = line[match.end():].replace("[ERROR]", "").strip()[:60]
+        entry = f"{name}:{match.group(2)}{col} {tail}"
+        for follow in lines[index + 1:index + 3]:
+            stripped = follow.replace("[ERROR]", "").strip()
+            if stripped.startswith(("symbol:", "location:")):
+                entry += " " + stripped[:90]
+        blame.append(entry[:200])
+    return blame
 
 
 def _synthesized_command(task, record):
@@ -160,11 +237,10 @@ def _synthesized_command(task, record):
 
 def _fingerprint(task):
     """Cheap identity of everything the recorded test depends on: payload, main tree, test tree."""
-    import os
     payload = settings.ROOT / "blackboard" / "coder-changes" / f"{task['id']}.json"
     root = workspace.project_root_for(task["project"])
     def tree_sig(folder):
-        files = [f for f in folder.rglob("*.java")] if folder.is_dir() else []
+        files = source_files(folder)
         return [len(files), max((f.stat().st_mtime_ns for f in files), default=0)]
     return json.dumps({
         "payload": payload.stat().st_mtime_ns if payload.is_file() else 0,

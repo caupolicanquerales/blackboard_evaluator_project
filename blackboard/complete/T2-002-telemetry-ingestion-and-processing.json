@@ -1,0 +1,15 @@
+{
+  "id": "T2-002",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-002"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/intake/domain/MetricBoundaryPolicy.java",
+  "kind": "code",
+  "layer": "domain",
+  "feature": null,
+  "export": "MetricBoundaryPolicy",
+  "intent": "Context Telemetry Intake & Validation. Domain policy validate(sample) returning ValidationStatus VALID, OUT_OF_BOUNDS or UNDEFINED_BOUNDARY using configured inclusive min/max per metric; never rejects/drops a sample. Pure domain, boundaries injected as a Map.",
+  "project": "telemetry-ingestion-and-processing"
+}

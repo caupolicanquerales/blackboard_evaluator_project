@@ -1,0 +1,24 @@
+{
+  "id": "T2-014",
+  "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/intake/domain/MetricBoundary.java",
+  "export": "MetricBoundary",
+  "method": "MetricBoundary",
+  "language": "java",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "signature": "MetricBoundary(String metric, double min, double max)",
+  "returns": "MetricBoundary",
+  "body": "",
+  "imports": [],
+  "missing": [],
+  "kind": "record",
+  "members": [
+    "String metric",
+    "double min",
+    "double max"
+  ],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-06T19:44:54.233038+00:00"
+}

@@ -1,0 +1,16 @@
+{
+  "id": "T3-014",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-014"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/intake/domain/MetricBoundary.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "MetricBoundary",
+  "intent": "Bounded context telemetry-ingestion-and-processing: define MetricBoundary (domain collaborator defined from its test usages only) in package com.pulsestream.telemetry.intake.domain. Contract is fixed by its usage in R2dbcMetricBoundaryRepositoryTest.java; implement the smallest correct type that satisfies every usage.",
+  "project": "telemetry-ingestion-and-processing",
+  "error": "dependsOn T2-014 not resolvable in queue or complete"
+}

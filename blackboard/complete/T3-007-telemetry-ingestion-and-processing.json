@@ -1,0 +1,15 @@
+{
+  "id": "T3-007",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-007"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/reordering/application/ReorderingService.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "ReorderingService",
+  "intent": "Context Backfill Reordering. Review service: reactive correctness, retry without discard, port-only dependencies; keep tests green.",
+  "project": "telemetry-ingestion-and-processing"
+}

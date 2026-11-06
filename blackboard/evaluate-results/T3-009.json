@@ -1,0 +1,31 @@
+{
+  "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ledger/infrastructure/R2dbcEventRevisionRepository.java",
+  "stack": "java-springboot",
+  "skill": "java-springboot",
+  "summary": "CLEAN: INSERT-only append, all SQL parameterized via named binds, range query filters on device_id/metric/t_device (partition key prefix) with bounded ORDER BY, latest uses LIMIT 1. No edits needed; gate-cache T2-009 verdict (passed, sources untouched) used as baseline.",
+  "findings": [
+    "No UPDATE/DELETE statements; append-only respected",
+    "No string concatenation in SQL; no secrets",
+    "history() is unbounded by row count but bounded by caller time range; recorded as note only",
+    "Column list duplicated in two SELECTs (cosmetic, left untouched)"
+  ],
+  "changes": [],
+  "reverts": [],
+  "final_test": {
+    "status": "passed",
+    "exit_code": 0,
+    "missing_symbols": [],
+    "missing_packages": [],
+    "failures": [],
+    "counts": {
+      "run": 4,
+      "failures": 0,
+      "errors": 0
+    }
+  },
+  "task_id": "T3-009",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-06T20:07:56.645711+00:00"
+}

@@ -1,0 +1,15 @@
+{
+  "id": "T1-007",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/reordering/application/ReorderingServiceTest.java",
+  "kind": "test",
+  "layer": "application",
+  "feature": null,
+  "export": "ReorderingServiceTest",
+  "intent": "Context Backfill Reordering. Test ReorderingService with StepVerifier and virtual time: consumes validated events, emits TelemetryWindowOrdered per closed window and TelemetryBackfillDetected for late samples to the ledger event port; downstream failure is retried, never discarded.",
+  "project": "telemetry-ingestion-and-processing"
+}

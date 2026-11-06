@@ -1,0 +1,21 @@
+{
+  "task_id": "T2-012",
+  "status": "ok",
+  "target_file": "/home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/main/java/com/pulsestream/telemetry/reordering/domain/TelemetryWindowOrdered.java",
+  "language": "java",
+  "framework": "spring",
+  "command": [
+    "java",
+    "-jar",
+    "/home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/ast_weaver_tools/ast_weaver_java/target/ast_weaver_java-0.0.1-SNAPSHOT.jar",
+    "--root",
+    "/home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing",
+    "--changes-json",
+    "/home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/blackboard/coder-changes/T2-012.json"
+  ],
+  "exit_code": 0,
+  "stdout": "Successfully spliced AST body into: /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/main/java/com/pulsestream/telemetry/reordering/domain/TelemetryWindowOrdered.java",
+  "stderr": "",
+  "reason": "",
+  "executed": true
+}

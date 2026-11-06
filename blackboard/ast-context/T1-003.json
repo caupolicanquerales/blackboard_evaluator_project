@@ -1,0 +1,55 @@
+{
+  "task_id": "T1-003",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "R2dbcMetricBoundaryRepository",
+    "constructors": [
+      [
+        "databaseClient"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "repository",
+        "method": "findAll",
+        "args": [],
+        "returns": "Flux<MetricBoundary>"
+      },
+      {
+        "receiver": "repository",
+        "method": "findByMetric",
+        "args": [
+          "\"temp\""
+        ],
+        "returns": "Mono<MetricBoundary>"
+      },
+      {
+        "receiver": "repository",
+        "method": "findByMetric",
+        "args": [
+          "\"unknown\""
+        ],
+        "returns": "Mono<MetricBoundary>"
+      },
+      {
+        "receiver": "repository",
+        "method": "findAll",
+        "args": []
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class R2dbcMetricBoundaryRepositoryTest {",
+      "private R2dbcMetricBoundaryRepository repository;",
+      "repository = new R2dbcMetricBoundaryRepository(databaseClient);",
+      "Flux<MetricBoundary> result = repository.findAll();",
+      "Mono<MetricBoundary> result = repository.findByMetric(\"temp\");",
+      "Mono<MetricBoundary> result = repository.findByMetric(\"unknown\");",
+      "repository.findAll().collectList().block();"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

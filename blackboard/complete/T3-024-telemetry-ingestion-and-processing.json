@@ -1,0 +1,15 @@
+{
+  "id": "T3-024",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-024"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/intake/application/ReorderingEventPort.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "ReorderingEventPort",
+  "intent": "Bounded context telemetry-ingestion-and-processing: define ReorderingEventPort (domain port interface with exactly the methods the tests invoke or stub) in package com.pulsestream.telemetry.intake.application. Contract is fixed by its usage in IntakeTelemetryUseCase.java; implement the smallest correct type that satisfies every usage.",
+  "project": "telemetry-ingestion-and-processing"
+}

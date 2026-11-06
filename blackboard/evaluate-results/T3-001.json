@@ -1,0 +1,26 @@
+{
+  "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/intake/domain/TelemetrySample.java",
+  "stack": "java-springboot3",
+  "skill": "none (overlay not present; audit by built-in checklist)",
+  "summary": "CLEAN: immutable record, compact-constructor validation, only java.time import, no framework/IO, no hacks or duplication.",
+  "findings": [],
+  "changes": [],
+  "reverts": [],
+  "final_test": {
+    "status": "passed",
+    "exit_code": 0,
+    "missing_symbols": [],
+    "missing_packages": [],
+    "failures": [],
+    "counts": {
+      "run": 15,
+      "failures": 0,
+      "errors": 0
+    }
+  },
+  "task_id": "T3-001",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-06T20:03:19.694267+00:00"
+}

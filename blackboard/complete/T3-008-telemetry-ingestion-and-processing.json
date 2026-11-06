@@ -1,0 +1,15 @@
+{
+  "id": "T3-008",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-008"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ledger/domain/EventRevision.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "EventRevision",
+  "intent": "Context Telemetry Event Ledger. Review EventRevision record: immutability, revision invariant, append-only semantics; keep tests green.",
+  "project": "telemetry-ingestion-and-processing"
+}

@@ -1,0 +1,27 @@
+{
+  "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/reordering/domain/TelemetryWindowOrdered.java",
+  "stack": "java-springboot",
+  "skill": "coder-framework/java-springboot",
+  "summary": "Immutable record with no framework/IO imports, no logic, no hacks; nothing to refactor.",
+  "findings": [],
+  "changes": [],
+  "reverts": [],
+  "final_test": {
+    "status": "passed",
+    "exit_code": 0,
+    "missing_symbols": [],
+    "missing_packages": [],
+    "failures": [],
+    "counts": {
+      "run": 6,
+      "failures": 0,
+      "errors": 0
+    },
+    "source": "blackboard/gate-cache/T2-012.json (unit unchanged since)"
+  },
+  "task_id": "T3-012",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-06T20:10:12.836956+00:00"
+}

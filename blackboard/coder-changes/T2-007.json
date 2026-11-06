@@ -1,0 +1,48 @@
+{
+  "id": "T2-007",
+  "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/reordering/application/ReorderingService.java",
+  "export": "ReorderingService",
+  "method": "process",
+  "language": "java",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "kind": "class",
+  "annotations": [
+    "Service"
+  ],
+  "members": [
+    "private final LedgerEventPort port",
+    "private final Duration window",
+    "public ReorderingService(LedgerEventPort port, Duration window) { this.port = Objects.requireNonNull(port, \"port\"); this.window = Objects.requireNonNull(window, \"window\"); if (window.isZero() || window.isNegative()) { throw new IllegalArgumentException(\"window must be positive\"); } }"
+  ],
+  "signature": "public Flux<Void> process(Flux<ValidatedTelemetryEvent> source)",
+  "returns": "Flux<Void>",
+  "body": "Objects.requireNonNull(source, \"source\");\nlong windowMillis = window.toMillis();\nreturn Flux.defer(() -> {\n    Map<String, Long> openBucket = new HashMap<>();\n    Map<String, List<ValidatedTelemetryEvent>> buffers = new HashMap<>();\n    Function<String, Object> closeWindow = metric -> {\n        List<ValidatedTelemetryEvent> samples = new ArrayList<>(buffers.remove(metric));\n        samples.sort(Comparator.comparing(ValidatedTelemetryEvent::timestamp));\n        Instant start = Instant.ofEpochMilli(openBucket.remove(metric) * windowMillis);\n        return new TelemetryWindowOrdered(metric, start, start.plus(window), List.copyOf(samples));\n    };\n    Flux<Object> emitted = source.concatMap(event -> {\n        String metric = event.metric();\n        long bucket = Math.floorDiv(event.timestamp().toEpochMilli(), windowMillis);\n        Long open = openBucket.get(metric);\n        List<Object> out = new ArrayList<>();\n        if (open == null) {\n            openBucket.put(metric, bucket);\n            buffers.put(metric, new ArrayList<>(List.of(event)));\n        } else if (bucket < open) {\n            out.add(new TelemetryBackfillDetected(metric, event.timestamp(), Instant.ofEpochMilli(open * windowMillis)));\n        } else if (bucket == open) {\n            buffers.get(metric).add(event);\n        } else {\n            out.add(closeWindow.apply(metric));\n            openBucket.put(metric, bucket);\n            buffers.put(metric, new ArrayList<>(List.of(event)));\n        }\n        return Flux.fromIterable(out);\n    }).concatWith(Flux.defer(() -> Flux.fromIterable(new ArrayList<>(buffers.keySet())).map(closeWindow)));\n    return emitted.concatMap(domainEvent -> port.publish(domainEvent)\n            .retryWhen(Retry.backoff(5, Duration.ofSeconds(1)).maxBackoff(Duration.ofSeconds(30))));\n});",
+  "imports": [
+    "java.time.Duration",
+    "java.time.Instant",
+    "java.util.ArrayList",
+    "java.util.Comparator",
+    "java.util.HashMap",
+    "java.util.List",
+    "java.util.Map",
+    "java.util.Objects",
+    "java.util.function.Function",
+    "org.springframework.stereotype.Service",
+    "reactor.core.publisher.Flux",
+    "reactor.util.retry.Retry",
+    "com.pulsestream.telemetry.reordering.domain.TelemetryBackfillDetected",
+    "com.pulsestream.telemetry.reordering.domain.TelemetryWindowOrdered",
+    "com.pulsestream.telemetry.reordering.domain.ValidatedTelemetryEvent"
+  ],
+  "missing": [
+    "TelemetryWindowOrdered(String metric, Instant windowStart, Instant windowEnd, List<ValidatedTelemetryEvent> samples) constructor",
+    "TelemetryBackfillDetected(String metric, Instant lateTimestamp, Instant windowStart) constructor",
+    "ValidatedTelemetryEvent.metric() accessor",
+    "LedgerEventPort"
+  ],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-06T19:04:11.792098+00:00"
+}

@@ -1,0 +1,15 @@
+{
+  "id": "T2-005",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-005"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/intake/api/TelemetryIngressController.java",
+  "kind": "code",
+  "layer": "interface",
+  "feature": null,
+  "export": "TelemetryIngressController",
+  "intent": "Context Telemetry Intake & Validation. WebFlux @RestController POST /telemetry/samples: validates DTO (@Valid), maps to TelemetrySample, calls IntakeTelemetryUseCase, returns 202 with Mono<Void>; 400 on malformed input. Conformist ingress, non-blocking.",
+  "project": "telemetry-ingestion-and-processing"
+}

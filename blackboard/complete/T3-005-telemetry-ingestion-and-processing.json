@@ -1,0 +1,15 @@
+{
+  "id": "T3-005",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-005"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/intake/api/TelemetryIngressController.java",
+  "kind": "refactor",
+  "layer": "interface",
+  "feature": null,
+  "export": "TelemetryIngressController",
+  "intent": "Context Telemetry Intake & Validation. Review ingress controller: thin controller, DTO validation, correct status codes, no business logic; keep tests green.",
+  "project": "telemetry-ingestion-and-processing"
+}

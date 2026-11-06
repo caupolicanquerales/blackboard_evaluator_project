@@ -1,0 +1,26 @@
+{
+  "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/intake/domain/TelemetrySampleValidated.java",
+  "stack": "java-springboot",
+  "skill": "none (unit audit trivial; no framework code)",
+  "summary": "Immutable record with one delegating accessor; no violations found.",
+  "findings": [],
+  "changes": [],
+  "reverts": [],
+  "final_test": {
+    "status": "passed",
+    "exit_code": 0,
+    "missing_symbols": [],
+    "missing_packages": [],
+    "failures": [],
+    "counts": {
+      "run": 5,
+      "failures": 0,
+      "errors": 0
+    }
+  },
+  "task_id": "T3-015",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-06T20:03:38.444661+00:00"
+}

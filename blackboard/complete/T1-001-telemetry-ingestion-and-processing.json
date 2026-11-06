@@ -1,0 +1,15 @@
+{
+  "id": "T1-001",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/intake/domain/TelemetrySampleTest.java",
+  "kind": "test",
+  "layer": "domain",
+  "feature": null,
+  "export": "TelemetrySampleTest",
+  "intent": "Context Telemetry Intake & Validation. Test immutable record TelemetrySample(deviceId, metric, value, tDevice, tIngress): rejects null/blank deviceId/metric and null timestamps; value object equality; tIngress is distinct from tDevice and never overwrites it.",
+  "project": "telemetry-ingestion-and-processing"
+}

@@ -1,0 +1,63 @@
+{
+  "schema_version": "1.0",
+  "report_type": "context-map",
+  "metadata": {
+    "generated_at": "2026-11-06T18:50:00Z",
+    "agent": "domain-context-mapping-specialist",
+    "source_report": "blackboard/domain"
+  },
+  "context_map": [
+    {
+      "upstream": "Telemetry Intake & Validation",
+      "downstream": "Backfill Reordering",
+      "relationship": "Customer-supplier",
+      "direction": "Telemetry Intake & Validation -> Backfill Reordering",
+      "exchanged_information": "Validated and validation-failed telemetry samples with device timestamp and validation status; failed samples still flow, flagged, never dropped.",
+      "boundary_protection": "Reordering treats validation status as opaque and never re-applies Sensor Metric Boundary rules; intake never exposes boundary definitions or ingress-handling internals. Eventual consistency."
+    },
+    {
+      "upstream": "Backfill Reordering",
+      "downstream": "Telemetry Event Ledger",
+      "relationship": "Customer-supplier",
+      "direction": "Backfill Reordering -> Telemetry Event Ledger",
+      "exchanged_information": "Ordered telemetry windows and backfill detections to be retained as appended revisions.",
+      "boundary_protection": "Ledger translates ordering outcomes into Event Revisions and never mutates stored records or makes ordering decisions; window buffer internals do not leak. Eventual consistency. Open question: ownership of the 60s window versus late-backfill revisions (possible merge if atomicity is required)."
+    },
+    {
+      "upstream": "Telemetry Event Ledger",
+      "downstream": "external",
+      "relationship": "Open host service / published language",
+      "direction": "Telemetry Event Ledger -> external (audit consumers)",
+      "exchanged_information": "Revision-appended notifications and auditable raw telemetry history for other platform subdomains.",
+      "boundary_protection": "Stable versioned contract of revisions; consumers cannot alter stored history. Open question: external consumer identities (athlete/activity, analytics) belong to other subdomains."
+    },
+    {
+      "upstream": "external",
+      "downstream": "Telemetry Intake & Validation",
+      "relationship": "Conformist",
+      "direction": "external (device transmitters) -> Telemetry Intake & Validation",
+      "exchanged_information": "Ingress packets carrying 1Hz telemetry samples.",
+      "boundary_protection": "Devices dictate packet format; intake accepts under backpressure and does not leak device-specific formats downstream beyond the Telemetry Sample concept."
+    }
+  ],
+  "cross_boundary_flows": [
+    {
+      "business_process": "Ingest, validate, order and retain telemetry from a device packet",
+      "contexts_involved": [
+        "Telemetry Intake & Validation",
+        "Backfill Reordering",
+        "Telemetry Event Ledger"
+      ],
+      "consistency_expectation": "Validation is immediate within intake; ordering and retention are eventually consistent. Samples may be temporarily unordered up to the 60s reorder window. Invalid samples are flagged, never lost; failure at reordering or ledger must not discard samples (retry/hold)."
+    },
+    {
+      "business_process": "Late backfill correction of earlier telemetry",
+      "contexts_involved": [
+        "Backfill Reordering",
+        "Telemetry Event Ledger"
+      ],
+      "consistency_expectation": "Eventual: ledger appends a new Event Revision; earlier records stay unchanged, so history is briefly without the correction. Open question on 60s window vs revision ownership.",
+      "notes": "Samples delayed beyond the window are not specified by discovery."
+    }
+  ]
+}

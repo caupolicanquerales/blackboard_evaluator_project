@@ -1,0 +1,31 @@
+{
+  "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/intake/api/TelemetryIngressController.java",
+  "stack": "java-springboot",
+  "skill": "coder-framework/java-springboot",
+  "summary": "Controller is thin: validated DTO, maps to domain sample, delegates to use case, returns 202 Accepted. No business logic, no duplication. No edits needed.",
+  "findings": [
+    "Clean code: none",
+    "Architecture: interface layer depends only on application use case and domain sample; no business logic",
+    "Performance: none",
+    "Security: input validated via @Valid with @NotBlank/@NotNull"
+  ],
+  "changes": [],
+  "reverts": [],
+  "final_test": {
+    "status": "passed",
+    "exit_code": 0,
+    "missing_symbols": [],
+    "missing_packages": [],
+    "failures": [],
+    "counts": {
+      "run": 10,
+      "failures": 0,
+      "errors": 0
+    }
+  },
+  "task_id": "T3-005",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-06T19:49:52.862512+00:00"
+}

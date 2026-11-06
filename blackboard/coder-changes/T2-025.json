@@ -1,0 +1,24 @@
+{
+  "id": "T2-025",
+  "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ledger/application/TelemetryRevisionEventPublisher.java",
+  "export": "TelemetryRevisionEventPublisher",
+  "method": "TelemetryRevisionEventPublisher",
+  "language": "java",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "signature": "interface TelemetryRevisionEventPublisher",
+  "returns": "void",
+  "body": "",
+  "imports": [
+    "com.pulsestream.telemetry.ledger.domain.TelemetryRevisionAppended"
+  ],
+  "missing": [],
+  "kind": "interface",
+  "members": [
+    "void publish(TelemetryRevisionAppended event);"
+  ],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-06T19:21:44.591619+00:00"
+}

@@ -111,3 +111,32 @@ class AstBuilder(ABC):
                                tool_root: Path | None) -> str:
         """Why build() returned None, as one actionable line; empty when unknown."""
         return ""
+
+    def test_contract(self, project_root: Path, ctx: dict) -> dict | None:
+        """The API a brand-new unit must implement, read from its own test file.
+
+        Language-neutral default: the raw usage lines of the target type. It never
+        fabricates signatures; it pins what the test literally shows. Builders that know
+        their syntax (java) override with structured extraction (constructors, calls,
+        stubbed returns). The dispatcher itself must never parse source: syntax is here.
+        """
+        relative, target = ctx.get("test_path"), ctx.get("target_class")
+        if not isinstance(relative, str) or not relative.strip() or not target:
+            return None
+        test_file = project_root / relative
+        if not test_file.is_file():
+            return None
+        try:
+            text = test_file.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            return None
+        simple = str(target).split(".")[-1]
+        usage = []
+        for raw in text.splitlines():
+            line = raw.strip()
+            if simple in line and not line.startswith(("import ", "package ", "//", "from ")):
+                usage.append(line[:160])
+        if not usage:
+            return None
+        return {"type": simple, "constructors": [], "static_calls": [], "calls": [],
+                "verified": [], "usage_lines": usage[:40]}

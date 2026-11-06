@@ -1,0 +1,166 @@
+{
+  "task_id": "T1-008",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "EventRevision",
+    "constructors": [
+      [
+        "\"device-1\"",
+        "\"temperature\"",
+        "T_DEVICE",
+        "revision",
+        "T_INGRESS",
+        "\"VALID\"",
+        "\"{\\\"v\\\":1}\""
+      ],
+      [
+        "null",
+        "\"m\"",
+        "T_DEVICE",
+        "1",
+        "T_INGRESS",
+        "\"VALID\"",
+        "\"p\""
+      ],
+      [
+        "\"d\"",
+        "null",
+        "T_DEVICE",
+        "1",
+        "T_INGRESS",
+        "\"VALID\"",
+        "\"p\""
+      ],
+      [
+        "\"d\"",
+        "\"m\"",
+        "null",
+        "1",
+        "T_INGRESS",
+        "\"VALID\"",
+        "\"p\""
+      ],
+      [
+        "\"d\"",
+        "\"m\"",
+        "T_DEVICE",
+        "1",
+        "null",
+        "\"VALID\"",
+        "\"p\""
+      ],
+      [
+        "\"d\"",
+        "\"m\"",
+        "T_DEVICE",
+        "1",
+        "T_INGRESS",
+        "null",
+        "\"p\""
+      ],
+      [
+        "\"d\"",
+        "\"m\"",
+        "T_DEVICE",
+        "1",
+        "T_INGRESS",
+        "\"VALID\"",
+        "null"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "event",
+        "method": "deviceId",
+        "args": []
+      },
+      {
+        "receiver": "event",
+        "method": "metric",
+        "args": []
+      },
+      {
+        "receiver": "event",
+        "method": "tDevice",
+        "args": []
+      },
+      {
+        "receiver": "event",
+        "method": "revision",
+        "args": []
+      },
+      {
+        "receiver": "event",
+        "method": "tIngress",
+        "args": []
+      },
+      {
+        "receiver": "event",
+        "method": "validationStatus",
+        "args": []
+      },
+      {
+        "receiver": "event",
+        "method": "rawPayload",
+        "args": []
+      },
+      {
+        "receiver": "next",
+        "method": "revision",
+        "args": []
+      },
+      {
+        "receiver": "original",
+        "method": "nextRevision",
+        "args": [],
+        "returns": "EventRevision"
+      },
+      {
+        "receiver": "original",
+        "method": "nextRevision",
+        "args": []
+      },
+      {
+        "receiver": "original",
+        "method": "revision",
+        "args": []
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class EventRevisionTest {",
+      "private static EventRevision revision(int revision) {",
+      "return new EventRevision(\"device-1\", \"temperature\", T_DEVICE, revision, T_INGRESS, \"VALID\", \"{\\\"v\\\":1}\");",
+      "EventRevision event = revision(1);",
+      "assertThat(event.deviceId()).isEqualTo(\"device-1\");",
+      "assertThat(event.metric()).isEqualTo(\"temperature\");",
+      "assertThat(event.tDevice()).isEqualTo(T_DEVICE);",
+      "assertThat(event.revision()).isEqualTo(1);",
+      "assertThat(event.tIngress()).isEqualTo(T_INGRESS);",
+      "assertThat(event.validationStatus()).isEqualTo(\"VALID\");",
+      "assertThat(event.rawPayload()).isEqualTo(\"{\\\"v\\\":1}\");",
+      "assertThatNoException().isThrownBy(() -> revision(1));",
+      "assertThatThrownBy(() -> revision(invalid)).isInstanceOf(IllegalArgumentException.class);",
+      "EventRevision original = revision(1);",
+      "EventRevision next = original.nextRevision();",
+      "assertThat(next).isNotSameAs(original);",
+      "assertThat(next.revision()).isEqualTo(2);",
+      "EventRevision original = revision(3);",
+      "original.nextRevision();",
+      "assertThat(original.revision()).isEqualTo(3);",
+      "EventRevision original = revision(1);",
+      "EventRevision next = original.nextRevision();",
+      "assertThat(next).usingRecursiveComparison().ignoringFields(\"revision\").isEqualTo(original);",
+      "assertThatThrownBy(() -> new EventRevision(null, \"m\", T_DEVICE, 1, T_INGRESS, \"VALID\", \"p\"))",
+      "assertThatThrownBy(() -> new EventRevision(\"d\", null, T_DEVICE, 1, T_INGRESS, \"VALID\", \"p\"))",
+      "assertThatThrownBy(() -> new EventRevision(\"d\", \"m\", null, 1, T_INGRESS, \"VALID\", \"p\"))",
+      "assertThatThrownBy(() -> new EventRevision(\"d\", \"m\", T_DEVICE, 1, null, \"VALID\", \"p\"))",
+      "assertThatThrownBy(() -> new EventRevision(\"d\", \"m\", T_DEVICE, 1, T_INGRESS, null, \"p\"))",
+      "assertThatThrownBy(() -> new EventRevision(\"d\", \"m\", T_DEVICE, 1, T_INGRESS, \"VALID\", null))"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

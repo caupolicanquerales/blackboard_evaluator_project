@@ -7,7 +7,9 @@ the skill dispatchers and the verification gate.
 import heapq
 import json
 
+import assembly
 import dispatchers
+import refactor_audit
 import settings
 import task_queue
 import test_gate
@@ -17,8 +19,6 @@ import verification
 import workspace
 
 
-_ERROR_FILE_RE = __import__("re").compile(r"\[ERROR\] (\S+\.java):\[\d+")
-
 
 BATCH_MIN_PEERS = 4
 BATCH_MAX = 4
@@ -27,11 +27,9 @@ BATCH_MAX = 4
 def _pending_symbols_of(project, exclude_id):
     """Types a queued sibling task still has to produce for this domain.
 
-    One unit often needs a secondary type owned by another task (an enum or value
-    object named in the sibling's `intent`, not in its `export`). Surefire compiles
-    the whole test source set, so that missing type looks like a failure of this
-    unit; only the sibling can resolve it, so the orchestrator defers instead of
-    burning the coder attempts.
+    Strict by design: only a task's EXPORT counts — intent-named types have no file and
+    no producer, and counting them made the deferral rule wait forever on a symbol
+    nobody would ever write.
     """
     names = set()
     for f in settings.QUEUE_DIR.glob(f"T2-*-{project}.json"):
@@ -40,8 +38,41 @@ def _pending_symbols_of(project, exclude_id):
         except (OSError, json.JSONDecodeError):
             continue
         if isinstance(peer, dict) and peer.get("id") != exclude_id:
-            names |= tasks.produced_types(peer)
+            name = tasks.exported_product(peer)
+            if name:
+                names.add(name)
     return names
+
+
+def _unresolvable_missing(result, task):
+    """Missing symbols no queued task exports and no source on disk declares.
+
+    These are scheduling holes, not code defects: deferring on them livelocks the
+    domain (the owner may be quarantined, or may never have existed). The orchestrator
+    aborts loudly instead of spinning, and names the remedy.
+    """
+    if not isinstance(result, dict):
+        return []
+    # Fully qualified JDK names inside javac method signatures (the arity description of
+    # `cannot find symbol: method of(java.lang.String,java.time.Instant,double)`) tokenize
+    # into bare type names: strip them, then subtract the known JDK short names, or a
+    # contract-arity defect reads as a scheduling hole and aborts a healthy run.
+    import re
+    raw = " ".join(str(item) for item in (result.get("missing_symbols") or []))
+    raw = re.sub(r"\b(?:java|javax|jakarta)\.[\w.]*", "", raw)
+    # Only TYPE-shaped symbols can be scheduling holes. Lowercase tokens are javac
+    # method/variable mismatches between woven units: real code defects the normal
+    # retry loop fixes with the javac log, not aborts.
+    tokens = {t for t in _identifier_tokens(raw) if t[:1].isupper() and tasks.is_type_shape(t)}
+    tokens -= test_gate.JAVA_LANG_NAMES | set(test_gate.JDK_TYPES)
+    if not tokens:
+        return []
+    resolvable = _pending_symbols_of(task.get("project", ""), task["id"])
+    # Scan the whole domain project for declared symbols; source_files() is layout- and
+    # extension-agnostic and skips build output, so this is not a Maven-only check.
+    project_root = workspace.project_root_for(task["project"])
+    resolvable |= {f.stem for f in test_gate.source_files(project_root)}
+    return sorted(tokens - resolvable)
 
 
 def _payloadless_peers(task):
@@ -60,6 +91,24 @@ def _payloadless_peers(task):
     ordered = [task] + sorted((p for p in same if p.get("id") != task["id"]),
                               key=lambda p: str(p.get("path")))
     return ordered
+
+
+def _queued_main_file_owners(project):
+    """{production file basename: queued stage-2 task id} for one domain.
+
+    A stage-2 task's `path` IS the production file it writes - in every layout and language -
+    so ownership needs no extension or src/main assumption: it comes from the queue itself.
+    """
+    owners = {}
+    for f in settings.QUEUE_DIR.glob(f"T2-*-{project}.json"):
+        try:
+            peer = json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        path = str(peer.get("path", "")).replace("\\", "/")
+        if path:
+            owners[path.split("/")[-1]] = peer.get("id")
+    return owners
 
 
 def _sibling_payloads_pending(task):
@@ -90,6 +139,14 @@ class DeferredTask(Exception):
     """Stage-2 verification blocked by not-yet-implemented peer tasks; retry next pass."""
 
 
+class FatalPipeline(Exception):
+    """A deterministic check found a failure no agent can fix; abort before spending more tokens.
+
+    Example: tests import packages absent from the scaffold's classpath. Only the build file
+    can add them, and stage 2 may not edit it, so every gate of the domain would fail forever.
+    """
+
+
 def execute_with_tdd(task, invoke, verify):
     """Run one task. Stage 2 retries the coder with the verification log, up to MAX_TDD_RETRIES.
 
@@ -98,7 +155,8 @@ def execute_with_tdd(task, invoke, verify):
     source tree, then re-runs the recorded test (green gate), then the build gate.
     Agent failures are not retried; only verification failures are.
     """
-    attempts = settings.MAX_TDD_RETRIES if task["stage"] == settings.TDD_STAGE else 1
+    attempts = settings.MAX_TDD_RETRIES if task["stage"] in (settings.TDD_STAGE,
+                                                             settings.ASSEMBLY_STAGE) else 1
     feedback = None
     reason = ""
     for attempt in range(1, attempts + 1):
@@ -127,9 +185,9 @@ def _blocked_by_peers(result, task):
 
     Surefire compiles the whole source set: a missing peer (or a test that will
     only compile once other tasks land) fails every task of the domain. The only
-    compile failure worth retrying is one LOCATED IN this unit's own file
-    (javac prints "location: .../File.java:[l,c]"); everything else is a peer
-    problem the coder cannot fix, so defer instead of burning the three attempts.
+    compile failure worth retrying is one STRUCTURALLY located in this unit's own file
+    (every toolchain prints "file:line: message"); a cascade of foreign symbol misses
+    is a peer problem the coder cannot fix, so defer instead of burning the attempts.
     """
     if not isinstance(result, dict) or result.get("status") not in ("compile_error", "error"):
         return False
@@ -137,14 +195,35 @@ def _blocked_by_peers(result, task):
         missing_tokens = _identifier_tokens(" ".join(str(item) for item in (result.get("missing_symbols") or [])))
         if missing_tokens & _pending_symbols_of(task["project"], task["id"]):
             return True          # a queued peer will resolve this symbol; do not burn attempts
-    excerpt_lines = [str(line) for line in (result.get("excerpt") or [])]
-    files = [m.group(1) for line in excerpt_lines if (m := _ERROR_FILE_RE.search(line))]
+    owners = _queued_main_file_owners(task.get("project", ""))
     own = str(task.get("path", "")).split("/")[-1]
-    main_hits = [f for f in files if "/src/main/" in f]
-    if own and any(own in f for f in main_hits):
-        return False                      # javac blames THIS unit's source: real retry
-    if files and not main_hits:
-        return True                       # only test files fail: peers/contract issue, defer
+    locations = test_gate.error_locations(result)
+    main_names = {name for name, _ in locations if name in owners}
+    if own in main_names:
+        # Own file blamed: only a STRUCTURAL error there is this unit's fault. A "cannot find
+        # symbol" in the own file is a cascade from a foreign broken definition, which no
+        # payload of this unit can repair - defer while the root owner retries instead.
+        own_structural = any(name == own and not test_gate.is_cascade(message)
+                             for name, message in locations)
+        if not own_structural and any(owners.get(name) != task["id"] for name in main_names):
+            return True
+        return False                       # the own file is structurally broken: real retry
+    if main_names and all(owners.get(name) != task["id"] for name in main_names):
+        return True                        # every blamed production file belongs to other queued units
+    if locations and not main_names:
+        # A test-only blame is still OWNED work when javac names the production type in
+        # the message (`method of(...) location: class TelemetrySample`, `constructor
+        # MetricBoundary in record ...`): the task exporting that type's file must retry
+        # with this log. If every peer defers to the test blame instead, nobody ever
+        # fixes the contract and the whole domain livelocks in deferred gates.
+        import re
+        text = " ".join(str(line) for line in (result.get("excerpt") or []))
+        named = {owner_id for name, owner_id in owners.items()
+                 if re.search(rf"\b{name[:-5] if name.endswith('.java') else name}\b", text)}
+        if task["id"] in named:
+            return False                   # the gap sits in MY exported type: real retry
+        return True                        # another queued unit owns the named type: defer
+    excerpt_lines = [str(line) for line in (result.get("excerpt") or [])]
     if result.get("status") != "compile_error":
         return False
     export = str(task.get("export", "")).split(".")[-1]
@@ -178,6 +257,42 @@ def quarantine_dependents(failed_id, tasks, files, dependents, remaining):
             pending.append(dependent_id)
 
 
+def _ensure_task_parent(task):
+    """Create the parent folder of a stage-1 test path before any agent runs.
+
+    Copilot's create tool refuses to write when the parent folder is missing, and every
+    greenfield package starts absent: without this the tester burns 2-3 extra calls
+    (mkdir + re-write, ~50K tokens re-sent for the rest of its session).
+    """
+    if task.get("stage") != settings.TESTER_STAGE:
+        return
+    try:
+        (workspace.project_root_for(task["project"]) / task["path"]).parent.mkdir(
+            parents=True, exist_ok=True)
+    except (OSError, KeyError, TypeError):
+        pass
+
+
+def _tester_close_out(task):
+    """Deterministic stage-1 close-out: validate red, guard classpath holes, dispatch the AST.
+
+    Shared by the after-session path and the resume-skip, so a tester killed mid-session
+    (valid red record on disk, no [done], no contract) is finished WITHOUT re-billing a
+    full agent session.
+    """
+    problem = dispatchers.red_phase_problem(task)
+    if problem:
+        return False, problem
+    gap = dispatchers.red_phase_dependency_gap(task)
+    if gap:
+        raise FatalPipeline(
+            f"{task['id']} tests import {len(gap)} package(s) no task produces and "
+            f"the scaffold classpath lacks: {', '.join(gap)}. Stage 2 cannot edit the "
+            "build file, so every gate of this domain would fail forever.")
+    dispatchers.run_ast_dispatcher(task)
+    return True, ""
+
+
 def drain_queue(args, invoke_for_task):
     """Drain the queue once using an in-memory dependency graph and ready heap.
 
@@ -192,6 +307,18 @@ def drain_queue(args, invoke_for_task):
     kept, complete_ids = task_queue.load_valid_tasks()
     if not kept:
         return 0, []
+
+    for _, task in kept:
+        _ensure_task_parent(task)
+
+    gaps = dispatchers.scan_red_phase_gaps()
+    if gaps:
+        detail = "; ".join(f"{project}: {', '.join(pkgs)}"
+                           for project, pkgs in sorted(gaps.items()))
+        raise FatalPipeline(
+            f"recorded red tests import packages no task produces and the scaffold "
+            f"classpath lacks: {detail}. Fix the build file (stage 2 may not edit it), "
+            "then relaunch; the check re-runs on every drain.")
 
     by_id = {task["id"]: task for _, task in kept}
     files = {task["id"]: file for file, task in kept}
@@ -231,6 +358,7 @@ def drain_queue(args, invoke_for_task):
 
     def closures_for(task):
         def invoke(feedback):
+            _ensure_task_parent(task)
             payload = settings.ROOT / "blackboard" / "coder-changes" / f"{task['id']}.json"
             if (task["stage"] == settings.TDD_STAGE and feedback is None and payload.is_file()):
                 print(f"[skip-agent] {task['id']} coder payload already recorded; going straight to verify")
@@ -240,6 +368,24 @@ def drain_queue(args, invoke_for_task):
                 print(f"[skip-agent] {task['id']} bootstrap artifact already on disk "
                       f"({task['path']}); no agent session needed")
                 return True, ""
+            if (task["stage"] == settings.TESTER_STAGE and feedback is None
+                    and (workspace.project_root_for(task["project"]) / task["path"]).is_file()):
+                # Resume guard: a killed tester can leave a valid test + red record without
+                # [done]. Close it out deterministically (re-dispatching the contract) instead
+                # of re-billing the whole session (~130K). Invalid record -> fall through:
+                # the tester runs again and overwrites it, exactly as before.
+                ok_red, reason_red = _tester_close_out(task)
+                if ok_red:
+                    print(f"[skip-agent] {task['id']} test and valid red record on disk; "
+                          "contract dispatched without a new session")
+                    return True, ""
+            if task["stage"] == settings.TDD_STAGE:
+                # A coder session without the unit's AST contract is a guessing session:
+                # the payloads get weaved happily and die at the green wave, one coder
+                # retry session (~150K tokens) per unit. Refuse the session instead.
+                problem = dispatchers.ast_context_problem(task)
+                if problem:
+                    return False, f"ast-context gate: {problem}"
             if task["stage"] == settings.TDD_STAGE and feedback is None and not payload.is_file():
                 batch = getattr(invoke_for_task, "batch", None)
                 siblings = _payloadless_peers(task) if batch else []
@@ -256,21 +402,21 @@ def drain_queue(args, invoke_for_task):
                         return True, ""
                     print(f"[batch ] {task['id']} batch wrote no payload"
                           f"{'' if ok_batch else ' (' + reason_batch[:120] + ')'}; falling back to per-task")
+            pre_edit_snapshot = (refactor_audit.snapshot_sources(task)
+                                 if task["stage"] == settings.EVALUATOR_STAGE else None)
             ok, reason = invoke_for_task(task, feedback)
             expected = workspace.project_root_for(task["project"]) / task["path"]
             if ok and task["stage"] != settings.TDD_STAGE and not expected.exists():
                 return False, f"agent finished but {task['path']} was not created"
             if ok and task["stage"] == settings.TESTER_STAGE:
-                problem = dispatchers.red_phase_problem(task)
-                if problem:
-                    return False, problem
-                dispatchers.run_ast_dispatcher(task)
+                return _tester_close_out(task)
             if ok and task["stage"] == settings.EVALUATOR_STAGE:
                 problem = dispatchers.evaluate_result_problem(task)
                 if problem:
                     if _peers_outstanding(task):
                         raise DeferredTask(f"evaluate artifact pending ({problem}) while peers remain queued")
                     return False, problem
+                refactor_audit.attach_engine_diff(task, pre_edit_snapshot)
             return ok, reason
 
         def verify():
@@ -286,6 +432,14 @@ def drain_queue(args, invoke_for_task):
                                        "domain is fully woven")
                 problem, result = test_gate.green_test_result(task)
                 if problem:
+                    holes = _unresolvable_missing(result, task)
+                    if holes:
+                        raise FatalPipeline(
+                            f"{task['id']} cannot compile against {len(holes)} symbol(s) no "
+                            f"queued task exports and no source declares: {', '.join(holes[:8])}. "
+                            "This is a scheduling hole, not a code defect; deferring would "
+                            "livelock the domain. Close it with: "
+                            "python3 orchestrators/closure.py --project-root <root> --emit")
                     if _blocked_by_peers(result, task):
                         raise DeferredTask(problem)
                     return False, problem
@@ -293,6 +447,10 @@ def drain_queue(args, invoke_for_task):
             if task["stage"] == settings.EVALUATOR_STAGE:
                 return verification.verify_project(
                     project_root, args.verify, args.verify_timeout)
+            if task["stage"] == settings.ASSEMBLY_STAGE:
+                # The gate IS the verification: the container boots or it does not.
+                # No agent artifact is trusted - the engine runs the smoke test itself.
+                return assembly.gate(task)
             return verification.run_verification(
                 project_root, args.verify, args.verify_scope, task, args.verify_timeout)
 

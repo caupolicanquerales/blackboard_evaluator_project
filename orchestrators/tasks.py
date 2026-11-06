@@ -14,13 +14,24 @@ def is_type_shape(name):
     return bool(name) and not name.isupper()
 
 
-def produced_types(task):
-    """Types one task owns: its export plus the CamelCase types its intent names.
+def exported_product(task):
+    """The single type a stage-2 task actually writes: its export, simple name.
 
-    A unit normally ships secondary types its own export does not name (an enum, a value
-    object, an outcome record). Both the closure gate and the stage-2 peer-deferral rule
-    have to know them, or they blame a sibling task for a type another task already plans
-    to write.
+    Scheduling truth: a task writes ONE file (its `path`). The names its `intent`
+    mentions are NOT producers — treating them as such hid real decomposition gaps
+    and livelocked the whole domain behind symbols nobody ever writes.
+    """
+    export = task.get("export")
+    if isinstance(export, str) and export.strip():
+        return export.strip().split(".")[-1]
+    return None
+
+
+def produced_types(task):
+    """Types a task's text NAMES (export + CamelCase words of the intent).
+
+    Advisory only (unit briefs). Never use this to decide that a type has a producer:
+    use exported_product — a task creates exactly one file.
     """
     names = set()
     export = task.get("export")
@@ -65,10 +76,10 @@ def validate(task, index):
         return f"schema mismatch, missing={missing} extra={extra}"
     stage = task["stage"]
     if not isinstance(stage, int) or stage not in settings.STAGE_AGENTS:
-        return "stage must be an integer 0-3"
+        return f"stage must be one of {sorted(settings.STAGE_AGENTS)}"
     match = settings.ID_PATTERN.match(str(task["id"]))
     if not match:
-        return "id must match ^T[0-3]-\\d{3}$"
+        return f"id must match {settings.ID_PATTERN.pattern}"
     if int(match.group(1)) != stage:
         return "id stage suffix differs from stage"
     if task["targetAgent"] != settings.STAGE_AGENTS[stage]:

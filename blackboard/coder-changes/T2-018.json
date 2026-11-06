@@ -1,0 +1,26 @@
+{
+  "id": "T2-018",
+  "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ledger/domain/TelemetryEventKey.java",
+  "export": "TelemetryEventKey",
+  "method": "TelemetryEventKey",
+  "language": "java",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "signature": "TelemetryEventKey",
+  "returns": "void",
+  "body": "",
+  "imports": [
+    "java.time.Instant"
+  ],
+  "missing": [],
+  "kind": "record",
+  "members": [
+    "String deviceId",
+    "String metric",
+    "Instant timestamp"
+  ],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-06T19:22:13.867005+00:00"
+}

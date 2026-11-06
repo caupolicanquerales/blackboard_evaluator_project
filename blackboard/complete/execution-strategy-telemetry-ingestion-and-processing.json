@@ -1,0 +1,65 @@
+{
+  "slug": "telemetry-ingestion-and-processing",
+  "bounded_contexts": [
+    "Telemetry Intake & Validation",
+    "Backfill Reordering",
+    "Telemetry Event Ledger"
+  ],
+  "modules": ["telemetry-ingestion-and-processing"],
+  "layers": ["api", "application", "domain", "infrastructure", "shared"],
+  "tech_stack": {
+    "language": "Java 17",
+    "framework": "Spring Boot 3 (reactive, Maven)",
+    "dependencies": [
+      "spring-boot-starter-webflux",
+      "spring-boot-starter-validation",
+      "spring-boot-starter-actuator",
+      "spring-boot-starter-data-r2dbc",
+      "r2dbc-postgresql",
+      "flyway-core",
+      "flyway-database-postgresql",
+      "postgresql",
+      "spring-boot-starter-jdbc",
+      "spring-boot-starter-test",
+      "reactor-test"
+    ]
+  },
+  "module_layout": {
+    "base_package": "com.pulsestream.telemetry",
+    "packages": [
+      "intake.api", "intake.application", "intake.domain", "intake.infrastructure",
+      "reordering.application", "reordering.domain", "reordering.infrastructure",
+      "ledger.application", "ledger.domain", "ledger.infrastructure", "ledger.api",
+      "shared"
+    ],
+    "integration": [
+      "Intake -> Reordering: in-process reactive event port (Sinks with backpressure) carrying TelemetrySampleValidated/ValidationFailed; validation status opaque downstream",
+      "Reordering -> Ledger: in-process event port carrying TelemetryWindowOrdered/TelemetryBackfillDetected; ledger translates to Event Revisions",
+      "Ledger -> external: versioned published-language read/notification contract (TelemetryRevisionAppended)",
+      "external devices -> Intake: conformist non-blocking ingress endpoint"
+    ]
+  },
+  "build_order": [
+    "project scaffold (pom.xml)",
+    "shared + domain (sample, boundaries, reorder window, event revision)",
+    "application ports and use cases (intake, reordering, ledger)",
+    "infrastructure adapters (reactive buffers, R2DBC append-only ledger, migrations)",
+    "api (ingress endpoint, revision published contract, error mapping)"
+  ],
+  "risks": [
+    "Ownership of 60s window vs append-only late-backfill revisions unclear; contexts may need to merge if atomicity is required",
+    "Behavior for samples delayed beyond 60s unspecified",
+    "Boundaries for ground contact time, respiration and swim stroke are undefined",
+    "Sustained 1Hz burst load needs bounded buffers and explicit overflow policy without dropping samples",
+    "In-process eventual consistency: failures downstream must hold/retry, not discard"
+  ],
+  "persistence": {
+    "drivers": ["append-only audit history", "high write throughput", "time-range reads by device timestamp"],
+    "storage_paradigm": "Relational, append-only, time-partition friendly store (reactive access)",
+    "data_model": "Event Revision records keyed by device/metric/t_device with revision number, t_ingress, validation status and raw payload; never updated or deleted; boundary definitions held as configuration",
+    "queries": ["Append revision", "Read revision history for device/metric in a time range", "Latest revision per sample"],
+    "migration_plan": "Expand-only versioned migrations; new revision tables/indexes added, none altered destructively",
+    "backup_recovery": "Periodic snapshots plus WAL/point-in-time recovery; append-only nature simplifies restore",
+    "open_questions": ["Retention period and partitioning granularity", "Concrete store selection by database step"]
+  }
+}

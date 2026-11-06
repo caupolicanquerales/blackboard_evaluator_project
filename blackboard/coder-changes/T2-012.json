@@ -1,0 +1,28 @@
+{
+  "id": "T2-012",
+  "project": "telemetry-ingestion-and-processing",
+  "language": "java",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "signature": "TelemetryWindowOrdered(String metric, Instant windowStart, Instant windowEnd, List<ValidatedTelemetryEvent> samples)",
+  "returns": "void",
+  "body": "",
+  "missing": [],
+  "targetFile": "src/main/java/com/pulsestream/telemetry/reordering/domain/TelemetryWindowOrdered.java",
+  "export": "TelemetryWindowOrdered",
+  "method": "TelemetryWindowOrdered",
+  "kind": "record",
+  "members": [
+    "String metric",
+    "Instant windowStart",
+    "Instant windowEnd",
+    "List<ValidatedTelemetryEvent> samples"
+  ],
+  "imports": [
+    "java.time.Instant",
+    "java.util.List"
+  ],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-06T19:23:27.249258+00:00"
+}

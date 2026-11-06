@@ -1,0 +1,17 @@
+{
+  "id": "T2-014",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T0-001",
+    "T1-003"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/intake/domain/MetricBoundary.java",
+  "kind": "code",
+  "layer": "domain",
+  "feature": null,
+  "export": "MetricBoundary",
+  "intent": "Bounded context telemetry-ingestion-and-processing: define MetricBoundary (domain collaborator defined from its test usages only) in package com.pulsestream.telemetry.intake.domain. Contract is fixed by its usage in R2dbcMetricBoundaryRepositoryTest.java; implement the smallest correct type that satisfies every usage.",
+  "project": "telemetry-ingestion-and-processing",
+  "error": "TDD failed after 3 attempts: test gate: status=assertion_failure; exit_code=1; tests=4 failures=1 errors=0"
+}

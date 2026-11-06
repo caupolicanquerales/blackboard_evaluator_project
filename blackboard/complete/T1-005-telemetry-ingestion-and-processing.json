@@ -1,0 +1,15 @@
+{
+  "id": "T1-005",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/intake/api/TelemetryIngressControllerTest.java",
+  "kind": "test",
+  "layer": "interface",
+  "feature": null,
+  "export": "TelemetryIngressControllerTest",
+  "intent": "Context Telemetry Intake & Validation. WebFluxTest of POST /telemetry/samples: 202 Accepted for well-formed payload, 400 for malformed/missing fields, non-blocking Mono<Void> response, delegates to IntakeTelemetryUseCase.",
+  "project": "telemetry-ingestion-and-processing"
+}

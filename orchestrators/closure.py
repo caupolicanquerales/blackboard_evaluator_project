@@ -66,6 +66,10 @@ def _kind_hint(name: str) -> str:
 TYPE_POSITIONS = (
     r"new\s+([A-Z]\w*)\s*[(<]",
     r"\b([A-Z]\w*)\s+[a-z_$]\w*\s*[=,)]",
+    # declaration positions the plain patterns miss: a method return type
+    # (`public ValidationStatus validate(`) or a field (`ValidationStatus status;`).
+    # JDK/imports in these positions are subtracted below or by the blocklists.
+    r"\b([A-Z]\w*)\s+[a-z_$][\w$]*\s*[(;]",
     r"([A-Z]\w*)\.class",
     r"instanceof\s+([A-Z]\w*)",
     r"catch\s*\(\s*([A-Z]\w*)",
@@ -73,6 +77,15 @@ TYPE_POSITIONS = (
     r"isInstanceOf\(\s*([A-Z]\w*)",
     r"forClass\(\s*([A-Z]\w*)\.class",
 )
+
+# `java.util.function.BiFunction.class` is a JDK type used fully qualified: no import
+# statement exists to filter it, and no domain task may ever own it.
+JDK_QUALIFIED_RE = re.compile(r"\b(?:java|javax|jakarta)\.[\w.]*\.([A-Z]\w*)\b")
+
+
+def source_files(folder: Path) -> list:
+    """Source files of any supported language under a folder (Java layout is not assumed)."""
+    return test_gate.source_files(folder)
 
 
 def _declared_in_file(text: str) -> set:
@@ -100,6 +113,10 @@ def _used_without_import(text: str, imported_or_same: set, declared: set) -> set
     code = _code_only(text)
     for pattern in TYPE_POSITIONS:
         found |= set(re.findall(pattern, code))
+    found -= set(JDK_QUALIFIED_RE.findall(code))
+    # qualified uses are not top-level types: `ReorderWindowBuffer.Outcome outcome = ...`
+    # names a NESTED type of a file whose producer exists; only the bare match leaks through.
+    qualified = {m.group(2) for m in re.finditer(r"\b([A-Z]\w*)\.([A-Z]\w*)\b", code)}
     blocklist = {"Test", "BeforeEach", "AfterEach", "BeforeAll", "AfterAll", "Nested",
                  "DisplayName", "TempDir", "Timeout", "RepeatedTest", "EnumSource",
                  "CsvSource", "MethodSource", "ValueSource", "Mock"}
@@ -113,7 +130,7 @@ def _used_without_import(text: str, imported_or_same: set, declared: set) -> set
     # java.lang is never importable-by-name in a test and never needs a producer task:
     # StringBuilder there was reported as an unclosed import of the domain.
     blocklist |= test_gate.JAVA_LANG_NAMES
-    return {name for name in (found - imported_or_same - declared - blocklist)
+    return {name for name in (found - imported_or_same - declared - blocklist - qualified)
             if _is_type_shape(name)}
 
 
@@ -136,36 +153,64 @@ def _is_nested_type(package: str, cls: str, outer: set) -> bool:
 
 
 def gaps(service_root: Path, slug: str, index: dict) -> list:
-    """Types this domain's tests reference (imports or type positions) with no producer."""
+    """Types this domain's tests reference (imports or type positions) with no producer.
+
+    Coverage is per (class, package): Java imports are fully qualified, so a producer
+    in one package never satisfies an import from another. Keying by simple name let
+    the first package win and livelocked every test importing the same name elsewhere.
+    """
     test_root = service_root / "src" / "test" / "java"
     main_root = service_root / "src" / "main" / "java"
     if not test_root.is_dir():
         return []
-    produced = set()
+    produced_pairs = set()
+    outer_names = set()
     for task in index.values():
         if task.get("project") == slug and isinstance(task.get("stage"), int) \
                 and task["stage"] == settings.TDD_STAGE:
-            produced |= tasks.produced_types(task)
-    main_stems = {f.stem for f in main_root.rglob("*.java")}
-    produced |= main_stems
-    outer = _outer_types(produced, index, slug, main_stems)
-    missing = {}
-    for f in test_root.rglob("*.java"):
-        text = f.read_text(encoding="utf-8", errors="ignore")
-        pkg_match = re.search(r"package ([\w.]+);", text)
-        own_pkg = pkg_match.group(1) if pkg_match else ""
-        imported_simple = set(re.findall(r"import (?:static )?[\w.]*?\.([A-Z]\w*);", text))
-        declared = _declared_in_file(text) | {
-            n for other in test_root.rglob("*.java") if other != f
-            for n in (_declared_in_file(other.read_text(encoding="utf-8", errors="ignore"))
-                      if other.parent == f.parent else set())}
-        for cls, pkg in _imported_classes(f):
-            if cls in produced or cls in missing or _is_nested_type(pkg, cls, outer):
+            name = tasks.exported_product(task)
+            if not name:
                 continue
-            missing[cls] = {"class": cls, "package": pkg, "test": f.name}
-        for cls in _used_without_import(text, imported_simple | produced, declared):
-            if cls not in missing and not _is_nested_type(own_pkg, cls, outer):
-                missing[cls] = {"class": cls, "package": own_pkg, "test": f.name}
+            path = str(task.get("path", "")).replace("\\", "/")
+            match = re.search(r"src/main/[^/]+/(.+)/[^/]+$", path)
+            produced_pairs.add((name, match.group(1).replace("/", ".") if match else ""))
+            outer_names.add(name)
+    main_stems = set()
+    if main_root.is_dir():
+        for f in source_files(main_root):
+            pkg = str(f.parent.relative_to(main_root)).replace("/", ".")
+            produced_pairs.add((f.stem, pkg))
+            main_stems.add(f.stem)
+    produced = {name for name, _ in produced_pairs}
+    outer = outer_names | main_stems
+    missing = {}
+    seen_declared = {}
+
+    def declared_in_tree(f, tree_root):
+        cached = seen_declared.get(tree_root)
+        if cached is None:
+            cached = {d: _declared_in_file(d.read_text(encoding="utf-8", errors="ignore"))
+                      for d in source_files(tree_root)}
+            seen_declared[tree_root] = cached
+        return cached.get(f, set()) | {
+            n for other, names in cached.items()
+            if other != f and other.parent == f.parent for n in names}
+
+    for tree_root in (test_root, main_root):
+        for f in source_files(tree_root):
+            text = f.read_text(encoding="utf-8", errors="ignore")
+            pkg_match = re.search(r"package ([\w.]+);", text)
+            own_pkg = pkg_match.group(1) if pkg_match else ""
+            imported_simple = set(re.findall(r"import (?:static )?[\w.]*?\.([A-Z]\w*);", text))
+            declared = declared_in_tree(f, tree_root)
+            for cls, pkg in _imported_classes(f):
+                if (cls, pkg) in produced_pairs or (cls, pkg) in missing or _is_nested_type(pkg, cls, outer):
+                    continue
+                missing[(cls, pkg)] = {"class": cls, "package": pkg, "test": f.name}
+            for cls in _used_without_import(text, imported_simple | produced, declared):
+                key = (cls, own_pkg)
+                if key not in missing and not _is_nested_type(own_pkg, cls, outer):
+                    missing[key] = {"class": cls, "package": own_pkg, "test": f.name}
     return list(missing.values())
 
 
@@ -185,7 +230,7 @@ def _build_task(stage: int, task_id: str, slug: str, gap: dict, scaffold_id: str
         "feature": None,
         "export": gap["class"],
         "intent": (f"Bounded context {slug}: define {gap['class']} ({_kind_hint(gap['class'])}) in "
-                   f"package {gap['package']}. Contract is fixed by its usage in test {gap['test']}; "
+                   f"package {gap['package']}. Contract is fixed by its usage in {gap['test']}; "
                    "implement the smallest correct type that satisfies every usage."),
         "project": slug,
     }
@@ -198,9 +243,21 @@ def emit_all(report=print) -> int:
         slug = service.name
         for gap in gaps(service, slug, task_queue.load_index()):
             scaffold_id = task_queue.scaffold_task_id(slug)
-            tester_id = next((t["id"] for _, t in sorted(task_queue.load_index().items())
+            index = task_queue.load_index()
+            tester_id = next((t["id"] for _, t in sorted(index.items())
                               if t.get("project") == slug and t.get("stage") == settings.TESTER_STAGE
                               and gap["test"] in str(t.get("path", ""))), None)
+            if tester_id is None:
+                # The reference came from a woven MAIN file (a coder collaborated with a
+                # type nobody scheduled): inherit the tester of the unit that OWNS that
+                # file, so the producer's contract is anchored to a real red record.
+                ref_stem = Path(str(gap["test"])).stem
+                owner = next((t for _, t in sorted(index.items())
+                              if t.get("project") == slug and t.get("stage") == settings.TDD_STAGE
+                              and Path(str(t.get("path", ""))).stem == ref_stem), None)
+                if owner:
+                    tester_id = next((str(dep) for dep in owner.get("dependsOn", [])
+                                      if str(dep).startswith("T1-")), None)
             t2_id = task_queue.next_task_id(settings.TDD_STAGE)
             batch = [_build_task(settings.TDD_STAGE, t2_id, slug, gap, scaffold_id, tester_id)]
             t3_id = task_queue.next_task_id(3)

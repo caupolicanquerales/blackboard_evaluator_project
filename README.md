@@ -65,6 +65,7 @@ Business description (seed/*.md)
 | 2 | `agent-coder` | Implement the unit described by the task, guided by the test and AST context. |
 | - | `code-weaver-dispatcher` | Splice the coder payload into the source tree and record `blackboard/weave-results/<id>.json`. |
 | 3 | `agent-evaluator` | TDD refactor: audit clean code, architecture, performance, and security while keeping the recorded test green; record `blackboard/evaluate-results/<id>.json`. |
+| 4 | `agent-assembly` | Application assembly: boot the generated application. Stack-agnostic — detects the framework, loads its skill from `assembly-framework/`, closes runtime wiring gaps in production sources only, and re-runs the scaffold smoke test until the application starts. The orchestrator verifies the boot with its own deterministic gate; there is no agent artifact to trust. |
 
 Before these stages, two specialists create the DDD artifacts:
 
@@ -132,7 +133,25 @@ Immediately after weaving, the orchestrator re-executes the tester's scoped test
 | no `command` recorded (older red-phase files) | the gate is skipped with a warning; the build gate still applies |
 | classification | patterns cover Maven/Surefire, Gradle, Jest/ts-jest, pytest, unittest, `go test`, and cargo; the tool ships its own suite in `run-test-tool-tests.py` |
 
-Stage 3 reuses the same mechanism: `agent-evaluator` refactors against the test command recorded in `blackboard/red-phase/<T1-id>.json` (resolved through the task `dependsOn` chain), re-runs it through `run-test-tool.py` after every step, and persists an `evaluate-results` artifact via `writer-evaluate-results.py` — which refuses to write when the final test is not green. The hand-off back to the orchestrator is deterministic: (1) `evaluate_result_problem` checks that `blackboard/evaluate-results/<id>.json` exists, is `executed`, and reports `final_test.status == "passed"`; (2) the stage-3 verify step runs the final **global** compile/check gate for the domain project (`verify_project`, skipped under `--verify none`); (3) only then is the task moved from `blackboard/queue/` to `blackboard/complete/`. Any step failing sends the task to `blackboard/error/` with the reason.
+Stage 3 reuses the same mechanism: `agent-evaluator` refactors against the test command recorded in `blackboard/red-phase/<T1-id>.json` (resolved through the task `dependsOn` chain), re-runs it through `run-test-tool.py` after every step, and persists an `evaluate-results` artifact via `writer-evaluate-results.py` — which refuses to write when the final test is not green. The hand-off back to the orchestrator is deterministic: (1) `evaluate_result_problem` checks that `blackboard/evaluate-results/<id>.json` exists, is `executed`, and reports `final_test.status == "passed"`; (2) the stage-3 verify step runs the final **global** compile/check gate for the domain project (`verify_project`, skipped under `--verify none`); (3) only then is the task moved from `blackboard/queue/` to `blackboard/complete/`. Any step failing sends the task to `blackboard/error/` with the reason. After the green hand-off, the engine appends `engine_diff` to the artifact: a ground-truth unified diff of every production source the session actually changed (computed by `refactor_audit.py` from before/after snapshots, not from the agent's self-reported `changes[]`).
+
+### Application assembly (stage 4)
+
+No scoped gate ever boots the application: unit tests construct collaborators with
+`new` and mocks, so a class the framework container cannot supply (an unregistered
+service, a port without an adapter, a driver without configuration) passes every
+unit gate and still fails to start. The scaffold's own smoke test is the only
+contract that proves the whole application wiring resolves, so the pipeline queues
+**one stage-4 task per domain** (`assembly.py`, drained structurally last):
+`agent-assembly` detects the stack, loads the matching skill from
+`.opencode/skills/assembly-framework/<language>-<framework>/` (Spring Boot, NestJS,
+FastAPI — each owns its failure-reading map, ordered fix menu, and editable roots),
+runs the smoke command through `run-test-tool.py`, and closes wiring gaps in
+production sources only — never tests, manifests, or unit contracts. The agent and
+the queue carry no framework vocabulary; per-stack detection rules live in the small
+detector registry in `assembly.py`. The orchestrator re-checks the boot with its own
+deterministic gate after every session, retrying the agent with the fresh log up to
+`MAX_TDD_RETRIES`. There is no agent artifact to trust: the gate is the proof.
 
 The tester agent keeps deciding *which* test command proves the unit red (it needs domain judgment); the orchestrator owns *re-running* it for green (pure mechanics). Both use the same generic script, so the red and green executions are identical commands parsed by identical regexes.
 
@@ -150,6 +169,8 @@ The tester agent keeps deciding *which* test command proves the unit red (it nee
 │   ├── tasks.py                   # Task schema validation and ordering
 │   ├── task_queue.py              # Queue files: read, index, emit, quarantine
 │   ├── ddd.py                     # Discovery, context-map and strategy gates
+│   ├── assembly.py                # Stage 4: scaffold smoke-test detection, task emit, boot gate
+│   ├── refactor_audit.py          # Engine-computed diffs of what stage-3 sessions changed
 │   ├── verification.py            # Framework build/check gates
 │   ├── dispatchers.py             # red-phase, ast-dispatcher, code-weaver-dispatcher
 │   ├── test_gate.py               # Green-phase re-run of the recorded test command
@@ -170,7 +191,7 @@ The tester agent keeps deciding *which* test command proves the unit red (it nee
 │   ├── ast-context/               # AST context extracted for each stage-1 task
 │   ├── coder-changes/             # Pure method-body payloads produced by agent-coder
 │   ├── weave-results/             # Code-weaver runs applied to the source tree
-│   └── evaluate-results/          # Stage-3 refactor reports (final green test attached)
+│   └── evaluate-results/          # Stage-3 refactor reports (final green test + engine diff attached)
 ├── projects/                      # Generated source code
 ├── .opencode/
 │   ├── agents/                    # OpenCode agent definitions

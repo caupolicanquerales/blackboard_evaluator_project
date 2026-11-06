@@ -13,11 +13,11 @@ tools: ["read", "write", "search", "execute"]
 ## Inputs (read only)
 - Task JSON: embedded in your prompt (also at `blackboard/queue/<id>-<project>.json` or `blackboard/complete/`).
 - Red evidence is keyed by the **stage-1 task id** in your `dependsOn` (for example `blackboard/red-phase/T1-001.json`); the prompt's "Unit artifacts" line names it. Mandatory, `executed: true`, status `compile_error` or `assertion_failure`.
-- AST context `blackboard/ast-context/<T1-id>.json` may be absent for brand-new units (the extractor cannot read classes that do not exist yet): proceed from the task `path`, `export`, and the test imports.
+- AST context `blackboard/ast-context/<T1-id>.json` is **mandatory** (the orchestrator gates your session on it). It is your anti-hallucination contract: `status:"ok"` gives the real production class/method/fields when a file exists, `status:"test_contract"` gives the constructors, calls and stubbed returns the test demands for a brand-new class. Write the signature and body to match it exactly; open the test file only if the contract is missing a fact.
 - Project root = task `project`; `path` is relative to it. Repository root owns `blackboard/`: inputs read and the writer script run against it.
 
 ## Steps
-0. Stop and report only if the red-phase record for the unit is missing or not `executed`. Read the test it names and the production file at `path` if it exists.
+0. Stop and report if the red-phase record for the unit is missing or not `executed`, or if its ast-context contract is missing. Those two records are the whole input: write the payload from them. Do NOT read the test file or any production file by default — the contract already carries the constructors, calls and returns the test demands. When the contract truly lacks a fact, fetch it with a line-bounded `grep -n` on the unit's own test file, never a whole-file read.
 
 ## Step 1: Detect stack
 - Explicit stack in `intent` wins.
@@ -36,7 +36,7 @@ tools: ["read", "write", "search", "execute"]
 - Parse `intent`: invariants, expected behavior, error cases.
 - Satisfy every invariant and every red-phase assertion.
 - Match the AST signature exactly: parameter names, types, return type, checked errors.
-- Call only symbols present in the AST context (when present), production sources, the unit's test imports, or the stack's standard library. Missing symbol: add to `missing`, do not guess.
+- Call only symbols present in the AST context (your contract), production sources, the unit's test imports, or the stack's standard library. Missing symbol: add to `missing`, do not guess.
 - Depend only on ports named in the AST context or imported by the unit's test.
 
 ## Body rules
@@ -56,7 +56,7 @@ tools: ["read", "write", "search", "execute"]
 - Run: `python3 .opencode/skills/read-write-file-ddd/writer-coder-changes/write-coder-changes.py --root <repository root> --task-id <id> --input <payload.json>`. Add `--retry` only on orchestrator request.
 - Payload keys: `id`, `project`, `targetFile`, `export`, `method`, `language`, `framework`, `skill`, `signature`, `returns`, `body`, `imports`, `missing`, plus optional `kind`, `members`, `annotations` (type level) and `methodAnnotations` (method level). `returns` is the method return type (`void` when none): the weaver uses it to create the class/method when the unit is new. The script sets `stage` and `executed`.
 - Exit 0: done. Exit 1: fix payload per errors and resubmit. Exit 2: file exists, stop and report.
-- Retry on verification feedback: change only `body`.
+- Retry on verification feedback: change only the field the failure names (`body`, `signature`, `returns`, `kind`, `members`, `imports`, `annotations` or `methodAnnotations`); fixing `body` when the weaver blames another field wastes the attempt and a full gate build.
 - Write no other file.
 
 ## Result
@@ -67,8 +67,9 @@ tools: ["read", "write", "search", "execute"]
 
 ## Tool budget and scope
 
-- Single task: at most 5 tool calls (assigned skill, red-phase read, one draft write, one writer
-  call, one clarification read). Batch mode: 4 + 3 calls per task, shared by the session; detect
+- Single task: at most 6 tool calls (assigned skill, red-phase read, ast-context read, one draft
+  write, one writer call, one clarification read). Batch mode: 4 + 3 calls per task, shared by the
+  session (per unit: contract read, draft write, writer call); detect
   the stack and load the skills ONCE and reuse them for every unit.
 - Skills live only in `.opencode/skills/`; read the assigned `SKILL.md` once. Never list or search
   skill folders. Never read the weaver, dispatchers, orchestrator scripts or writer-script sources:
@@ -78,6 +79,9 @@ tools: ["read", "write", "search", "execute"]
 - The Unit brief in your prompt is authoritative. Open the test file only when a signature is
   missing from it, and then with a line-bounded `grep -n`, never a whole-file `cat`.
 - A rejected payload names the field to fix: change that field, re-emit with `--retry`, stop there.
+- Verification feedback carries `File.java:[line,col] symbol: ... location: ...` blame lines. When the
+  blamed file is yours, fix the exact call against the named type's real accessors; NEVER re-emit an
+  unchanged payload - another unit's error is deferred by the orchestrator, not coded around.
 - Out of budget or blocked: report the task id and the reason, write nothing else, and stop.
 ## Limits
 - Write only `blackboard/coder-changes/<id>.json`, via the script.

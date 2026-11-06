@@ -6,10 +6,12 @@ The same flow runs over any backend module that exposes ``run_discovery``,
 import argparse
 import time
 
+import assembly
 import closure
 import ddd
 import settings
 import task_queue
+import tdd_engine
 import telemetry
 import verification
 import workspace
@@ -161,6 +163,10 @@ def run(args, backend):
         if task_queue.database_task_ids(slug) and _migration_files(slug):
             print(f"[skip] database {slug}: tasks queued and migrations written in {migrations}")
             continue
+        # The scaffold (stage 0) is generated AFTER this phase, and Copilot's create tool refuses
+        # to write under a missing parent: without this directory the database agent loses ~10
+        # tool calls to failed writes and duplicates, every extra turn re-sending the transcript.
+        migrations.mkdir(parents=True, exist_ok=True)
         ok, reason = backend.run_database(args, slug)
         if ok:
             reason = _database_reason(slug)
@@ -191,6 +197,10 @@ def run(args, backend):
         print("[hint ] generate the missing producers with: python3 orchestrators/closure.py --emit")
         return 2
 
+    # Stage 4: the drain walks stages in ascending order, so a queued assembly task
+    # structurally runs after every unit of the domain is implemented and evaluated.
+    assembly.ensure_tasks()
+
     try:
         if args.watch:
             while True:
@@ -199,6 +209,9 @@ def run(args, backend):
         processed, blocked = backend.run_pass(args)
     except KeyboardInterrupt:
         return 130
+    except tdd_engine.FatalPipeline as fatal:
+        print(f"[fatal] {fatal}")
+        return 2
     if blocked:
         print(f"[blocked] {', '.join(blocked)}")
         return 1

@@ -1,0 +1,31 @@
+{
+  "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ledger/domain/EventRevision.java",
+  "stack": "java-springboot",
+  "skill": "java-springboot",
+  "summary": "EventRevision is an immutable record with null checks, revision >= 1 invariant and append-only nextRevision(); no framework/IO imports. No edit needed.",
+  "findings": [
+    "domain: immutable record, framework-free",
+    "revision invariant enforced in compact constructor",
+    "nextRevision returns a new instance (append-only); overflow of Long.MAX_VALUE not handled, negligible"
+  ],
+  "changes": [],
+  "reverts": [],
+  "final_test": {
+    "status": "passed",
+    "exit_code": 0,
+    "missing_symbols": [],
+    "missing_packages": [],
+    "failures": [],
+    "counts": {
+      "run": 14,
+      "failures": 0,
+      "errors": 0
+    },
+    "source": "gate-cache/T2-008.json (unit unchanged since)"
+  },
+  "task_id": "T3-008",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-06T20:06:37.077452+00:00"
+}

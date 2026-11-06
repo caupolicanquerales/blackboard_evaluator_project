@@ -1,0 +1,36 @@
+{
+  "id": "T2-004",
+  "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/intake/application/IntakeTelemetryUseCase.java",
+  "export": "IntakeTelemetryUseCase",
+  "method": "ingest",
+  "language": "java",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "kind": "class",
+  "signature": "public Mono<Void> ingest(TelemetrySample sample)",
+  "returns": "Mono<Void>",
+  "body": "return Mono.defer(() -> {\n    TelemetrySample stamped = new TelemetrySample(\n            sample.deviceId(), sample.metric(), sample.value(), sample.tDevice(), clock.instant());\n    Object event = policy.isWithinBounds(stamped)\n            ? new TelemetrySampleValidated(stamped)\n            : new ValidationFailed(stamped);\n    return port.publish(event);\n});",
+  "members": [
+    "private final MetricBoundaryPolicy policy;",
+    "private final ReorderingEventPort port;",
+    "private final Clock clock;",
+    "public IntakeTelemetryUseCase(MetricBoundaryPolicy policy, ReorderingEventPort port, Clock clock) {\n    this.policy = policy;\n    this.port = port;\n    this.clock = clock;\n}"
+  ],
+  "imports": [
+    "java.time.Clock",
+    "reactor.core.publisher.Mono",
+    "com.pulsestream.telemetry.intake.domain.MetricBoundaryPolicy",
+    "com.pulsestream.telemetry.intake.domain.TelemetrySample",
+    "com.pulsestream.telemetry.intake.domain.TelemetrySampleValidated",
+    "com.pulsestream.telemetry.intake.domain.ValidationFailed"
+  ],
+  "missing": [
+    "ReorderingEventPort",
+    "TelemetrySampleValidated",
+    "ValidationFailed"
+  ],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-06T19:02:08.052642+00:00"
+}

@@ -1,0 +1,24 @@
+{
+  "id": "T2-024",
+  "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/intake/application/ReorderingEventPort.java",
+  "export": "ReorderingEventPort",
+  "method": "publish",
+  "language": "java",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "signature": "Mono<Void> publish(Object event)",
+  "returns": "Mono<Void>",
+  "body": "",
+  "imports": [
+    "reactor.core.publisher.Mono"
+  ],
+  "missing": [],
+  "kind": "interface",
+  "members": [
+    "Mono<Void> publish(Object event);"
+  ],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-06T19:19:58.166809+00:00"
+}

@@ -1,0 +1,36 @@
+{
+  "id": "T2-006",
+  "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/reordering/domain/ReorderWindow.java",
+  "export": "ReorderWindow",
+  "method": "release",
+  "language": "java",
+  "framework": "java",
+  "skill": "java-standard-best-practices",
+  "kind": "class",
+  "members": [
+    "private final Duration window;",
+    "private final List<TelemetrySample> pending = new ArrayList<>();",
+    "private Instant watermark = Instant.MIN;",
+    "public ReorderWindow(Duration window) {\n    this.window = Objects.requireNonNull(window, \"window must not be null\");\n}",
+    "public void offer(TelemetrySample sample) {\n    pending.add(Objects.requireNonNull(sample, \"sample must not be null\"));\n}"
+  ],
+  "signature": "public List<ReleasedSample> release(Instant now)",
+  "returns": "List<ReleasedSample>",
+  "body": "Objects.requireNonNull(now, \"now must not be null\");\nInstant cutoff = now.minus(window);\nList<TelemetrySample> due = pending.stream()\n    .filter(sample -> !sample.tDevice().isAfter(cutoff))\n    .sorted(Comparator.comparing(TelemetrySample::tDevice))\n    .toList();\npending.removeAll(due);\nInstant batchWatermark = watermark;\nList<ReleasedSample> released = new ArrayList<>();\nfor (TelemetrySample sample : due) {\n    released.add(new ReleasedSample(sample, sample.tDevice().isBefore(batchWatermark)));\n    if (sample.tDevice().isAfter(watermark)) {\n        watermark = sample.tDevice();\n    }\n}\nreturn List.copyOf(released);",
+  "imports": [
+    "java.time.Duration",
+    "java.time.Instant",
+    "java.util.ArrayList",
+    "java.util.Comparator",
+    "java.util.List",
+    "java.util.Objects",
+    "com.pulsestream.telemetry.intake.domain.TelemetrySample"
+  ],
+  "missing": [
+    "ReleasedSample"
+  ],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-06T19:05:11.311896+00:00"
+}

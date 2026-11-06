@@ -1,0 +1,15 @@
+{
+  "id": "T3-015",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-015"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/intake/domain/TelemetrySampleValidated.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "TelemetrySampleValidated",
+  "intent": "Bounded context telemetry-ingestion-and-processing: define TelemetrySampleValidated (domain collaborator defined from its test usages only) in package com.pulsestream.telemetry.intake.domain. Contract is fixed by its usage in IntakeTelemetryUseCaseTest.java; implement the smallest correct type that satisfies every usage.",
+  "project": "telemetry-ingestion-and-processing"
+}

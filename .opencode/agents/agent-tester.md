@@ -52,7 +52,7 @@ permission:
 - Orchestrator only checks file existence and compiles main sources.
 
 ## Step 1: Detect stack
-- Infer from manifests (e.g. `pom.xml`, `package.json`), `path` extension, existing tests.
+- Infer from manifests (e.g. `pom.xml`, `package.json`) and the `path` extension. Never open another unit's test file to detect the stack: it is forbidden input and one wasted turn re-sent for the rest of the session.
 - Explicit task language/framework wins.
 - Key: `<language>-<framework>` (e.g. `java-junit5`).
 

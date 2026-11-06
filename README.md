@@ -16,7 +16,10 @@ The same workflow can run with either **OpenCode** or **GitHub Copilot CLI**.
 - Processes tasks with an in-memory dependency graph instead of repeatedly searching the queue after every task.
 - Groups ready work by domain to improve execution locality and make logs easier to follow.
 - Gives every task a stable, readable filename such as `T0-023-treasury-fx.json`.
-- Validates task schemas and dependencies, quarantines invalid work, and records failures.
+- Validates task schemas and dependencies, quarantines invalid work, and records failures; quarantined tasks can be restored with `--retry`.
+- Audits test-import closure before draining, so a domain that can never go green stops the run early instead of burning agent calls.
+- Enforces per-agent tool-call budgets and batches coder payloads to keep session cost proportional to the work.
+- Runs independent domains concurrently with `--parallel` while preserving stage order.
 - Supports optional compilation/build checks and OpenTelemetry tracing.
 
 ## How it works
@@ -47,6 +50,9 @@ Business description (seed/*.md)
               |
               v
        Validated blackboard queue
+              |
+              v
+  Closure and Docker audit
               |
               v
  Dependency-aware, domain-grouped execution
@@ -97,13 +103,13 @@ The dispatcher:
 - Merges the task context from `blackboard/queue/<id>.json` (target class via `export`) and `blackboard/red-phase/<id>.json` (target method from missing symbols or assertion failures).
 - Runs the configured AST executable and writes the result to `blackboard/ast-context/<id>.json`.
 
-For Java/Spring Boot projects, the executable is the fat JAR located by `AST_TOOL_ROOT` and `AST_JAR_NAME` in `.env`. The bundled Java extractor is at `ast_tools/ast_extractor/target/ast_extractor-0.0.1-SNAPSHOT.jar`; point `.env` to the extractor you want to use.
+For Java/Spring Boot projects, the executable is the fat JAR located by `AST_TOOL_ROOT` and `AST_JAR_NAME` in `.env`. The bundled Java extractor is at `ast_tools/ast_extrator_java`; a fresh clone has no `target/` directory, so the dispatcher builds it with Maven on first use, within `TOOL_BUILD_TIMEOUT` seconds (default `900`). Point `.env` to the extractor you want to use.
 
 A dispatcher failure is logged but does not block `agent-coder`; the context is treated as optional guidance.
 
 ### Green-phase code weaving
 
-Stage 2 is not just "write the implementation": `agent-coder` never touches production code. It records the pure method body and return type (`returns`) in `blackboard/coder-changes/<id>.json` (via `read-write-file-ddd/writer-coder-changes/write-coder-changes.py`, which sets `executed: true`). The orchestrator then runs the weaver as part of the stage 2 verification gate, before the build/test command:
+Stage 2 is not just "write the implementation": `agent-coder` never touches production code. It loads the skills from `coder-framework/` — the language's standard-best-practices base, then the framework overlay that wins on conflict — and records the pure method body and return type (`returns`) in `blackboard/coder-changes/<id>.json` (via `read-write-file-ddd/writer-coder-changes/write-coder-changes.py`, which sets `executed: true`). The orchestrator then runs the weaver as part of the stage 2 verification gate, before the build/test command:
 
 ```text
 python3 .opencode/skills/code-weaver-dispatcher/code-weaver-dispatcher.py \
@@ -120,9 +126,11 @@ The dispatcher:
 
 A weaving failure is not fatal noise: its compact reason (e.g. body parse error, no overload matching the signature) becomes `agent-coder` retry feedback, so the coder re-emits the payload with `--retry` and the orchestrator weaves again before re-running the gate.
 
+When at least four stage-2 tasks of the same domain still have no payload, the engine opens a **batch session**: one `agent-coder` run produces up to four units, sharing a single tool budget (4 calls for the first unit plus 3 per additional one) with a session timeout that scales with the batch. If the batch writes no payload, the tasks fall back to ordinary per-task sessions. A woven task defers its green gate while sibling payloads are still pending, so a domain's test gate never runs against a half-woven source tree.
+
 ### Green-phase test gate
 
-Immediately after weaving, the orchestrator re-executes the tester's scoped test command through the shared `tester-framework/run-test-tool.py` — no agent involvement. The command is read from the `command` key that `write-red-phase.py` records in `blackboard/red-phase/<id>.json`. Gate outcomes:
+Immediately after weaving, the orchestrator re-executes the tester's scoped test command through the shared `tester-framework/run-test-tool.py` — no agent involvement. Before running, it deterministically adds missing same-project imports to test files (a tester can reference a production type in another package without importing it; an added import never changes behavior). The command is read from the `command` key that `write-red-phase.py` records in `blackboard/red-phase/<id>.json`; legacy records without a command get it rebuilt from the stage-1 task path for the detected framework. The verdict — pass or fail — is then memoized in `blackboard/gate-cache/<id>.json` keyed by a fingerprint of the coder payload and both source trees: while nothing changes, the cached verdict is reused and the suite is not re-run. Gate outcomes:
 
 | Result | Orchestrator behavior |
 | --- | --- |
@@ -130,10 +138,21 @@ Immediately after weaving, the orchestrator re-executes the tester's scoped test
 | `assertion_failure` / `compile_error` / `error` | retry the stage 2 coder with the compact failure log (up to `MAX_TDD_RETRIES` = 3 attempts) |
 | `not_run` (silent exit-0, or a `&&`/`$VAR` command refused by the argv-only guard) | treated as failure and retried: an unexecuted suite never passes the gate |
 | still failing after 3 attempts | the task moves to `blackboard/error/` and its dependents are quarantined |
-| no `command` recorded (older red-phase files) | the gate is skipped with a warning; the build gate still applies |
+| no `command` recorded and none derivable from the stage-1 path | the gate is skipped with a warning; the build gate still applies |
 | classification | patterns cover Maven/Surefire, Gradle, Jest/ts-jest, pytest, unittest, `go test`, and cargo; the tool ships its own suite in `run-test-tool-tests.py` |
 
 Stage 3 reuses the same mechanism: `agent-evaluator` refactors against the test command recorded in `blackboard/red-phase/<T1-id>.json` (resolved through the task `dependsOn` chain), re-runs it through `run-test-tool.py` after every step, and persists an `evaluate-results` artifact via `writer-evaluate-results.py` — which refuses to write when the final test is not green. The hand-off back to the orchestrator is deterministic: (1) `evaluate_result_problem` checks that `blackboard/evaluate-results/<id>.json` exists, is `executed`, and reports `final_test.status == "passed"`; (2) the stage-3 verify step runs the final **global** compile/check gate for the domain project (`verify_project`, skipped under `--verify none`); (3) only then is the task moved from `blackboard/queue/` to `blackboard/complete/`. Any step failing sends the task to `blackboard/error/` with the reason. After the green hand-off, the engine appends `engine_diff` to the artifact: a ground-truth unified diff of every production source the session actually changed (computed by `refactor_audit.py` from before/after snapshots, not from the agent's self-reported `changes[]`).
+
+### Import-closure audit and fatal checks
+
+The whole test source set compiles on every run, so a single imported production type without a producer task keeps an entire domain permanently red. Two deterministic checks stop the pipeline before it spends agent runs on an impossible repair:
+
+- Before draining, the pipeline scans each domain's test imports and aborts with a `task closure` error when an import has no producing task. `python3 orchestrators/closure.py` reports those gaps, and `python3 orchestrators/closure.py --emit` queues the missing stage-2 producer tasks (with matching stage-3 evaluators) through the validated queue writer.
+- At every drain, recorded red-phase results are scanned for packages imported by tests that no task produces and the scaffold classpath lacks. That is a build-file problem stage 2 is not allowed to edit, so the run aborts with a fatal reason instead of retrying. Stale records from before a build-file rewrite are ignored: fixing the scaffold is enough for the run to continue.
+
+### Session cost budgets
+
+Every assistant turn re-sends the whole transcript, so a session's cost is driven by its number of tool calls. Every prompt therefore states an explicit budget (container and database 10 calls, tester 8, coder 6, evaluator and assembly 12, architect 12; a coder batch shares a budget that scales with its unit count), and on the Copilot backend a session streaming past twice its budget is killed mid-run rather than left to burn tokens. `python3 orchestrators/session_audit.py` reads the local Copilot session records and reports, per agent, the turns, tool calls, and tokens, flagging calls that left the agent's own inputs (skill folder listings, orchestrator or AST-tool source reads, other tasks' records, `git`); use `--since-hours`, `--budget-report`, or `--json` to slice the view.
 
 ### Application assembly (stage 4)
 
@@ -163,24 +182,27 @@ The tester agent keeps deciding *which* test command proves the unit red (it nee
 │   ├── orchestrator_opencode.py   # Entry point: OpenCode backend
 │   ├── orchestrator_github.py     # Entry point: GitHub Copilot CLI backend
 │   ├── pipeline.py                # Shared CLI shape and full phase order
-│   ├── settings.py                # Repository layout, stages, schema, timeouts
+│   ├── settings.py                # Repository layout, stages, schema, timeouts, call budgets
 │   ├── workspace.py               # Seed and project-root resolution
 │   ├── prompts.py                 # Agent prompt templates and builders
 │   ├── tasks.py                   # Task schema validation and ordering
 │   ├── task_queue.py              # Queue files: read, index, emit, quarantine
 │   ├── ddd.py                     # Discovery, context-map and strategy gates
 │   ├── assembly.py                # Stage 4: scaffold smoke-test detection, task emit, boot gate
+│   ├── closure.py                 # Test-import closure audit; emits missing producer tasks
 │   ├── refactor_audit.py          # Engine-computed diffs of what stage-3 sessions changed
-│   ├── verification.py            # Framework build/check gates
-│   ├── dispatchers.py             # red-phase, ast-dispatcher, code-weaver-dispatcher
-│   ├── test_gate.py               # Green-phase re-run of the recorded test command
+│   ├── session_audit.py           # Per-session tool-call/token cost audit (Copilot records)
+│   ├── verification.py            # Framework build/check gates + Docker access gate
+│   ├── dispatchers.py             # Red-phase, AST/weaver dispatch, evaluate-result and gap checks
+│   ├── test_gate.py               # Green-phase test re-run: import repair, memoized verdicts
 │   ├── agent_runners.py           # Subprocess plumbing and log tails
 │   ├── tdd_engine.py              # execute_with_tdd and drain_queue
 │   ├── opencode_backend.py        # ``opencode run`` phase runners
 │   ├── copilot_backend.py         # Copilot CLI profiles and phase runners
 │   └── telemetry.py               # Optional OpenTelemetry integration
 ├── seed/                          # Input business descriptions
-├── ast_tools/                     # Language-specific AST extractors (e.g. Java)
+├── ast_tools/                     # AST extractor executables (e.g. ast_extrator_java)
+├── ast_weaver_tools/              # Code-weaver executables (e.g. ast_weaver_java)
 ├── blackboard/
 │   ├── domain/                    # Discovered domain boundaries
 │   ├── context-map/               # DDD context maps
@@ -191,22 +213,25 @@ The tester agent keeps deciding *which* test command proves the unit red (it nee
 │   ├── ast-context/               # AST context extracted for each stage-1 task
 │   ├── coder-changes/             # Pure method-body payloads produced by agent-coder
 │   ├── weave-results/             # Code-weaver runs applied to the source tree
-│   └── evaluate-results/          # Stage-3 refactor reports (final green test + engine diff attached)
+│   ├── evaluate-results/          # Stage-3 refactor reports (final green test + engine diff attached)
+│   └── gate-cache/                # Memoized green-test verdicts keyed by source-tree fingerprint
 ├── projects/                      # Generated source code
 ├── .opencode/
 │   ├── agents/                    # OpenCode agent definitions
 │   └── skills/                    # Architecture, stack, coding, testing, and AST guidance
 │       ├── tester-framework/      # Language/framework testing skills + run-test-tool.py
+│       ├── coder-framework/       # Coder rules (java-springboot, java-standard-best-practices)
+│       ├── assembly-framework/    # Per-stack boot skills (java-springboot, python-fastapi, typescript-nestjs)
 │       ├── ast-dispatcher/        # Language detection and AST executable dispatch
 │       ├── code-weaver-dispatcher/ # Language detection and code-weaver dispatch
-│       ├── read-write-file-ddd/   # Blackboard file writers (red-phase, architect, etc.)
+│       ├── read-write-file-ddd/   # Blackboard writers (red-phase, coder-changes, evaluate-results, ...)
 │       ├── architect-practices/   # DDD and architecture skills
 │       ├── tech-stack/            # Technology selection and migration skills
-│       └── java-standard-best-practices/
+│       └── mcp-server-alternatives/ # Docker MCP scaffolding skills (Spring Boot, FastAPI, NestJS)
 ├── .github/
 │   ├── agents/                    # Copilot agent profiles
-│   └── skills/                    # Copilot-accessible skills (mirrored layout)
-└── mcp_server/                    # MCP server images for project scaffolding
+│   └── skills/                    # Copilot-accessible skills (symlink to .opencode/skills)
+└── mcp_server/                    # Docker image sources for the scaffolding MCP servers
 ```
 
 ## Prerequisites
@@ -215,17 +240,31 @@ The tester agent keeps deciding *which* test command proves the unit red (it nee
 - One configured agent backend:
   - [OpenCode](https://opencode.ai/) with access to the configured model, or
   - [GitHub Copilot CLI](https://docs.github.com/en/copilot) available as `copilot`.
-- Docker when using the containerized MCP scaffolding servers.
+- Docker when using the containerized MCP scaffolding servers. The pipeline checks daemon access before stage 0 and fails fast instead of spending agent runs; override with `--skip-docker-check`.
 - The build tools required by the generated projects, such as Maven/Gradle, Node.js, or another stack selected during planning.
-- Java 21 if you use the bundled Java AST extractor.
+- Java 21 and Maven for the bundled Java AST extractor and code weaver. A fresh clone has no built JARs; the dispatchers compile both tool projects on first use within `TOOL_BUILD_TIMEOUT` seconds (default `900`).
 
 The orchestrators themselves use the Python standard library. OpenTelemetry packages are optional.
 
-Configure the AST extractor location in `.env`:
+Configure the AST extractor, the code weaver, and the MCP scaffolding images in `.env`:
 
 ```dotenv
-AST_TOOL_ROOT=<path-to-extractor-project>
-AST_JAR_NAME=<extractor-jar-name>
+# AST extractor: folder of the extractor project and its JAR name inside target/
+AST_TOOL_ROOT=ast_tools/ast_extrator_java
+AST_JAR_NAME=ast_extrator_java-0.0.1-SNAPSHOT.jar
+
+# Code weaver: folder of the weaver project and its JAR name inside target/
+WEAVER_TOOL_ROOT=ast_weaver_tools/ast_weaver_java
+WEAVER_JAR_NAME=ast_weaver_java-0.0.1-SNAPSHOT.jar
+
+# Seconds allowed to compile either tool when target/ is missing
+TOOL_BUILD_TIMEOUT=900
+
+# Docker images of the MCP servers used by the agent skills
+SPRINGBOOT_MCP_IMAGE=caupolicanquerales/springboot_mcp_server:latest
+SPRINGBOOT_MCP_PORT=8900
+FASTAPI_MCP_IMAGE=caupolicanquerales/fastapi_mcp_server:latest
+NESTJS_MCP_IMAGE=caupolicanquerales/nestjs_mcp_server:latest
 ```
 
 ## Quick start
@@ -234,7 +273,10 @@ AST_JAR_NAME=<extractor-jar-name>
 
 Create a Markdown file in `seed/`. The first level-1 heading is used to derive the default output directory name.
 
-The repository includes `seed/001_description.md`, an example core banking platform covering Accounts, General Ledger, Payments, Treasury/FX, and Compliance/Risk.
+The repository includes two examples:
+
+- `seed/001_description.md`: a core banking platform covering Accounts, General Ledger, Payments, Treasury/FX, and Compliance/Risk.
+- `seed/002_description.md`: a high-performance time-series telemetry ingestion pipeline.
 
 ### 2. Run with OpenCode
 
@@ -286,10 +328,14 @@ Both orchestrators expose the same main pipeline options:
 | `--watch` | Poll the queue continuously. |
 | `--interval N` | Seconds between polls in watch mode; default: `5`. |
 | `--timeout N` | Seconds before an agent run is stopped; default: `900`. |
-| `--limit N` | Stop after N tasks; `0` means no limit. |
 | `--verify MODE` | Verification mode: `none`, `typecheck`, or `build`; default: `typecheck`. |
+| `--verify-scope MODE` | Verification scope: `task` (default) or `global`. |
 | `--verify-timeout N` | Seconds allowed for each verification command; default: `300`. |
+| `--limit N` | Stop after N tasks; `0` means no limit. |
+| `--parallel N` | Concurrent domains during the drain; at most one task per project is in flight, so builds never share a `target/` directory. |
 | `--emit FILE ...` | Validate and enqueue task JSON files without running the pipeline. |
+| `--retry [ID ...]` | Move quarantined tasks from `blackboard/error/` back to the queue — all of them, or only ids matching the given patterns — then continue the run. |
+| `--skip-docker-check` | Do not gate the queue drain on a reachable Docker daemon. |
 
 OpenCode also supports `--no-auto` to omit automatic approval. The GitHub backend supports `--copilot-bin` and `--allow-tool`; their defaults can also be set with `COPILOT_BIN` and `COPILOT_ALLOW_TOOL`.
 
@@ -341,7 +387,9 @@ At the start of a pass, the orchestrator loads and validates the queue, builds a
 
 This preserves stage order while keeping work from the same domain together. Completing a task updates dependent tasks immediately, without rescanning the queue.
 
-Invalid tasks and failed executions are moved to `blackboard/error/` with an `error` field explaining the reason. Dependents of failed work are quarantined when they can no longer be resolved. Successful tasks move to `blackboard/complete/` using the same filename.
+With `--parallel N`, independent domains drain concurrently while at most one task per project is in flight, so two builds never share a `target/` directory. Work that is blocked by not-yet-finished siblings — a woven task whose domain is still being woven, or an evaluator artifact pending while peer units remain queued — is deferred to a later pass instead of being marked failed.
+
+Invalid tasks and failed executions are moved to `blackboard/error/` with an `error` field explaining the reason. Dependents of failed work are quarantined when they can no longer be resolved. Successful tasks move to `blackboard/complete/` using the same filename. After fixing the environment or the scaffold, relaunch with `--retry` to restore quarantined tasks to the queue.
 
 Stage 2 supports up to three implementation attempts when verification fails. The verification output is returned to the coder as focused feedback for the next attempt.
 
@@ -372,11 +420,14 @@ The OpenTelemetry SDK and an OTLP HTTP or gRPC trace exporter must also be insta
 - **Agent behavior:** edit `.opencode/agents/` and the matching `.github/agents/` profiles.
 - **Test conventions:** update `agent-tester` and the skills under `tester-framework/<language-framework>/`.
 - **Red-phase record:** change `read-write-file-ddd/writer-red-phase/write-red-phase.py` or `orchestrators/dispatchers.py`.
-- **AST extraction:** add builders under `ast-dispatcher/builders/` and configure `AST_TOOL_ROOT`/`AST_JAR_NAME` in `.env`.
+- **AST extraction:** add builders under `ast-dispatcher/builders/` and configure `AST_TOOL_ROOT`/`AST_JAR_NAME` in `.env`; the dispatchers build the JAR automatically when `target/` is missing (`TOOL_BUILD_TIMEOUT`).
 - **Code weaving:** add weavers under `code-weaver-dispatcher/builders/` and configure `WEAVER_TOOL_ROOT`/`WEAVER_JAR_NAME` in `.env`.
 - **Architecture rules:** update the skills under `.opencode/skills/architect-practices/`.
-- **Technology choices:** update `.opencode/skills/tech-stack/` and the MCP scaffolding configuration.
-- **Coding standards:** update the relevant language and framework skills.
+- **Technology choices:** update `.opencode/skills/tech-stack/` and the MCP scaffolding configuration (images in `.env`, sources under `mcp_server/`).
+- **Coding standards:** update the skills under `coder-framework/<language-framework>/`.
+- **Application assembly:** edit the per-stack skills under `assembly-framework/<language>-<framework>/` and the detection rules in `orchestrators/assembly.py`.
+- **Task closure:** tune gap detection and the auto-emitted producer tasks in `orchestrators/closure.py`.
+- **Cost control:** change the per-agent tool budgets and hard-kill factor in `orchestrators/settings.py` (`AGENT_CALL_BUDGETS`, `BUDGET_HARD_KILL_FACTOR`) and audit real spend with `orchestrators/session_audit.py`.
 - **Queue behavior:** change `orchestrators/task_queue.py` and `orchestrators/tdd_engine.py`; both backends reuse them.
 
 Keep both backends' agent profiles aligned when changing the workflow.

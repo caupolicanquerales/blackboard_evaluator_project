@@ -196,6 +196,40 @@ def rerecord_red_phase(task):
     return written.returncode == 0
 
 
+def derive_red_phase(task):
+    """Deterministic red recovery, zero sessions: the tester's test file is on disk but
+    its red-phase record never was written (a session killed between the write and the
+    record, or a batch interrupted mid-unit). The verdict is fully derivable - the
+    scoped command comes from the test path, run-test-tool produces the verdict, the
+    official writer persists it. Paying a whole agent session to re-derive a build
+    result the engine can produce itself is pure waste; a genuinely wrong red still
+    falls through to a real session, because the re-derived record is validated by the
+    same red_phase_problem gate afterwards.
+    """
+    project_root = workspace.project_root_for(task.get("project", ""))
+    test_path = str(task.get("path", ""))
+    if not test_path or not (project_root / test_path).is_file():
+        return False
+    command = test_gate.command_from_test_path(test_path, project_root)
+    if not command:
+        return False
+    tool = [sys.executable, str(settings.RUN_TEST_TOOL),
+            "--cwd", str(project_root), "--cmd", command,
+            "--timeout", str(settings.TEST_GATE_TIMEOUT)]
+    writer = [sys.executable, str(settings.RED_PHASE_WRITER), "--root", str(settings.ROOT),
+              "--task-id", str(task["id"]), "--cmd", command]
+    try:
+        produced = subprocess.run(tool, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                                  stderr=subprocess.DEVNULL, text=True,
+                                  timeout=settings.TEST_GATE_TIMEOUT + 30, cwd=str(settings.ROOT))
+        written = subprocess.run(writer, input=produced.stdout, stdout=subprocess.DEVNULL,
+                                 stderr=subprocess.DEVNULL, text=True, timeout=60,
+                                 cwd=str(settings.ROOT))
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return written.returncode == 0
+
+
 def scan_red_phase_gaps():
     """Foreign missing packages across every recorded red: {project: [packages]}.
 

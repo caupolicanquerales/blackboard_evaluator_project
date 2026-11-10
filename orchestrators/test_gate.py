@@ -521,6 +521,23 @@ def external_type_index(project_root):
     return index
 
 
+def command_from_test_path(test_path, project_root):
+    """The scoped test-command shapes the tester skills produce, from a test file path
+    alone (None when no shape fits). Shared by green-gate synthesis and the
+    deterministic red recovery: one place knows the shapes, nothing guesses twice."""
+    p = pathlib.Path(test_path)
+    root = pathlib.Path(project_root)
+    if (root / "pom.xml").is_file() and p.suffix in (".java", ".kt", ".kts", ".scala"):
+        return f"./mvnw -Dtest={p.stem} test"
+    if (root / "package.json").is_file() and p.suffix in (".ts", ".tsx", ".js", ".jsx", ".mjs"):
+        return f"npx jest {p.stem}"
+    if (root / "go.mod").is_file() and p.suffix == ".go":
+        return f"go test -run {p.stem} ./..."
+    if p.suffix == ".py":
+        return f"python3 -m pytest {test_path}"
+    return None
+
+
 def _synthesized_command(task, record):
     """Legacy red-phase records predate command capture: rebuild the scoped command
     from the stage-1 task path (`.../AccountStateTest.java` -> `./mvnw -Dtest=AccountStateTest test`)."""

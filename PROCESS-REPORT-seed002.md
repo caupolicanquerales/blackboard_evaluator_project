@@ -783,3 +783,18 @@ Restart protocol after this change: commit the tree, wipe ONLY the state folders
 (blackboard/, projects/, /tmp logs), relaunch from seed. The next plan cannot ship
 an API-less unit; the next contradiction - if any - dies at emit time with a named
 reason instead of costing a domain.
+
+## 21. Token forensics of the fresh runs + deterministic red recovery
+
+Measured (copilot session-state usage, windows exact): fresh02 no-batch = 2,187,082 input
+over 22 sessions for 19 units (~115K/unit); fresh04 batch-ON = 256,343 input over 2
+sessions for 5 units (~51K/unit) - batching halved per-unit cost; the dashboard "spike"
+was the single large batch transcript (147K) plus one batch killed mid-run (110K spent,
+its units' tests+reds persisted on disk - zero data lost, resume closes them free).
+
+That last residue was the only remaining double-payment in the design, now eliminated:
+dispatchers.derive_red_phase - test file on disk + missing/unusable red record = the
+engine runs the scoped command itself (shape shared with the green gate via
+test_gate.command_from_test_path), pipes the official writer, revalidates. A session is
+charged only when the TEST itself is wrong, never to re-observe a build result.
+Pinned as H8-H10; gauntlet 80/80.

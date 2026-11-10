@@ -717,6 +717,10 @@ def _tester_close_out(task):
     full agent session.
     """
     problem = dispatchers.red_phase_problem(task)
+    if problem and dispatchers.derive_red_phase(task):
+        # Test on disk + unusable/missing red record is DERIVABLE: run it, pipe the
+        # official writer, revalidate - before charging a session for a build result.
+        problem = dispatchers.red_phase_problem(task)
     if problem:
         return False, problem
     gap = dispatchers.red_phase_dependency_gap(task)

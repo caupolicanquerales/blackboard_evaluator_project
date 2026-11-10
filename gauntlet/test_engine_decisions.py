@@ -422,6 +422,40 @@ check("H7 single tester budget unchanged by the batch model",
       settings.call_budget(settings.STAGE_AGENTS[1], 1)
       == settings.AGENT_CALL_BUDGETS[settings.STAGE_AGENTS[1]])
 
+import dispatchers
+
+(proj := ROOT / "proj").mkdir(exist_ok=True)
+(proj / "pom.xml").write_text("<project/>\n")
+rdir = proj / "src" / "test" / "java" / "r"
+rdir.mkdir(parents=True, exist_ok=True)
+(rdir / "RecoveredTest.java").write_text("// test on disk, red record never written\n")
+rt = t1task("T1-810", "Recovered", "src/test/java/r/RecoveredTest.java")
+seen = {}
+orig_run = dispatchers.subprocess.run
+def fake_run(cmd, **kw):
+    joined = " ".join(str(c) for c in cmd)
+    key = "tool" if "run-test-tool" in joined else "writer" if "write-red-phase" in joined else "other"
+    seen[key] = joined
+    class R:
+        returncode = 0
+        stdout = json.dumps({"status": "compile_error", "exit_code": 1, "missing_symbols": [],
+                             "failures": [], "counts": {}, "classes": {}})
+    return R()
+dispatchers.subprocess.run = fake_run
+derived = dispatchers.derive_red_phase(rt)
+dispatchers.subprocess.run = orig_run
+check("H8 missing red is DERIVED from the test file (zero sessions)",
+      derived and "tool" in seen and "-Dtest=RecoveredTest" in seen["tool"]
+      and "writer" in seen, str(seen))
+ghost = t1task("T1-811", "Nothing", "src/test/java/r/NothingTest.java")
+check("H9 no test on disk: recovery refuses, session path preserved",
+      dispatchers.derive_red_phase(ghost) is False)
+# command synthesis: the tester's own four shapes, from path alone
+check("H10 scoped command shapes derived from path+markers",
+      test_gate.command_from_test_path("src/test/java/x/ATest.java", proj) == "./mvnw -Dtest=ATest test"
+      and test_gate.command_from_test_path("src/a_test.py", proj).startswith("python3 -m pytest")
+      and test_gate.command_from_test_path("src/a.rb", proj) is None)
+
 bad_names = [n for n, c in CHECKS if not c]
 print(f"\nENGINE-DECISIONS SUITE: {len(CHECKS) - len(bad_names)}/{len(CHECKS)}")
 print("FAILED:", bad_names if bad_names else "none")

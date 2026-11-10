@@ -1,0 +1,40 @@
+{
+  "id": "T2-029",
+  "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ledger/infrastructure/TelemetryRecordR2dbcRepository.java",
+  "export": "TelemetryRecordR2dbcRepository",
+  "method": "findHistory",
+  "language": "java",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "kind": "interface",
+  "implements": [
+    "ReactiveCrudRepository<TelemetryRecordEntity, UUID>"
+  ],
+  "extends": [
+    "ReactiveCrudRepository<TelemetryRecordEntity, UUID>"
+  ],
+  "signature": "Flux<TelemetryRecordEntity> findHistory(@Param(\"deviceId\") String deviceId, @Param(\"from\") Instant from, @Param(\"toExclusive\") Instant toExclusive)",
+  "returns": "Flux<TelemetryRecordEntity>",
+  "methodAnnotations": [
+    "Query(\"SELECT * FROM ledger.telemetry_records WHERE device_id = :deviceId AND t_device >= :from AND t_device < :toExclusive ORDER BY t_device, revision\")"
+  ],
+  "members": [
+    "@Query(\"SELECT * FROM ledger.telemetry_records WHERE device_id = :deviceId AND metric = :metric AND t_device = :tDevice ORDER BY revision DESC LIMIT 1\") Mono<TelemetryRecordEntity> findLatestRevision(@Param(\"deviceId\") String deviceId, @Param(\"metric\") String metric, @Param(\"tDevice\") Instant tDevice);",
+    "@Query(\"SELECT * FROM ledger.telemetry_records WHERE device_id = :deviceId AND metric = :metric AND t_device = :tDevice ORDER BY revision\") Flux<TelemetryRecordEntity> findRevisionChain(@Param(\"deviceId\") String deviceId, @Param(\"metric\") String metric, @Param(\"tDevice\") Instant tDevice);"
+  ],
+  "body": "",
+  "imports": [
+    "java.time.Instant",
+    "java.util.UUID",
+    "org.springframework.data.r2dbc.repository.Query",
+    "org.springframework.data.repository.query.Param",
+    "org.springframework.data.repository.reactive.ReactiveCrudRepository",
+    "reactor.core.publisher.Flux",
+    "reactor.core.publisher.Mono"
+  ],
+  "missing": [],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-09T20:13:10.550895+00:00"
+}

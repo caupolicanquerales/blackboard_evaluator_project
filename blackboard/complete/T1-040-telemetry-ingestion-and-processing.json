@@ -1,0 +1,31 @@
+{
+  "id": "T1-040",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T0-002",
+    "T0-003",
+    "T1-007",
+    "T1-006",
+    "T1-015",
+    "T1-012",
+    "T1-021",
+    "T1-025",
+    "T1-027",
+    "T1-036",
+    "T1-037",
+    "T1-001",
+    "T1-002",
+    "T1-003",
+    "T1-004",
+    "T1-005"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/shared/config/TelemetryBeansConfigurationTest.java",
+  "kind": "test",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "TelemetryBeansConfiguration",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "TEST for TelemetryBeansConfiguration at src/main/java/com/pulsestream/telemetry/shared/config/TelemetryBeansConfiguration.java. JUnit 5 + AssertJ (+ Mockito, reactor-test StepVerifier for reactive code); cover every invariant and behavior below, including failure cases, using only the pinned surfaces of collaborators. Unit under test: @Configuration with @EnableConfigurationProperties(TelemetryProperties.class). Beans: Clock.systemUTC(); BoundedEventChannel beans named validatedSamples, sequencedSamples, backfillDetections, closedWindows, revisionsAppended, streamPublications with capacities from TelemetryProperties.channels(); SensorMetricBoundaryPolicy built from properties.boundaries(); ReactorTelemetryStreamGateway(channels.streamSubscriberBuffer()); IngestTelemetryService, SequencingService (reorderWindow, reorderBufferCapacity, window.size, window.slide), RecordTelemetryService, LedgerQueryService, BroadcastingService with the constructors pinned by their tasks. Generic channels are injected by bean name (@Qualifier). No literal durations or capacities. Does not add a second @SpringBootApplication."
+}

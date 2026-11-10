@@ -84,7 +84,17 @@ def _coder_contract(task_ids):
         f"else (including any agent scratch or session folder) is invisible to the orchestrator. "
         f"Task ids of this session: {ids}. Run the writer for every one of them before finishing.\n"
         "WEAVER SHAPE (do not go read the weaver to discover it): `kind` is class|interface|enum|"
-        "record|exception. For a record, `members` is an array with ONE entry per part: every "
+        "record|exception. A generic type declares its type parameters inside `export`, spelled "
+        "the way your language writes them on a type declaration (your stack skill gives the "
+        "concrete shape): the shell the weaver creates carries them and `members`/`body` may use "
+        "them. Supertype clauses the frozen tests demand (IS-A a port/base): "
+        "`extends` one name and/or `implements` a list land on the created type header once; "
+        "list those supertypes in `imports` too. A method `signature` may be written TWO ways: "
+        "the bare contract spelling (`from(Cart cart)` - keeps the located method's declared "
+        "shape) or the COMPLETE declaration (`public static Order from(Cart cart)` - the method "
+        "is then REDECLARED from that text: modifiers, type parameters and return type all "
+        "ride the text, existing annotations are kept; no new field is needed for a shape "
+        "nobody predicted. For a record, `members` is an array with ONE entry per part: every "
         "component its own element (`\"String deviceId\"`, `\"Instant tDevice\"`) and every body "
         "member (compact constructor, factory, extra method) another element - NEVER one joined "
         "string like \"String a, int b\": the weaver parses each element alone and rejects the "
@@ -111,7 +121,7 @@ def build_task_message(task, feedback=None):
         f"{instruction}\n"
         "Resolve `path` against the project root above. Task JSON:\n"
     )
-    message += json.dumps({key: task[key] for key in settings.PROMPT_KEYS}, indent=2)
+    message += json.dumps({key: task.get(key) for key in settings.PROMPT_KEYS}, indent=2)
     if task["stage"] == settings.TDD_STAGE:
         t1 = next((d for d in task.get("dependsOn", []) if str(d).startswith("T1-")), None)
         if t1:
@@ -150,6 +160,10 @@ def _unit_brief(task, t1_id):
         pass
     main_root = root / "src" / "main"
     count = len(list(main_root.rglob("*.java"))) if main_root.is_dir() else 0
+    if not count:
+        import test_gate
+        count = len([f for f in test_gate.source_files(root)
+                     if "test" not in f.parts and "tests" not in f.parts])
     parts.append(f"main_sources_present={count}")
     parts.append("write the payload from these facts plus your unit's blackboard/ast-context "
                  "<T1-id>.json (the exact constructors/calls/returns the test demands); "
@@ -171,7 +185,7 @@ def build_batch_message(tasks, feedback=None):
     )
     for task in tasks:
         t1 = next((d for d in task.get("dependsOn", []) if str(d).startswith("T1-")), None)
-        block = json.dumps({key: task[key] for key in settings.PROMPT_KEYS}, indent=2)
+        block = json.dumps({key: task.get(key) for key in settings.PROMPT_KEYS}, indent=2)
         extra = ""
         if t1:
             extra = (f"\nUnit artifacts: mandatory `blackboard/red-phase/{t1}.json` and "
@@ -232,6 +246,10 @@ Once per domain:
 1. Write the execution strategy to {strategy_dir}/execution-strategy-<slug>.json with the edit tool.
    Include the bounded contexts, module/package layout, build order, risks, and a `persistence`
    object when the context owns data. Use only the slice and its own context map.
+   The `tech stack` / `language` fields MUST repeat the versions the business description names
+   VERBATIM (a seed saying "Java 21 / Spring Boot 3 WebFlux" yields language "Java 21", never a
+   defaulted or normalized version). Never copy versions from an existing scaffold or tool
+   default: the description is the source of truth, and downstream stages pin the build from it.
 
 2. Emit exactly one separate project scaffold task for THIS domain. Each domain is its own project,
    rooted at {project_root}/services/<slug>/. Fields:
@@ -243,6 +261,13 @@ Once per domain:
    The intent MUST list the build dependencies the strategy names (for Java: e.g. "spring-boot-starter-webflux,
    spring-boot-starter-data-r2dbc, reactor-test" plus every test artifact). agent-container cannot guess them,
    and a scaffold whose classpath lacks a package makes every later green gate impossible.
+    The intent MUST also require, for the chosen stack: a SINGLE composition root (never a second boot
+    class beside the scaffold's), test-run timeout guardrails (a hung test must fail fast, never freeze
+    the suite), and when the strategy's persistence object owns SQL, a schema MIGRATION RUNNER wired
+    into the build plus an embeddable in-process substitute so the scaffold's own boot test passes
+    without external services. Take the concrete artifact, plugin and tool names for these three
+    requirements from the selected stack's tech-stack skill; the stage-4 assembly gate fails each of
+    these structural requirements.
    Write it to /tmp/tasks/T0-<slug>.json and queue it with:
    python3 {runner} --emit /tmp/tasks/T0-<slug>.json
 
@@ -266,7 +291,8 @@ Follow these steps exactly, once per domain:
 
 2. Decompose the plan into blackboard tasks. Every task is a JSON object with exactly
    these keys and no others:
-   id, targetAgent, stage, dependsOn, path, kind, layer, feature, export, intent, project.
+   id, targetAgent, stage, dependsOn, path, kind, layer, feature, export, intent, project,
+   ast_hints (required for stage 1-2; optional for the other stages).
 
    Fixed stage/agent/kind mapping:
    - stage 0 -> agent-container, kind "bootstrap": generate the project root/scaffold.
@@ -287,6 +313,31 @@ Follow these steps exactly, once per domain:
    - intent: precise and implementation-ready. State the bounded context, the invariants
      it must protect, and the expected behavior. The tester, coder, and evaluator tasks
      for the same unit must describe the same unit and stay consistent.
+   - ast_hints (stage 1-2; the test task and code task of one unit carry the IDENTICAL
+     table): {"package": the unit's namespace as its language spells it; "implements":
+     supertype names the unit must satisfy; "dependencies": [{"type", "task_id"}] one per
+     collaborator, pinned to the task that produces it; "methods": [{"signature",
+     "returns"}] every boundary method the unit must provide, with parameter and return
+     types spelled exactly as the language's own declaration for that unit - including
+     the methods of every implemented supertype; "returns" is "" when there is none.
+     Pure value objects may leave "methods" empty. This table is the single API truth:
+     the tester asserts ONLY against it and the coder implements exactly it. A signature
+     missing from the table gets improvised twice, and two frozen artifacts contradict.
+
+   Architecture invariants (the tester/coder conflict class these prevent is unresolvable
+   later - frozen tests cannot be edited by any agent):
+   - Port / in-use-case method signatures speak DOMAIN types only. REST/DTO shapes live in
+     the interface layer; no application port may return an interface-layer DTO.
+   - Every collaborator a unit's consumers construct or stub - records, enums, events, DTO
+     shapes, constructor arities - MUST have exactly one producing task whose intent pins
+     that surface. If two units need the same type, one task produces it and the other
+     `dependsOn` it; never leave the shape implicit and hope the testers converge.
+   - Config-driven operational values (timeouts, windows, capacities) bind through the
+     externalized-config unit; task intents must not hardcode fallback durations a test can
+     contradict.
+   - Prose may never be the only place a signature exists: every method an intent describes
+     must also appear in that unit's ast_hints.methods, spelled identically, so prose and
+     table can never disagree.
 
    Do not emit stage 0 tasks; the scaffold and database tasks are already queued. Units that use a store
    list the matching database ids from the list above in `dependsOn`.
@@ -398,8 +449,19 @@ build manifests, or another task's contract. Verification output:
 FEEDBACK_TEMPLATE_CODER = """
 Previous attempt FAILED verification. Do not edit the file at `{path}`: re-emit the payload of task
 `{id}` through the writer script with `--retry`, changing only the payload field the message names
-(`body`, `signature`, `returns`, `kind`, `members`, `annotations`, `methodAnnotations` or `imports`).
+(`body`, `signature`, `returns`, `kind`, `members`, `annotations`, `methodAnnotations`, `imports`,
+`export` to declare the type's parameters, or `extends`/`implements` when the type must be a subtype of a port).
 Same budget as before: one draft write plus one writer call.
+Rules for reading the log: the gate compiles the WHOLE module, so the failure may be attributed to
+your unit even when the blamed file is a frozen test of another unit. If the log names a missing
+constructor, method or accessor ON THE TYPE YOUR TASK EXPORTS (task `export`) - e.g.
+`no suitable constructor`, `cannot find symbol: method x() location: class YourType` - your payload
+must ADD that member to your type as a delegating overload or accessor matching the exact call
+shown; other units' frozen tests are part of your contract surface. Fix EVERY demand the log
+attributes to your type in ONE re-emit (all `MUST PROVIDE` entries and all blamed lines of your
+file), not only the first. Never re-emit an unchanged
+payload: if after reading the whole log you truly own none of it, change the payload to the strictest
+reading of your red-phase contract instead of repeating byte-identical content.
 Verification output:
 ```
 {log}

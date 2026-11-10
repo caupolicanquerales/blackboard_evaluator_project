@@ -2,62 +2,71 @@
   "schema_version": "1.0",
   "report_type": "context-map",
   "metadata": {
-    "generated_at": "2026-11-06T18:50:00Z",
+    "generated_at": "2026-11-09T19:06:00Z",
     "agent": "domain-context-mapping-specialist",
     "source_report": "blackboard/domain"
   },
   "context_map": [
     {
-      "upstream": "Telemetry Intake & Validation",
-      "downstream": "Backfill Reordering",
-      "relationship": "Customer-supplier",
-      "direction": "Telemetry Intake & Validation -> Backfill Reordering",
-      "exchanged_information": "Validated and validation-failed telemetry samples with device timestamp and validation status; failed samples still flow, flagged, never dropped.",
-      "boundary_protection": "Reordering treats validation status as opaque and never re-applies Sensor Metric Boundary rules; intake never exposes boundary definitions or ingress-handling internals. Eventual consistency."
-    },
-    {
-      "upstream": "Backfill Reordering",
-      "downstream": "Telemetry Event Ledger",
-      "relationship": "Customer-supplier",
-      "direction": "Backfill Reordering -> Telemetry Event Ledger",
-      "exchanged_information": "Ordered telemetry windows and backfill detections to be retained as appended revisions.",
-      "boundary_protection": "Ledger translates ordering outcomes into Event Revisions and never mutates stored records or makes ordering decisions; window buffer internals do not leak. Eventual consistency. Open question: ownership of the 60s window versus late-backfill revisions (possible merge if atomicity is required)."
-    },
-    {
-      "upstream": "Telemetry Event Ledger",
-      "downstream": "external",
-      "relationship": "Open host service / published language",
-      "direction": "Telemetry Event Ledger -> external (audit consumers)",
-      "exchanged_information": "Revision-appended notifications and auditable raw telemetry history for other platform subdomains.",
-      "boundary_protection": "Stable versioned contract of revisions; consumers cannot alter stored history. Open question: external consumer identities (athlete/activity, analytics) belong to other subdomains."
-    },
-    {
       "upstream": "external",
       "downstream": "Telemetry Intake & Validation",
-      "relationship": "Conformist",
-      "direction": "external (device transmitters) -> Telemetry Intake & Validation",
-      "exchanged_information": "Ingress packets carrying 1Hz telemetry samples.",
-      "boundary_protection": "Devices dictate packet format; intake accepts under backpressure and does not leak device-specific formats downstream beyond the Telemetry Sample concept."
+      "relationship": "Open host service / published language",
+      "direction": "external -> Telemetry Intake & Validation",
+      "exchanged_information": "Ingress packets with telemetry samples and device timestamps from edge devices, bike computers and wearables",
+      "boundary_protection": "Intake publishes a stable packet contract and translates raw packets into Telemetry Samples; device-specific formats never enter the engine"
+    },
+    {
+      "upstream": "Telemetry Intake & Validation",
+      "downstream": "Telemetry Sequencing & Windowing",
+      "relationship": "Customer-supplier",
+      "direction": "Telemetry Intake & Validation -> Telemetry Sequencing & Windowing",
+      "exchanged_information": "Validated and VALIDATION_FAILED-tagged samples with device timestamp",
+      "boundary_protection": "Only validation status and sample content cross; Sensor Metric Boundary definitions stay inside Intake; sequencing never revalidates"
+    },
+    {
+      "upstream": "Telemetry Sequencing & Windowing",
+      "downstream": "Telemetry Event Ledger",
+      "relationship": "Customer-supplier",
+      "direction": "Telemetry Sequencing & Windowing -> Telemetry Event Ledger",
+      "exchanged_information": "Sequenced samples and backfill detections to be recorded as records or Event Revisions",
+      "boundary_protection": "Ledger translates sequencing outcomes into append-only records; window buffers and reorder logic do not leak into the ledger"
+    },
+    {
+      "upstream": "Telemetry Sequencing & Windowing",
+      "downstream": "Telemetry Stream Broadcasting",
+      "relationship": "Customer-supplier",
+      "direction": "Telemetry Sequencing & Windowing -> Telemetry Stream Broadcasting",
+      "exchanged_information": "Sequenced samples and closed Telemetry Windows",
+      "boundary_protection": "Broadcasting consumes ordered output only and cannot influence ordering; downstream demand is not propagated into sequencing rules"
+    },
+    {
+      "upstream": "Telemetry Stream Broadcasting",
+      "downstream": "external",
+      "relationship": "Open host service / published language",
+      "direction": "Telemetry Stream Broadcasting -> external",
+      "exchanged_information": "Processed telemetry windows and samples for downstream analytics consumers",
+      "boundary_protection": "Stable published stream contract; consumers honor demand signals and never see ledger or validation internals"
     }
   ],
   "cross_boundary_flows": [
     {
-      "business_process": "Ingest, validate, order and retain telemetry from a device packet",
+      "business_process": "Live telemetry processing: Intake validates -> Sequencing orders by t_device within 60s window -> Ledger records and Broadcasting publishes in parallel",
       "contexts_involved": [
         "Telemetry Intake & Validation",
-        "Backfill Reordering",
-        "Telemetry Event Ledger"
+        "Telemetry Sequencing & Windowing",
+        "Telemetry Event Ledger",
+        "Telemetry Stream Broadcasting"
       ],
-      "consistency_expectation": "Validation is immediate within intake; ordering and retention are eventually consistent. Samples may be temporarily unordered up to the 60s reorder window. Invalid samples are flagged, never lost; failure at reordering or ledger must not discard samples (retry/hold)."
+      "consistency_expectation": "Immediate within each context; eventual across contexts. Ledger and broadcast may briefly differ. Failure: invalid samples are tagged, never dropped."
     },
     {
-      "business_process": "Late backfill correction of earlier telemetry",
+      "business_process": "Backfill correction: delayed sample within 60s is re-indexed and recorded as a new Event Revision",
       "contexts_involved": [
-        "Backfill Reordering",
+        "Telemetry Sequencing & Windowing",
         "Telemetry Event Ledger"
       ],
-      "consistency_expectation": "Eventual: ledger appends a new Event Revision; earlier records stay unchanged, so history is briefly without the correction. Open question on 60s window vs revision ownership.",
-      "notes": "Samples delayed beyond the window are not specified by discovery."
+      "consistency_expectation": "Eventual; ledger appends a revision, never mutating prior records. Open question: samples later than 60s (revision via ledger assumed).",
+      "notes": "Open questions: late data beyond 60s; downstream consumer identity and window size/slide unspecified; backpressure ownership split between Intake and Broadcasting."
     }
   ]
 }

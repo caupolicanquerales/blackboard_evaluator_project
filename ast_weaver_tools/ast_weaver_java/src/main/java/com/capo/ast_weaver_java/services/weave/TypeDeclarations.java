@@ -53,23 +53,38 @@ public final class TypeDeclarations {
      * a missing type is created from the same shell the new-file path uses. Returns null
      * for {@code record} payloads whose type is absent - a record's header cannot be woven
      * into a file that does not declare it, so the caller writes what it has (imports).
+     * A payload that declares type parameters ({@code Box<T>}) upgrades an existing shell
+     * that has none; a shell that already carries parameters keeps its own (never re-added,
+     * so re-weaving stays idempotent).
      */
-    public static TypeDeclaration<?> findOrCreate(CompilationUnit cu, String type, String kind) {
+    public static TypeDeclaration<?> findOrCreate(CompilationUnit cu, String type, String kind,
+            List<String> typeParameters) {
         Optional<TypeDeclaration<?>> topLevel = cu.getTypes().stream()
             .filter(candidate -> candidate.getNameAsString().equals(type))
             .findFirst();
-        if (topLevel.isPresent()) {
-            return topLevel.get();
-        }
-        for (TypeDeclaration<?> candidate : cu.findAll(TypeDeclaration.class)) {
-            if (candidate.getNameAsString().equals(type)) {
-                return candidate;
+        TypeDeclaration<?> owner = topLevel.orElseGet(() -> {
+            for (TypeDeclaration<?> candidate : cu.findAll(TypeDeclaration.class)) {
+                if (candidate.getNameAsString().equals(type)) {
+                    return candidate;
+                }
             }
+            return null;
+        });
+        if (owner != null) {
+            if (!typeParameters.isEmpty() && owner instanceof ClassOrInterfaceDeclaration shell
+                    && shell.getTypeParameters().isEmpty()) {
+                for (String parameter : typeParameters) {
+                    if (!parameter.isBlank()) {
+                        shell.addTypeParameter(parameter);
+                    }
+                }
+            }
+            return owner;
         }
         if ("record".equals(kind)) {
             return null;
         }
-        TypeDeclaration<?> created = TypeSkeletons.shell(kind, type);
+        TypeDeclaration<?> created = TypeSkeletons.shell(kind, type, typeParameters);
         cu.addType(created);
         return cu.getType(cu.getTypes().size() - 1);
     }

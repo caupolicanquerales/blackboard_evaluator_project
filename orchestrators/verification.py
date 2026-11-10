@@ -124,17 +124,36 @@ def run_verification(project_root, mode, scope, task, timeout):
         return False, reason
 
 
+_VERIFY_MEMO = {}   # (root, mode) -> (tree-fingerprint, ok, reason)
+
+
 def verify_project(project_root, mode, timeout):
+    """Stack-appropriate build/typecheck gate, memoized on the tree BYTES.
+
+    The verdict is a pure function of (command, tree content): re-running maven/tsc
+    on an unchanged tree burns a full build per unit per pass (T3's evaluator gate
+    runs it once per attempt). If the content fingerprint is unchanged since the last
+    verdict for this (root, mode), replay it; any weave, revert or repair moves the
+    fingerprint and the build runs for real.
+    """
     command = get_framework_verification_commands(project_root, mode)
     if command is None:
         return True, ""
+    import test_gate
+    fingerprint = test_gate._tree_fingerprint(project_root)
+    memo = _VERIFY_MEMO.get((str(project_root), mode))
+    if memo and memo[0] == fingerprint:
+        return memo[1], memo[2]
     with telemetry.span("blackboard.verify", {"scope": "project", "mode": mode}) as current:
         code, output = _run_verification(command, project_root, timeout)
         if code is None:
             telemetry.mark_error(current, output)
+            _VERIFY_MEMO[(str(project_root), mode)] = (fingerprint, False, output)
             return False, output
         if code == 0:
+            _VERIFY_MEMO[(str(project_root), mode)] = (fingerprint, True, "")
             return True, ""
         reason = f"verification failed: {agent_runners.verify_tail(output)}"
         telemetry.mark_error(current, reason)
+        _VERIFY_MEMO[(str(project_root), mode)] = (fingerprint, False, reason)
         return False, reason

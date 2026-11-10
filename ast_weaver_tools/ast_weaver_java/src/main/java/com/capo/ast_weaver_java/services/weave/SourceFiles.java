@@ -17,7 +17,16 @@ import java.util.List;
  */
 public final class SourceFiles {
 
+    /** Set when a re-declaration structurally replaced a node's children: lexical
+     *  preservation stops tracking such nodes, so printing must fall back to the clean
+     *  printer for the file (correct indentation for ALL members, not just the last one). */
+    private static boolean reshaped;
+
     private SourceFiles() {
+    }
+
+    public static void markReshaped() {
+        reshaped = true;
     }
 
     public static CompilationUnit loadExisting(Path targetPath) throws IOException {
@@ -28,7 +37,9 @@ public final class SourceFiles {
 
     public static void writeValidated(Path targetPath, CompilationUnit cu, boolean newFile)
             throws IOException {
-        String rendered = render(cu, newFile);
+        boolean lexicalBroken = reshaped;
+        reshaped = false;
+        String rendered = render(cu, newFile || lexicalBroken);
         List<String> problems = SyntaxGate.problems(rendered);
         if (!problems.isEmpty() && !newFile) {
             String plain = cu.toString();

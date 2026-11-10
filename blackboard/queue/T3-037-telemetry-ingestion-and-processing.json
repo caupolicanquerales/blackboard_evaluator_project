@@ -1,0 +1,15 @@
+{
+  "id": "T3-037",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-037"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/broadcasting/infrastructure/ReactorTelemetryStreamGateway.java",
+  "kind": "refactor",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "ReactorTelemetryStreamGateway",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "REFACTOR ReactorTelemetryStreamGateway: inspect the implementation for layering violations, blocking calls, unbounded buffers, hardcoded values and invariant gaps; improve clarity without changing the public surface or breaking tests. Spec: Telemetry Stream Broadcasting adapter implementing TelemetryStreamGateway. Constructor ReactorTelemetryStreamGateway(int subscriberBuffer>0). Backed by Sinks.many().multicast().directBestEffort(); publish emits non-blocking (no subscribers or slow subscribers never block or fail the publisher); items() = sink.asFlux().onBackpressureBuffer(subscriberBuffer, BufferOverflowStrategy.DROP_OLDEST) so each subscriber's demand is respected with bounded memory."
+}

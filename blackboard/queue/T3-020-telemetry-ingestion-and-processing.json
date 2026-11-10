@@ -1,0 +1,15 @@
+{
+  "id": "T3-020",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-020"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/sequencing/application/port/in/SequenceTelemetryUseCase.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "SequenceTelemetryUseCase",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "REFACTOR SequenceTelemetryUseCase: inspect the implementation for layering violations, blocking calls, unbounded buffers, hardcoded values and invariant gaps; improve clarity without changing the public surface or breaking tests. Spec: Telemetry Sequencing & Windowing inbound port consuming TelemetrySampleValidated/ValidationFailed: Mono<Void> onSampleReceived(TelemetrySampleEvent sample) and Mono<Void> flush() (drain remaining buffers and open windows, e.g. on shutdown). Non-blocking."
+}

@@ -1,0 +1,22 @@
+{
+  "id": "T1-041",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T0-002",
+    "T0-003",
+    "T1-040",
+    "T1-020",
+    "T1-024",
+    "T1-035",
+    "T1-006"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/shared/config/TelemetryPipelineWiringTest.java",
+  "kind": "test",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "TelemetryPipelineWiring",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "TEST for TelemetryPipelineWiring at src/main/java/com/pulsestream/telemetry/shared/config/TelemetryPipelineWiring.java. JUnit 5 + AssertJ (+ Mockito, reactor-test StepVerifier for reactive code); cover every invariant and behavior below, including failure cases, using only the pinned surfaces of collaborators. Unit under test: In-process reactive wiring between contexts, implements SmartLifecycle. Constructor TelemetryPipelineWiring(@Qualifier'd BoundedEventChannel validatedSamples, sequencedSamples, backfillDetections, closedWindows, SequenceTelemetryUseCase, RecordTelemetryUseCase, BroadcastTelemetryUseCase). start() subscribes independently: validatedSamples -> sequence.onSampleReceived; sequencedSamples -> record.recordSequenced; sequencedSamples -> broadcast.broadcastSample; backfillDetections -> record.recordBackfill; closedWindows -> broadcast.broadcastWindow. Each uses concatMap to preserve order with per-element onErrorResume (log and continue) so one failure never kills a subscription. stop() disposes all subscriptions and calls sequence.flush() once. isRunning reflects state. Ledger and broadcast consumers are independent (eventual consistency)."
+}

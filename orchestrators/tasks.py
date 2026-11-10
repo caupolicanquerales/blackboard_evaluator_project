@@ -23,7 +23,11 @@ def exported_product(task):
     """
     export = task.get("export")
     if isinstance(export, str) and export.strip():
-        return export.strip().split(".")[-1]
+        name = export.strip()
+        open_generic = name.find("<")  # an export may declare its type parameters; the product is the bare head name
+        if open_generic > 0:
+            name = name[:open_generic]
+        return name.split(".")[-1]
     return None
 
 
@@ -65,14 +69,48 @@ def depends_transitively(start, target, index, seen=None):
     return any(depends_transitively(dep, target, index, seen) for dep in node["dependsOn"])
 
 
-def validate(task, index):
+def validate_ast_hints(hints):
+    """Structural shape of the API contract table. No language grammar: the entries are
+    names and the language's own declaration text, treated as opaque strings."""
+    if not isinstance(hints, dict) or set(hints) != set(settings.AST_HINT_KEYS):
+        return f"ast_hints keys must be exactly {list(settings.AST_HINT_KEYS)}"
+    if not (isinstance(hints["package"], str) and hints["package"].strip()):
+        return "ast_hints.package must be a non-empty string"
+    if not isinstance(hints["implements"], list) \
+            or not all(isinstance(s, str) and s.strip() for s in hints["implements"]):
+        return "ast_hints.implements must be a list of non-empty strings"
+    if not isinstance(hints["dependencies"], list):
+        return "ast_hints.dependencies must be a list of {type, task_id} objects"
+    for dep in hints["dependencies"]:
+        if not (isinstance(dep, dict) and set(dep) == {"type", "task_id"}
+                and isinstance(dep["type"], str) and dep["type"].strip()
+                and isinstance(dep["task_id"], str) and dep["task_id"].strip()):
+            return "each ast_hints.dependencies entry must be {type, task_id}, both non-empty strings"
+    if not isinstance(hints["methods"], list):
+        return "ast_hints.methods must be a list of {signature, returns} objects"
+    for method in hints["methods"]:
+        if not (isinstance(method, dict) and set(method) == {"signature", "returns"}
+                and isinstance(method["signature"], str) and method["signature"].strip()
+                and isinstance(method["returns"], str)):
+            return "each ast_hints.methods entry must be {signature, returns} (returns '' for none)"
+    return None
+
+
+def validate(task, index, planning=False):
     """Validate one blackboard task against the evaluator pipeline schema.
+
+    planning=True (task emission) additionally demands the API contract table for
+    stages 1-2: those freeze the unit's public surface, and a tester left without the
+    table improvises signatures from prose - which froze two contradictory contracts
+    against each other in seed 002 and deadlocked the whole domain behind them.
+    Resume validation (planning=False) only shape-checks: older boards stay readable.
 
     Returns a reason string, or None when the task is valid.
     """
-    if set(task) != set(settings.REQUIRED_KEYS):
+    allowed = set(settings.REQUIRED_KEYS) | set(settings.OPTIONAL_KEYS)
+    if not set(task) <= allowed or set(settings.REQUIRED_KEYS) - set(task):
         missing = sorted(set(settings.REQUIRED_KEYS) - set(task))
-        extra = sorted(set(task) - set(settings.REQUIRED_KEYS))
+        extra = sorted(set(task) - allowed)
         return f"schema mismatch, missing={missing} extra={extra}"
     stage = task["stage"]
     if not isinstance(stage, int) or stage not in settings.STAGE_AGENTS:
@@ -126,4 +164,17 @@ def validate(task, index):
             return f"dependsOn {dep} is in a later stage than this task"
         if depends_transitively(dep, task["id"], index):
             return f"dependsOn {dep} creates a dependency cycle"
+    if "ast_hints" in task:
+        reason = validate_ast_hints(task["ast_hints"])
+        if reason:
+            return reason
+        hints = task["ast_hints"]
+        if hints["implements"] and not hints["methods"]:
+            return ("ast_hints.methods must spell the surface of every implemented "
+                    "supertype (implements is non-empty but methods is empty)")
+    if planning and stage in (1, 2):
+        if "ast_hints" not in task:
+            return ("stage 1-2 tasks carry ast_hints: the API contract table "
+                    "(package, implements, dependencies, methods) the tester and coder "
+                    "must not improvise")
     return None

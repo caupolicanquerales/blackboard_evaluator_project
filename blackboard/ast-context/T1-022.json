@@ -1,0 +1,300 @@
+{
+  "task_id": "T1-022",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "TelemetryRecord",
+    "constructors": [
+      [
+        "ID",
+        "\"dev-1\"",
+        "\"m\"",
+        "1.0",
+        "T_DEVICE",
+        "T_INGRESS",
+        "\"VALID\"",
+        "-1"
+      ],
+      [
+        "ID",
+        "\"dev-1\"",
+        "\"m\"",
+        "1.0",
+        "T_DEVICE",
+        "T_INGRESS",
+        "\"VALID\"",
+        "0"
+      ],
+      [
+        "ID",
+        "\"dev-1\"",
+        "\"m\"",
+        "1.0",
+        "T_DEVICE",
+        "T_INGRESS",
+        "\"VALID\"",
+        "1"
+      ],
+      [
+        "null",
+        "\"dev-1\"",
+        "\"m\"",
+        "1.0",
+        "T_DEVICE",
+        "T_INGRESS",
+        "\"VALID\"",
+        "0"
+      ],
+      [
+        "ID",
+        "\"dev-1\"",
+        "\"m\"",
+        "1.0",
+        "null",
+        "T_INGRESS",
+        "\"VALID\"",
+        "0"
+      ],
+      [
+        "ID",
+        "\"dev-1\"",
+        "\"m\"",
+        "1.0",
+        "T_DEVICE",
+        "null",
+        "\"VALID\"",
+        "0"
+      ],
+      [
+        "ID",
+        "\"dev-1\"",
+        "\"m\"",
+        "1.0",
+        "T_DEVICE",
+        "T_INGRESS",
+        "null",
+        "0"
+      ],
+      [
+        "ID",
+        "null",
+        "\"m\"",
+        "1.0",
+        "T_DEVICE",
+        "T_INGRESS",
+        "\"VALID\"",
+        "0"
+      ]
+    ],
+    "static_calls": [
+      {
+        "method": "original",
+        "args": [
+          "\"dev-1\"",
+          "\"temperature\"",
+          "21.5",
+          "T_DEVICE",
+          "T_INGRESS",
+          "\"VALID\""
+        ]
+      },
+      {
+        "method": "original",
+        "args": [
+          "blank",
+          "\"m\"",
+          "1.0",
+          "T_DEVICE",
+          "T_INGRESS",
+          "\"VALID\""
+        ]
+      },
+      {
+        "method": "original",
+        "args": [
+          "\"dev-1\"",
+          "blank",
+          "1.0",
+          "T_DEVICE",
+          "T_INGRESS",
+          "\"VALID\""
+        ]
+      },
+      {
+        "method": "original",
+        "args": [
+          "\"dev-1\"",
+          "\"m\"",
+          "1.0",
+          "T_DEVICE",
+          "T_INGRESS",
+          "blank"
+        ]
+      }
+    ],
+    "calls": [
+      {
+        "receiver": "first",
+        "method": "reviseWith",
+        "args": [
+          "30.0",
+          "T_INGRESS_2",
+          "\"CORRECTED\""
+        ],
+        "returns": "TelemetryRecord"
+      },
+      {
+        "receiver": "first",
+        "method": "id",
+        "args": []
+      },
+      {
+        "receiver": "first",
+        "method": "deviceId",
+        "args": []
+      },
+      {
+        "receiver": "first",
+        "method": "metric",
+        "args": []
+      },
+      {
+        "receiver": "first",
+        "method": "tDevice",
+        "args": []
+      },
+      {
+        "receiver": "first",
+        "method": "reviseWith",
+        "args": [
+          "30.0",
+          "T_INGRESS_2",
+          "\"CORRECTED\""
+        ]
+      },
+      {
+        "receiver": "first",
+        "method": "value",
+        "args": []
+      },
+      {
+        "receiver": "first",
+        "method": "revision",
+        "args": []
+      },
+      {
+        "receiver": "first",
+        "method": "supersedesId",
+        "args": []
+      },
+      {
+        "receiver": "first",
+        "method": "validationStatus",
+        "args": []
+      },
+      {
+        "receiver": "first",
+        "method": "reviseWith",
+        "args": [
+          "2.0",
+          "T_INGRESS_2",
+          "blank"
+        ]
+      },
+      {
+        "receiver": "first",
+        "method": "reviseWith",
+        "args": [
+          "2.0",
+          "null",
+          "\"CORRECTED\""
+        ]
+      },
+      {
+        "receiver": "record",
+        "method": "id",
+        "args": []
+      },
+      {
+        "receiver": "record",
+        "method": "deviceId",
+        "args": []
+      },
+      {
+        "receiver": "record",
+        "method": "metric",
+        "args": []
+      },
+      {
+        "receiver": "record",
+        "method": "value",
+        "args": []
+      },
+      {
+        "receiver": "record",
+        "method": "tDevice",
+        "args": []
+      },
+      {
+        "receiver": "record",
+        "method": "tIngress",
+        "args": []
+      },
+      {
+        "receiver": "record",
+        "method": "validationStatus",
+        "args": []
+      },
+      {
+        "receiver": "record",
+        "method": "revision",
+        "args": []
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class TelemetryRecordTest {",
+      "private static TelemetryRecord original() {",
+      "return TelemetryRecord.original(\"dev-1\", \"temperature\", 21.5, T_DEVICE, T_INGRESS, \"VALID\");",
+      "TelemetryRecord record = original();",
+      "assertThat(record.id()).isNotNull();",
+      "assertThat(record.deviceId()).isEqualTo(\"dev-1\");",
+      "assertThat(record.metric()).isEqualTo(\"temperature\");",
+      "assertThat(record.value()).isEqualTo(21.5);",
+      "assertThat(record.tDevice()).isEqualTo(T_DEVICE);",
+      "assertThat(record.tIngress()).isEqualTo(T_INGRESS);",
+      "assertThat(record.validationStatus()).isEqualTo(\"VALID\");",
+      "assertThat(record.revision()).isZero();",
+      "assertThat(record.supersedesId()).isNull();",
+      "assertThat(original().id()).isNotEqualTo(original().id());",
+      "TelemetryRecord first = original();",
+      "TelemetryRecord revised = first.reviseWith(30.0, T_INGRESS_2, \"CORRECTED\");",
+      "assertThat(revised).isNotSameAs(first);",
+      "assertThat(revised.id()).isNotNull().isNotEqualTo(first.id());",
+      "assertThat(revised.deviceId()).isEqualTo(first.deviceId());",
+      "assertThat(revised.metric()).isEqualTo(first.metric());",
+      "assertThat(revised.tDevice()).isEqualTo(first.tDevice());",
+      "assertThat(revised.value()).isEqualTo(30.0);",
+      "assertThat(revised.tIngress()).isEqualTo(T_INGRESS_2);",
+      "assertThat(revised.validationStatus()).isEqualTo(\"CORRECTED\");",
+      "assertThat(revised.revision()).isEqualTo(1);",
+      "assertThat(revised.supersedesId()).isEqualTo(first.id());",
+      "TelemetryRecord first = original();",
+      "first.reviseWith(30.0, T_INGRESS_2, \"CORRECTED\");",
+      "assertThat(first.value()).isEqualTo(21.5);",
+      "assertThat(first.revision()).isZero();",
+      "assertThat(first.supersedesId()).isNull();",
+      "assertThat(first.validationStatus()).isEqualTo(\"VALID\");",
+      "TelemetryRecord second = original().reviseWith(1.0, T_INGRESS_2, \"CORRECTED\");",
+      "TelemetryRecord third = second.reviseWith(2.0, T_INGRESS_2, \"CORRECTED\");",
+      "assertThat(third.revision()).isEqualTo(2);",
+      "assertThat(third.supersedesId()).isEqualTo(second.id());",
+      "assertThatThrownBy(() -> new TelemetryRecord(ID, \"dev-1\", \"m\", 1.0, T_DEVICE, T_INGRESS, \"VALID\", -1, OTHER_ID))",
+      "assertThatThrownBy(() -> new TelemetryRecord(ID, \"dev-1\", \"m\", 1.0, T_DEVICE, T_INGRESS, \"VALID\", 0, OTHER_ID))",
+      "assertThatThrownBy(() -> new TelemetryRecord(ID, \"dev-1\", \"m\", 1.0, T_DEVICE, T_INGRESS, \"VALID\", 1, null))",
+      "TelemetryRecord record ="
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

@@ -1,0 +1,8 @@
+{
+  "status": "not_run",
+  "reason": "EXEC_ERROR: [Errno 13] Permission denied: './mvnw'",
+  "command": "./mvnw -Dtest=IngressPacketRequestTest test",
+  "task_id": "T1-016",
+  "executed": true,
+  "recorded_at": "2026-11-09T19:24:54.796927+00:00"
+}

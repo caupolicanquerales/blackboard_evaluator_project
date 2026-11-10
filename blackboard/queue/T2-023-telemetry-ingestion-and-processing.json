@@ -1,0 +1,16 @@
+{
+  "id": "T2-023",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-023",
+    "T2-022"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ledger/application/port/out/TelemetryLedgerRepository.java",
+  "kind": "code",
+  "layer": "application",
+  "feature": null,
+  "export": "TelemetryLedgerRepository",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "IMPLEMENT TelemetryLedgerRepository so the frozen test passes; Java 17, Spring Boot 3, non-blocking, no cross-context domain imports, no hardcoded config values. Spec: Telemetry Event Ledger outbound port (domain types only; deliberately NO update/delete). Mono<TelemetryRecord> append(TelemetryRecord record); Flux<TelemetryRecord> findHistory(String deviceId, Instant fromInclusive, Instant toExclusive) ordered by tDevice asc then revision asc; Mono<TelemetryRecord> findLatestRevision(String deviceId, String metric, Instant tDevice) (empty if none); Flux<TelemetryRecord> findRevisionChain(String deviceId, String metric, Instant tDevice) ordered by revision asc."
+}

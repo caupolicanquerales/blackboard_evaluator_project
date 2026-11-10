@@ -1,28 +1,26 @@
 {
   "id": "T2-012",
   "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/intake/domain/SensorMetricBoundaryPolicy.java",
+  "export": "SensorMetricBoundaryPolicy",
+  "method": "validate",
   "language": "java",
   "framework": "springboot",
   "skill": "java-springboot",
-  "signature": "TelemetryWindowOrdered(String metric, Instant windowStart, Instant windowEnd, List<ValidatedTelemetryEvent> samples)",
-  "returns": "void",
-  "body": "",
-  "missing": [],
-  "targetFile": "src/main/java/com/pulsestream/telemetry/reordering/domain/TelemetryWindowOrdered.java",
-  "export": "TelemetryWindowOrdered",
-  "method": "TelemetryWindowOrdered",
-  "kind": "record",
+  "kind": "class",
   "members": [
-    "String metric",
-    "Instant windowStart",
-    "Instant windowEnd",
-    "List<ValidatedTelemetryEvent> samples"
+    "private final Map<String, SensorMetricBoundary> boundariesByMetric",
+    "public SensorMetricBoundaryPolicy(Map<String, SensorMetricBoundary> boundariesByMetric) { this.boundariesByMetric = Map.copyOf(boundariesByMetric); }"
   ],
+  "signature": "public TelemetrySample validate(TelemetrySample sample)",
+  "returns": "TelemetrySample",
+  "body": "String key = sample.metric() == null ? null : sample.metric().toLowerCase(Locale.ROOT);\nSensorMetricBoundary boundary = key == null ? null : boundariesByMetric.get(key);\nboolean inside = boundary != null && boundary.contains(sample.value());\nreturn sample.withStatus(inside ? ValidationStatus.VALID : ValidationStatus.VALIDATION_FAILED);",
   "imports": [
-    "java.time.Instant",
-    "java.util.List"
+    "java.util.Locale",
+    "java.util.Map"
   ],
+  "missing": [],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-06T19:23:27.249258+00:00"
+  "recorded_at": "2026-11-09T20:06:31.006780+00:00"
 }

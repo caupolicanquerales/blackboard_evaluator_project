@@ -1,0 +1,84 @@
+{
+  "task_id": "T1-025",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "RecordTelemetryService",
+    "constructors": [
+      [
+        "repository",
+        "revisionsAppended"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "service",
+        "method": "recordSequenced",
+        "args": [
+          "sample(21.5)"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "recordSequenced",
+        "args": [
+          "sample(30.0)"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "recordSequenced",
+        "args": [
+          "failed"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "recordSequenced",
+        "args": [
+          "sample(30.0)"
+        ],
+        "returns": "TelemetryRecord"
+      },
+      {
+        "receiver": "service",
+        "method": "recordBackfill",
+        "args": [
+          "new TelemetryBackfillDetectedEvent(sample(21.5), false)"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "recordBackfill",
+        "args": [
+          "new TelemetryBackfillDetectedEvent(sample(21.5), true)"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "recordBackfill",
+        "args": [
+          "new TelemetryBackfillDetectedEvent(sample(99.0), true)"
+        ]
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class RecordTelemetryServiceTest {",
+      "private RecordTelemetryService service;",
+      "service = new RecordTelemetryService(repository, revisionsAppended);",
+      "StepVerifier.create(service.recordSequenced(sample(21.5)))",
+      "StepVerifier.create(service.recordSequenced(sample(21.5)))",
+      "StepVerifier.create(service.recordSequenced(sample(30.0)))",
+      "StepVerifier.create(service.recordSequenced(failed))",
+      "TelemetryRecord appended = service.recordSequenced(sample(30.0)).block();",
+      "StepVerifier.create(service.recordBackfill(new TelemetryBackfillDetectedEvent(sample(21.5), false)))",
+      "StepVerifier.create(service.recordBackfill(new TelemetryBackfillDetectedEvent(sample(21.5), true)))",
+      "StepVerifier.create(service.recordBackfill(new TelemetryBackfillDetectedEvent(sample(99.0), true)))",
+      "service.recordSequenced(sample(30.0)).block();"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

@@ -1,0 +1,10 @@
+{
+  "bounces": 0,
+  "consumed": 1,
+  "contract": "f50d5495fc7e155e",
+  "fed": "test gate: status=error; exit_code=#; blame: telemetrypipelinewiring.java:#,# ] cannot assign a value to final variable validatedsamples || telemetrypipelinewiring.java:#,# ] cannot assign a value to final variable sequencedsamples || telemetrypipelinewiring.java:#,# ] cannot assign a value to final variable backfilldetections || telemetrypipelinewiring.java:#,# ] cannot assign a value to final variable closedwindows || telemetrypipelinewiring.java:#,# ] cannot assign a value to final variable sequence || telemetrypipelinewiring.java:#,# ] cannot assign a value to final variable record",
+  "id": "T2-041",
+  "reason": "test gate: status=error; exit_code=1; blame: TelemetryPipelineWiring.java:82,13 ] cannot assign a value to final variable validatedSamples || TelemetryPipelineWiring.java:83,13 ] cannot assign a value to final variable sequencedSamples || TelemetryPipelineWiring.java:84,13 ] cannot assign a value to final variable backfillDetections || TelemetryPipelineWiring.java:85,13 ] cannot assign a value to final variable closedWindows || TelemetryPipelineWiring.java:86,13 ] cannot assign a value to final variable sequence || TelemetryPipelineWiring.java:87,13 ] cannot assign a value to final variable record",
+  "signature": "test gate: status=error; exit_code=#; blame: telemetrypipelinewiring.java:#,# ] cannot assign a value to final variable validatedsamples || telemetrypipelinewiring.java:#,# ] cannot assign a value to final variable sequencedsamples || telemetrypipelinewiring.java:#,# ] cannot assign a value to final variable backfilldetections || telemetrypipelinewiring.java:#,# ] cannot assign a value to final variable closedwindows || telemetrypipelinewiring.java:#,# ] cannot assign a value to final variable sequence || telemetrypipelinewiring.java:#,# ] cannot assign a value to final variable record",
+  "updated": 1794332860
+}

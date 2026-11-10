@@ -48,7 +48,7 @@ permission:
 ## Input
 - `Project root`: `path` resolves against it and the `--cwd` of run-test-tool.
 - `Repository root`: owns `blackboard/`; every writer/reader script takes `--root` of it.
-- Task JSON: `id`, `path`, `kind`, `layer`, `feature`, `export`, `intent`, `dependsOn`, `project`.
+- Task JSON: `id`, `path`, `kind`, `layer`, `feature`, `export`, `intent`, `dependsOn`, `project`, `ast_hints` (`package`, `dependencies` pinned to `task_id`, `methods` with parameter order).
 - Orchestrator only checks file existence and compiles main sources.
 
 ## Step 1: Detect stack
@@ -65,12 +65,16 @@ permission:
 - Read `export`, `layer`, existing production sources.
 - Match intent's API; keep references to missing symbols and list them; never invent APIs.
 - Use only manifest-declared test libraries; report missing ones.
-- Cross-context collaborators: read `blackboard/`, use test doubles.
+- Cross-context collaborators: take their exact types, parameter order, and package from `ast_hints.dependencies` and read only the task JSON named by each `task_id`; use test doubles.
+- Test doubles for ports use the port's own layer types (domain models, value objects). Never stub a domain or application port with presentation types (DTOs, response models, controller types); the mapping to presentation belongs to presentation tests.
 
 ## Test rules
 - One test file at `path`; only skill libraries.
 - Cover happy path, each invariant, each illegal input, stated boundaries.
 - Name `methodUnderTest_condition_expectedResult` or skill convention.
+- Package: the test's package is `ast_hints.package` of the unit under test, exact. Never infer or invent a package from `path` or `intent`.
+- Imports: nested types are imported through their enclosing type (Java `import p.Outer.Inner;`, not `import p.Inner;`).
+- Constructor and method shapes come only from `ast_hints.methods` (parameter order and types). Never guess a signature. If the table is absent or empty for a unit that exposes behavior, that is a PLAN ERROR: report it and stop - improvising call shapes from `intent` prose or field names freezes a contract the coder can never satisfy.
 - Pure unit: no app context, server, DB unless intent requires.
 - One behavior per test; short bodies; fixtures in helpers.
 - Forbidden: skipped tests, always-true asserts, empty tests, sleeps, unseeded random.
@@ -90,11 +94,11 @@ permission:
 
 ## Tool budget and scope
 
-- At most 8 tool calls: assigned skill, task/manifest read, one test write, `run-test-tool` (twice
+- At most 8 tool calls: assigned skill, task/manifest read, pinned collaborator task reads, one test write, `run-test-tool` (twice
   at most: red run plus one fix), red-phase writer.
 - Skills live only in `.opencode/skills/`; read the assigned `SKILL.md` once, never a folder listing.
 - Never run `git`; never read `orchestrators/`, `ast_tools/`, `ast_weaver_tools/`, or another unit's
-  test file or `blackboard` record. Existing production sources of YOUR unit are the only extra read.
+  test file or `blackboard` record. Only the task JSON of each pinned collaborator and existing production sources of YOUR unit are extra reads.
 - The task `intent` fixes the API. Do not explore the module to infer more than the unit under test.
 - Out of budget or blocked: report the task id and the reason, and stop.
 ## Limits

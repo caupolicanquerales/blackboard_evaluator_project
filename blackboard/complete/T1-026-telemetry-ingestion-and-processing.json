@@ -1,0 +1,16 @@
+{
+  "id": "T1-026",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-022"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/ledger/application/port/in/QueryTelemetryLedgerUseCaseTest.java",
+  "kind": "test",
+  "layer": "application",
+  "feature": null,
+  "export": "QueryTelemetryLedgerUseCase",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "TEST for QueryTelemetryLedgerUseCase at src/main/java/com/pulsestream/telemetry/ledger/application/port/in/QueryTelemetryLedgerUseCase.java. JUnit 5 + AssertJ (+ Mockito, reactor-test StepVerifier for reactive code); cover every invariant and behavior below, including failure cases, using only the pinned surfaces of collaborators. Unit under test: Telemetry Event Ledger inbound read port (open-host query side, domain types only): Flux<TelemetryRecord> history(String deviceId, Instant from, Instant toExclusive) all revisions ordered by tDevice, revision; Flux<TelemetryRecord> latestHistory(String deviceId, Instant from, Instant toExclusive) only the latest revision per (metric, tDevice) ordered by tDevice; Flux<TelemetryRecord> revisionChain(String deviceId, String metric, Instant tDevice) audit chain ordered by revision."
+}

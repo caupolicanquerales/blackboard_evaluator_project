@@ -1,0 +1,25 @@
+{
+  "task_id": "T1-030",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "R2dbcTelemetryLedgerRepository",
+    "constructors": [
+      [
+        "repository",
+        "template"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [],
+    "verified": [],
+    "usage_lines": [
+      "class R2dbcTelemetryLedgerRepositoryTest {",
+      "adapter = new R2dbcTelemetryLedgerRepository(repository, template);",
+      "assertThat(R2dbcTelemetryLedgerRepository.class.isAnnotationPresent(Repository.class)).isTrue();",
+      "assertThat(TelemetryLedgerRepository.class).isAssignableFrom(R2dbcTelemetryLedgerRepository.class);"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

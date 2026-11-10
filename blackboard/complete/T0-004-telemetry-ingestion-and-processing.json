@@ -5,11 +5,11 @@
   "dependsOn": [
     "T0-001"
   ],
-  "path": "db/migrations/V3__configuration_profile.sql",
+  "path": "db/migrations/flyway.conf",
   "kind": "bootstrap",
   "layer": "root",
   "feature": null,
-  "export": "V3__configuration_profile.sql",
-  "intent": "Configuration profile: PostgreSQL 16 Flyway script db/migrations/V3__configuration_profile.sql creating telemetry.metric_boundaries for context telemetry-ingestion-and-processing.",
+  "export": "flyway.conf",
+  "intent": "Configuration profile: Flyway settings for PostgreSQL 16 (ledger schema, clean disabled, credentials from env), file db/migrations/flyway.conf, context telemetry-ingestion-and-processing.",
   "project": "telemetry-ingestion-and-processing"
 }

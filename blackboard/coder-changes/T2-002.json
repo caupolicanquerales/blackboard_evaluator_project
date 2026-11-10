@@ -1,29 +1,25 @@
 {
   "id": "T2-002",
   "project": "telemetry-ingestion-and-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/intake/domain/MetricBoundaryPolicy.java",
-  "export": "MetricBoundaryPolicy",
-  "method": "validate",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/shared/events/TelemetryBackfillDetectedEvent.java",
+  "export": "TelemetryBackfillDetectedEvent",
+  "method": "TelemetryBackfillDetectedEvent",
   "language": "java",
-  "framework": "springboot",
-  "skill": "java-springboot",
-  "kind": "class",
-  "signature": "public ValidationStatus validate(TelemetrySample sample)",
-  "returns": "ValidationStatus",
-  "body": "MetricBoundary boundary = boundaries.get(sample.metric());\nif (boundary == null) {\n    return ValidationStatus.UNDEFINED_BOUNDARY;\n}\nif (sample.value() < boundary.min() || sample.value() > boundary.max()) {\n    return ValidationStatus.OUT_OF_BOUNDS;\n}\nreturn ValidationStatus.VALID;",
+  "framework": "springboot3",
+  "skill": "java-springboot3",
+  "kind": "record",
+  "signature": "public TelemetryBackfillDetectedEvent(TelemetrySampleEvent sample, boolean beyondReorderWindow)",
+  "returns": "void",
+  "body": "Objects.requireNonNull(sample, \"sample must not be null\");",
   "members": [
-    "private final Map<String, MetricBoundary> boundaries;",
-    "public MetricBoundaryPolicy(Map<String, MetricBoundary> boundaries) {\n    this.boundaries = Map.copyOf(boundaries);\n}",
-    "public boolean isWithinBounds(TelemetrySample sample) {\n    return validate(sample) == ValidationStatus.VALID;\n}"
+    "TelemetrySampleEvent sample",
+    "boolean beyondReorderWindow"
   ],
   "imports": [
-    "java.util.Map"
+    "java.util.Objects"
   ],
-  "missing": [
-    "MetricBoundary",
-    "ValidationStatus"
-  ],
+  "missing": [],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-06T19:02:08.116589+00:00"
+  "recorded_at": "2026-11-09T20:17:33.178205+00:00"
 }

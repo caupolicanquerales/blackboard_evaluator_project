@@ -1,0 +1,18 @@
+{
+  "id": "T2-029",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-029",
+    "T0-002",
+    "T0-003",
+    "T2-028"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ledger/infrastructure/TelemetryRecordR2dbcRepository.java",
+  "kind": "code",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "TelemetryRecordR2dbcRepository",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "IMPLEMENT TelemetryRecordR2dbcRepository so the frozen test passes; Java 17, Spring Boot 3, non-blocking, no cross-context domain imports, no hardcoded config values. Spec: Spring Data interface extending ReactiveCrudRepository<TelemetryRecordEntity, UUID> with @Query methods on ledger.telemetry_records using the (device_id, t_device) index: findHistory(deviceId, from, toExclusive) ORDER BY t_device, revision; findLatestRevision(deviceId, metric, tDevice) ORDER BY revision DESC LIMIT 1 (Mono); findRevisionChain(deviceId, metric, tDevice) ORDER BY revision. Query side only; the adapter never calls delete/update."
+}

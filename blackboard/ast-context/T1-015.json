@@ -1,0 +1,59 @@
+{
+  "task_id": "T1-015",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "IngestTelemetryService",
+    "constructors": [
+      [
+        "policy",
+        "channel"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "service",
+        "method": "ingest",
+        "args": [
+          "packetOf(raw)"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "ingest",
+        "args": [
+          "packetOf(rawA, rawB, rawC)"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "ingest",
+        "args": [
+          "packetOf()"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "ingest",
+        "args": [
+          "packetOf(rawA, rawB)"
+        ]
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class IngestTelemetryServiceTest {",
+      "private IngestTelemetryService service;",
+      "service = new IngestTelemetryService(policy, channel);",
+      "StepVerifier.create(service.ingest(packetOf(raw))).expectNext(1).verifyComplete();",
+      "StepVerifier.create(service.ingest(packetOf(raw))).expectNext(1).verifyComplete();",
+      "StepVerifier.create(service.ingest(packetOf(rawA, rawB, rawC))).expectNext(3).verifyComplete();",
+      "StepVerifier.create(service.ingest(packetOf())).expectNext(0).verifyComplete();",
+      "StepVerifier.create(service.ingest(packetOf(raw)))",
+      "StepVerifier.create(service.ingest(packetOf(rawA, rawB))).expectError(IllegalStateException.class).verify();"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

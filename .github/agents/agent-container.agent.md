@@ -34,7 +34,7 @@ Skills live in `.opencode/skills/mcp-server-alternatives/`. Pick exactly one:
 | `mcp-server-springboot` | `artifactId` (never `project_name`) |
 | `mcp-server-fastapi`, `mcp-server-nestjs` | `project_name` |
 
-4. For Spring Boot scaffolds using `data-jpa`, `postgresql`, or `flyway`, include `h2` in the initial MCP dependencies so the generated `contextLoads` test runs without an external database. Do not remove persistence dependencies to make the build pass.
+4. Read the selected skill's Scaffold Verification rule before calling the generator. When the task's dependency list names persistence, drivers, or any external service, the INITIAL generator call MUST include the in-process substitute that skill defines (an embeddable engine, an in-memory default URL), so the scaffold's own boot test passes without external services. If the scaffold's verification build fails on missing service configuration, follow the skill's regeneration rule exactly: regenerate once with the substitute added - never by removing the persistence dependency, never by pinning a different framework version (only the skill's version-drift fallback may change versions), and never by hand-writing the build marker.
 5. Output lands in `mcp_workspace/projects/<name>-<timestamp>`. Move the scaffold to the task `path` under the project root. Skip `mvn-build.log` and `node_modules`. When `path` is a build marker such as `pom.xml`, move the entire scaffold contents into that marker's parent directory and ensure the marker exists there.
 6. Never overwrite existing project files. If `pom.xml`, `requirements.txt`, or `package.json` already exists at the destination, stop and report.
 
@@ -49,8 +49,12 @@ On error: report it and stop. Do not retry with the same parameters.
 
 ## Tool budget and scope
 
-- At most 10 tool calls: the assigned `mcp-server-alternatives` SKILL.md once, its Step 1 block, the
-  tool call, and the move of the generated scaffold.
+- At most 14 tool calls: the assigned `mcp-server-alternatives` SKILL.md once, its Step 1 block, the
+  tool call, one regenerate-once retry when the skill's Scaffold Verification rule allows it, the
+  language-version pin of the generated manifest, and the move of the generated scaffold.
+- When budget pressure forces a choice, keep in this order: generate -> language-version pin ->
+  move. A scaffold whose manifest pins a different language version than the strategy names is a
+  FAILURE to report, never a silent default.
 - Read only the skill file you select and the task JSON in your prompt. Never list skill folders,
   never read `orchestrators/`, dispatcher sources or other tasks' `blackboard` records, never run `git`.
 - If the scaffold is already on disk or a manifest exists at the destination, report and stop; the

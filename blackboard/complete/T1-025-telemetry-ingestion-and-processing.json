@@ -1,0 +1,19 @@
+{
+  "id": "T1-025",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-024",
+    "T1-023",
+    "T1-004",
+    "T1-006"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/ledger/application/RecordTelemetryServiceTest.java",
+  "kind": "test",
+  "layer": "application",
+  "feature": null,
+  "export": "RecordTelemetryService",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "TEST for RecordTelemetryService at src/main/java/com/pulsestream/telemetry/ledger/application/RecordTelemetryService.java. JUnit 5 + AssertJ (+ Mockito, reactor-test StepVerifier for reactive code); cover every invariant and behavior below, including failure cases, using only the pinned surfaces of collaborators. Unit under test: Telemetry Event Ledger use case implementing RecordTelemetryUseCase. Constructor RecordTelemetryService(TelemetryLedgerRepository repository, BoundedEventChannel<TelemetryRevisionAppendedEvent> revisionsAppended). recordSequenced: if no record exists for (deviceId, metric, tDevice) append original revision 0; if the latest revision has identical value and status return it unchanged (idempotent); otherwise append latest.reviseWith(...). recordBackfill: same logic on event.sample(); a backfill of an existing sample with different value appends a revision, never mutates. Every appended revision >= 1 publishes TelemetryRevisionAppendedEvent. Append-only: only repository.append is used. Fully reactive."
+}

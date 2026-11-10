@@ -1,0 +1,97 @@
+{
+  "task_id": "T1-027",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "LedgerQueryService",
+    "constructors": [
+      [
+        "repository"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "service",
+        "method": "history",
+        "args": [
+          "DEVICE",
+          "T1",
+          "T3"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "history",
+        "args": [
+          "DEVICE",
+          "T1",
+          "T1"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "history",
+        "args": [
+          "DEVICE",
+          "T3",
+          "T1"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "latestHistory",
+        "args": [
+          "DEVICE",
+          "T2",
+          "T2"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "latestHistory",
+        "args": [
+          "DEVICE",
+          "T1",
+          "T3"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "revisionChain",
+        "args": [
+          "DEVICE",
+          "\"temp\"",
+          "T1"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "revisionChain",
+        "args": [
+          "DEVICE",
+          "\"unknown\"",
+          "T1"
+        ]
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class LedgerQueryServiceTest {",
+      "private LedgerQueryService service;",
+      "service = new LedgerQueryService(repository);",
+      "StepVerifier.create(service.history(DEVICE, T1, T3))",
+      "assertThatThrownBy(() -> service.history(DEVICE, T1, T1))",
+      "assertThatThrownBy(() -> service.history(DEVICE, T3, T1))",
+      "assertThatThrownBy(() -> service.latestHistory(DEVICE, T2, T2))",
+      "StepVerifier.create(service.latestHistory(DEVICE, T1, T3))",
+      "StepVerifier.create(service.latestHistory(DEVICE, T1, T3))",
+      "StepVerifier.create(service.latestHistory(DEVICE, T1, T3))",
+      "StepVerifier.create(service.latestHistory(DEVICE, T1, T3)).verifyComplete();",
+      "StepVerifier.create(service.revisionChain(DEVICE, \"temp\", T1))",
+      "StepVerifier.create(service.revisionChain(DEVICE, \"unknown\", T1)).verifyComplete();"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

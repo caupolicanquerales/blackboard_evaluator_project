@@ -4,13 +4,13 @@
   "stage": 1,
   "dependsOn": [
     "T0-001",
-    "T0-004"
+    "T1-001"
   ],
-  "path": "src/test/java/com/pulsestream/telemetry/intake/infrastructure/R2dbcMetricBoundaryRepositoryTest.java",
+  "path": "src/test/java/com/pulsestream/telemetry/shared/events/TelemetryWindowClosedEventTest.java",
   "kind": "test",
-  "layer": "infrastructure",
+  "layer": "shared",
   "feature": null,
-  "export": "R2dbcMetricBoundaryRepositoryTest",
-  "intent": "Context Telemetry Intake & Validation. Test R2dbcMetricBoundaryRepository (reactive, DatabaseClient mocked) loading boundaries from telemetry.metric_boundaries as Flux/Mono of MetricBoundary(metric,min,max); empty result for unknown metric; read-only access.",
-  "project": "telemetry-ingestion-and-processing"
+  "export": "TelemetryWindowClosedEvent",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "TEST for TelemetryWindowClosedEvent at src/main/java/com/pulsestream/telemetry/shared/events/TelemetryWindowClosedEvent.java. JUnit 5 + AssertJ (+ Mockito, reactor-test StepVerifier for reactive code); cover every invariant and behavior below, including failure cases, using only the pinned surfaces of collaborators. Unit under test: Telemetry Sequencing & Windowing publishes, Telemetry Stream Broadcasting consumes: shared kernel event record in package com.pulsestream.telemetry.shared.events (no domain types of any context). Record TelemetryWindowClosedEvent(String deviceId, Instant windowStart, Instant windowEnd, List<TelemetrySampleEvent> samples). Rejects blank deviceId, null instants, windowEnd not after windowStart; samples is defensively copied into an unmodifiable list ordered as supplied (ascending tDevice) and may not be null."
 }

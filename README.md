@@ -152,7 +152,7 @@ The whole test source set compiles on every run, so a single imported production
 
 ### Session cost budgets
 
-Every assistant turn re-sends the whole transcript, so a session's cost is driven by its number of tool calls. Every prompt therefore states an explicit budget (container and database 10 calls, tester 8, coder 6, evaluator and assembly 12, architect 12; a coder batch shares a budget that scales with its unit count), and on the Copilot backend a session streaming past twice its budget is killed mid-run rather than left to burn tokens. `python3 orchestrators/session_audit.py` reads the local Copilot session records and reports, per agent, the turns, tool calls, and tokens, flagging calls that left the agent's own inputs (skill folder listings, orchestrator or AST-tool source reads, other tasks' records, `git`); use `--since-hours`, `--budget-report`, or `--json` to slice the view.
+Every assistant turn re-sends the whole transcript, so a session's cost is driven by its number of tool calls. Every prompt therefore states an explicit budget (container and database 10 calls, tester 8, coder 6, evaluator and assembly 12, architect 12; a coder batch shares a budget that scales with its unit count), and on the Copilot backend a session streaming past twice its budget is killed mid-run rather than left to burn tokens. Budgets cap one session; the *number* of sessions a unit may bill is capped by the attempt ledger (`blackboard/attempts/`, see Scheduling and failure handling) and by lifetime weave-reject bounce caps. `python3 orchestrators/session_audit.py` reads the local Copilot session records and reports, per agent, the turns, tool calls, and tokens, flagging calls that left the agent's own inputs (skill folder listings, orchestrator or AST-tool source reads, other tasks' records, board-folder listings such as `ls blackboard/coder-changes`, `git`); use `--since-hours`, `--budget-report`, or `--json` to slice the view.
 
 ### Application assembly (stage 4)
 
@@ -195,6 +195,7 @@ The tester agent keeps deciding *which* test command proves the unit red (it nee
 │   ├── verification.py            # Framework build/check gates + Docker access gate
 │   ├── dispatchers.py             # Red-phase, AST/weaver dispatch, evaluate-result and gap checks
 │   ├── test_gate.py               # Green-phase test re-run: import repair, memoized verdicts
+│   ├── attempt_ledger.py          # Cross-pass TDD attempt memory: throttles coder SESSION COUNT
 │   ├── agent_runners.py           # Subprocess plumbing and log tails
 │   ├── tdd_engine.py              # execute_with_tdd and drain_queue
 │   ├── opencode_backend.py        # ``opencode run`` phase runners
@@ -214,7 +215,8 @@ The tester agent keeps deciding *which* test command proves the unit red (it nee
 │   ├── coder-changes/             # Pure method-body payloads produced by agent-coder
 │   ├── weave-results/             # Code-weaver runs applied to the source tree
 │   ├── evaluate-results/          # Stage-3 refactor reports (final green test + engine diff attached)
-│   └── gate-cache/                # Memoized green-test verdicts keyed by source-tree fingerprint
+│   ├── gate-cache/                # Memoized green-test verdicts keyed by source-tree fingerprint
+│   └── attempts/                  # Per-unit TDD attempt ledger (lifetime budgets, last failure, informed retries)
 ├── projects/                      # Generated source code
 ├── .opencode/
 │   ├── agents/                    # OpenCode agent definitions
@@ -391,7 +393,7 @@ With `--parallel N`, independent domains drain concurrently while at most one ta
 
 Invalid tasks and failed executions are moved to `blackboard/error/` with an `error` field explaining the reason. Dependents of failed work are quarantined when they can no longer be resolved. Successful tasks move to `blackboard/complete/` using the same filename. After fixing the environment or the scaffold, relaunch with `--retry` to restore quarantined tasks to the queue.
 
-Stage 2 supports up to three implementation attempts when verification fails. The verification output is returned to the coder as focused feedback for the next attempt.
+Stage 2 supports up to three implementation attempts when verification fails. The verification output is returned to the coder as focused feedback for the next attempt. These attempts are a **lifetime budget per contract**, recorded in `blackboard/attempts/<id>.json`: a later pass or a `--retry` restore of a unit whose task record, red record and AST contract are unchanged does NOT re-arm the budget from zero — it grants one informed attempt whose prompt already carries the previous failure, and a gate verdict whose normalized signature repeats a recorded failure quarantines the unit immediately instead of billing further coder sessions (a session costs a flat per-turn floor regardless of what the agent finds, so re-deriving a known failure is pure waste). The full budget returns only when the unit's contract actually moves. A structural "does not override/implements a supertype" conflict in the unit's own file is deferred, not charged, while the supertype's producing task is still unresolved: the adapter cannot converge on a moving port, and yesterday's wave proved the coder never converges on it blindly.
 
 ## Verification
 

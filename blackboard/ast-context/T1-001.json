@@ -3,72 +3,112 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "TelemetrySample",
+    "type": "TelemetrySampleEvent",
     "constructors": [
       [
         "deviceId",
         "metric",
         "21.5",
         "tDevice",
-        "tIngress"
+        "tIngress",
+        "status"
       ]
     ],
     "static_calls": [],
     "calls": [
       {
-        "receiver": "s",
+        "receiver": "e",
         "method": "deviceId",
         "args": []
       },
       {
-        "receiver": "s",
+        "receiver": "e",
         "method": "metric",
         "args": []
       },
       {
-        "receiver": "s",
+        "receiver": "e",
         "method": "value",
         "args": []
       },
       {
-        "receiver": "s",
+        "receiver": "e",
         "method": "tDevice",
         "args": []
       },
       {
-        "receiver": "s",
+        "receiver": "e",
+        "method": "tIngress",
+        "args": []
+      },
+      {
+        "receiver": "e",
+        "method": "validationStatus",
+        "args": []
+      },
+      {
+        "receiver": "e",
+        "method": "isValidationFailed",
+        "args": []
+      },
+      {
+        "receiver": "early",
+        "method": "tDevice",
+        "args": []
+      },
+      {
+        "receiver": "early",
+        "method": "tIngress",
+        "args": []
+      },
+      {
+        "receiver": "late",
+        "method": "tDevice",
+        "args": []
+      },
+      {
+        "receiver": "late",
         "method": "tIngress",
         "args": []
       }
     ],
     "verified": [],
     "usage_lines": [
-      "class TelemetrySampleTest {",
-      "private static TelemetrySample sample(String deviceId, String metric, Instant tDevice, Instant tIngress) {",
-      "return new TelemetrySample(deviceId, metric, 21.5, tDevice, tIngress);",
-      "TelemetrySample s = sample(\"dev-1\", \"temperature\", T_DEVICE, T_INGRESS);",
-      "assertThat(s.deviceId()).isEqualTo(\"dev-1\");",
-      "assertThat(s.metric()).isEqualTo(\"temperature\");",
-      "assertThat(s.value()).isEqualTo(21.5);",
-      "assertThat(s.tDevice()).isEqualTo(T_DEVICE);",
-      "assertThat(s.tIngress()).isEqualTo(T_INGRESS);",
-      "assertThatThrownBy(() -> sample(null, \"temperature\", T_DEVICE, T_INGRESS))",
-      "assertThatThrownBy(() -> sample(blank, \"temperature\", T_DEVICE, T_INGRESS))",
-      "assertThatThrownBy(() -> sample(\"dev-1\", null, T_DEVICE, T_INGRESS))",
-      "assertThatThrownBy(() -> sample(\"dev-1\", blank, T_DEVICE, T_INGRESS))",
-      "assertThatThrownBy(() -> sample(\"dev-1\", \"temperature\", null, T_INGRESS))",
-      "assertThatThrownBy(() -> sample(\"dev-1\", \"temperature\", T_DEVICE, null))",
-      "TelemetrySample a = sample(\"dev-1\", \"temperature\", T_DEVICE, T_INGRESS);",
-      "TelemetrySample b = sample(\"dev-1\", \"temperature\", T_DEVICE, T_INGRESS);",
+      "class TelemetrySampleEventTest {",
+      "private static TelemetrySampleEvent event(String deviceId, String metric, Instant tDevice,",
+      "return new TelemetrySampleEvent(deviceId, metric, 21.5, tDevice, tIngress, status);",
+      "assertThat(TelemetrySampleEvent.VALID).isEqualTo(\"VALID\");",
+      "assertThat(TelemetrySampleEvent.VALIDATION_FAILED).isEqualTo(\"VALIDATION_FAILED\");",
+      "TelemetrySampleEvent e = event(\"dev-1\", \"temp\", T_DEVICE, T_INGRESS, TelemetrySampleEvent.VALID);",
+      "assertThat(e.deviceId()).isEqualTo(\"dev-1\");",
+      "assertThat(e.metric()).isEqualTo(\"temp\");",
+      "assertThat(e.value()).isEqualTo(21.5);",
+      "assertThat(e.tDevice()).isEqualTo(T_DEVICE);",
+      "assertThat(e.tIngress()).isEqualTo(T_INGRESS);",
+      "assertThat(e.validationStatus()).isEqualTo(\"VALID\");",
+      "TelemetrySampleEvent a = event(\"dev-1\", \"temp\", T_DEVICE, T_INGRESS, TelemetrySampleEvent.VALID);",
+      "TelemetrySampleEvent b = event(\"dev-1\", \"temp\", T_DEVICE, T_INGRESS, TelemetrySampleEvent.VALID);",
       "assertThat(a).isEqualTo(b).hasSameHashCodeAs(b);",
-      "TelemetrySample a = sample(\"dev-1\", \"temperature\", T_DEVICE, T_INGRESS);",
-      "TelemetrySample b = sample(\"dev-1\", \"temperature\", T_DEVICE, T_INGRESS.plusSeconds(1));",
-      "assertThat(a).isNotEqualTo(b);",
-      "TelemetrySample s = sample(\"dev-1\", \"temperature\", T_DEVICE, T_INGRESS);",
-      "assertThat(s.tDevice()).isNotEqualTo(s.tIngress()).isEqualTo(T_DEVICE);",
-      "TelemetrySample s = sample(\"dev-1\", \"temperature\", T_DEVICE, T_DEVICE);",
-      "assertThat(s.tDevice()).isEqualTo(T_DEVICE);",
-      "assertThat(s.tIngress()).isEqualTo(T_DEVICE);"
+      "assertThatThrownBy(() -> event(null, \"temp\", T_DEVICE, T_INGRESS, TelemetrySampleEvent.VALID))",
+      "assertThatThrownBy(() -> event(blank, \"temp\", T_DEVICE, T_INGRESS, TelemetrySampleEvent.VALID))",
+      "assertThatThrownBy(() -> event(\"dev-1\", null, T_DEVICE, T_INGRESS, TelemetrySampleEvent.VALID))",
+      "assertThatThrownBy(() -> event(\"dev-1\", blank, T_DEVICE, T_INGRESS, TelemetrySampleEvent.VALID))",
+      "assertThatThrownBy(() -> event(\"dev-1\", \"temp\", null, T_INGRESS, TelemetrySampleEvent.VALID))",
+      "assertThatThrownBy(() -> event(\"dev-1\", \"temp\", T_DEVICE, null, TelemetrySampleEvent.VALID))",
+      "assertThatThrownBy(() -> event(\"dev-1\", \"temp\", T_DEVICE, T_INGRESS, null))",
+      "assertThatThrownBy(() -> event(\"dev-1\", \"temp\", T_DEVICE, T_INGRESS, status))",
+      "() -> event(\"dev-1\", \"temp\", T_DEVICE, T_INGRESS, TelemetrySampleEvent.VALIDATION_FAILED));",
+      "TelemetrySampleEvent e = event(\"dev-1\", \"temp\", T_DEVICE, T_INGRESS, TelemetrySampleEvent.VALID);",
+      "assertThat(e.isValidationFailed()).isFalse();",
+      "TelemetrySampleEvent e = event(\"dev-1\", \"temp\", T_DEVICE, T_INGRESS,",
+      "TelemetrySampleEvent.VALIDATION_FAILED);",
+      "assertThat(e.isValidationFailed()).isTrue();",
+      "TelemetrySampleEvent early = event(\"dev-1\", \"temp\", T_DEVICE, T_INGRESS.plusSeconds(60),",
+      "TelemetrySampleEvent.VALID);",
+      "TelemetrySampleEvent late = event(\"dev-1\", \"temp\", T_DEVICE.plusSeconds(10), T_INGRESS,",
+      "TelemetrySampleEvent.VALID);",
+      "assertThat(early.tDevice()).isBefore(late.tDevice());",
+      "assertThat(early.tIngress()).isAfter(late.tIngress());"
     ]
   },
   "stderr": "",

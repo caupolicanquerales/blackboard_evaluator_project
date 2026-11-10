@@ -37,6 +37,10 @@ Ask the user for the value before calling the tool if it was not given:
 ## Step 3: Invoke the tool
 Call `create_fastapi_project` with `project_name` through the stdio session from Step 2. The tool writes the project to `/workspace/projects/<project_name>-<timestamp>`, which is `mcp_workspace/projects/<project_name>-<timestamp>` on the host.
 
+## Scaffold Verification (engine contract for the bootstrap agent)
+- Embeddable substitute: when the task configures a database or external service, the generated project's settings must DEFAULT to an in-process substitute (SQLite via a `sqlite:///...` or env-var fallback URL) so the scaffold's own `TestClient` boot test passes with no service running. An env var or CLI flag only overrides the default; it never becomes the only source.
+- Regenerate-once: if the smoke/compile check fails on missing service configuration, apply settings-level in-process defaults (or regenerate once) - never by dropping the persistence dependency, never by pinning a different FastAPI/Python version to mask the failure, and never by hand-writing `requirements.txt`.
+
 ## Step 4: Report the result
 - `COMPILE OK` in the response: tell the user the project is ready, give the path under `mcp_workspace/projects`, and the run command `pip install -r requirements.txt && uvicorn main:app --reload`.
 - Error in the response: report the error text. Do not retry with the same parameters.

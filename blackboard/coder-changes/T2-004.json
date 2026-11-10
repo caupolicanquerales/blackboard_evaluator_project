@@ -1,36 +1,31 @@
 {
   "id": "T2-004",
   "project": "telemetry-ingestion-and-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/intake/application/IntakeTelemetryUseCase.java",
-  "export": "IntakeTelemetryUseCase",
-  "method": "ingest",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/shared/events/TelemetryRevisionAppendedEvent.java",
+  "export": "TelemetryRevisionAppendedEvent",
+  "method": "TelemetryRevisionAppendedEvent",
   "language": "java",
-  "framework": "springboot",
-  "skill": "java-springboot",
-  "kind": "class",
-  "signature": "public Mono<Void> ingest(TelemetrySample sample)",
-  "returns": "Mono<Void>",
-  "body": "return Mono.defer(() -> {\n    TelemetrySample stamped = new TelemetrySample(\n            sample.deviceId(), sample.metric(), sample.value(), sample.tDevice(), clock.instant());\n    Object event = policy.isWithinBounds(stamped)\n            ? new TelemetrySampleValidated(stamped)\n            : new ValidationFailed(stamped);\n    return port.publish(event);\n});",
+  "framework": "springboot3",
+  "skill": "java-standard-best-practices",
+  "kind": "record",
+  "signature": "public record TelemetryRevisionAppendedEvent(UUID recordId, String deviceId, String metric, Instant tDevice, int revision)",
+  "returns": "void",
   "members": [
-    "private final MetricBoundaryPolicy policy;",
-    "private final ReorderingEventPort port;",
-    "private final Clock clock;",
-    "public IntakeTelemetryUseCase(MetricBoundaryPolicy policy, ReorderingEventPort port, Clock clock) {\n    this.policy = policy;\n    this.port = port;\n    this.clock = clock;\n}"
+    "UUID recordId",
+    "String deviceId",
+    "String metric",
+    "Instant tDevice",
+    "int revision",
+    "public TelemetryRevisionAppendedEvent {\n    Objects.requireNonNull(recordId, \"recordId must not be null\");\n    Objects.requireNonNull(deviceId, \"deviceId must not be null\");\n    Objects.requireNonNull(metric, \"metric must not be null\");\n    Objects.requireNonNull(tDevice, \"tDevice must not be null\");\n    if (deviceId.isBlank()) {\n        throw new IllegalArgumentException(\"deviceId must not be blank\");\n    }\n    if (metric.isBlank()) {\n        throw new IllegalArgumentException(\"metric must not be blank\");\n    }\n    if (revision < 1) {\n        throw new IllegalArgumentException(\"revision must be >= 1\");\n    }\n}"
   ],
+  "body": "Objects.requireNonNull(recordId, \"recordId must not be null\");\nObjects.requireNonNull(deviceId, \"deviceId must not be null\");\nObjects.requireNonNull(metric, \"metric must not be null\");\nObjects.requireNonNull(tDevice, \"tDevice must not be null\");\nif (deviceId.isBlank()) {\n    throw new IllegalArgumentException(\"deviceId must not be blank\");\n}\nif (metric.isBlank()) {\n    throw new IllegalArgumentException(\"metric must not be blank\");\n}\nif (revision < 1) {\n    throw new IllegalArgumentException(\"revision must be >= 1\");\n}",
   "imports": [
-    "java.time.Clock",
-    "reactor.core.publisher.Mono",
-    "com.pulsestream.telemetry.intake.domain.MetricBoundaryPolicy",
-    "com.pulsestream.telemetry.intake.domain.TelemetrySample",
-    "com.pulsestream.telemetry.intake.domain.TelemetrySampleValidated",
-    "com.pulsestream.telemetry.intake.domain.ValidationFailed"
+    "java.time.Instant",
+    "java.util.Objects",
+    "java.util.UUID"
   ],
-  "missing": [
-    "ReorderingEventPort",
-    "TelemetrySampleValidated",
-    "ValidationFailed"
-  ],
+  "missing": [],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-06T19:02:08.052642+00:00"
+  "recorded_at": "2026-11-09T20:16:55.917328+00:00"
 }

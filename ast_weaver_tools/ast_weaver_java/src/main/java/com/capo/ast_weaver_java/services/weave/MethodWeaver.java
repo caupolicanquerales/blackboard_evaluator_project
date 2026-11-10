@@ -1,6 +1,7 @@
 package com.capo.ast_weaver_java.services.weave;
 
 import com.capo.ast_weaver_java.records.CoderChangesPayload;
+import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
@@ -82,8 +83,61 @@ public final class MethodWeaver {
             throw new IllegalArgumentException("Payload signature does not parse as a method declaration: "
                 + ParseErrors.firstLineOf(ex.getMessage()), ex);
         }
+        reconcileFromSignature(created, payload);
         owner.addMember(created);
         return created;
+    }
+
+    /**
+     * Carries the payload signature's declaration tokens onto the method: the frozen test
+     * may demand a STATIC factory (`Resp.from(record)` referenced from a static context),
+     * and an instance method can never satisfy it - without this, no payload re-emit could
+     * ever converge (the T2-031 loop). Modifiers are read only in their declaration place
+     * (before the return type/name); a bare signature (`from(TelemetryRecord r)` - the
+     * abstract-contract spelling) has nothing to carry and changes nothing. The return
+     * type, when explicit, is reconciled too.
+     */
+    public static void reconcileFromSignature(MethodDeclaration target, CoderChangesPayload payload) {
+        String signature = payload.signature() == null ? "" : payload.signature().trim();
+        int paren = signature.indexOf('(');
+        if (paren < 0) {
+            return;
+        }
+        java.util.List<String> tokens = new java.util.ArrayList<>();
+        for (String token : signature.substring(0, paren).split("\\s+")) {
+            if (!token.isEmpty()) {
+                tokens.add(token);
+            }
+        }
+        int index = 0;
+        boolean modified = false;
+        while (index < tokens.size() - 1
+                && tokens.get(index).matches("(public|protected|private|static|final|synchronized)")) {
+            String modifier = tokens.get(index);
+            switch (modifier) {
+                case "static" -> { target.setStatic(true); modified = true; }
+                case "final" -> { target.setFinal(true); modified = true; }
+                case "synchronized" -> { target.setSynchronized(true); modified = true; }
+                default -> { }  // access modifier: JavaParser keeps whatever is set
+            }
+            index++;
+        }
+        int namePosition = tokens.size() - 1;
+        if (namePosition - index > 0) {
+            String returnType = String.join(" ", tokens.subList(index, namePosition));
+            if (!returnType.equals(target.getTypeAsString())) {
+                try {
+                    target.setType(com.github.javaparser.StaticJavaParser.parseType(returnType));
+                    modified = true;
+                } catch (RuntimeException ignored) {
+                    // Unparsable type phrase: leave the type untouched. Creation and the
+                    // grammar ladder validate signatures properly; this path only reconciles.
+                }
+            }
+        }
+        if (modified) {
+            SourceFiles.markReshaped();
+        }
     }
 
     private static String abstractDeclaration(CoderChangesPayload payload) {
@@ -93,6 +147,100 @@ public final class MethodWeaver {
 
     private static String safeReturnType(String returns) {
         return returns == null || returns.isBlank() ? "void" : returns.trim();
+    }
+
+    /**
+     * The signature written as a COMPLETE declaration (`public static &lt;T&gt; T map(T in)`)
+     * rather than the bare contract spelling (`map(T in)`). When the payload ships the full
+     * form, the method is REPLACED wholesale - modifiers, method-level type parameters,
+     * return type and throws all ride the text, so no language shape needs a new schema
+     * field or a reconciliation rule. The bare form keeps the field-by-field path.
+     */
+    public static java.util.Optional<MethodDeclaration> fullDeclaration(CoderChangesPayload payload) {
+        String signature = payload.signature() == null ? "" : payload.signature().trim();
+        String bare = payload.method() == null ? "" : payload.method().trim();
+        if (signature.isEmpty() || bare.isEmpty() || !signature.contains("(")
+                || signature.startsWith(bare + "(")) {
+            return java.util.Optional.empty();
+        }
+        try {
+            MethodDeclaration parsed = PayloadParser.methodDeclaration(
+                signature.endsWith(";") ? signature : signature + ";");
+            return parsed.getNameAsString().equals(bare)
+                ? java.util.Optional.of(parsed) : java.util.Optional.empty();
+        } catch (RuntimeException ex) {
+            return java.util.Optional.empty();
+        }
+    }
+
+    /** Swap the twin method in place (same name, matching parameters OR same erasure),
+     *  or add when none exists. Same erasure IS the same method: javac rejects any other
+     *  reading ("name clash ... same erasure"), so a generic rewrite of a concrete twin
+     *  replaces it instead of clashing beside it.
+     *
+     *  The twin node itself is KEPT and re-declared in place: the file prints through
+     *  lexical preservation, so replacing nodes loses indentation and any annotation the
+     *  payload never mentions - modifying in place carries both. */
+    public static MethodDeclaration replaceInPlace(TypeDeclaration<?> owner, MethodDeclaration declaration) {
+        for (MethodDeclaration existing : owner.getMethodsByName(declaration.getNameAsString())) {
+            if (!parametersMatch(existing, declaration.getParameters()) && !sameErasure(existing, declaration)) {
+                continue;
+            }
+            redeclareInPlace(existing, declaration);
+            SourceFiles.markReshaped();
+            return existing;
+        }
+        owner.addMember(declaration);
+        return declaration;
+    }
+
+    private static void redeclareInPlace(MethodDeclaration target, MethodDeclaration source) {
+        target.setModifiers(new NodeList<>(source.getModifiers()));
+        target.setTypeParameters(new NodeList<>(source.getTypeParameters()));
+        target.setType(source.getType().clone());
+        target.setParameters(new NodeList<>(source.getParameters()));
+        target.setThrownExceptions(new NodeList<>(source.getThrownExceptions()));
+        target.setDefault(source.isDefault());
+        source.getAnnotations().forEach(annotation -> {
+            boolean alreadyPresent = target.getAnnotations().stream().anyMatch(present ->
+                present.getNameAsString().equals(annotation.getNameAsString()));
+            if (!alreadyPresent) {
+                target.addAnnotation(annotation.clone());
+            }
+        });
+    }
+
+    private static boolean sameErasure(MethodDeclaration existing, MethodDeclaration fresh) {
+        List<Parameter> left = existing.getParameters();
+        List<Parameter> right = fresh.getParameters();
+        if (left.size() != right.size()) {
+            return false;
+        }
+        for (int index = 0; index < left.size(); index++) {
+            if (left.get(index).isVarArgs() != right.get(index).isVarArgs()) {
+                return false;
+            }
+            String a = TypeIdentity.key(erased(left.get(index).getTypeAsString(), variableNames(existing)));
+            String b = TypeIdentity.key(erased(right.get(index).getTypeAsString(), variableNames(fresh)));
+            if (!a.equals(b)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static java.util.Set<String> variableNames(MethodDeclaration method) {
+        java.util.Set<String> names = new java.util.HashSet<>();
+        method.getTypeParameters().forEach(parameter -> names.add(parameter.getNameAsString()));
+        return names;
+    }
+
+    /** Erasure as javac sees it: generics cut to the raw type, the method's OWN type
+     *  variables replaced by their erasure ({@code Object} when unbounded). */
+    private static String erased(String type, java.util.Collection<String> ownVariables) {
+        String head = type.contains("<") ? type.substring(0, type.indexOf('<')) : type;
+        head = head.replaceAll("[\\[\\]]", "").replace("...", "").trim();
+        return ownVariables.contains(head) ? "Object" : head;
     }
 
     private static boolean parametersMatch(MethodDeclaration method, List<Parameter> expectedParams) {

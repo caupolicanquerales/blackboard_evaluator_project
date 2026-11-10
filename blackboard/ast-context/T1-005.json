@@ -3,15 +3,93 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "TelemetryIngressController",
-    "constructors": [],
+    "type": "TelemetryStreamPublishedEvent",
+    "constructors": [
+      [
+        "kind",
+        "\"device-1\"",
+        "3",
+        "PUBLISHED_AT"
+      ],
+      [
+        "\"SAMPLE\"",
+        "\"device-1\"",
+        "1",
+        "PUBLISHED_AT"
+      ],
+      [
+        "\"SAMPLE\"",
+        "\"device-1\"",
+        "sampleCount",
+        "PUBLISHED_AT"
+      ],
+      [
+        "\"SAMPLE\"",
+        "deviceId",
+        "1",
+        "PUBLISHED_AT"
+      ],
+      [
+        "kind",
+        "\"device-1\"",
+        "1",
+        "PUBLISHED_AT"
+      ],
+      [
+        "\"WINDOW\"",
+        "\"device-1\"",
+        "1",
+        "null"
+      ],
+      [
+        "\"WINDOW\"",
+        "\"device-1\"",
+        "2",
+        "PUBLISHED_AT"
+      ]
+    ],
     "static_calls": [],
-    "calls": [],
+    "calls": [
+      {
+        "receiver": "event",
+        "method": "kind",
+        "args": []
+      },
+      {
+        "receiver": "event",
+        "method": "deviceId",
+        "args": []
+      },
+      {
+        "receiver": "event",
+        "method": "sampleCount",
+        "args": []
+      },
+      {
+        "receiver": "event",
+        "method": "publishedAt",
+        "args": []
+      }
+    ],
     "verified": [],
     "usage_lines": [
-      "@WebFluxTest(TelemetryIngressController.class)",
-      "@Import(TelemetryIngressControllerTest.UseCaseDouble.class)",
-      "class TelemetryIngressControllerTest {"
+      "class TelemetryStreamPublishedEventTest {",
+      "TelemetryStreamPublishedEvent event =",
+      "new TelemetryStreamPublishedEvent(kind, \"device-1\", 3, PUBLISHED_AT);",
+      "assertThat(event.kind()).isEqualTo(kind);",
+      "assertThat(event.deviceId()).isEqualTo(\"device-1\");",
+      "assertThat(event.sampleCount()).isEqualTo(3);",
+      "assertThat(event.publishedAt()).isEqualTo(PUBLISHED_AT);",
+      ".isThrownBy(() -> new TelemetryStreamPublishedEvent(\"SAMPLE\", \"device-1\", 1, PUBLISHED_AT));",
+      "assertThatThrownBy(() -> new TelemetryStreamPublishedEvent(\"SAMPLE\", \"device-1\", sampleCount, PUBLISHED_AT))",
+      "assertThatThrownBy(() -> new TelemetryStreamPublishedEvent(\"SAMPLE\", deviceId, 1, PUBLISHED_AT))",
+      "assertThatThrownBy(() -> new TelemetryStreamPublishedEvent(kind, \"device-1\", 1, PUBLISHED_AT))",
+      "assertThatThrownBy(() -> new TelemetryStreamPublishedEvent(\"WINDOW\", \"device-1\", 1, null))",
+      "TelemetryStreamPublishedEvent first =",
+      "new TelemetryStreamPublishedEvent(\"WINDOW\", \"device-1\", 2, PUBLISHED_AT);",
+      "TelemetryStreamPublishedEvent second =",
+      "new TelemetryStreamPublishedEvent(\"WINDOW\", \"device-1\", 2, PUBLISHED_AT);",
+      "assertThat(first).isEqualTo(second).hasSameHashCodeAs(second);"
     ]
   },
   "stderr": "",

@@ -1,0 +1,19 @@
+{
+  "id": "T1-036",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-035",
+    "T1-034",
+    "T1-005",
+    "T1-006"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/broadcasting/application/BroadcastingServiceTest.java",
+  "kind": "test",
+  "layer": "application",
+  "feature": null,
+  "export": "BroadcastingService",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "TEST for BroadcastingService at src/main/java/com/pulsestream/telemetry/broadcasting/application/BroadcastingService.java. JUnit 5 + AssertJ (+ Mockito, reactor-test StepVerifier for reactive code); cover every invariant and behavior below, including failure cases, using only the pinned surfaces of collaborators. Unit under test: Telemetry Stream Broadcasting use case implementing BroadcastTelemetryUseCase. Constructor BroadcastingService(TelemetryStreamGateway gateway, BoundedEventChannel<TelemetryStreamPublishedEvent> streamPublications, Clock clock). broadcastSample/broadcastWindow map to BroadcastItem, publish through the gateway, then publish TelemetryStreamPublishedEvent(kind, deviceId, sampleCount, clock.instant()); a failure publishing that audit event is swallowed (onErrorResume) so it never blocks broadcasting. stream(deviceId) = gateway.items() filtered by deviceId when non-null. Broadcasting never influences ordering."
+}

@@ -1,32 +1,32 @@
 {
   "id": "T2-010",
   "project": "telemetry-ingestion-and-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/ledger/application/AppendRevisionUseCase.java",
-  "export": "AppendRevisionUseCase",
-  "method": "execute",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/intake/domain/TelemetrySample.java",
+  "export": "TelemetrySample",
+  "method": "TelemetrySample",
   "language": "java",
-  "framework": "springboot",
-  "skill": "java-springboot",
-  "kind": "class",
-  "annotations": [
-    "Service"
-  ],
-  "signature": "TelemetryRevision execute(AppendRevisionCommand command)",
-  "returns": "TelemetryRevision",
-  "body": "Objects.requireNonNull(command, \"command\");\nlong next = repository.findRevisions(command.key()).stream()\n    .mapToLong(TelemetryRevision::revision)\n    .max()\n    .orElse(0L) + 1L;\nTelemetryRevision appended = repository.append(new TelemetryRevision(command.key(), next, command.value()));\npublisher.publish(new TelemetryRevisionAppended(appended.key(), appended.revision()));\nreturn appended;",
+  "framework": "springboot3",
+  "skill": "java-standard-best-practices",
+  "kind": "record",
+  "signature": "record TelemetrySample",
+  "returns": "void",
   "members": [
-    "private final TelemetryLedgerRepository repository;",
-    "private final TelemetryRevisionEventPublisher publisher;",
-    "public AppendRevisionUseCase(TelemetryLedgerRepository repository, TelemetryRevisionEventPublisher publisher) {\n    this.repository = Objects.requireNonNull(repository, \"repository\");\n    this.publisher = Objects.requireNonNull(publisher, \"publisher\");\n}"
+    "String deviceId",
+    "String metric",
+    "double value",
+    "Instant tDevice",
+    "Instant tIngress",
+    "ValidationStatus status",
+    "public TelemetrySample {\n    if (deviceId == null || deviceId.isBlank()) {\n        throw new IllegalArgumentException(\"deviceId must not be null or blank\");\n    }\n    if (metric == null || metric.isBlank()) {\n        throw new IllegalArgumentException(\"metric must not be null or blank\");\n    }\n    if (tDevice == null) {\n        throw new IllegalArgumentException(\"tDevice must not be null\");\n    }\n    if (tIngress == null) {\n        throw new IllegalArgumentException(\"tIngress must not be null\");\n    }\n    if (status == null) {\n        throw new IllegalArgumentException(\"status must not be null\");\n    }\n}",
+    "public static TelemetrySample unvalidated(String deviceId, String metric, double value, Instant tDevice, Instant tIngress) {\n    return new TelemetrySample(deviceId, metric, value, tDevice, tIngress, ValidationStatus.UNVALIDATED);\n}",
+    "public TelemetrySample withStatus(ValidationStatus newStatus) {\n    return new TelemetrySample(deviceId, metric, value, tDevice, tIngress, newStatus);\n}"
   ],
+  "body": "",
   "imports": [
-    "com.pulsestream.telemetry.ledger.domain.TelemetryRevision",
-    "com.pulsestream.telemetry.ledger.domain.TelemetryRevisionAppended",
-    "java.util.Objects",
-    "org.springframework.stereotype.Service"
+    "java.time.Instant"
   ],
   "missing": [],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-06T19:03:17.677228+00:00"
+  "recorded_at": "2026-11-10T15:31:02.152683+00:00"
 }

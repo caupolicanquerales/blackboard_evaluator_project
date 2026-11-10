@@ -1,0 +1,15 @@
+{
+  "id": "T3-031",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-031"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ledger/interfaces/TelemetryRecordResponse.java",
+  "kind": "refactor",
+  "layer": "interface",
+  "feature": null,
+  "export": "TelemetryRecordResponse",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "REFACTOR TelemetryRecordResponse: inspect the implementation for layering violations, blocking calls, unbounded buffers, hardcoded values and invariant gaps; improve clarity without changing the public surface or breaking tests. Spec: Ledger read DTO record TelemetryRecordResponse(UUID id, String deviceId, String metric, double value, Instant tDevice, Instant tIngress, String validationStatus, int revision, UUID supersedesId) with static from(TelemetryRecord). Interface layer only; never returned by application ports."
+}

@@ -1,0 +1,16 @@
+{
+  "id": "T1-018",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-001"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/sequencing/domain/ReorderWindowTest.java",
+  "kind": "test",
+  "layer": "domain",
+  "feature": null,
+  "export": "ReorderWindow",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "TEST for ReorderWindow at src/main/java/com/pulsestream/telemetry/sequencing/domain/ReorderWindow.java. JUnit 5 + AssertJ (+ Mockito, reactor-test StepVerifier for reactive code); cover every invariant and behavior below, including failure cases, using only the pinned surfaces of collaborators. Unit under test: Telemetry Sequencing & Windowing domain (per-device, not thread-safe; caller synchronizes). Constructor ReorderWindow(Duration window, int capacity), both positive. Nested enum Outcome {IN_ORDER, BACKFILL, LATE}. Outcome offer(TelemetrySampleEvent e): IN_ORDER if e.tDevice >= highest tDevice seen; BACKFILL if highest - tDevice <= window (buffered); LATE if older than the window (NOT buffered, caller records it as revision). List<TelemetrySampleEvent> drainReady(): removes and returns buffered samples with tDevice <= highest - window ordered ascending by tDevice (ties by arrival); when buffer size exceeds capacity the oldest samples are also released so memory stays bounded. List<TelemetrySampleEvent> drainAll() releases everything ordered. Ordering uses tDevice only, never tIngress. VALIDATION_FAILED samples are ordered like any other; no revalidation. Window duration is a constructor parameter (no hardcoded 60s)."
+}

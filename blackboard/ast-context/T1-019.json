@@ -1,0 +1,172 @@
+{
+  "task_id": "T1-019",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "SlidingWindowAssembler",
+    "constructors": [
+      [
+        "SLIDE",
+        "SIZE"
+      ],
+      [
+        "SIZE",
+        "Duration.ZERO"
+      ],
+      [
+        "SIZE",
+        "Duration.ofSeconds(-5)"
+      ],
+      [
+        "SIZE",
+        "SLIDE"
+      ],
+      [
+        "SIZE",
+        "SIZE"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "assembler",
+        "method": "add",
+        "args": [
+          "sample(3)"
+        ]
+      },
+      {
+        "receiver": "assembler",
+        "method": "add",
+        "args": [
+          "sample(7)"
+        ],
+        "returns": "List<TelemetryWindowClosedEvent>"
+      },
+      {
+        "receiver": "assembler",
+        "method": "add",
+        "args": [
+          "sample(7)"
+        ]
+      },
+      {
+        "receiver": "assembler",
+        "method": "add",
+        "args": [
+          "sample(12)"
+        ],
+        "returns": "List<TelemetryWindowClosedEvent>"
+      },
+      {
+        "receiver": "assembler",
+        "method": "add",
+        "args": [
+          "sample(1)"
+        ]
+      },
+      {
+        "receiver": "assembler",
+        "method": "add",
+        "args": [
+          "sample(10)"
+        ],
+        "returns": "List<TelemetryWindowClosedEvent>"
+      },
+      {
+        "receiver": "assembler",
+        "method": "add",
+        "args": [
+          "sample(10)"
+        ]
+      },
+      {
+        "receiver": "assembler",
+        "method": "add",
+        "args": [
+          "sample(20)"
+        ],
+        "returns": "List<TelemetryWindowClosedEvent>"
+      },
+      {
+        "receiver": "assembler",
+        "method": "add",
+        "args": [
+          "sample(30)"
+        ],
+        "returns": "List<TelemetryWindowClosedEvent>"
+      },
+      {
+        "receiver": "assembler",
+        "method": "add",
+        "args": [
+          "sample(35)"
+        ],
+        "returns": "List<TelemetryWindowClosedEvent>"
+      },
+      {
+        "receiver": "assembler",
+        "method": "add",
+        "args": [
+          "sample(11)"
+        ],
+        "returns": "List<TelemetryWindowClosedEvent>"
+      },
+      {
+        "receiver": "assembler",
+        "method": "flush",
+        "args": [],
+        "returns": "List<TelemetryWindowClosedEvent>"
+      },
+      {
+        "receiver": "assembler",
+        "method": "flush",
+        "args": []
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class SlidingWindowAssemblerTest {",
+      "assertThatThrownBy(() -> new SlidingWindowAssembler(SLIDE, SIZE))",
+      "assertThatThrownBy(() -> new SlidingWindowAssembler(SIZE, Duration.ZERO))",
+      "assertThatThrownBy(() -> new SlidingWindowAssembler(SIZE, Duration.ofSeconds(-5)))",
+      "SlidingWindowAssembler assembler = new SlidingWindowAssembler(SIZE, SLIDE);",
+      "assertThat(assembler.add(sample(3))).isEmpty();",
+      "SlidingWindowAssembler assembler = new SlidingWindowAssembler(SIZE, SLIDE);",
+      "assembler.add(sample(3));",
+      "List<TelemetryWindowClosedEvent> closed = assembler.add(sample(7));",
+      "SlidingWindowAssembler assembler = new SlidingWindowAssembler(SIZE, SLIDE);",
+      "assembler.add(sample(3));",
+      "assembler.add(sample(7));",
+      "List<TelemetryWindowClosedEvent> closed = assembler.add(sample(12));",
+      "SlidingWindowAssembler assembler = new SlidingWindowAssembler(SIZE, SIZE);",
+      "assembler.add(sample(1));",
+      "List<TelemetryWindowClosedEvent> closed = assembler.add(sample(10));",
+      "SlidingWindowAssembler assembler = new SlidingWindowAssembler(SIZE, SIZE);",
+      "assembler.add(sample(10));",
+      "List<TelemetryWindowClosedEvent> closed = assembler.add(sample(20));",
+      "SlidingWindowAssembler assembler = new SlidingWindowAssembler(SIZE, SLIDE);",
+      "assembler.add(sample(3));",
+      "assembler.add(sample(7));",
+      "List<TelemetryWindowClosedEvent> closed = assembler.add(sample(30));",
+      "SlidingWindowAssembler assembler = new SlidingWindowAssembler(SIZE, SIZE);",
+      "assembler.add(sample(1));",
+      "List<TelemetryWindowClosedEvent> closed = assembler.add(sample(35));",
+      "SlidingWindowAssembler assembler = new SlidingWindowAssembler(SIZE, SIZE);",
+      "assembler.add(sample(1));",
+      "List<TelemetryWindowClosedEvent> closed = assembler.add(sample(11));",
+      "SlidingWindowAssembler assembler = new SlidingWindowAssembler(SIZE, SLIDE);",
+      "assembler.add(sample(3));",
+      "assembler.add(sample(7));",
+      "List<TelemetryWindowClosedEvent> flushed = assembler.flush();",
+      "SlidingWindowAssembler assembler = new SlidingWindowAssembler(SIZE, SLIDE);",
+      "assembler.add(sample(3));",
+      "assembler.flush();",
+      "assertThat(assembler.flush()).isEmpty();",
+      "SlidingWindowAssembler assembler = new SlidingWindowAssembler(SIZE, SLIDE);",
+      "assertThat(assembler.flush()).isEmpty();"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

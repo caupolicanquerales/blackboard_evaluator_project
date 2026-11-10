@@ -1,0 +1,11 @@
+{
+  "bounces": 0,
+  "consumed": 2,
+  "contract": "9a68282eab1eb922",
+  "fed": "test gate: status=error; exit_code=#; blame: telemetryrecordresponsetest.java:#,# ] non-static method from(com.pulsestream.telemetry.ledger.do || telemetryrecordresponsetest.java:#,# ] non-static method from(com.pulsestream.telemetry.ledger.do || telemetryrecordresponsetest.java:#,# ] non-static method from(com.pulsestream.telemetry.ledger.do || telemetryrecordresponsetest.java:#,# ] non-static method from(com.pulsestream.telemetry.ledger.do || recordtelemetryservicetest.java:#,# ] incompatible types: com.pulsestream.telemetry.intake.domai || recordtelemetryservicetest.java:#,# ] incompatible types: com.pulsestream.telemetry.intake.domai",
+  "grants": 1,
+  "id": "T2-031",
+  "reason": "test gate: status=error; exit_code=1; blame: TelemetryRecordResponseTest.java:23,67 ] non-static method from(com.pulsestream.telemetry.ledger.do || TelemetryRecordResponseTest.java:34,67 ] non-static method from(com.pulsestream.telemetry.ledger.do || TelemetryRecordResponseTest.java:47,67 ] non-static method from(com.pulsestream.telemetry.ledger.do || TelemetryRecordResponseTest.java:58,57 ] non-static method from(com.pulsestream.telemetry.ledger.do || RecordTelemetryServiceTest.java:148,93 ] incompatible types: com.pulsestream.telemetry.intake.domai || RecordTelemetryServiceTest.java:160,93 ] incompatible types: com.pulsestream.telemetry.intake.domai",
+  "signature": "test gate: status=error; exit_code=#; blame: telemetryrecordresponsetest.java:#,# ] non-static method from(com.pulsestream.telemetry.ledger.do || telemetryrecordresponsetest.java:#,# ] non-static method from(com.pulsestream.telemetry.ledger.do || telemetryrecordresponsetest.java:#,# ] non-static method from(com.pulsestream.telemetry.ledger.do || telemetryrecordresponsetest.java:#,# ] non-static method from(com.pulsestream.telemetry.ledger.do || recordtelemetryservicetest.java:#,# ] incompatible types: com.pulsestream.telemetry.intake.domai || recordtelemetryservicetest.java:#,# ] incompatible types: com.pulsestream.telemetry.intake.domai",
+  "updated": 1794333493
+}

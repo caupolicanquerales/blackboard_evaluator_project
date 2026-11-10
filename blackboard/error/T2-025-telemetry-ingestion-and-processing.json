@@ -1,0 +1,20 @@
+{
+  "id": "T2-025",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-025",
+    "T2-024",
+    "T2-023",
+    "T2-004",
+    "T2-006"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ledger/application/RecordTelemetryService.java",
+  "kind": "code",
+  "layer": "application",
+  "feature": null,
+  "export": "RecordTelemetryService",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "IMPLEMENT RecordTelemetryService so the frozen test passes; Java 17, Spring Boot 3, non-blocking, no cross-context domain imports, no hardcoded config values. Spec: Telemetry Event Ledger use case implementing RecordTelemetryUseCase. Constructor RecordTelemetryService(TelemetryLedgerRepository repository, BoundedEventChannel<TelemetryRevisionAppendedEvent> revisionsAppended). recordSequenced: if no record exists for (deviceId, metric, tDevice) append original revision 0; if the latest revision has identical value and status return it unchanged (idempotent); otherwise append latest.reviseWith(...). recordBackfill: same logic on event.sample(); a backfill of an existing sample with different value appends a revision, never mutates. Every appended revision >= 1 publishes TelemetryRevisionAppendedEvent. Append-only: only repository.append is used. Fully reactive.",
+  "error": "TDD failed after 3 attempts: test gate: status=error; exit_code=1; blame: RecordTelemetryServiceTest.java:73,59 ] incompatible types: com.pulsestream.telemetry.intake.domai || RecordTelemetryServiceTest.java:90,59 ] incompatible types: com.pulsestream.telemetry.intake.domai || RecordTelemetryServiceTest.java:104,59 ] incompatible types: com.pulsestream.telemetry.intake.domai || RecordTelemetryServiceTest.java:123,53 ] incompatible types: com.pulsestream.telemetry.intake.domai || RecordTelemetryServiceTest.java:133,66 ] incompatible types: com.pulsestream.telemetry.intake.domai || RecordTelemetryServiceTest.java:148,93 ] incompatible types: com.pulsestream.telemetry.intake.domai"
+}

@@ -1,0 +1,17 @@
+{
+  "id": "T1-027",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-026",
+    "T1-023"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/ledger/application/LedgerQueryServiceTest.java",
+  "kind": "test",
+  "layer": "application",
+  "feature": null,
+  "export": "LedgerQueryService",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "TEST for LedgerQueryService at src/main/java/com/pulsestream/telemetry/ledger/application/LedgerQueryService.java. JUnit 5 + AssertJ (+ Mockito, reactor-test StepVerifier for reactive code); cover every invariant and behavior below, including failure cases, using only the pinned surfaces of collaborators. Unit under test: Telemetry Event Ledger use case implementing QueryTelemetryLedgerUseCase. Constructor LedgerQueryService(TelemetryLedgerRepository repository). history and revisionChain delegate to the port; latestHistory reduces history to the highest revision per (metric, tDevice) preserving tDevice order. Rejects from >= toExclusive with IllegalArgumentException. Read-only, non-blocking."
+}

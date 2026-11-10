@@ -1,0 +1,31 @@
+{
+  "id": "T2-038",
+  "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/broadcasting/interfaces/TelemetryStreamMessage.java",
+  "export": "TelemetryStreamMessage",
+  "method": "from",
+  "language": "java",
+  "framework": "springboot3",
+  "skill": "java-standard-best-practices",
+  "signature": "public static TelemetryStreamMessage from(BroadcastItem item)",
+  "returns": "TelemetryStreamMessage",
+  "body": "Objects.requireNonNull(item, \"item must not be null\");\nList<SampleView> views = item.samples().stream()\n    .map(sample -> new SampleView(sample.metric(), sample.value(), sample.tDevice(), sample.validationStatus()))\n    .toList();\nreturn new TelemetryStreamMessage(item.kind().name(), item.deviceId(), views);",
+  "imports": [
+    "java.time.Instant",
+    "java.util.List",
+    "java.util.Objects",
+    "com.pulsestream.telemetry.broadcasting.domain.BroadcastItem"
+  ],
+  "missing": [],
+  "kind": "record",
+  "members": [
+    "String kind",
+    "String deviceId",
+    "List<SampleView> samples",
+    "public static TelemetryStreamMessage from(BroadcastItem item) {\n    Objects.requireNonNull(item, \"item must not be null\");\n    List<SampleView> views = item.samples().stream()\n        .map(sample -> new SampleView(sample.metric(), sample.value(), sample.tDevice(), sample.validationStatus()))\n        .toList();\n    return new TelemetryStreamMessage(item.kind().name(), item.deviceId(), views);\n}",
+    "public record SampleView(String metric, double value, Instant tDevice, String validationStatus) {\n}"
+  ],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-09T20:04:20.147945+00:00"
+}

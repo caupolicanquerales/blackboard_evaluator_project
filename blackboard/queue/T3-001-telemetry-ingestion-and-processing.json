@@ -1,0 +1,15 @@
+{
+  "id": "T3-001",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-001"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/shared/events/TelemetrySampleEvent.java",
+  "kind": "refactor",
+  "layer": "shared",
+  "feature": null,
+  "export": "TelemetrySampleEvent",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "REFACTOR TelemetrySampleEvent: inspect the implementation for layering violations, blocking calls, unbounded buffers, hardcoded values and invariant gaps; improve clarity without changing the public surface or breaking tests. Spec: Telemetry Intake & Validation (publishes TelemetrySampleValidated / TelemetrySampleValidationFailed) and the downstream contexts: shared kernel event record in package com.pulsestream.telemetry.shared.events (no domain types of any context). Immutable record TelemetrySampleEvent(String deviceId, String metric, double value, Instant tDevice, Instant tIngress, String validationStatus). Constants VALID=\"VALID\" and VALIDATION_FAILED=\"VALIDATION_FAILED\". Compact constructor rejects null/blank deviceId, metric, null tDevice/tIngress, and a validationStatus that is neither constant (NullPointerException/IllegalArgumentException). Method boolean isValidationFailed(). Ordering key is tDevice, never tIngress. Used as the payload of TelemetrySampleValidated, ValidationFailed and TelemetrySampleSequenced events."
+}

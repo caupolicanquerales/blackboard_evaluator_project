@@ -1,36 +1,32 @@
 {
   "id": "T2-006",
   "project": "telemetry-ingestion-and-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/reordering/domain/ReorderWindow.java",
-  "export": "ReorderWindow",
-  "method": "release",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/shared/events/BoundedEventChannel.java",
+  "export": "BoundedEventChannel<T>",
+  "method": "publish",
   "language": "java",
-  "framework": "java",
-  "skill": "java-standard-best-practices",
+  "framework": "springboot",
+  "skill": "java-springboot3",
   "kind": "class",
+  "signature": "public Mono<Void> publish(T event)",
+  "returns": "Mono<Void>",
+  "body": "if (event == null) {\n    return Mono.error(new NullPointerException(\"event must not be null\"));\n}\nreturn Mono.defer(() -> {\n    Sinks.EmitResult result;\n    do {\n        result = sink.tryEmitNext(event);\n    } while (result == Sinks.EmitResult.FAIL_NON_SERIALIZED);\n    if (result == Sinks.EmitResult.FAIL_OVERFLOW) {\n        return Mono.<Void>error(new OverflowException(name));\n    }\n    return Mono.<Void>empty();\n});",
   "members": [
-    "private final Duration window;",
-    "private final List<TelemetrySample> pending = new ArrayList<>();",
-    "private Instant watermark = Instant.MIN;",
-    "public ReorderWindow(Duration window) {\n    this.window = Objects.requireNonNull(window, \"window must not be null\");\n}",
-    "public void offer(TelemetrySample sample) {\n    pending.add(Objects.requireNonNull(sample, \"sample must not be null\"));\n}"
+    "private final String name",
+    "private final Sinks.Many<T> sink",
+    "public BoundedEventChannel(String name, int capacity) { if (capacity <= 0) { throw new IllegalArgumentException(\"capacity must be positive\"); } this.name = name; this.sink = Sinks.many().multicast().onBackpressureBuffer(capacity, false); }",
+    "public Mono<Void> offer(T event) { return publish(event); }",
+    "public Flux<T> stream() { return sink.asFlux(); }",
+    "public String name() { return name; }",
+    "public static class OverflowException extends RuntimeException { public OverflowException(String channelName) { super(\"Event channel overflow: \" + channelName); } }"
   ],
-  "signature": "public List<ReleasedSample> release(Instant now)",
-  "returns": "List<ReleasedSample>",
-  "body": "Objects.requireNonNull(now, \"now must not be null\");\nInstant cutoff = now.minus(window);\nList<TelemetrySample> due = pending.stream()\n    .filter(sample -> !sample.tDevice().isAfter(cutoff))\n    .sorted(Comparator.comparing(TelemetrySample::tDevice))\n    .toList();\npending.removeAll(due);\nInstant batchWatermark = watermark;\nList<ReleasedSample> released = new ArrayList<>();\nfor (TelemetrySample sample : due) {\n    released.add(new ReleasedSample(sample, sample.tDevice().isBefore(batchWatermark)));\n    if (sample.tDevice().isAfter(watermark)) {\n        watermark = sample.tDevice();\n    }\n}\nreturn List.copyOf(released);",
   "imports": [
-    "java.time.Duration",
-    "java.time.Instant",
-    "java.util.ArrayList",
-    "java.util.Comparator",
-    "java.util.List",
-    "java.util.Objects",
-    "com.pulsestream.telemetry.intake.domain.TelemetrySample"
+    "reactor.core.publisher.Flux",
+    "reactor.core.publisher.Mono",
+    "reactor.core.publisher.Sinks"
   ],
-  "missing": [
-    "ReleasedSample"
-  ],
+  "missing": [],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-06T19:05:11.311896+00:00"
+  "recorded_at": "2026-11-10T14:57:09.114949+00:00"
 }

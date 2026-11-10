@@ -1,0 +1,16 @@
+{
+  "id": "T3-025",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-025"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ledger/application/RecordTelemetryService.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "RecordTelemetryService",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "REFACTOR RecordTelemetryService: inspect the implementation for layering violations, blocking calls, unbounded buffers, hardcoded values and invariant gaps; improve clarity without changing the public surface or breaking tests. Spec: Telemetry Event Ledger use case implementing RecordTelemetryUseCase. Constructor RecordTelemetryService(TelemetryLedgerRepository repository, BoundedEventChannel<TelemetryRevisionAppendedEvent> revisionsAppended). recordSequenced: if no record exists for (deviceId, metric, tDevice) append original revision 0; if the latest revision has identical value and status return it unchanged (idempotent); otherwise append latest.reviseWith(...). recordBackfill: same logic on event.sample(); a backfill of an existing sample with different value appends a revision, never mutates. Every appended revision >= 1 publishes TelemetryRevisionAppendedEvent. Append-only: only repository.append is used. Fully reactive.",
+  "error": "dependsOn T2-025 not resolvable in queue or complete"
+}

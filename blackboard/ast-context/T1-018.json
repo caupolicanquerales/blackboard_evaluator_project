@@ -1,0 +1,217 @@
+{
+  "task_id": "T1-018",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "ReorderWindow",
+    "constructors": [
+      [
+        "WINDOW",
+        "100"
+      ],
+      [
+        "WINDOW",
+        "0"
+      ],
+      [
+        "Duration.ZERO",
+        "10"
+      ],
+      [
+        "Duration.ofSeconds(-1)",
+        "10"
+      ],
+      [
+        "Duration.ofSeconds(5)",
+        "10"
+      ],
+      [
+        "WINDOW",
+        "2"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "w",
+        "method": "offer",
+        "args": [
+          "sample(100, 100)"
+        ]
+      },
+      {
+        "receiver": "w",
+        "method": "offer",
+        "args": [
+          "sample(100, 101)"
+        ]
+      },
+      {
+        "receiver": "w",
+        "method": "offer",
+        "args": [
+          "sample(70, 101)"
+        ]
+      },
+      {
+        "receiver": "w",
+        "method": "offer",
+        "args": [
+          "sample(40, 101)"
+        ]
+      },
+      {
+        "receiver": "w",
+        "method": "offer",
+        "args": [
+          "sample(39, 101)"
+        ]
+      },
+      {
+        "receiver": "w",
+        "method": "offer",
+        "args": [
+          "sample(10, 101)"
+        ]
+      },
+      {
+        "receiver": "w",
+        "method": "drainAll",
+        "args": []
+      },
+      {
+        "receiver": "w",
+        "method": "offer",
+        "args": [
+          "sample(94, 101)"
+        ]
+      },
+      {
+        "receiver": "w",
+        "method": "offer",
+        "args": [
+          "sample(100, 0)"
+        ]
+      },
+      {
+        "receiver": "w",
+        "method": "offer",
+        "args": [
+          "sample(90, 500)"
+        ]
+      },
+      {
+        "receiver": "w",
+        "method": "offer",
+        "args": [
+          "sample(90, 101)"
+        ]
+      },
+      {
+        "receiver": "w",
+        "method": "drainReady",
+        "args": []
+      },
+      {
+        "receiver": "w",
+        "method": "offer",
+        "args": [
+          "sample(50, 1)"
+        ]
+      },
+      {
+        "receiver": "w",
+        "method": "offer",
+        "args": [
+          "sample(30, 2)"
+        ]
+      },
+      {
+        "receiver": "w",
+        "method": "offer",
+        "args": [
+          "sample(40, 3)"
+        ]
+      },
+      {
+        "receiver": "w",
+        "method": "offer",
+        "args": [
+          "sample(200, 4)"
+        ]
+      },
+      {
+        "receiver": "w",
+        "method": "drainReady",
+        "args": [],
+        "returns": "List<TelemetrySampleEvent>"
+      },
+      {
+        "receiver": "w",
+        "method": "offer",
+        "args": [
+          "sample(40, 1)"
+        ]
+      },
+      {
+        "receiver": "w",
+        "method": "offer",
+        "args": [
+          "sample(100, 2)"
+        ]
+      },
+      {
+        "receiver": "w",
+        "method": "offer",
+        "args": [
+          "first"
+        ]
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class ReorderWindowTest {",
+      "private static ReorderWindow window() {",
+      "return new ReorderWindow(WINDOW, 100);",
+      "assertThatThrownBy(() -> new ReorderWindow(WINDOW, 0))",
+      "assertThatThrownBy(() -> new ReorderWindow(Duration.ZERO, 10))",
+      "assertThatThrownBy(() -> new ReorderWindow(Duration.ofSeconds(-1), 10))",
+      "assertThat(window().offer(sample(100, 100))).isEqualTo(Outcome.IN_ORDER);",
+      "ReorderWindow w = window();",
+      "w.offer(sample(100, 100));",
+      "assertThat(w.offer(sample(100, 101))).isEqualTo(Outcome.IN_ORDER);",
+      "ReorderWindow w = window();",
+      "w.offer(sample(100, 100));",
+      "assertThat(w.offer(sample(70, 101))).isEqualTo(Outcome.BACKFILL);",
+      "ReorderWindow w = window();",
+      "w.offer(sample(100, 100));",
+      "assertThat(w.offer(sample(40, 101))).isEqualTo(Outcome.BACKFILL);",
+      "ReorderWindow w = window();",
+      "w.offer(sample(100, 100));",
+      "assertThat(w.offer(sample(39, 101))).isEqualTo(Outcome.LATE);",
+      "ReorderWindow w = window();",
+      "w.offer(sample(100, 100));",
+      "w.offer(sample(10, 101));",
+      "assertThat(w.drainAll()).containsExactly(sample(100, 100));",
+      "ReorderWindow w = new ReorderWindow(Duration.ofSeconds(5), 10);",
+      "w.offer(sample(100, 100));",
+      "assertThat(w.offer(sample(94, 101))).isEqualTo(Outcome.LATE);",
+      "ReorderWindow w = window();",
+      "w.offer(sample(100, 0));",
+      "assertThat(w.offer(sample(90, 500))).isEqualTo(Outcome.BACKFILL);",
+      "ReorderWindow w = window();",
+      "w.offer(sample(100, 100));",
+      "w.offer(sample(90, 101));",
+      "assertThat(w.drainReady()).isEmpty();",
+      "ReorderWindow w = window();",
+      "w.offer(sample(50, 1));",
+      "w.offer(sample(30, 2));",
+      "w.offer(sample(40, 3));",
+      "w.offer(sample(200, 4));",
+      "List<TelemetrySampleEvent> ready = w.drainReady();",
+      "assertThat(w.drainReady()).isEmpty();"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

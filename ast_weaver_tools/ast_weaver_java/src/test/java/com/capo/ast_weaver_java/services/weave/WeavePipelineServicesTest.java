@@ -112,7 +112,7 @@ class WeavePipelineServicesTest {
 
     @Test
     void shell_exceptionExtendsRuntimeExceptionAtTheAstLevel() {
-        assertThat(TypeSkeletons.create("exception", "FlowFailed", "com.x").toString())
+        assertThat(TypeSkeletons.create("exception", "FlowFailed", List.of(), "com.x").toString())
             .contains("public class FlowFailed extends RuntimeException");
     }
 

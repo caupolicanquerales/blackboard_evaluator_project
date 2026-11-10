@@ -4,6 +4,8 @@ The same flow runs over any backend module that exposes ``run_discovery``,
 ``run_mapping``, ``run_architect``, ``run_database`` and ``run_pass``.
 """
 import argparse
+import builtins
+import sys
 import time
 
 import assembly
@@ -15,6 +17,37 @@ import tdd_engine
 import telemetry
 import verification
 import workspace
+
+_REAL_PRINT = builtins.print
+
+
+def _stamp_print(*args, **kwargs):
+    """Tagged `[phase ] ...` lines get a wall clock so a resume's replay flood and
+    live progress are distinguishable in the log; passthrough output untouched."""
+    first = args[0] if args else ""
+    if isinstance(first, str) and first.lstrip().startswith("["):
+        _REAL_PRINT(time.strftime("%H:%M:%S") + " " + first, *args[1:], **kwargs)
+        return
+    _REAL_PRINT(*args, **kwargs)
+
+
+builtins.print = _stamp_print
+
+
+def _pass_summary(pass_started, processed, blocked):
+    """One heartbeat line per drain pass: wall cost plus the cumulative board
+    counters, so progress is readable across restarts without parsing the log."""
+    def count(folder):
+        try:
+            # task records only: the architect's strategy files also live under the board
+            return sum(1 for f in folder.glob("*.json")
+                       if '"id"' in f.read_text(encoding="utf-8", errors="ignore"))
+        except OSError:
+            return 0
+    print("[pass  ] wall {:.1f}s | queue {} complete {} quarantined {} | processed {} blocked {}"
+          .format(time.monotonic() - pass_started, count(settings.QUEUE_DIR),
+                  count(settings.COMPLETE_DIR), count(settings.ERROR_DIR),
+                  processed, len(blocked or [])))
 
 
 def build_parser(description):
@@ -63,7 +96,7 @@ def _application_tasks_queued():
 def _closure_blockers():
     """Summary of test imports without producer tasks, per domain (empty string when closed)."""
     root = workspace.get_project_root()
-    index = task_queue.load_index()
+    index = task_queue.load_index(include_error=True)
     offenders = []
     services = sorted((root / settings.PROJECTS_SUBDIR).glob("*")) if (root / settings.PROJECTS_SUBDIR).is_dir() else []
     for service in services:
@@ -72,6 +105,32 @@ def _closure_blockers():
             names = ", ".join(g["class"] for g in found[:3])
             offenders.append(f"{service.name}: {len(found)} unclosed import(s) [{names}...]")
     return "; ".join(offenders)
+
+
+def _stuck_report(blocked):
+    """The stuck-drain escalation text: who blocks, who owns the blockers, what to run.
+
+    A watch drain whose passes bill nothing and complete nothing while tasks stay
+    blocked is provably waiting on events the engine itself cannot create. The report
+    names the quarantined owners and the last deferral reasons so the operator lands
+    on the remedy (--retry / closure --emit / source fix) instead of reading a spin.
+    """
+    import re
+    waits = tdd_engine.wait_snapshot()
+    quarantined = sorted({match.group(1) for f in settings.ERROR_DIR.glob("*.json")
+                          if (match := re.match(r"(T[0-4]-\d{3})", f.name))})
+    parts = [f"no progress for {settings.STUCK_PASSES_FATAL} consecutive passes: "
+             f"{len(blocked)} task(s) still blocked"]
+    if quarantined:
+        head = ", ".join(quarantined[:12]) + (", ..." if len(quarantined) > 12 else "")
+        parts.append(f"quarantined in blackboard/error/: {head}")
+    for task_id in list(blocked)[:3]:
+        if task_id in waits:
+            parts.append(f"e.g. {task_id} waits on: {waits[task_id][:150]}")
+    parts.append("nothing the engine can do changes this: restore quarantined units with "
+                 "--retry [ids], queue missing producers with python3 orchestrators/closure.py --emit, "
+                 "or fix the blamed source; then relaunch to continue")
+    return " | ".join(parts)
 
 
 def run(args, backend):
@@ -195,6 +254,9 @@ def run(args, backend):
     if blocked:
         print(f"[fatal] task closure: {blocked}")
         print("[hint ] generate the missing producers with: python3 orchestrators/closure.py --emit")
+        if any(settings.ERROR_DIR.glob("*.json")):
+            print("[hint ] a quarantined task may own the missing product: relaunch with "
+                  "--retry [ids] to restore it (its payload often still needs only a gate)")
         return 2
 
     # Stage 4: the drain walks stages in ascending order, so a queued assembly task
@@ -203,9 +265,40 @@ def run(args, backend):
 
     try:
         if args.watch:
+            idle_passes = 0
+            stuck_passes = 0
             while True:
-                backend.run_pass(args)
-                time.sleep(args.interval)
+                pass_started = time.monotonic()
+                processed, blocked = backend.run_pass(args)
+                _pass_summary(pass_started, processed, blocked)
+                if processed == 0:
+                    idle_passes += 1
+                    # Nothing was produced this pass: every unit is idle (empty queue)
+                    # or deferred on work only the OPERATOR can unlock (--retry restore,
+                    # a newly emitted producer, a source fix). A fixed 5s re-poll burns
+                    # CPU and log volume (W3) and, with a blocked queue, used to run
+                    # forever: measured 2,900+ zero-progress passes after one root
+                    # quarantine reverted the domain's classes. Back off geometrically
+                    # for BOTH shapes and stop loudly when a blocked drain repeats.
+                    time.sleep(min(max(args.interval, 1) * 2 ** min(idle_passes, 4), 60))
+                    stuck_passes = stuck_passes + 1 if blocked else 0
+                    if stuck_passes >= settings.STUCK_PASSES_FATAL:
+                        # Before declaring the block operator-only, auto-grant the
+                        # quarantined units that are PROVABLY advancing (their last
+                        # failure was never shown to a coder): the drain resumes with
+                        # its bounded informed attempts instead of idling on launches.
+                        restored = tdd_engine.autogrant_progressing()
+                        if restored:
+                            print(f"[grant ] auto-restored {len(restored)} advancing "
+                                  f"quarantined unit(s): {', '.join(restored[:8])}")
+                            stuck_passes = 0
+                            idle_passes = 0
+                            continue
+                        raise tdd_engine.FatalPipeline(_stuck_report(blocked))
+                else:
+                    idle_passes = 0
+                    stuck_passes = 0
+                    time.sleep(args.interval)
         processed, blocked = backend.run_pass(args)
     except KeyboardInterrupt:
         return 130

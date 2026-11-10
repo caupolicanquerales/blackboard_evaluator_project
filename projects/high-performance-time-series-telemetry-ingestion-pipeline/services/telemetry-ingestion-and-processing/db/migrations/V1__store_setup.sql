@@ -1,2 +1,2 @@
--- Store setup: PostgreSQL 16, Flyway-managed. Dedicated schema for the telemetry ledger.
-CREATE SCHEMA IF NOT EXISTS telemetry;
+-- Store setup: PostgreSQL 16, owned by the Telemetry Event Ledger.
+CREATE SCHEMA IF NOT EXISTS ledger;

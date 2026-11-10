@@ -28,7 +28,7 @@ sys.dont_write_bytecode = True
 DEFAULT_STRATEGY = "blackboard/complete/execution-strategy.json"
 DEFAULT_TASKS_DIR = "blackboard/queue"
 
-TASK_ID_PATTERN = re.compile(r"^T-\d{3}$")
+TASK_ID_PATTERN = re.compile(r"^T\d-\d{3}$")  # blackboard ids: T<stage>-<3 digits>
 TASK_KINDS = frozenset({"record", "class", "interface", "enum"})
 TASK_LAYERS = frozenset(
     {
@@ -136,7 +136,7 @@ def validate_task(task, label):
     if reason:
         return reason
     if not (isinstance(task["id"], str) and TASK_ID_PATTERN.match(task["id"])):
-        return f"{label}.id must match T-### (got {task['id']!r})"
+        return f"{label}.id must match T<stage>-### (got {task['id']!r})"
     if not is_str_list(task["depends_on"]):
         return f"{label}.depends_on must be a list of task IDs"
     if task["id"] in task["depends_on"]:
@@ -158,18 +158,27 @@ def validate_task(task, label):
         return reason
     if not is_non_empty_str(hints["package"]):
         return f"{label}.ast_hints.package must be a non-empty string"
-    for key in ("implements", "dependencies"):
-        if not is_str_list(hints[key]):
-            return f"{label}.ast_hints.{key} must be a list of non-empty strings"
-    if not isinstance(hints["methods"], list) or not hints["methods"]:
-        return f"{label}.ast_hints.methods must be a non-empty list"
+    if not is_str_list(hints["implements"]):
+        return f"{label}.ast_hints.implements must be a list of non-empty strings"
+    if not isinstance(hints["dependencies"], list):
+        return f"{label}.ast_hints.dependencies must be a list of {{type, task_id}} objects"
+    for dep in hints["dependencies"]:
+        if not (isinstance(dep, dict) and set(dep) == {"type", "task_id"}
+                and is_non_empty_str(dep["type"]) and is_non_empty_str(dep["task_id"])):
+            return (f"{label}.ast_hints.dependencies entries must be "
+                    "{type, task_id}, both non-empty strings")
+    if not isinstance(hints["methods"], list):
+        return f"{label}.ast_hints.methods must be a list of {{signature, returns}} objects"
+    if hints["implements"] and not hints["methods"]:
+        return (f"{label}.ast_hints.methods must spell the surface of every "
+                "implemented supertype (implements is non-empty but methods is empty)")
     for index, method in enumerate(hints["methods"]):
         method_label = f"{label}.ast_hints.methods[{index}]"
         reason = check_exact_keys(method, ("signature", "returns"), method_label)
         if reason:
             return reason
-        if not is_non_empty_str(method["signature"]) or not is_non_empty_str(method["returns"]):
-            return f"{method_label}.signature and .returns must be non-empty strings"
+        if not is_non_empty_str(method["signature"]) or not isinstance(method["returns"], str):
+            return f"{method_label}.signature must be non-empty; .returns a string ('' for none)"
 
     tdd = task["tdd"]
     reason = check_exact_keys(tdd, TDD_KEYS, f"{label}.tdd")

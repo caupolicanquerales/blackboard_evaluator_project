@@ -1,0 +1,46 @@
+{
+  "id": "T2-036",
+  "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/broadcasting/application/BroadcastingService.java",
+  "export": "BroadcastingService",
+  "method": "broadcastSample",
+  "language": "java",
+  "framework": "springboot3",
+  "skill": "java-springboot3",
+  "kind": "class",
+  "implements": [
+    "BroadcastTelemetryUseCase"
+  ],
+  "annotations": [
+    "Service"
+  ],
+  "signature": "public Mono<Void> broadcastSample(TelemetrySampleEvent sample)",
+  "returns": "Mono<Void>",
+  "members": [
+    "private final TelemetryStreamGateway gateway",
+    "private final BoundedEventChannel<TelemetryStreamPublishedEvent> streamPublications",
+    "private final Clock clock",
+    "public BroadcastingService(TelemetryStreamGateway gateway, BoundedEventChannel<TelemetryStreamPublishedEvent> streamPublications, Clock clock) {\n    this.gateway = gateway;\n    this.streamPublications = streamPublications;\n    this.clock = clock;\n}",
+    "public Mono<Void> broadcastWindow(TelemetryWindowClosedEvent window) {\n    return Mono.defer(() -> publish(BroadcastItem.window(window)));\n}",
+    "public Flux<BroadcastItem> stream(String deviceId) {\n    Flux<BroadcastItem> items = gateway.items();\n    return deviceId == null ? items : items.filter(item -> deviceId.equals(item.deviceId()));\n}",
+    "private Mono<Void> publish(BroadcastItem item) {\n    return gateway.publish(item)\n            .then(Mono.defer(() -> streamPublications\n                    .publish(new TelemetryStreamPublishedEvent(item.kind().name(), item.deviceId(), item.samples().size(), clock.instant()))\n                    .onErrorResume(error -> Mono.empty())));\n}"
+  ],
+  "body": "return Mono.defer(() -> publish(BroadcastItem.sample(sample)));",
+  "imports": [
+    "com.pulsestream.telemetry.broadcasting.application.port.in.BroadcastTelemetryUseCase",
+    "com.pulsestream.telemetry.broadcasting.application.port.out.TelemetryStreamGateway",
+    "com.pulsestream.telemetry.broadcasting.domain.BroadcastItem",
+    "com.pulsestream.telemetry.shared.events.BoundedEventChannel",
+    "com.pulsestream.telemetry.shared.events.TelemetrySampleEvent",
+    "com.pulsestream.telemetry.shared.events.TelemetryStreamPublishedEvent",
+    "com.pulsestream.telemetry.shared.events.TelemetryWindowClosedEvent",
+    "java.time.Clock",
+    "org.springframework.stereotype.Service",
+    "reactor.core.publisher.Flux",
+    "reactor.core.publisher.Mono"
+  ],
+  "missing": [],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-09T21:17:30.827328+00:00"
+}

@@ -1,24 +1,36 @@
 {
   "id": "T2-019",
   "project": "telemetry-ingestion-and-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/ledger/domain/TelemetryRevision.java",
-  "export": "TelemetryRevision",
-  "method": "TelemetryRevision",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/sequencing/domain/SlidingWindowAssembler.java",
+  "export": "SlidingWindowAssembler",
+  "method": "add",
   "language": "java",
-  "framework": "springboot",
-  "skill": "java-springboot",
-  "signature": "TelemetryRevision",
-  "returns": "void",
-  "body": "",
-  "imports": [],
+  "framework": "springboot3",
+  "skill": "java-standard-best-practices",
+  "signature": "public List<TelemetryWindowClosedEvent> add(TelemetrySampleEvent orderedSample)",
+  "returns": "List<TelemetryWindowClosedEvent>",
+  "body": "Objects.requireNonNull(orderedSample, \"orderedSample must not be null\");\nInstant tDevice = orderedSample.tDevice();\nList<TelemetryWindowClosedEvent> closed = closeEndingAtOrBefore(tDevice);\nlong slideNanos = slide.toNanos();\nlong epochNanos = Math.addExact(Math.multiplyExact(tDevice.getEpochSecond(), 1_000_000_000L), tDevice.getNano());\nInstant start = Instant.ofEpochSecond(0, Math.floorDiv(epochNanos, slideNanos) * slideNanos);\nwhile (start.plus(size).isAfter(tDevice)) {\n    openWindows.computeIfAbsent(start, key -> new ArrayList<>()).add(orderedSample);\n    start = start.minus(slide);\n}\nreturn closed;",
+  "imports": [
+    "java.time.Duration",
+    "java.time.Instant",
+    "java.util.ArrayList",
+    "java.util.List",
+    "java.util.Objects",
+    "java.util.TreeMap",
+    "com.pulsestream.telemetry.shared.events.TelemetrySampleEvent",
+    "com.pulsestream.telemetry.shared.events.TelemetryWindowClosedEvent"
+  ],
   "missing": [],
-  "kind": "record",
+  "kind": "class",
   "members": [
-    "TelemetryEventKey key",
-    "long revision",
-    "double value"
+    "private final Duration size;",
+    "private final Duration slide;",
+    "private final TreeMap<Instant, List<TelemetrySampleEvent>> openWindows = new TreeMap<>();",
+    "public SlidingWindowAssembler(Duration size, Duration slide) {\n    Objects.requireNonNull(size, \"size must not be null\");\n    Objects.requireNonNull(slide, \"slide must not be null\");\n    if (slide.isZero() || slide.isNegative()) {\n        throw new IllegalArgumentException(\"slide must be positive\");\n    }\n    if (size.compareTo(slide) < 0) {\n        throw new IllegalArgumentException(\"size must be greater than or equal to slide\");\n    }\n    this.size = size;\n    this.slide = slide;\n}",
+    "public List<TelemetryWindowClosedEvent> flush() {\n    return closeEndingAtOrBefore(Instant.MAX);\n}",
+    "private List<TelemetryWindowClosedEvent> closeEndingAtOrBefore(Instant bound) {\n    List<TelemetryWindowClosedEvent> closed = new ArrayList<>();\n    var iterator = openWindows.entrySet().iterator();\n    while (iterator.hasNext()) {\n        var entry = iterator.next();\n        Instant end = entry.getKey().plus(size);\n        if (end.isAfter(bound)) {\n            break;\n        }\n        List<TelemetrySampleEvent> samples = entry.getValue();\n        closed.add(new TelemetryWindowClosedEvent(samples.get(0).deviceId(), entry.getKey(), end, samples));\n        iterator.remove();\n    }\n    return closed;\n}"
   ],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-06T19:22:13.929177+00:00"
+  "recorded_at": "2026-11-09T20:14:34.716249+00:00"
 }

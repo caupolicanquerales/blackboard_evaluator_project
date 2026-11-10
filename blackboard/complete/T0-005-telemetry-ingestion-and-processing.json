@@ -5,11 +5,11 @@
   "dependsOn": [
     "T0-001"
   ],
-  "path": "db/migrations/backup_recovery.conf",
+  "path": "db/migrations/postgresql_backup.conf",
   "kind": "bootstrap",
   "layer": "root",
   "feature": null,
-  "export": "backup_recovery.conf",
-  "intent": "Backup/recovery: PostgreSQL 16 WAL archiving and point-in-time recovery settings in db/migrations/backup_recovery.conf for context telemetry-ingestion-and-processing.",
+  "export": "postgresql_backup.conf",
+  "intent": "Backup/recovery: PostgreSQL 16 WAL archiving plus periodic base snapshots, file db/migrations/postgresql_backup.conf, context telemetry-ingestion-and-processing.",
   "project": "telemetry-ingestion-and-processing"
 }

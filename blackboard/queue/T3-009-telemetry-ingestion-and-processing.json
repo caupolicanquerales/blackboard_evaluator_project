@@ -1,0 +1,15 @@
+{
+  "id": "T3-009",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-009"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/intake/domain/ValidationStatus.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "ValidationStatus",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "REFACTOR ValidationStatus: inspect the implementation for layering violations, blocking calls, unbounded buffers, hardcoded values and invariant gaps; improve clarity without changing the public surface or breaking tests. Spec: Telemetry Intake & Validation domain enum ValidationStatus {UNVALIDATED, VALID, VALIDATION_FAILED}. UNVALIDATED is only the state of a freshly received sample; after validation a sample is always VALID or VALIDATION_FAILED, never dropped."
+}

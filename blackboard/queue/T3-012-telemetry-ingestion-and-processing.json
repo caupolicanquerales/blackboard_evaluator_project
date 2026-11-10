@@ -1,0 +1,15 @@
+{
+  "id": "T3-012",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-012"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/intake/domain/SensorMetricBoundaryPolicy.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "SensorMetricBoundaryPolicy",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "REFACTOR SensorMetricBoundaryPolicy: inspect the implementation for layering violations, blocking calls, unbounded buffers, hardcoded values and invariant gaps; improve clarity without changing the public surface or breaking tests. Spec: Telemetry Intake & Validation domain service. Constructor SensorMetricBoundaryPolicy(Map<String, SensorMetricBoundary> boundariesByMetric) (keys lower-case; defensive copy). TelemetrySample validate(TelemetrySample sample): looks the metric up case-insensitively; inside boundary -> status VALID; outside, non-finite, or metric without configured boundary -> VALIDATION_FAILED. Invariant: never throws for bad data, never drops or alters payload fields other than status. Pure, no I/O."
+}

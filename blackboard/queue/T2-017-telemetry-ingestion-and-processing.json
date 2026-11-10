@@ -1,0 +1,18 @@
+{
+  "id": "T2-017",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-017",
+    "T2-014",
+    "T2-016",
+    "T2-006"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/intake/interfaces/IngressController.java",
+  "kind": "code",
+  "layer": "interface",
+  "feature": null,
+  "export": "IngressController",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "IMPLEMENT IngressController so the frozen test passes; Java 17, Spring Boot 3, non-blocking, no cross-context domain imports, no hardcoded config values. Spec: Telemetry Intake & Validation WebFlux ingress. @RestController, constructor IngressController(IngestTelemetryUseCase useCase, Clock clock). POST /api/v1/telemetry/packets consuming JSON IngressPacketRequest (@Valid) -> Mono<ResponseEntity<IngressAcknowledgement>> status 202 with nested public record IngressAcknowledgement(String deviceId, int accepted). t_ingress = clock.instant() at arrival. BoundedEventChannel.OverflowException maps to HTTP 503; validation errors to 400. No blocking I/O."
+}

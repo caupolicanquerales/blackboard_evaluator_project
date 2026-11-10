@@ -1,0 +1,15 @@
+{
+  "id": "T3-017",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-017"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/intake/interfaces/IngressController.java",
+  "kind": "refactor",
+  "layer": "interface",
+  "feature": null,
+  "export": "IngressController",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "REFACTOR IngressController: inspect the implementation for layering violations, blocking calls, unbounded buffers, hardcoded values and invariant gaps; improve clarity without changing the public surface or breaking tests. Spec: Telemetry Intake & Validation WebFlux ingress. @RestController, constructor IngressController(IngestTelemetryUseCase useCase, Clock clock). POST /api/v1/telemetry/packets consuming JSON IngressPacketRequest (@Valid) -> Mono<ResponseEntity<IngressAcknowledgement>> status 202 with nested public record IngressAcknowledgement(String deviceId, int accepted). t_ingress = clock.instant() at arrival. BoundedEventChannel.OverflowException maps to HTTP 503; validation errors to 400. No blocking I/O."
+}

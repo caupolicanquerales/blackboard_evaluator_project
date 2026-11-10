@@ -1,0 +1,18 @@
+{
+  "id": "T2-035",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-035",
+    "T2-033",
+    "T2-001",
+    "T2-003"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/broadcasting/application/port/in/BroadcastTelemetryUseCase.java",
+  "kind": "code",
+  "layer": "application",
+  "feature": null,
+  "export": "BroadcastTelemetryUseCase",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "IMPLEMENT BroadcastTelemetryUseCase so the frozen test passes; Java 17, Spring Boot 3, non-blocking, no cross-context domain imports, no hardcoded config values. Spec: Telemetry Stream Broadcasting inbound port consuming TelemetrySampleSequenced and TelemetryWindowClosed: Mono<Void> broadcastSample(TelemetrySampleEvent sample), Mono<Void> broadcastWindow(TelemetryWindowClosedEvent window), Flux<BroadcastItem> stream(String deviceId) where null deviceId means all devices."
+}

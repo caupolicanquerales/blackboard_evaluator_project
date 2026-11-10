@@ -28,9 +28,22 @@ def read_queue():
     return entries
 
 
-def load_index():
+def load_index(include_error=False):
+    """Task records by id, from queue + complete (and error/ when asked).
+
+    include_error is for PRODUCER lookups only: a type whose producing task sits
+    quarantined in error/ awaiting --retry HAS an owner; closure-style gap scans that
+    miss it fabricate duplicate producers (the W4/WindowQuery class of incident) and
+    abort healthy restarts with the wrong remedy. Consumers that must see only
+    live work (emit-duplicate checks, --retry membership, id allocation) keep the
+    default and treat error/ as absent, which is exactly the queue's semantics.
+    """
     index = {}
-    for folder in (settings.QUEUE_DIR, settings.COMPLETE_DIR):
+    folders = (settings.QUEUE_DIR, settings.COMPLETE_DIR,
+               settings.ERROR_DIR if include_error else None)
+    for folder in folders:
+        if folder is None:
+            continue
         for file in folder.glob("*.json"):
             try:
                 task = json.loads(file.read_text(encoding="utf-8"))
@@ -113,7 +126,9 @@ def send_to_error(file, reason, task):
                                              **telemetry.task_attributes(payload)}) as current:
         telemetry.mark_error(current, reason)
         (settings.ERROR_DIR / file.name).write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-        file.unlink()
+        # Idempotent: a task can be swept by the dependent-cascade while its own gate is
+        # still running; whichever quarantine loses the race must not crash the drain.
+        file.unlink(missing_ok=True)
 
 
 def retry_error_tasks(patterns=()):
@@ -178,7 +193,7 @@ def emit_tasks(paths):
                 if not isinstance(task, dict):
                     errors.append(f"{label}: task must be a JSON object")
                     continue
-                reason = tasks.validate(task, index)
+                reason = tasks.validate(task, index, planning=True)
                 if reason:
                     errors.append(f"{label}: {reason}")
                     if isinstance(task.get("id"), str) and task["id"] not in index:
@@ -207,8 +222,42 @@ def emit_tasks(paths):
     return None
 
 
+class ScaffoldUnresolved(RuntimeError):
+    """A queued task depends on a stage-0 task that sits QUARANTINED in error/.
+
+    The scaffold is the root of the whole domain: every tester/coder/evaluator dangles
+    behind it, and letting the per-file quarantine loop scatter that fact produced 124
+    error records for ONE failed container session. Fail fast with the scaffold's own
+    reason instead - it is the only line an operator needs.
+    """
+
+
+def _quarantined_scaffold_reasons():
+    reasons = {}
+    for file in settings.ERROR_DIR.glob("T0-*.json"):
+        try:
+            record = json.loads(file.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if isinstance(record, dict) and record.get("id"):
+            reasons[str(record["id"])] = str(record.get("error", ""))[:300]
+    return reasons
+
+
 def load_valid_tasks():
     """Read the queue and quarantine bad files until the remaining set is stable."""
+    dead_scaffolds = _quarantined_scaffold_reasons()
+    if dead_scaffolds:
+        for _, _, task, _ in read_queue():
+            if not isinstance(task, dict):
+                continue
+            deps = task.get("dependsOn")
+            for dep in (deps if isinstance(deps, list) else []):
+                if str(dep) in dead_scaffolds:
+                    raise ScaffoldUnresolved(
+                        f"stage-0 scaffold {dep} of '{task.get('project', '?')}' is quarantined: "
+                        f"{dead_scaffolds[str(dep)]} - every unit of that domain dangles behind it; "
+                        "fix the container stage (skill/environment) and relaunch with --retry")
     while True:
         entries = read_queue()
         if not entries:

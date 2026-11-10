@@ -1,0 +1,16 @@
+{
+  "id": "T1-037",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-034"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/broadcasting/infrastructure/ReactorTelemetryStreamGatewayTest.java",
+  "kind": "test",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "ReactorTelemetryStreamGateway",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "TEST for ReactorTelemetryStreamGateway at src/main/java/com/pulsestream/telemetry/broadcasting/infrastructure/ReactorTelemetryStreamGateway.java. JUnit 5 + AssertJ (+ Mockito, reactor-test StepVerifier for reactive code); cover every invariant and behavior below, including failure cases, using only the pinned surfaces of collaborators. Unit under test: Telemetry Stream Broadcasting adapter implementing TelemetryStreamGateway. Constructor ReactorTelemetryStreamGateway(int subscriberBuffer>0). Backed by Sinks.many().multicast().directBestEffort(); publish emits non-blocking (no subscribers or slow subscribers never block or fail the publisher); items() = sink.asFlux().onBackpressureBuffer(subscriberBuffer, BufferOverflowStrategy.DROP_OLDEST) so each subscriber's demand is respected with bounded memory."
+}

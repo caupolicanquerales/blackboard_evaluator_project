@@ -1,25 +1,33 @@
 {
   "id": "T2-016",
   "project": "telemetry-ingestion-and-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/intake/domain/ValidationFailed.java",
-  "export": "ValidationFailed",
-  "method": "tIngress",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/intake/interfaces/IngressPacketRequest.java",
+  "export": "IngressPacketRequest",
+  "method": "toPacket",
   "language": "java",
   "framework": "springboot",
   "skill": "java-springboot",
-  "signature": "Instant tIngress()",
-  "returns": "Instant",
-  "body": "return sample.tIngress();",
-  "imports": [
-    "java.time.Instant"
-  ],
-  "missing": [],
   "kind": "record",
   "members": [
-    "TelemetrySample sample",
-    "public Instant tIngress() { return sample.tIngress(); }"
+    "@NotBlank String deviceId",
+    "@NotEmpty List<@Valid SampleRequest> samples",
+    "public record SampleRequest(@NotBlank String metric, @NotNull Double value, @NotNull Instant tDevice) {}"
   ],
+  "signature": "public IngressPacket toPacket(Instant tIngress)",
+  "returns": "IngressPacket",
+  "body": "List<TelemetrySample> mapped = samples.stream()\n        .map(s -> TelemetrySample.unvalidated(deviceId, s.metric(), s.value(), s.tDevice(), tIngress))\n        .toList();\nreturn new IngressPacket(deviceId, tIngress, mapped);",
+  "imports": [
+    "com.pulsestream.telemetry.intake.application.IngressPacket",
+    "com.pulsestream.telemetry.intake.domain.TelemetrySample",
+    "jakarta.validation.Valid",
+    "jakarta.validation.constraints.NotBlank",
+    "jakarta.validation.constraints.NotEmpty",
+    "jakarta.validation.constraints.NotNull",
+    "java.time.Instant",
+    "java.util.List"
+  ],
+  "missing": [],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-06T19:19:37.999707+00:00"
+  "recorded_at": "2026-11-09T20:06:31.135483+00:00"
 }

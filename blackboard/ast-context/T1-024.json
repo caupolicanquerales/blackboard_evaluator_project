@@ -1,0 +1,84 @@
+{
+  "task_id": "T1-024",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "RecordTelemetryUseCase",
+    "constructors": [],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "useCase",
+        "method": "recordSequenced",
+        "args": [
+          "sample"
+        ],
+        "stubbed_to": "Mono.just(appended)"
+      },
+      {
+        "receiver": "useCase",
+        "method": "recordSequenced",
+        "args": [
+          "sample"
+        ]
+      },
+      {
+        "receiver": "useCase",
+        "method": "recordSequenced",
+        "args": [
+          "sample"
+        ],
+        "stubbed_to": "Mono.just(existing)"
+      },
+      {
+        "receiver": "useCase",
+        "method": "recordBackfill",
+        "args": [
+          "backfill"
+        ],
+        "stubbed_to": "Mono.just(appended)"
+      },
+      {
+        "receiver": "useCase",
+        "method": "recordBackfill",
+        "args": [
+          "backfill"
+        ]
+      },
+      {
+        "receiver": "useCase",
+        "method": "recordBackfill",
+        "args": [
+          "backfill"
+        ],
+        "stubbed_to": "Mono.just(existing)"
+      }
+    ],
+    "verified": [
+      "recordSequenced",
+      "recordBackfill"
+    ],
+    "usage_lines": [
+      "class RecordTelemetryUseCaseTest {",
+      "private RecordTelemetryUseCase useCase;",
+      "when(useCase.recordSequenced(sample)).thenReturn(Mono.just(appended));",
+      "StepVerifier.create(useCase.recordSequenced(sample))",
+      "verify(useCase).recordSequenced(sample);",
+      "verifyNoMoreInteractions(useCase);",
+      "when(useCase.recordSequenced(sample)).thenReturn(Mono.just(existing));",
+      "StepVerifier.create(useCase.recordSequenced(sample))",
+      "when(useCase.recordSequenced(sample))",
+      "StepVerifier.create(useCase.recordSequenced(sample))",
+      "when(useCase.recordBackfill(backfill)).thenReturn(Mono.just(appended));",
+      "StepVerifier.create(useCase.recordBackfill(backfill))",
+      "verify(useCase).recordBackfill(backfill);",
+      "verifyNoMoreInteractions(useCase);",
+      "when(useCase.recordBackfill(backfill)).thenReturn(Mono.just(existing));",
+      "StepVerifier.create(useCase.recordBackfill(backfill))",
+      "when(useCase.recordBackfill(backfill))",
+      "StepVerifier.create(useCase.recordBackfill(backfill))"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

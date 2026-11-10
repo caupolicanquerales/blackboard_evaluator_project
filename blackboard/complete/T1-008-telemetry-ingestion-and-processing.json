@@ -3,13 +3,15 @@
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
-    "T0-001"
+    "T0-001",
+    "T0-004",
+    "T1-007"
   ],
-  "path": "src/test/java/com/pulsestream/telemetry/ledger/domain/EventRevisionTest.java",
+  "path": "src/test/java/com/pulsestream/telemetry/shared/config/TelemetryApplicationYamlBindingTest.java",
   "kind": "test",
-  "layer": "domain",
+  "layer": "root",
   "feature": null,
-  "export": "EventRevisionTest",
-  "intent": "Context Telemetry Event Ledger. Test immutable EventRevision(deviceId, metric, tDevice, revision, tIngress, validationStatus, rawPayload): revision >= 1; next revision derives a new instance with revision+1 and never mutates the original; required fields non-null.",
-  "project": "telemetry-ingestion-and-processing"
+  "export": "application.yml",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "TEST for application.yml at src/main/resources/application.yml. JUnit 5 + AssertJ (+ Mockito, reactor-test StepVerifier for reactive code); cover every invariant and behavior below, including failure cases, using only the pinned surfaces of collaborators. Unit under test: Externalized config file for the single deployable. Defines: spring.application.name; spring.r2dbc url/username/password from env vars (R2DBC_URL, DB_USER, DB_PASSWORD) targeting the ledger schema; spring.flyway enabled with jdbc url/user/password from env and locations classpath:db/migration, schemas ledger; server graceful shutdown; and the pulsestream.telemetry.* tree bound by TelemetryProperties: reorder-window PT60S, reorder-buffer-capacity, window.size/slide, every channels.* capacity, and boundaries heart_rate 30-240, power 0-2500, cadence 0-220, swim_pace min 45 (no max). Sample window size/slide and capacities are tunable values documented as open questions in the domain slice. Property names must match TelemetryProperties exactly (relaxed kebab-case)."
 }

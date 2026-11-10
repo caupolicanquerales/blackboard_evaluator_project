@@ -25,7 +25,7 @@ description: Use when the architect agent splits a component into a dependency-o
 
 Every task payload must include:
 
-- `ast_hints`: target package, exact type name, kind (`record|class|interface|enum`), implements/extends, injected dependencies by type, method signatures with parameter and return types.
+- `ast_hints`: the unit's API contract table - namespace, implemented supertypes, collaborators pinned to producing task ids, and the COMPLETE signature (parameter and return types, spelled as the language's own declaration) of every boundary method the unit must provide, INCLUDING the methods of every implemented supertype. This table is the single API truth: the tester asserts only against it, the coder implements exactly it, and the queue validator rejects a task that implements supertypes while leaving the method list empty. Pure value objects may carry an empty method list.
 - `tdd`: at least one failing test case per public method, stated as `given / when / then`, plus the test class path.
 - `constraints`: layer rules from `software-layering-patterns`, language/framework from the tech-stack skill in use.
 - Acceptance: compile and test command that must pass.
@@ -47,7 +47,7 @@ Output one JSON file per task, pushed to the Blackboard. File name: `T-###-<doma
   "ast_hints": {
     "package": "string",
     "implements": [],
-    "dependencies": [],
+    "dependencies": [{"type": "FullyQualifiedContractType", "task_id": "T-###"}],
     "methods": [{"signature": "string", "returns": "string"}]
   },
   "tdd": {
@@ -59,3 +59,10 @@ Output one JSON file per task, pushed to the Blackboard. File name: `T-###-<doma
 ```
 
 Rules: `id` unique and sequential; `depends_on` references existing IDs only; `path` is relative to project root; `layer` must match the file's package layer.
+
+## 5. Wiring Contract Directives
+
+- **Collaborator Pinning**: every entry in `ast_hints.dependencies` names the exact contract type and the `id` of the task that produces it, e.g. `{"type": "FQN.Port", "task_id": "T-004"}`. The producing task must appear in `depends_on`. A dependency with no producing task is a plan error.
+- **Type Scope**: collaborators are typed by the port or interface in the layer that owns them, never by an adapter or implementation class. Application and domain tasks may reference only domain and application types; adapters are referenced only by configuration tasks.
+- **Canonical Constructors**: each class declares exactly one constructor. `ast_hints.methods` lists its parameters in order, each with the type and the collaborator task it is pinned to. Two parameters of the same type or two bindings of the same property are a plan error.
+- **Configuration Bindings**: every operational value (timeouts, windows, capacities) is read through a single configuration-binding task that owns the property key and type. Each property has exactly one binding task; other tasks receive the bound type, never the raw property or a literal default.

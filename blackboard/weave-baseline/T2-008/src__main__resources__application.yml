@@ -1,0 +1,43 @@
+spring:
+  application:
+    name: telemetry-ingestion-and-processing
+  r2dbc:
+    url: ${R2DBC_URL:r2dbc:postgresql://localhost:5432/telemetry?schema=ledger}
+    username: ${DB_USER:telemetry}
+    password: ${DB_PASSWORD:}
+  flyway:
+    enabled: true
+    url: ${FLYWAY_URL:jdbc:postgresql://localhost:5432/telemetry}
+    user: ${DB_USER:telemetry}
+    password: ${DB_PASSWORD:}
+    locations: classpath:db/migration
+    schemas: ledger
+server:
+  shutdown: graceful
+pulsestream:
+  telemetry:
+    reorder-window: PT60S
+    reorder-buffer-capacity: 1024
+    window:
+      size: PT60S
+      slide: PT10S
+    channels:
+      validated-samples: 1024
+      sequenced-samples: 1024
+      backfill-detections: 256
+      closed-windows: 256
+      revisions-appended: 256
+      stream-publications: 256
+      stream-subscriber-buffer: 256
+    boundaries:
+      heart_rate:
+        min: 30
+        max: 240
+      power:
+        min: 0
+        max: 2500
+      cadence:
+        min: 0
+        max: 220
+      swim_pace:
+        min: 45

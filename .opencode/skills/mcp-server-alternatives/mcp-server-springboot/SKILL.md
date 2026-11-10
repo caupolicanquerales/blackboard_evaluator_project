@@ -39,9 +39,13 @@ Outcomes:
 ## Step 3: Invoke the tool
 Call `generateSpringBootProject` on `http://localhost:$SPRINGBOOT_MCP_PORT/sse` (default `8900`). It generates the project into `/workspace/projects/<artifactId>-<timestamp>` and runs `mvn clean install -X`, logging to `mvn-build.log` in that folder.
 
-After generation, set `<java.version>21</java.version>` in the generated `pom.xml`, then run `./mvnw clean install` from the generated project to verify Java 21 before moving or reporting the scaffold. Do not pass `javaVersion` to the MCP tool; its current schema rejects additional properties.
+## Scaffold Verification (engine contract for the bootstrap agent)
+- Embeddable substitute: ANY of `data-jpa`, `data-r2dbc`, `jdbc`, `postgresql`, `mssql`, `oracle`, `flyway`, `r2dbc-*` in the dependency list REQUIRES `h2` in the SAME initial generation call, so the generated `contextLoads` test passes without an external database.
+- Regenerate-once: if `mvn-build.log` shows a datasource/connection/configuration failure, regenerate once with the substitute present and the DEFAULT GA version. Never fix it by removing the persistence dependency, by pinning a different version to mask a build failure, or by hand-writing `pom.xml`.
+- Wrapper permissions: after moving the scaffold out of `mcp_workspace`, verify `mvnw` carries the executable bit (`test -x mvnw`, else `chmod +x mvnw`); the docker copy path routinely drops it and every later gate command is `./mvnw ...`.
+- Version drift: Initializr only serves versions currently GA (Boot 3.x may be gone while a strategy still names it). A rejected `bootVersion` (HTTP 400 or a version error) means: regenerate IMMEDIATELY with the default GA, keep every other parameter, record the deviation in the Step 4 report, and continue - never halt or ask for a version in headless mode, and never pin a different version to mask a BUILD FAILURE (that is the regenerate-once rule's problem, not the version's).
 
-If Initializr rejects `bootVersion` (HTTP 400 or a version error), tell the user, ask for another GA version or offer the default, and do not halt.
+After generation, set `<java.version>21</java.version>` in the generated `pom.xml`, then run `./mvnw clean install` from the generated project to verify Java 21 before moving or reporting the scaffold. Do not pass `javaVersion` to the MCP tool; its current schema rejects additional properties.
 
 ## Step 4: Report
 - `BUILD SUCCESS`: project ready at `mcp_workspace/projects/<folder>`; run with `./mvnw spring-boot:run`.

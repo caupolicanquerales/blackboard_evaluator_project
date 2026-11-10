@@ -37,6 +37,10 @@ Ask the user for the value before calling the tool if it was not given:
 ## Step 3: Invoke the tool
 Call `create_nestjs_project` with `project_name` through the stdio session from Step 1. The tool writes the project to `/workspace/projects/<project_name>-<timestamp>`, which is `mcp_workspace/projects/<project_name>-<timestamp>` on the host.
 
+## Scaffold Verification (engine contract for the bootstrap agent)
+- Embeddable substitute: when the task adds persistence (TypeORM, MikroORM, Prisma, knex), the module configuration must DEFAULT that connection to an in-process substitute (the SQLite driver) so `npm run test:e2e` boots the Nest context without an external database. An env var only overrides the default.
+- Regenerate-once: if `npm install` or `test:e2e` fails on missing service configuration, apply config-level in-process defaults (or regenerate once) - never by removing the persistence dependency, never by pinning a different Nest/Node version to mask a build failure, and never by hand-writing `package.json`.
+
 ## Step 4: Report the result
 - `PROJECT READY` in the response: tell the user the project is ready, give the path under `mcp_workspace/projects`, and the run command `npm install && npm run start:dev`.
 - Error in the response: report the error text. Do not retry with the same parameters.

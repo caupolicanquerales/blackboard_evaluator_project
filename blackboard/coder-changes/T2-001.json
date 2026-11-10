@@ -1,29 +1,34 @@
 {
   "id": "T2-001",
   "project": "telemetry-ingestion-and-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/intake/domain/TelemetrySample.java",
-  "export": "TelemetrySample",
-  "method": "TelemetrySample",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/shared/events/TelemetrySampleEvent.java",
+  "export": "TelemetrySampleEvent",
+  "method": "TelemetrySampleEvent",
   "language": "java",
-  "framework": "springboot",
-  "skill": "java-springboot",
+  "framework": "springboot3",
+  "skill": "java-standard-best-practices",
   "kind": "record",
-  "signature": "TelemetrySample(String deviceId, String metric, double value, Instant tDevice, Instant tIngress)",
+  "signature": "public record TelemetrySampleEvent(String deviceId, String metric, double value, Instant tDevice, Instant tIngress, String validationStatus)",
   "returns": "void",
-  "body": "if (deviceId == null || deviceId.isBlank()) {\n    throw new IllegalArgumentException(\"deviceId must not be blank\");\n}\nif (metric == null || metric.isBlank()) {\n    throw new IllegalArgumentException(\"metric must not be blank\");\n}\nif (tDevice == null) {\n    throw new IllegalArgumentException(\"tDevice must not be null\");\n}\nif (tIngress == null) {\n    throw new IllegalArgumentException(\"tIngress must not be null\");\n}",
   "members": [
     "String deviceId",
     "String metric",
     "double value",
     "Instant tDevice",
     "Instant tIngress",
-    "public TelemetrySample {\n    if (deviceId == null || deviceId.isBlank()) {\n        throw new IllegalArgumentException(\"deviceId must not be blank\");\n    }\n    if (metric == null || metric.isBlank()) {\n        throw new IllegalArgumentException(\"metric must not be blank\");\n    }\n    if (tDevice == null) {\n        throw new IllegalArgumentException(\"tDevice must not be null\");\n    }\n    if (tIngress == null) {\n        throw new IllegalArgumentException(\"tIngress must not be null\");\n    }\n}"
+    "String validationStatus",
+    "public static final String VALID = \"VALID\"",
+    "public static final String VALIDATION_FAILED = \"VALIDATION_FAILED\"",
+    "public TelemetrySampleEvent {\n    Objects.requireNonNull(deviceId, \"deviceId must not be null\");\n    Objects.requireNonNull(metric, \"metric must not be null\");\n    Objects.requireNonNull(tDevice, \"tDevice must not be null\");\n    Objects.requireNonNull(tIngress, \"tIngress must not be null\");\n    Objects.requireNonNull(validationStatus, \"validationStatus must not be null\");\n    if (deviceId.isBlank()) {\n        throw new IllegalArgumentException(\"deviceId must not be blank\");\n    }\n    if (metric.isBlank()) {\n        throw new IllegalArgumentException(\"metric must not be blank\");\n    }\n    if (!VALID.equals(validationStatus) && !VALIDATION_FAILED.equals(validationStatus)) {\n        throw new IllegalArgumentException(\"unknown validationStatus: \" + validationStatus);\n    }\n}",
+    "public boolean isValidationFailed() {\n    return VALIDATION_FAILED.equals(validationStatus);\n}"
   ],
+  "body": "Objects.requireNonNull(deviceId, \"deviceId must not be null\");\nObjects.requireNonNull(metric, \"metric must not be null\");\nObjects.requireNonNull(tDevice, \"tDevice must not be null\");\nObjects.requireNonNull(tIngress, \"tIngress must not be null\");\nObjects.requireNonNull(validationStatus, \"validationStatus must not be null\");\nif (deviceId.isBlank()) {\n    throw new IllegalArgumentException(\"deviceId must not be blank\");\n}\nif (metric.isBlank()) {\n    throw new IllegalArgumentException(\"metric must not be blank\");\n}\nif (!VALID.equals(validationStatus) && !VALIDATION_FAILED.equals(validationStatus)) {\n    throw new IllegalArgumentException(\"unknown validationStatus: \" + validationStatus);\n}",
   "imports": [
-    "java.time.Instant"
+    "java.time.Instant",
+    "java.util.Objects"
   ],
   "missing": [],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-06T19:45:51.171525+00:00"
+  "recorded_at": "2026-11-09T20:16:56.002947+00:00"
 }

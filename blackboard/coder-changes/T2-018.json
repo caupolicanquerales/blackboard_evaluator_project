@@ -1,26 +1,37 @@
 {
   "id": "T2-018",
   "project": "telemetry-ingestion-and-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/ledger/domain/TelemetryEventKey.java",
-  "export": "TelemetryEventKey",
-  "method": "TelemetryEventKey",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/sequencing/domain/ReorderWindow.java",
+  "export": "ReorderWindow",
+  "method": "offer",
   "language": "java",
-  "framework": "springboot",
-  "skill": "java-springboot",
-  "signature": "TelemetryEventKey",
-  "returns": "void",
-  "body": "",
+  "framework": "springboot3",
+  "skill": "java-standard-best-practices",
+  "signature": "public Outcome offer(TelemetrySampleEvent event)",
+  "returns": "Outcome",
+  "body": "Objects.requireNonNull(event, \"event must not be null\");\nInstant tDevice = event.tDevice();\nif (highest == null || !tDevice.isBefore(highest)) {\n    highest = tDevice;\n    insertOrdered(event);\n    return Outcome.IN_ORDER;\n}\nif (tDevice.isBefore(highest.minus(window))) {\n    return Outcome.LATE;\n}\ninsertOrdered(event);\nreturn Outcome.BACKFILL;",
   "imports": [
-    "java.time.Instant"
+    "java.time.Duration",
+    "java.time.Instant",
+    "java.util.ArrayList",
+    "java.util.List",
+    "java.util.Objects",
+    "com.pulsestream.telemetry.shared.events.TelemetrySampleEvent"
   ],
   "missing": [],
-  "kind": "record",
+  "kind": "class",
   "members": [
-    "String deviceId",
-    "String metric",
-    "Instant timestamp"
+    "private final Duration window;",
+    "private final int capacity;",
+    "private final List<TelemetrySampleEvent> buffer = new ArrayList<>();",
+    "private Instant highest;",
+    "public enum Outcome { IN_ORDER, BACKFILL, LATE }",
+    "public ReorderWindow(Duration window, int capacity) {\n    Objects.requireNonNull(window, \"window must not be null\");\n    if (window.isZero() || window.isNegative()) {\n        throw new IllegalArgumentException(\"window must be positive\");\n    }\n    if (capacity <= 0) {\n        throw new IllegalArgumentException(\"capacity must be positive\");\n    }\n    this.window = window;\n    this.capacity = capacity;\n}",
+    "public List<TelemetrySampleEvent> drainReady() {\n    List<TelemetrySampleEvent> released = new ArrayList<>();\n    if (highest == null) {\n        return released;\n    }\n    Instant cutoff = highest.minus(window);\n    while (!buffer.isEmpty() && (!buffer.get(0).tDevice().isAfter(cutoff) || buffer.size() > capacity)) {\n        released.add(buffer.remove(0));\n    }\n    return released;\n}",
+    "public List<TelemetrySampleEvent> drainAll() {\n    List<TelemetrySampleEvent> released = new ArrayList<>(buffer);\n    buffer.clear();\n    return released;\n}",
+    "private void insertOrdered(TelemetrySampleEvent event) {\n    int index = buffer.size();\n    while (index > 0 && buffer.get(index - 1).tDevice().isAfter(event.tDevice())) {\n        index--;\n    }\n    buffer.add(index, event);\n}"
   ],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-06T19:22:13.867005+00:00"
+  "recorded_at": "2026-11-09T20:14:34.634519+00:00"
 }

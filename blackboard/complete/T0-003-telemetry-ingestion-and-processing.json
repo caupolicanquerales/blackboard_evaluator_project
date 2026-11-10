@@ -5,11 +5,11 @@
   "dependsOn": [
     "T0-001"
   ],
-  "path": "db/migrations/V2__event_revisions_schema.sql",
+  "path": "db/migrations/V2__telemetry_record_schema.sql",
   "kind": "bootstrap",
   "layer": "root",
   "feature": null,
-  "export": "V2__event_revisions_schema.sql",
-  "intent": "Schema migration: PostgreSQL 16 Flyway script db/migrations/V2__event_revisions_schema.sql creating append-only time-partitioned telemetry.event_revisions for context telemetry-ingestion-and-processing.",
+  "export": "V2__telemetry_record_schema.sql",
+  "intent": "Schema migration: PostgreSQL 16 append-only ledger.telemetry_records with index on (device_id, t_device) and append-only trigger, script db/migrations/V2__telemetry_record_schema.sql, context telemetry-ingestion-and-processing (Telemetry Event Ledger).",
   "project": "telemetry-ingestion-and-processing"
 }

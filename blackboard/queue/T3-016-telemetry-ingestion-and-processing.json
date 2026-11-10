@@ -1,0 +1,15 @@
+{
+  "id": "T3-016",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-016"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/intake/interfaces/IngressPacketRequest.java",
+  "kind": "refactor",
+  "layer": "interface",
+  "feature": null,
+  "export": "IngressPacketRequest",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "REFACTOR IngressPacketRequest: inspect the implementation for layering violations, blocking calls, unbounded buffers, hardcoded values and invariant gaps; improve clarity without changing the public surface or breaking tests. Spec: Open-host packet contract DTO (Telemetry Intake & Validation). Record IngressPacketRequest(@NotBlank String deviceId, @NotEmpty List<@Valid SampleRequest> samples) with nested record SampleRequest(@NotBlank String metric, @NotNull Double value, @NotNull Instant tDevice). IngressPacket toPacket(Instant tIngress) maps to unvalidated TelemetrySamples; device-specific formats never enter the engine."
+}

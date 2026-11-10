@@ -3,51 +3,66 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "R2dbcMetricBoundaryRepository",
+    "type": "TelemetryWindowClosedEvent",
     "constructors": [
       [
-        "databaseClient"
+        "deviceId",
+        "start",
+        "end",
+        "samples"
       ]
     ],
     "static_calls": [],
     "calls": [
       {
-        "receiver": "repository",
-        "method": "findAll",
-        "args": [],
-        "returns": "Flux<MetricBoundary>"
+        "receiver": "e",
+        "method": "deviceId",
+        "args": []
       },
       {
-        "receiver": "repository",
-        "method": "findByMetric",
-        "args": [
-          "\"temp\""
-        ],
-        "returns": "Mono<MetricBoundary>"
+        "receiver": "e",
+        "method": "windowStart",
+        "args": []
       },
       {
-        "receiver": "repository",
-        "method": "findByMetric",
-        "args": [
-          "\"unknown\""
-        ],
-        "returns": "Mono<MetricBoundary>"
+        "receiver": "e",
+        "method": "windowEnd",
+        "args": []
       },
       {
-        "receiver": "repository",
-        "method": "findAll",
+        "receiver": "e",
+        "method": "samples",
         "args": []
       }
     ],
     "verified": [],
     "usage_lines": [
-      "class R2dbcMetricBoundaryRepositoryTest {",
-      "private R2dbcMetricBoundaryRepository repository;",
-      "repository = new R2dbcMetricBoundaryRepository(databaseClient);",
-      "Flux<MetricBoundary> result = repository.findAll();",
-      "Mono<MetricBoundary> result = repository.findByMetric(\"temp\");",
-      "Mono<MetricBoundary> result = repository.findByMetric(\"unknown\");",
-      "repository.findAll().collectList().block();"
+      "class TelemetryWindowClosedEventTest {",
+      "private static TelemetryWindowClosedEvent event(String deviceId, Instant start, Instant end,",
+      "return new TelemetryWindowClosedEvent(deviceId, start, end, samples);",
+      "TelemetryWindowClosedEvent e = event(\"dev-1\", START, END, samples);",
+      "assertThat(e.deviceId()).isEqualTo(\"dev-1\");",
+      "assertThat(e.windowStart()).isEqualTo(START);",
+      "assertThat(e.windowEnd()).isEqualTo(END);",
+      "assertThat(e.samples()).containsExactly(sample(1), sample(2));",
+      "TelemetryWindowClosedEvent e = event(\"dev-1\", START, END, List.of());",
+      "assertThat(e.samples()).isEmpty();",
+      "assertThatThrownBy(() -> event(null, START, END, List.of()))",
+      "assertThatThrownBy(() -> event(blank, START, END, List.of()))",
+      "assertThatThrownBy(() -> event(\"dev-1\", null, END, List.of()))",
+      "assertThatThrownBy(() -> event(\"dev-1\", START, null, List.of()))",
+      "assertThatThrownBy(() -> event(\"dev-1\", START, START, List.of()))",
+      "assertThatThrownBy(() -> event(\"dev-1\", END, START, List.of()))",
+      "assertThatThrownBy(() -> event(\"dev-1\", START, END, null))",
+      "TelemetryWindowClosedEvent e = event(\"dev-1\", START, END, source);",
+      "assertThat(e.samples()).containsExactly(sample(1));",
+      "TelemetryWindowClosedEvent e = event(\"dev-1\", START, END, List.of(sample(1)));",
+      "assertThatThrownBy(() -> e.samples().add(sample(2)))",
+      "TelemetryWindowClosedEvent e = event(\"dev-1\", START, END,",
+      "assertThat(e.samples()).extracting(TelemetrySampleEvent::tDevice)",
+      "TelemetryWindowClosedEvent a = event(\"dev-1\", START, END, List.of(sample(1)));",
+      "TelemetryWindowClosedEvent b = event(\"dev-1\", START, END, List.of(sample(1)));",
+      "assertThat(a).isEqualTo(b).hasSameHashCodeAs(b);"
     ]
   },
   "stderr": "",

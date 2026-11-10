@@ -1,0 +1,115 @@
+{
+  "task_id": "T1-033",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "BroadcastItem",
+    "constructors": [
+      [
+        "Kind.SAMPLE",
+        "\"device-4\"",
+        "List.of()"
+      ],
+      [
+        "Kind.SAMPLE",
+        "\"device-4\"",
+        "null"
+      ],
+      [
+        "Kind.SAMPLE",
+        "deviceId",
+        "samples"
+      ],
+      [
+        "Kind.SAMPLE",
+        "null",
+        "samples"
+      ],
+      [
+        "Kind.WINDOW",
+        "\"device-7\"",
+        "source"
+      ]
+    ],
+    "static_calls": [
+      {
+        "method": "sample",
+        "args": [
+          "event"
+        ]
+      },
+      {
+        "method": "window",
+        "args": [
+          "windowEvent(\"device-2\", List.of(first, second, third))"
+        ]
+      },
+      {
+        "method": "sample",
+        "args": [
+          "null"
+        ]
+      },
+      {
+        "method": "window",
+        "args": [
+          "null"
+        ]
+      },
+      {
+        "method": "window",
+        "args": [
+          "empty"
+        ]
+      },
+      {
+        "method": "sample",
+        "args": [
+          "sampleEvent(\"device-6\", 0)"
+        ]
+      }
+    ],
+    "calls": [
+      {
+        "receiver": "item",
+        "method": "kind",
+        "args": []
+      },
+      {
+        "receiver": "item",
+        "method": "deviceId",
+        "args": []
+      },
+      {
+        "receiver": "item",
+        "method": "samples",
+        "args": []
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class BroadcastItemTest {",
+      "BroadcastItem item = BroadcastItem.sample(event);",
+      "assertThat(item.kind()).isEqualTo(Kind.SAMPLE);",
+      "assertThat(item.deviceId()).isEqualTo(\"device-1\");",
+      "assertThat(item.samples()).containsExactly(event);",
+      "BroadcastItem item = BroadcastItem.window(windowEvent(\"device-2\", List.of(first, second, third)));",
+      "assertThat(item.kind()).isEqualTo(Kind.WINDOW);",
+      "assertThat(item.deviceId()).isEqualTo(\"device-2\");",
+      "assertThat(item.samples()).containsExactly(first, second, third);",
+      "assertThatThrownBy(() -> BroadcastItem.sample(null)).isInstanceOf(RuntimeException.class);",
+      "assertThatThrownBy(() -> BroadcastItem.window(null)).isInstanceOf(RuntimeException.class);",
+      "assertThatThrownBy(() -> BroadcastItem.window(empty)).isInstanceOf(RuntimeException.class);",
+      "assertThatThrownBy(() -> new BroadcastItem(Kind.SAMPLE, \"device-4\", List.of()))",
+      "assertThatThrownBy(() -> new BroadcastItem(Kind.SAMPLE, \"device-4\", null))",
+      "assertThatThrownBy(() -> new BroadcastItem(Kind.SAMPLE, deviceId, samples))",
+      "assertThatThrownBy(() -> new BroadcastItem(Kind.SAMPLE, null, samples))",
+      "BroadcastItem item = BroadcastItem.sample(sampleEvent(\"device-6\", 0));",
+      "assertThatThrownBy(() -> item.samples().add(other))",
+      "BroadcastItem item = new BroadcastItem(Kind.WINDOW, \"device-7\", source);",
+      "assertThat(item.samples()).containsExactly(original);"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

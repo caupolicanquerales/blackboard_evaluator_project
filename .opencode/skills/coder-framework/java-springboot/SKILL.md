@@ -10,6 +10,18 @@ description: Coder rules for Java 17+ with Spring Boot 3. Method body generation
 - Body only. No signature, braces of the method, annotations, or class.
 - Whole type missing in the red (`cannot find symbol: class`): provide `kind` + `members`
   (ctor/fields, abstract signatures, enum constants, record components) alongside the body.
+- A generic type declares its parameters in `export` (`Box<T>`,
+  `Table<K, V extends Comparable<V>>`): the shell the weaver creates carries them and `members`
+  may use the variables. Constructors and methods never repeat the class-level `<T>`.
+- Supertypes the frozen tests demand (`isInstanceOf(Port.class)`, injection by the port type,
+  `@Override` blame): add `"implements": ["NotificationGateway"]` and/or `"extends":
+  "AuditHandler"` to the payload - the header lands as `class X implements Port`; list the
+  supertype FQNs in `imports` too. For an `interface` payload the `implements` entries become
+  its extended interfaces. Never write the class header as a `member`.
+- A factory the frozen test calls statically (`Order.from(cart)`) needs the modifier spelled in
+  the payload `signature` AS A COMPLETE DECLARATION: `public static Order from(Cart cart)`.
+  The method is then redeclared from that text (modifiers, type parameters, return type),
+  keeping any annotation already on it. A bare `from(Cart cart)` keeps the existing shape.
 - The type is created by the weaver, so framework annotations go in the dedicated payload fields,
   never inside `signature`: `annotations` for the type (`RestController`, `Service`,
   `Repository`, `Configuration`, `ControllerAdvice`) and `methodAnnotations` for the method
@@ -19,6 +31,9 @@ description: Coder rules for Java 17+ with Spring Boot 3. Method body generation
   the weaver preserves them.
 - Web annotations live in `org.springframework.web.bind.annotation.*`; reactive types in
   `reactor.core.publisher` (`Mono`, `Flux`).
+- A `final` field gets an inline initializer OR a constructor assignment, never both:
+  if the constructor must assign it, re-emit the field declaration without `= ...`
+  ("cannot assign a value to final variable" otherwise).
 - Use `var` only when the type is obvious from the right side.
 - Return type and checked exceptions match the AST signature exactly.
 

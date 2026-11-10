@@ -33,6 +33,14 @@ PATTERNS = (
     ("skills_folder_listing", re.compile(r"(?:^|[\s;&|])(ls|find|glob|tree|echo \*)\s[^\n]*skills/?")),
     ("tooling_source_read", re.compile(r"(?:^|[\s;&|])(grep|cat|sed|head|tail|awk)\s[^\n]*(orchestrators/|ast_tools/|ast_weaver_tools/|code-weaver-dispatcher|ast-dispatcher)")),
     ("other_task_record", re.compile(r"blackboard/(queue|complete|error)/T[0-3]-")),
+    # board-wide listings: `ls blackboard/queue`, `ls blackboard/coder-changes` etc. were
+    # measured in tester and batch coder sessions; the enumeration re-sends on every
+    # later turn. Only the folder as a DIRECT verb argument counts (flags allowed) -
+    # a single-file read of the unit's own record is legitimate input, not a listing.
+    # (A `find . -path '*coder-changes*'` dodge stays under this radar: accepted - the
+    # audit is a reporting aid, the engine's attempt ledger is the enforcement.)
+    ("board_bulk_read", re.compile(
+        r"(?:^|[\s;&|])(?:ls|find|tree|du)\s+(?:-\S+\s+)*(?:\S*/)?(?:queue|complete|error|coder-changes|ast-context|red-phase|attempts)(?![-\w])")),
     ("git", re.compile(r"\bgit (status|diff|log|show)\b")),
     ("agent_scratch", re.compile(r"\.copilot/session-state")),
     ("src_full_read", re.compile(r"\bcat [^\n]*src/(main|test)/")),
@@ -42,7 +50,7 @@ PATTERNS = (
 UNIT_RE = re.compile(r"\bT([0-4])-(\d{3})\b")
 BATCH_UNITS = re.compile(r"BATCH MODE.*?(\d+) tasks below", re.S)
 VIOLATIONS = ("skills_folder_listing", "tooling_source_read", "other_task_record",
-              "git", "agent_scratch", "src_full_read")
+              "board_bulk_read", "git", "agent_scratch", "src_full_read")
 
 
 ROLE_MARKERS = (
@@ -189,9 +197,12 @@ def budget_of(role, unit="-"):
     """Allowed tool calls for one session; a coder batch shares 4 + 3 per unit."""
     if role == "coder" and unit.startswith("batch x"):
         try:
-            return 4 + 3 * int(unit.split("x")[1])
+            units = int(unit.split("x")[1])
         except (TypeError, ValueError):
             return BUDGETS["coder"]
+        if units > 1:
+            return 4 + 3 * units
+        return BUDGETS["coder"]
     return BUDGETS.get(role)
 
 

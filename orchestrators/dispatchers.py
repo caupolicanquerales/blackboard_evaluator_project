@@ -144,7 +144,7 @@ def foreign_missing_packages(record, project, record_path, index=None):
     """
     if _build_file_rewritten_since(project, record_path):
         return []
-    runs = _internal_package_runs(project, index if index is not None else task_queue.load_index())
+    runs = _internal_package_runs(project, index if index is not None else task_queue.load_index(include_error=True))
     return [pkg for pkg in sorted(record_missing_packages(record))
             if not _package_is_internal(pkg, runs)]
 
@@ -163,6 +163,39 @@ def red_phase_dependency_gap(task):
     return foreign_missing_packages(record, task.get("project", ""), path)
 
 
+def rerecord_red_phase(task):
+    """Re-run the red command through run-test-tool and REWRITE the red-phase record.
+
+    Used after the deterministic import repair rewrites a test file: the verdict must
+    derive from the file as it now stands. Same two skill tools the tester piped
+    together (run-test-tool | write-red-phase), so the record format is untouched.
+    Returns True when the record was rewritten.
+    """
+    record_path = settings.RED_PHASE_DIR / f"{task['id']}.json"
+    try:
+        record = json.loads(record_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    command = record.get("command") if isinstance(record, dict) else None
+    if not isinstance(command, str) or not command.strip():
+        return False
+    tool = [sys.executable, str(settings.RUN_TEST_TOOL),
+            "--cwd", str(workspace.project_root_for(task.get("project", ""))),
+            "--cmd", command, "--timeout", str(settings.TEST_GATE_TIMEOUT)]
+    writer = [sys.executable, str(settings.RED_PHASE_WRITER), "--root", str(settings.ROOT),
+              "--task-id", str(task["id"]), "--cmd", command]
+    try:
+        produced = subprocess.run(tool, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                                  stderr=subprocess.DEVNULL, text=True,
+                                  timeout=settings.TEST_GATE_TIMEOUT + 30, cwd=str(settings.ROOT))
+        written = subprocess.run(writer, input=produced.stdout, stdout=subprocess.DEVNULL,
+                                 stderr=subprocess.DEVNULL, text=True, timeout=60,
+                                 cwd=str(settings.ROOT))
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return written.returncode == 0
+
+
 def scan_red_phase_gaps():
     """Foreign missing packages across every recorded red: {project: [packages]}.
 
@@ -170,7 +203,7 @@ def scan_red_phase_gaps():
     so fixing the scaffold is enough for the run to continue.
     """
     gaps = {}
-    index = task_queue.load_index()
+    index = task_queue.load_index(include_error=True)
     for path in sorted(settings.RED_PHASE_DIR.glob("*.json")):
         try:
             record = json.loads(path.read_text(encoding="utf-8"))
@@ -302,6 +335,162 @@ def run_ast_dispatcher(task):
     return True
 
 
+WEAVE_BASELINE_DIR = settings.BLACKBOARD / "weave-baseline"
+
+# Reasons the WEAVER TOOL produced from the payload itself. The unit's code never ran;
+# burning a TDD attempt on a tool rejection wastes a session and a full module build, so
+# the reason is prefixed and execute_with_tdd bounces it back without counting the attempt.
+_PAYLOAD_REJECT_MARKERS = ("does not parse", "no builder matched", "payload", "unsupported")
+
+
+def _reset_stale_weave(task, project_root):
+    """Restore the unit's file to its pre-first-weave state before a NEW payload re-weaves it.
+
+    The weaver ADDS members: retry payloads merge onto the previous weave, accumulating
+    duplicate constructors, dropped class headers and vestigial methods (observed as the
+    WindowBufferService frankenstein file). The first weave snapshots the target as it was;
+    every later weave undoes the old splice first, so each attempt sees a clean file.
+    Cache hits (unchanged payload) never reach a re-weave, so they are untouched.
+    """
+    import shutil
+    payload_file = settings.ROOT / "blackboard" / "coder-changes" / f"{task['id']}.json"
+    result_file = settings.BLACKBOARD / "weave-results" / f"{task['id']}.json"
+    if not payload_file.is_file():
+        return
+    try:
+        changes = json.loads(payload_file.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return
+    target_rel = changes.get("targetFile") if isinstance(changes, dict) else None
+    if not isinstance(target_rel, str) or not target_rel:
+        return
+    target = project_root / target_rel
+    baseline = WEAVE_BASELINE_DIR / task["id"] / target_rel.replace("/", "__")
+    if not baseline.exists():
+        baseline.parent.mkdir(parents=True, exist_ok=True)
+        if target.is_file():
+            shutil.copy2(target, baseline)
+        else:
+            (baseline.parent / "absent").write_text(target_rel, encoding="utf-8")
+        return
+    try:
+        reweave_pending = not result_file.is_file() or \
+            payload_file.stat().st_mtime_ns > result_file.stat().st_mtime_ns
+    except OSError:
+        reweave_pending = True
+    if not reweave_pending:
+        return
+    if (baseline.parent / "absent").exists():
+        if target.is_file():
+            target.unlink()
+    else:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(baseline, target)
+
+
+_PAYLOADLESS_GEN = 0
+_PAYLOADLESS_CACHE = {}   # project -> (generation, set of T2 ids without payload)
+
+
+def invalidate_payload_cache():
+    """Any event that can change payload existence (attempt, apply, revert) bumps this."""
+    global _PAYLOADLESS_GEN
+    _PAYLOADLESS_GEN += 1
+
+
+def payloadless_t2_ids(project):
+    """T2 ids queued for one domain that have no coder payload yet - computed once
+    per generation, not once per task. Pure file presence, any stack."""
+    if _PAYLOADLESS_CACHE.get(project, (None, None))[0] != _PAYLOADLESS_GEN:
+        ids = set()
+        for f in settings.QUEUE_DIR.glob(f"T2-*-{project}.json"):
+            try:
+                peer = json.loads(f.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            peer_id = peer.get("id") if isinstance(peer, dict) else None
+            if isinstance(peer_id, str) and not (settings.ROOT / "blackboard" / "coder-changes"
+                                                 / f"{peer_id}.json").is_file():
+                ids.add(peer_id)
+        _PAYLOADLESS_CACHE[project] = (_PAYLOADLESS_GEN, ids)
+    return _PAYLOADLESS_CACHE[project][1]
+
+
+def _weave_up_to_date(task, project_root, payload_file, result_file):
+    """Orchestrator-side mirror of the dispatcher's own `_cached_success`.
+
+    Checking it HERE avoids paying a python-startup subprocess (~140 ms) on every
+    attempt of every pass just to be told 'nothing to apply' - the same answer for
+    any payload language. When unsure (unreadable JSON, moved files), return False
+    and let the real dispatcher decide."""
+    try:
+        if not payload_file.is_file() or not result_file.is_file():
+            return False
+        changes = json.loads(payload_file.read_text(encoding="utf-8"))
+        previous = json.loads(result_file.read_text(encoding="utf-8"))
+        if not isinstance(changes, dict) or not isinstance(previous, dict):
+            return False
+        if previous.get("status") != "ok" or not previous.get("executed"):
+            return False
+        if payload_file.stat().st_mtime_ns > result_file.stat().st_mtime_ns:
+            return False
+        target_rel = changes.get("targetFile")
+        if not isinstance(target_rel, str):
+            return False
+        target = project_root / target_rel
+        if not target.is_file():
+            return False
+        return target.stat().st_mtime_ns <= result_file.stat().st_mtime_ns
+    except (OSError, json.JSONDecodeError):
+        return False
+
+
+def revert_weave(task, discard_payload=True):
+    """Undo a unit's woven payload when the unit is quarantined (restores the baseline
+    snapshotted by _reset_stale_weave, or deletes a file the unit created).
+
+    A quarantined stage-2 unit with its broken payload still spliced into src/main is the
+    worst tree state there is: it never passes a gate again (the task is in error/), yet
+    every other unit's module-wide compile keeps failing on it - the whole T2 wave hangs
+    on the few poisoned files. Reverting makes the tree contain only units that passed;
+    dependents dangle honestly (cascade quarantine) and --retry can re-run the unit later.
+    Returns True when the tree was restored.
+    """
+    import shutil
+    payload_file = settings.ROOT / "blackboard" / "coder-changes" / f"{task['id']}.json"
+    if not payload_file.is_file():
+        return False
+    try:
+        changes = json.loads(payload_file.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    target_rel = changes.get("targetFile") if isinstance(changes, dict) else None
+    if not isinstance(target_rel, str) or not target_rel:
+        return False
+    baseline = WEAVE_BASELINE_DIR / task["id"] / target_rel.replace("/", "__")
+    if not baseline.exists() and not (WEAVE_BASELINE_DIR / task["id"] / "absent").exists():
+        return False
+    target = workspace.project_root_for(task.get("project", "")) / target_rel
+    try:
+        if (WEAVE_BASELINE_DIR / task["id"] / "absent").exists():
+            target.unlink(missing_ok=True)
+        else:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(baseline, target)
+    except OSError:
+        return False
+    (settings.BLACKBOARD / "weave-results" / f"{task['id']}.json").unlink(missing_ok=True)
+    (settings.GATE_CACHE_DIR / f"{task['id']}.json").unlink(missing_ok=True)
+    print(f"[revert] {task['id']}: woven payload undone ({target_rel}) - quarantined code must not poison the shared tree")
+    if discard_payload:
+        # A unit that failed its OWN attempts 3x has a proven-bad payload: keeping it
+        # lets the next resume skip-agent re-splice identical poison. Untested cascade
+        # victims keep theirs - it was never disproven, and the next weave can pass.
+        payload_file.unlink(missing_ok=True)
+    invalidate_payload_cache()
+    return True
+
+
 def run_code_weaver_dispatcher(task):
     """Splice the agent-coder payload into the source tree via the code-weaver dispatcher.
 
@@ -310,11 +499,18 @@ def run_code_weaver_dispatcher(task):
     Returns None on success, or a reason string; the reason is fed back to the
     coder as TDD retry feedback, so it must explain what to re-emit with --retry.
     """
+    payload_file = settings.ROOT / "blackboard" / "coder-changes" / f"{task['id']}.json"
+    result_file = settings.BLACKBOARD / "weave-results" / f"{task['id']}.json"
+    project_root = workspace.project_root_for(task["project"])
+    if _weave_up_to_date(task, project_root, payload_file, result_file):
+        print(f"[weave] {task['id']} payload already applied (tree unchanged since); dispatcher skipped")
+        return None
+    _reset_stale_weave(task, project_root)
     command = [
         sys.executable,
         str(settings.CODE_WEAVER_DISPATCHER),
         "--root", str(settings.ROOT),
-        "--project-root", str(workspace.project_root_for(task["project"])),
+        "--project-root", str(project_root),
         "--task-id", task["id"],
     ]
     print(f"[weave] {task['id']} running code-weaver-dispatcher")
@@ -326,7 +522,10 @@ def run_code_weaver_dispatcher(task):
         return f"code-weaver dispatcher could not run: {reason}"
     if code != 0:
         print(f"[weave] {task['id']} failed (exit {code})")
+        if any(marker in (reason or "").lower() for marker in _PAYLOAD_REJECT_MARKERS):
+            return "weave-reject: " + reason
         return reason
+    invalidate_payload_cache()
     print(f"[weave] {task['id']} changes applied; result saved to blackboard/weave-results/{task['id']}.json")
     return None
 

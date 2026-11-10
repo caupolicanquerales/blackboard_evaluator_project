@@ -5,11 +5,11 @@
   "dependsOn": [
     "T0-001"
   ],
-  "path": "src/test/java/com/pulsestream/telemetry/reordering/application/ReorderingServiceTest.java",
+  "path": "src/test/java/com/pulsestream/telemetry/shared/config/TelemetryPropertiesTest.java",
   "kind": "test",
-  "layer": "application",
+  "layer": "infrastructure",
   "feature": null,
-  "export": "ReorderingServiceTest",
-  "intent": "Context Backfill Reordering. Test ReorderingService with StepVerifier and virtual time: consumes validated events, emits TelemetryWindowOrdered per closed window and TelemetryBackfillDetected for late samples to the ledger event port; downstream failure is retried, never discarded.",
-  "project": "telemetry-ingestion-and-processing"
+  "export": "TelemetryProperties",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "TEST for TelemetryProperties at src/main/java/com/pulsestream/telemetry/shared/config/TelemetryProperties.java. JUnit 5 + AssertJ (+ Mockito, reactor-test StepVerifier for reactive code); cover every invariant and behavior below, including failure cases, using only the pinned surfaces of collaborators. Unit under test: Externalized configuration binding for all operational parameters (no hardcoded durations or capacities elsewhere). @ConfigurationProperties(prefix=\"pulsestream.telemetry\") @Validated immutable record TelemetryProperties(Duration reorderWindow, int reorderBufferCapacity, Window window, Channels channels, Map<String, Boundary> boundaries). Nested records: Window(Duration size, Duration slide); Channels(int validatedSamples, int sequencedSamples, int backfillDetections, int closedWindows, int revisionsAppended, int streamPublications, int streamSubscriberBuffer); Boundary(Double min, Double max) inclusive, null side = unbounded. Bean validation: durations non-null and positive, capacities positive, window.size >= window.slide, boundaries non-empty with min <= max when both set. Boundary keys are lower-case metric names (Sensor Metric Boundary definitions owned by Telemetry Intake & Validation)."
 }

@@ -4,13 +4,13 @@
   "stage": 1,
   "dependsOn": [
     "T0-001",
-    "T0-003"
+    "T1-009"
   ],
-  "path": "src/test/java/com/pulsestream/telemetry/ledger/application/AppendRevisionUseCaseTest.java",
+  "path": "src/test/java/com/pulsestream/telemetry/intake/domain/TelemetrySampleTest.java",
   "kind": "test",
-  "layer": "application",
+  "layer": "domain",
   "feature": null,
-  "export": "AppendRevisionUseCaseTest",
-  "intent": "Context Telemetry Event Ledger. Test AppendRevisionUseCase with mocked repository port: first sample gets revision 1, late backfill for existing key appends revision N+1 preserving history, publishes TelemetryRevisionAppended, repository failure propagates as error (no silent loss).",
-  "project": "telemetry-ingestion-and-processing"
+  "export": "TelemetrySample",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "TEST for TelemetrySample at src/main/java/com/pulsestream/telemetry/intake/domain/TelemetrySample.java. JUnit 5 + AssertJ (+ Mockito, reactor-test StepVerifier for reactive code); cover every invariant and behavior below, including failure cases, using only the pinned surfaces of collaborators. Unit under test: Telemetry Intake & Validation domain record TelemetrySample(String deviceId, String metric, double value, Instant tDevice, Instant tIngress, ValidationStatus status). Rejects null/blank deviceId and metric, null instants and null status. Static factory unvalidated(deviceId, metric, value, tDevice, tIngress) sets UNVALIDATED. Method TelemetrySample withStatus(ValidationStatus) returns a copy (immutability). Chronological key is tDevice; tIngress is informational only."
 }

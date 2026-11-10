@@ -1,0 +1,15 @@
+{
+  "id": "T3-034",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-034"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/broadcasting/application/port/out/TelemetryStreamGateway.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "TelemetryStreamGateway",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "REFACTOR TelemetryStreamGateway: inspect the implementation for layering violations, blocking calls, unbounded buffers, hardcoded values and invariant gaps; improve clarity without changing the public surface or breaking tests. Spec: Telemetry Stream Broadcasting outbound port: Mono<Void> publish(BroadcastItem item) (never blocks, never fails because of slow subscribers) and Flux<BroadcastItem> items() (hot stream honoring each subscriber's demand). Domain types only."
+}

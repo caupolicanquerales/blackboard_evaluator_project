@@ -1,0 +1,15 @@
+{
+  "id": "T3-029",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-029"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ledger/infrastructure/TelemetryRecordR2dbcRepository.java",
+  "kind": "refactor",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "TelemetryRecordR2dbcRepository",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "REFACTOR TelemetryRecordR2dbcRepository: inspect the implementation for layering violations, blocking calls, unbounded buffers, hardcoded values and invariant gaps; improve clarity without changing the public surface or breaking tests. Spec: Spring Data interface extending ReactiveCrudRepository<TelemetryRecordEntity, UUID> with @Query methods on ledger.telemetry_records using the (device_id, t_device) index: findHistory(deviceId, from, toExclusive) ORDER BY t_device, revision; findLatestRevision(deviceId, metric, tDevice) ORDER BY revision DESC LIMIT 1 (Mono); findRevisionChain(deviceId, metric, tDevice) ORDER BY revision. Query side only; the adapter never calls delete/update."
+}

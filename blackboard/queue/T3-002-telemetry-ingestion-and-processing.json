@@ -1,0 +1,15 @@
+{
+  "id": "T3-002",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-002"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/shared/events/TelemetryBackfillDetectedEvent.java",
+  "kind": "refactor",
+  "layer": "shared",
+  "feature": null,
+  "export": "TelemetryBackfillDetectedEvent",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "REFACTOR TelemetryBackfillDetectedEvent: inspect the implementation for layering violations, blocking calls, unbounded buffers, hardcoded values and invariant gaps; improve clarity without changing the public surface or breaking tests. Spec: Telemetry Sequencing & Windowing publishes, Telemetry Event Ledger consumes: shared kernel event record in package com.pulsestream.telemetry.shared.events (no domain types of any context). Record TelemetryBackfillDetectedEvent(TelemetrySampleEvent sample, boolean beyondReorderWindow). sample must be non-null; beyondReorderWindow=true marks samples later than the Backfill Reorder Window (ledger records them as Event Revision)."
+}

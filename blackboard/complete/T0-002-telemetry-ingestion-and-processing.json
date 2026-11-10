@@ -10,6 +10,6 @@
   "layer": "root",
   "feature": null,
   "export": "V1__store_setup.sql",
-  "intent": "Store setup: PostgreSQL 16 with Flyway; creates schema telemetry. Script db/migrations/V1__store_setup.sql for context telemetry-ingestion-and-processing.",
+  "intent": "Store setup: PostgreSQL 16 ledger store for telemetry-ingestion-and-processing; script db/migrations/V1__store_setup.sql creates schema ledger (Flyway, expand-only).",
   "project": "telemetry-ingestion-and-processing"
 }

@@ -1,6 +1,8 @@
 package com.capo.ast_weaver_java.services.weave;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
@@ -28,7 +30,8 @@ public final class PayloadNames {
 
     /** The simple type name the payload claims to define, from its qualified export. */
     public static String simpleTypeName(String export) {
-        String name = export.substring(export.lastIndexOf('.') + 1).trim();
+        String head = headOf(export);
+        String name = head.substring(head.lastIndexOf('.') + 1).trim();
         int boundary = Math.max(name.indexOf('<'), name.indexOf('$'));
         if (boundary > 0) {
             name = name.substring(0, boundary);
@@ -40,13 +43,65 @@ public final class PayloadNames {
     }
 
     /**
+     * The export's declared type parameters, e.g. {@code com.x.Box<T>} yields {@code [T]} and
+     * {@code Box<K, V extends Comparable<V>>} yields {@code [K, V extends Comparable<V]]}.
+     * Empty when the export declares none. Commas inside nested bounds never split.
+     */
+    public static List<String> typeParameters(String export) {
+        int open = export.indexOf('<');
+        if (open < 0) {
+            return List.of();
+        }
+        int depth = 0;
+        int close = -1;
+        for (int i = open; i < export.length(); i++) {
+            char c = export.charAt(i);
+            if (c == '<') {
+                depth++;
+            } else if (c == '>' && --depth == 0) {
+                close = i;
+                break;
+            }
+        }
+        if (close < 0) {
+            throw new IllegalStateException("Unbalanced type parameters in export: " + export);
+        }
+        List<String> params = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        int nesting = 0;
+        for (char c : export.substring(open + 1, close).toCharArray()) {
+            if (c == '<') {
+                nesting++;
+            } else if (c == '>') {
+                nesting--;
+            }
+            if (c == ',' && nesting == 0) {
+                params.add(current.toString().trim());
+                current.setLength(0);
+            } else {
+                current.append(c);
+            }
+        }
+        if (!current.isEmpty()) {
+            params.add(current.toString().trim());
+        }
+        for (String param : params) {
+            if (!param.matches("[A-Za-z_$][\\w$]*(\\s+extends\\s+.+)?")) {
+                throw new IllegalStateException("Cannot parse type parameter from export: " + export);
+            }
+        }
+        return params;
+    }
+
+    /**
      * The package a new file declares: the export's qualifier when it has one, otherwise
      * the directory chain below {@code src/main/java} of the target path.
      */
     public static String packageOf(String export, Path targetPath) {
-        int dot = export.lastIndexOf('.');
+        String head = headOf(export);
+        int dot = head.lastIndexOf('.');
         if (dot > 0) {
-            return export.substring(0, dot);
+            return head.substring(0, dot);
         }
         String normalized = targetPath.toAbsolutePath().normalize().toString().replace('\\', '/');
         int marker = normalized.indexOf(JAVA_SOURCE_MARKER + "/");
@@ -56,5 +111,11 @@ public final class PayloadNames {
         String inside = normalized.substring(marker + JAVA_SOURCE_MARKER.length() + 1);
         int lastSlash = inside.lastIndexOf('/');
         return lastSlash < 0 ? "" : inside.substring(0, lastSlash).replace('/', '.');
+    }
+
+    /** The export cut before any type-parameter clause, so dots inside bounds never leak. */
+    private static String headOf(String export) {
+        int open = export.indexOf('<');
+        return open > 0 ? export.substring(0, open) : export;
     }
 }

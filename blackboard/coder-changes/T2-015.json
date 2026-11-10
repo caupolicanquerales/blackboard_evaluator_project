@@ -1,25 +1,35 @@
 {
   "id": "T2-015",
   "project": "telemetry-ingestion-and-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/intake/domain/TelemetrySampleValidated.java",
-  "export": "TelemetrySampleValidated",
-  "method": "tIngress",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/intake/application/IngestTelemetryService.java",
+  "export": "IngestTelemetryService",
+  "method": "ingest",
   "language": "java",
-  "framework": "springboot",
-  "skill": "java-springboot",
-  "signature": "Instant tIngress()",
-  "returns": "Instant",
-  "body": "return sample.tIngress();",
+  "framework": "springboot3",
+  "skill": "java-standard-best-practices",
+  "signature": "public Mono<Integer> ingest(IngressPacket packet)",
+  "returns": "Mono<Integer>",
+  "body": "return Flux.fromIterable(packet.samples())\n    .map(sample -> policy.validate(sample))\n    .map(validated -> new TelemetrySampleEvent(\n        validated.deviceId(),\n        validated.metric(),\n        validated.value(),\n        validated.tDevice(),\n        validated.tIngress(),\n        validated.status() == ValidationStatus.VALID\n            ? TelemetrySampleEvent.VALID\n            : TelemetrySampleEvent.VALIDATION_FAILED))\n    .concatMap(event -> {\n        Mono<Void> published = validatedSamples.publish(event);\n        return published.thenReturn(1);\n    })\n    .reduce(0, (total, one) -> total + one);",
   "imports": [
-    "java.time.Instant"
+    "reactor.core.publisher.Flux",
+    "reactor.core.publisher.Mono",
+    "com.pulsestream.telemetry.intake.domain.SensorMetricBoundaryPolicy",
+    "com.pulsestream.telemetry.intake.domain.ValidationStatus",
+    "com.pulsestream.telemetry.intake.application.port.in.IngestTelemetryUseCase",
+    "com.pulsestream.telemetry.shared.events.BoundedEventChannel",
+    "com.pulsestream.telemetry.shared.events.TelemetrySampleEvent"
   ],
   "missing": [],
-  "kind": "record",
+  "kind": "class",
   "members": [
-    "TelemetrySample sample",
-    "public Instant tIngress() { return sample.tIngress(); }"
+    "private final SensorMetricBoundaryPolicy policy;",
+    "private final BoundedEventChannel<TelemetrySampleEvent> validatedSamples;",
+    "public IngestTelemetryService(SensorMetricBoundaryPolicy policy, BoundedEventChannel<TelemetrySampleEvent> validatedSamples) {\n    this.policy = policy;\n    this.validatedSamples = validatedSamples;\n}"
+  ],
+  "implements": [
+    "IngestTelemetryUseCase"
   ],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-06T19:19:37.933729+00:00"
+  "recorded_at": "2026-11-09T21:16:13.857883+00:00"
 }

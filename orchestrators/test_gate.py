@@ -15,6 +15,7 @@ import sys
 import pathlib
 
 import settings
+import tasks
 import telemetry
 import workspace
 
@@ -23,6 +24,23 @@ JAVA_LANG_NAMES = {
     "String", "Integer", "Long", "Double", "Float", "Boolean", "Byte", "Short", "Character",
     "Object", "Class", "System", "Thread", "Runnable", "Iterable", "Exception", "RuntimeException",
     "Error", "Number", "Math", "Void", "StringBuilder", "StringBuffer", "Comparable", "Enum", "Record",
+    "NoSuchMethodException",
+    # Complete java.lang throwable inventory: reflection signature tests write
+    # `throws NoSuchFieldException` / `catch (AssertionError` against these built-ins;
+    # a manual trickle of additions kept handing the closure gate a new one each run.
+    "AbstractMethodError", "ArithmeticException", "ArrayIndexOutOfBoundsException",
+    "ArrayStoreException", "AssertionError", "BootstrapMethodError", "ClassCastException",
+    "ClassNotFoundException", "CloneNotSupportedException", "DataFormatError",
+    "DuplicateFormatFlagsException", "EnumConstantNotPresentException",
+    "ExceptionInInitializerError", "IllegalAccessError", "IllegalAccessException",
+    "IllegalArgumentException", "IllegalFormatException", "IllegalMonitorStateException",
+    "IllegalStateException", "IllegalThreadStateException", "IncompatibleClassChangeError",
+    "IndexOutOfBoundsException", "InstantiationException", "InterruptedException",
+    "LayerNotFoundException", "NegativeArraySizeException", "NoClassDefFoundError",
+    "NoSuchFieldError", "NoSuchFieldException", "NoSuchMethodError", "NullPointerException",
+    "NumberFormatException", "ReflectiveOperationException", "SecurityException",
+    "StackOverflowError", "TypeNotPresentException", "UndeclaredThrowableException",
+    "UnknownError", "UnsupportedOperationException", "VerifyError",
 }
 
 
@@ -35,59 +53,155 @@ JDK_TYPES = {
 }
 
 
+_REPAIR_STATE = {}   # str(root) -> tree fingerprint the last repair pass ran on
+
+
 def repair_test_imports(project_root):
-    """Deterministically add missing same-project imports to test files.
+    """Deterministically fix missing or malformed same-project imports in Java sources.
 
     Testers sometimes reference a production type that lives in another package
     without importing it; javac then reports the unit's own class as missing and
-    no coder run can fix it. Adding an import never changes behavior: it only
-    resolves a name the test already uses. Returns the number of files repaired.
+    no coder run can fix it. Nested types are worse: a `record` nested inside a
+    top-level type's file is importable ONLY through its enclosing class, so
+    `import p.RawSampleDto;` never resolves and a bare same-package use does not
+    compile either. Coders repeat the same mistakes in MAIN sources, and a wrong
+    import there classifies as a cascade the retry loop defers forever. Adding or
+    re-routing an import never changes behavior: it only resolves a name the file
+    already uses. Returns the number of files repaired.
+
+    The pass is a pure function of the tree BYTES, so it is gated on the content
+    fingerprint: an unchanged tree since the previous pass provably yields no
+    changes - the whole-tree scan is skipped, per every unit's gate call.
     """
-    main_root = project_root / "src" / "main" / "java"
-    test_root = project_root / "src" / "test" / "java"
+    root = pathlib.Path(project_root)
+    fp = _tree_fingerprint(root)
+    if _REPAIR_STATE.get(str(root)) == fp:
+        return 0
+    main_root = root / "src" / "main" / "java"
+    test_root = root / "src" / "test" / "java"
     if not main_root.is_dir() or not test_root.is_dir():
         return 0
 
-    declared_main = {}
+    top_main = {}     # package -> names declared AS the file's own top-level type
+    nested_main = {}  # (package, name) -> enclosing file stems holding the nested type
     for f in main_root.rglob("*.java"):
         text = f.read_text(encoding="utf-8", errors="ignore")
         pkg = re.search(r"package ([\w.]+);", text)
         if not pkg:
             continue
-        for name in re.findall(r"\b(?:class|interface|enum|record)\s+([A-Z]\w*)", text):
-            declared_main.setdefault(name, set()).add(pkg.group(1))
+        declared = re.findall(r"\b(?:class|interface|enum|record)\s+([A-Z]\w*)", text)
+        top_main.setdefault(pkg.group(1), set()).add(f.stem)
+        for name in declared:
+            if name != f.stem:
+                nested_main.setdefault((pkg.group(1), name), set()).add(f.stem)
+    # Queued producers that have not been woven yet are still the SCHEDULED home of a
+    # type: repair must be able to route imports there, not only at files on disk.
+    try:
+        import task_queue
+        for task in task_queue.load_index().values():
+            if not isinstance(task, dict) or task.get("stage") != settings.TDD_STAGE:
+                continue
+            path = str(task.get("path", "")).replace("\\", "/")
+            m = re.match(r"src/main/[^/]+/(.+)/([^/]+)\.java$", path)
+            if m:
+                top_main.setdefault(m.group(1).replace("/", "."), set()).add(m.group(2))
+    except Exception:  # noqa: BLE001 - scheduled overlay is best effort
+        pass
+
+    external_index = external_type_index(root)
+
+    # Rerouting needs the name to have a UNIQUE home inside the project's own package
+    # namespace. `own_packages` membership is NOT required - a fabricated import package
+    # (the tester inventing `p.ingestion.domain` for a type scheduled in `p.intake.domain`)
+    # is precisely the case that is not declared anywhere; the >=3-segment shared prefix
+    # against the unique home is what separates it from third-party imports.
+    def _common_prefix_len(a: str, b: str) -> int:
+        shared = 0
+        for left, right in zip(a.split("."), b.split(".")):
+            if left != right:
+                break
+            shared += 1
+        return shared
+
+    def _reroute(match):
+        pkg, name = match.group(1), match.group(2)
+        if name in top_main.get(pkg, set()):
+            return match.group(0)
+        outers = nested_main.get((pkg, name), set())
+        if len(outers) == 1:
+            return f"import {pkg}.{next(iter(outers))}.{name};"
+        if outers:
+            return match.group(0)  # ambiguous enclosing type: leave it to the agents
+        homes = {p for p, names in top_main.items() if name in names}
+        if len(homes) == 1:
+            home = next(iter(homes))
+            if home != pkg and _common_prefix_len(pkg, home) >= 3:
+                return f"import {home}.{name};"
+        return match.group(0)
 
     repaired = 0
-    for tf in test_root.rglob("*.java"):
-        src = tf.read_text(encoding="utf-8", errors="ignore")
-        pkg_match = re.search(r"package ([\w.]+);", src)
-        if not pkg_match:
-            continue
-        test_pkg = pkg_match.group(1)
-        own_declared = set(re.findall(r"\b(?:class|interface|enum|record)\s+([A-Z]\w*)", src))
-        imported_simple = set(re.findall(r"import (?:static )?[\w.]*?\.([A-Z]\w*);", src))
-        additions = []
-        for cls in sorted(set(re.findall(r"\b([A-Z]\w*)\b", src))):
-            if cls in JAVA_LANG_NAMES or cls in imported_simple or cls in own_declared:
+    for tree_root in (test_root, main_root):
+        for tf in tree_root.rglob("*.java"):
+            src = tf.read_text(encoding="utf-8", errors="ignore")
+            pkg_match = re.search(r"package ([\w.]+);", src)
+            if not pkg_match:
                 continue
-            packages = declared_main.get(cls)
-            if not packages or len(packages) != 1:
-                continue
-            pkg = next(iter(packages))
-            if pkg == test_pkg or f"import {pkg}.{cls};" in src:
-                continue
-            additions.append(f"import {pkg}.{cls};")
-        for cls, jdk_pkg in JDK_TYPES.items():
-            if cls in JAVA_LANG_NAMES or cls in imported_simple or cls in own_declared:
-                continue
-            if cls in declared_main:
-                continue
-            if re.search(r"\b" + cls + r"\b", src):
-                additions.append(f"import {jdk_pkg}.{cls};")
-        if additions:
-            new_src = src.replace(pkg_match.group(0) + "\n", pkg_match.group(0) + "\n" + "\n".join(additions) + "\n", 1)
-            tf.write_text(new_src, encoding="utf-8")
-            repaired += 1
+            own_pkg = pkg_match.group(1)
+            original = src
+            src, _n = re.subn(r"^import ([\w.]+)\.([A-Z]\w*);$", _reroute, src, flags=re.M)
+            rewrote = src != original
+            own_declared = set(re.findall(r"\b(?:class|interface|enum|record)\s+([A-Z]\w*)", src))
+            imported_simple = set(re.findall(r"import (?:static )?[\w.]*?\.([A-Z]\w*);", src))
+            additions = []
+            for cls in sorted(set(re.findall(r"\b([A-Z]\w*)\b", src))):
+                if cls in JAVA_LANG_NAMES or cls in imported_simple or cls in own_declared:
+                    continue
+                if cls in top_main.get(own_pkg, set()):
+                    continue  # same-package top-level: already in scope
+                candidates = {f"import {pkg}.{cls};" for pkg, names in top_main.items() if cls in names}
+                candidates |= {f"import {pkg}.{outer}.{cls};"
+                               for (pkg, name), outers in nested_main.items() if name == cls
+                               for outer in outers}
+                if len(candidates) != 1:
+                    continue  # absent (real gap) or ambiguous (two owners): leave it to the agents
+                stmt = next(iter(candidates))
+                if stmt in src:
+                    continue
+                if any(re.search(rf"\b{outer}\.{cls}\b", src)
+                       for outer in {o for (p, n), os_ in nested_main.items() if n == cls for o in os_}):
+                    continue  # already referenced through its outer type: no import needed
+                additions.append(stmt)
+            for cls, jdk_pkg in JDK_TYPES.items():
+                if cls in JAVA_LANG_NAMES or cls in imported_simple or cls in own_declared:
+                    continue
+                if any(name == cls for (_p, name) in nested_main) or \
+                   any(cls in names for names in top_main.values()):
+                    continue
+                if re.search(r"\b" + cls + r"\b", src):
+                    additions.append(f"import {jdk_pkg}.{cls};")
+            # Unambiguous dependency-provided types used bare (tester/coder forgot the
+            # import): add the FQCN the classpath actually offers. Ambiguous simple
+            # names stay with the agents - a guessed package compiles against the
+            # wrong library, which is worse than the compile error the loop reacts to.
+            for cls in sorted(set(re.findall(r"\b([A-Z]\w*)\b", src))):
+                if cls in JAVA_LANG_NAMES or cls in imported_simple or cls in own_declared:
+                    continue
+                if any(name == cls for (_p, name) in nested_main) or \
+                   any(cls in names for names in top_main.values()):
+                    continue
+                fqs = external_index.get(cls) or ()
+                if len(fqs) == 1 and re.search(r"(?<![\w.])" + cls + r"\b", src) \
+                        and f"import {fqs[0]};" not in src:
+                    additions.append(f"import {fqs[0]};")
+            if rewrote:
+                tf.write_text(src, encoding="utf-8")
+            if additions:
+                src = src.replace(pkg_match.group(0) + "\n",
+                                  pkg_match.group(0) + "\n" + "\n".join(additions) + "\n", 1)
+                tf.write_text(src, encoding="utf-8")
+            if rewrote or additions:
+                repaired += 1
+    _REPAIR_STATE[str(root)] = _tree_fingerprint(root)
     return repaired
 
 
@@ -113,24 +227,55 @@ def red_phase_record(task):
     return data if isinstance(data, dict) else None
 
 
-def _failure_detail(result):
+def _failure_detail(result, task=None):
     """Compact summary of a non-passing run-test-tool result, safe for retry feedback.
 
-    Includes up to three javac BLAME blocks (file:[line,col], symbol, location): without
-    them a coder re-emits an unchanged payload because it cannot see WHICH call on WHICH
-    type failed - each blind re-emit costs a session plus a full module build.
+    Includes javac BLAME blocks (file:[line,col], symbol, location): without them a coder
+    re-emits an unchanged payload because it cannot see WHICH call on WHICH type failed -
+    each blind re-emit costs a session plus a full module build. When `task` is given,
+    lines that name THIS unit's file or exported type are ranked first: the coder can act
+    only on failures its payload owns, and a head of peer-unit lines is what makes it
+    conclude "payload unchanged" while its own fixable error sits below the truncation.
     """
     counts = result.get("counts") or {}
     parts = [f"status={result.get('status')}", f"exit_code={result.get('exit_code')}"]
+    if task:
+        # The unit's OWN demanded surface first: blame lists below are dominated by
+        # peer files and truncation buries the one call the coder can actually fix
+        # (a unit was once charged for a member its type lacked while the text only
+        # ever showed foreign missing types - blind re-emits followed). Structured field,
+        # no toolchain grammar; the runner quotes the failing call itself into
+        # `context`, so the coder sees the exact expression, not just its position.
+        own_type = tasks.exported_product(task) or ""
+        own_lines, seen_members = [], set()
+        for d in (result.get("member_demands") or []):
+            if not isinstance(d, dict) or d.get("owner") != own_type:
+                continue
+            member = str(d.get("member") or "")[:80]
+            if not member or member in seen_members:
+                continue
+            seen_members.add(member)
+            ctx = str(d.get("context") or "")[:120]
+            own_lines.append(member + (f"  [at: {ctx}]" if ctx else ""))
+        if own_lines:
+            parts.append(f"YOUR TYPE {own_type} MUST PROVIDE: " + "; ".join(own_lines[:6]))
     if counts:
         parts.append(f"tests={counts.get('run', '?')} failures={counts.get('failures', 0)} errors={counts.get('errors', 0)}")
     missing = result.get("missing_symbols") or []
     if missing:
-        parts.append("missing=" + ", ".join(str(item)[:80] for item in missing[:3]))
-    blame = _blame_lines(result)
+        parts.append("missing=" + ", ".join(str(item)[:80] for item in missing[:6]))
+    blame = _blame_lines(result, limit=10)
+    if task:
+        own_name = str(task.get("path", "")).split("/")[-1]
+        own_type = tasks.exported_product(task) or ""
+        blame.sort(key=lambda entry: 0 if (own_name and own_name in entry)
+                                    or (own_type and own_type in entry) else 1)
+        blame = blame[:6]
     if blame:
         parts.append("blame: " + " || ".join(blame))
-    for failure in (result.get("failures") or [])[:2]:
+    named = [f for f in (result.get("failures") or []) if isinstance(f, dict) and f.get("test")]
+    anonymous = [f for f in (result.get("failures") or []) if isinstance(f, dict) and not f.get("test")]
+    for failure in (named + anonymous)[:3]:
         if isinstance(failure, dict):
             parts.append(f"failed {failure.get('test', '?')}: {failure.get('message', '')}")
     reason = result.get("reason")
@@ -179,14 +324,27 @@ def is_cascade(message):
     return any(phrase in lowered for phrase in CASCADE_PHRASES)
 
 
+_SKIP_DIRS = {".git", "target", "build", "dist", "node_modules", "__pycache__", ".venv", "venv"}
+
+
 def source_files(folder):
-    """Every source file under a folder, in any supported language (never build output)."""
-    if not folder.is_dir():
+    """Every source file under a folder, in any supported language (never build output).
+
+    os.walk with in-place directory pruning: the old rglob("*") enumerated every file
+    under target/ (thousands) before filtering, and this runs on every fingerprint /
+    repair / wave call - per attempt. Pruned walk visits ~only the real sources.
+    """
+    import os
+    root = pathlib.Path(folder)
+    if not root.is_dir():
         return []
-    return [f for f in folder.rglob("*")
-            if f.suffix in SOURCE_SUFFIXES and f.is_file()
-            and not {".git", "target", "build", "dist", "node_modules", "__pycache__", ".venv", "venv"}
-            & set(f.parts)]
+    out = []
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [d for d in dirnames if d not in _SKIP_DIRS]
+        for fn in filenames:
+            if pathlib.Path(fn).suffix in SOURCE_SUFFIXES:
+                out.append(pathlib.Path(dirpath, fn))
+    return sorted(out)
 
 
 def _blame_lines(result, limit=3):
@@ -209,6 +367,102 @@ def _blame_lines(result, limit=3):
                 entry += " " + stripped[:90]
         blame.append(entry[:200])
     return blame
+
+
+def ensure_wrapper_executables(project_root):
+    """Restore the exec bit on build wrappers a scaffold produced or moved without it.
+
+    Generated-in-Docker trees routinely lose +x on `mvnw`/`gradlew`; the gate's recorded
+    command is `./mvnw ...` and EXEC_ERROR: Permission denied is then charged to the CODER
+    as a unit failure (3 burned sessions per unit + cascade quarantines). This is tooling
+    hygiene the engine owes every stack, not an edit of unit content: bit only, never text.
+    """
+    fixed = []
+    for wrapper in ("mvnw", "gradlew"):
+        f = pathlib.Path(project_root) / wrapper
+        if f.is_file() and not f.stat().st_mode & 0o111:
+            try:
+                f.chmod(f.stat().st_mode | 0o755)
+                fixed.append(wrapper)
+            except OSError:
+                pass
+    if fixed:
+        print(f"[perm] {project_root.name}: restored exec bit on {', '.join(fixed)}")
+    return fixed
+
+
+_EXT_INDEX_CACHE = {}   # (marker path, mtime_ns) -> parsed index, per process
+
+
+def external_type_index(project_root):
+    """simple name -> list of fully qualified names provided by dependency JARs.
+
+    Built ONCE per build-manifest (cached at blackboard/external-index.json AND
+    in-process: the 1.3 MB parse must not repeat per gate). Non-JVM stacks return
+    {} (their gap strategies are import-path based and need no such blocklist).
+    """
+    import zipfile
+    import hashlib
+    project_root = pathlib.Path(project_root)
+    marker = next((project_root / m for m in ("pom.xml", "build.gradle", "build.gradle.kts")
+                   if (project_root / m).is_file()), None)
+    if marker is None:
+        return {}
+    try:
+        stamp_mtime = marker.stat().st_mtime_ns
+    except OSError:
+        return {}
+    cache_hit = _EXT_INDEX_CACHE.get((str(marker), stamp_mtime))
+    if cache_hit is not None:
+        return cache_hit
+    cache = settings.BLACKBOARD / "external-index.json"
+    stamp = hashlib.sha1(marker.read_bytes()).hexdigest()
+    if cache.is_file():
+        try:
+            cached = json.loads(cache.read_text(encoding="utf-8"))
+            if cached.get("stamp") == stamp:
+                index = cached.get("index") or {}
+                _EXT_INDEX_CACHE[(str(marker), stamp_mtime)] = index
+                return index
+        except (OSError, json.JSONDecodeError):
+            pass
+    cp_file = pathlib.Path("/tmp/opencode") / f"cp-{stamp}.txt"
+    if not cp_file.is_file():
+        wrapper = project_root / ("mvnw" if (project_root / "mvnw").is_file() else "gradlew")
+        runner = [str(wrapper)] if wrapper.is_file() else ["mvn"]
+        try:
+            subprocess.run(runner + ["-q", "dependency:build-classpath",
+                                     f"-Dmdep.outputFile={cp_file}"],
+                           cwd=str(project_root), stdin=subprocess.DEVNULL,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                           timeout=300)
+        except (OSError, subprocess.TimeoutExpired):
+            return {}
+    if not cp_file.is_file():
+        return {}
+    index = {}
+    for entry in cp_file.read_text().split(":"):
+        if not entry.endswith(".jar") or not pathlib.Path(entry).is_file():
+            continue
+        try:
+            with zipfile.ZipFile(entry) as zf:
+                for name in zf.namelist():
+                    if not name.endswith(".class") or "/" not in name:
+                        continue
+                    if "$" in name or name.startswith("META-INF") or name == "module-info.class":
+                        continue
+                    fq = name[:-len(".class")].replace("/", ".")
+                    simple = fq.rsplit(".", 1)[-1]
+                    index.setdefault(simple, set()).add(fq)
+        except (OSError, zipfile.BadZipFile):
+            continue
+    index = {k: sorted(v) for k, v in index.items() if k[:1].isupper()}
+    try:
+        cache.write_text(json.dumps({"stamp": stamp, "index": index}))
+    except OSError:
+        pass
+    _EXT_INDEX_CACHE[(str(marker), stamp_mtime)] = index
+    return index
 
 
 def _synthesized_command(task, record):
@@ -243,9 +497,18 @@ def _fingerprint(task):
         files = source_files(folder)
         return [len(files), max((f.stat().st_mtime_ns for f in files), default=0)]
     return json.dumps({
+        # Bumping this forces ONE rebuild after feedback-tool semantics change (e.g. the
+        # run-test-tool assertion-message upgrade; v4: normalized member_demands; v5:
+        # member_demands widened to `location: variable ... of type T` receivers and
+        # nested-type `class` symbols, so a verdict cached before the field exists or in
+        # its narrower first shape cannot be mistaken for "no demands"). Without it the
+        # memo serves stale logs to retrying coders forever, silently defeating the
+        # upgrade. v6: problem_kinds joined the verdict schema (kind-driven attribution
+        # must never replay a pre-kind verdict). v3: content fingerprint + wave
+        # verdicts (per-file list, not global max-mtime).
+        "memo_version": 6,
         "payload": payload.stat().st_mtime_ns if payload.is_file() else 0,
-        "main": tree_sig(root / "src" / "main"),
-        "test": tree_sig(root / "src" / "test"),
+        "tree": _tree_fingerprint(root),
     }, sort_keys=True)
 
 
@@ -268,6 +531,311 @@ def _write_memo(task, reason, result):
         json.dumps(memo, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
+_FP_CACHE = {}      # str(root) -> (stat-signature, content-fingerprint)
+
+
+def read_memo(task):
+    """Public: the unit's memoized gate verdict if it still matches its fingerprint."""
+    return _read_memo(task)
+
+
+def verdict_tree_stale(task):
+    """True when the unit's last recorded verdict no longer describes the current TREE.
+
+    Compares only the tree component: quarantine discards the payload, which would make
+    the full fingerprint (and thus `read_memo`) permanently stale for restored units -
+    the world-moved question is strictly about the source tree.
+    """
+    path = settings.GATE_CACHE_DIR / f"{task['id']}.json"
+    if not path.is_file():
+        return True
+    try:
+        memo = json.loads(path.read_text(encoding="utf-8"))
+        recorded = json.loads(memo.get("fingerprint") or "{}").get("tree")
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        return True
+    if not recorded:
+        return True
+    root = workspace.project_root_for(task.get("project", ""))
+    return recorded != _tree_fingerprint(root)
+
+
+def _tree_fingerprint(project_root):
+    """Content identity of everything a module-wide build compiles.
+
+    SHA-1 of the file BYTES (not mtimes: an mtime signature invalidates on every touch,
+    including byte-identical restore-then-reweave, which turned the wave cache back into
+    a full rebuild per unit). Two tiers so callers may hammer it every attempt: a cheap
+    stat signature (path,size,mtime_ns) guards an in-process cache of the expensive
+    byte-hash. Toolchain-neutral - any source suffix the runner understands.
+    """
+    import hashlib
+    root = pathlib.Path(project_root)
+    files = sorted(source_files(root), key=lambda p: str(p))
+    sig = []
+    for f in files:
+        try:
+            st = f.stat()
+            sig.append((str(f), st.st_size, st.st_mtime_ns))
+        except OSError:
+            sig.append((str(f), -1, 0))
+    key = str(root)
+    cached = _FP_CACHE.get(key)
+    if cached and cached[0] == sig:
+        return cached[1]
+    digest = hashlib.sha1()
+    for f, size, _ in sig:
+        digest.update(str(f).encode("utf-8", "ignore"))
+        digest.update(b"\0")
+        if size < 0:
+            digest.update(b"unreadable")
+            continue
+        try:
+            digest.update(hashlib.sha1(pathlib.Path(f).read_bytes()).digest())
+        except OSError:
+            digest.update(b"unreadable")
+    fp = digest.hexdigest()[:16]
+    _FP_CACHE[key] = (sig, fp)
+    return fp
+
+
+def _compile_probe_command(suite_command):
+    """A cheap compile-only shape of the suite command, when one exists per toolchain.
+
+    While the module does not compile, every unit's wave verdict is the same compile
+    error - learning it must not cost a whole test-suite boot (surefire, Spring
+    contexts). The probe mirrors `_suite_command`'s recognized shapes; anything else
+    returns None and the caller pays the full suite, as before.
+    """
+    toks = str(suite_command or "").split()
+    if not toks:
+        return None
+    if "./mvnw" in suite_command or " mvn " in f" {suite_command} ":
+        new = ["test-compile" if t == "test" else t for t in toks]
+        for i, tok in enumerate(new):
+            if tok.endswith("mvnw") or tok.endswith("mvn"):
+                new.insert(i + 1, "-q")
+                break
+        return " ".join(new)
+    if toks[:2] == ["go", "test"]:
+        return " ".join(["go", "vet"] + toks[2:])
+    if toks[:2] == ["npx", "jest"]:
+        return "npx tsc --noEmit"
+    if toks[:3] == ["python3", "-m", "pytest"]:
+        return " ".join(["python3", "-m", "pytest", "--collect-only", "-q"] + toks[3:])
+    return None
+
+
+def _suite_command(command):
+    """Generalize a unit's recorded scoped test command to the whole-suite command.
+
+    Mirrors exactly the shapes `_synthesized_command` (and the tester skills) produce:
+    maven `-Dtest=X`, go `-run X`, `npx jest <pattern>`, `python3 -m pytest <path>::...`.
+    Anything unrecognized returns None: the caller keeps the per-unit scoped run, so
+    an unsupported stack degrades to today's behavior, never to a wrong verdict.
+    """
+    toks = str(command or "").split()
+    if not toks:
+        return None
+    if any(t.startswith("-Dtest=") for t in toks):
+        rest = [t for t in toks if not t.startswith("-Dtest=")]
+        return " ".join(rest) if "test" in rest else None
+    if "-run" in toks:
+        i = toks.index("-run")
+        rest = toks[:i] + toks[i + 2:]
+        return " ".join(rest) if rest else None
+    if toks[:2] == ["npx", "jest"]:
+        return " ".join(toks[:2] + [t for t in toks[2:] if t.startswith("-")])
+    if toks[:3] == ["python3", "-m", "pytest"]:
+        folder = next((t.split("::")[0].rsplit("/", 1)[0] for t in toks[3:] if not t.startswith("-")), "")
+        return " ".join(toks[:3] + [folder or "tests"] + [t for t in toks[3:] if t.startswith("-")])
+    return None
+
+
+def _ident_tail(name):
+    """Simple-name tail of ANY identifier shape: path, FQCN, file://basename.
+
+    Extension order matters: `pricing.spec.ts` -> `pricing` (file), while
+    `com.x.FooTest` -> `FooTest` (package tail). Splitting on "." naively turns
+    both into the file extension and silently breaks selector matching.
+    """
+    s = str(name).replace("\\", "/").rsplit("/", 1)[-1]
+    s = re.sub(r"\.(spec|test)\.[cm]?[jt]sx?$", "", s)
+    s = re.sub(r"\.(py|go|java|kt|kts|scala|groovy|js|jsx|mjs|cjs|ts|tsx|rs|rb)$", "", s)
+    if "." in s:
+        s = s.rsplit(".", 1)[-1]
+    return s
+
+
+def _norm_stem(name):
+    text = _ident_tail(name)
+    text = re.sub(r"^test_(?=\w)", "", text)
+    text = re.sub(r"^Test(?=[A-Z_])", "", text)  # go: TestStore -> store
+    text = re.sub(r"_test$", "", text)
+    text = re.sub(r"(Tests?|Spec)$", "", text)
+    return text.lower()
+
+
+def _selector_of(command):
+    toks = str(command or "").split()
+    for t in toks:
+        if t.startswith("-Dtest="):
+            return t[len("-Dtest="):]
+    if "-run" in toks:
+        i = toks.index("-run")
+        if i + 1 < len(toks):
+            return toks[i + 1]
+    if toks[:2] == ["npx", "jest"]:
+        return next((t for t in toks[2:] if not t.startswith("-")), None)
+    if toks[:3] == ["python3", "-m", "pytest"]:
+        return next((t.split("::")[0] for t in toks[3:] if not t.startswith("-")), None)
+    return None
+
+
+def _matches_class(key, selector):
+    return (key == selector or _ident_tail(key) == _ident_tail(selector)
+            or (_ident_tail(key).lower() == selector.lower())
+            or _norm_stem(key) == _norm_stem(selector))
+
+
+def _tool_result(root, command, timeout):
+    tool_command = [sys.executable, str(settings.RUN_TEST_TOOL), "--cwd", str(root),
+                    "--cmd", command, "--timeout", str(timeout)]
+    completed = subprocess.run(tool_command, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT, text=True, timeout=timeout + 30,
+                               cwd=str(settings.ROOT))
+    try:
+        data = json.loads(completed.stdout)
+    except json.JSONDecodeError:
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _tree_wide_failure(data) -> bool:
+    """Is this module build's verdict a fact about the TREE, not about any one class?
+
+    A decisive non-pass status with zero per-class evidence - compile output, surefire
+    boot crash, toolchain error before any test ran - does not vary with `-Dtest` scope:
+    every unit's own scoped build re-derives byte-identical output. Those verdicts are
+    shared across the wave; statuses WITH class evidence (assertion_failure/passed) keep
+    their per-class routing. Toolchain-neutral: speaks only the runner's status contract.
+    """
+    if not isinstance(data, dict) or data.get("classes"):
+        return False
+    return data.get("status") in ("compile_error", "error")
+
+
+def _shared_verdict(data, task):
+    """The wave's decisive failure as any unit's own gate verdict: the same fields it
+    would have seen in its own (byte-identical) scoped build."""
+    shared = {k: data.get(k) for k in ("status", "exit_code", "missing_symbols",
+                                       "missing_packages", "failures", "counts",
+                                       "excerpt", "member_demands", "problem_kinds")}
+    shared = {k: v for k, v in shared.items() if v is not None}
+    return f"test gate: {_failure_detail(shared, task)}", shared
+
+
+def _write_wave(data, stamp):
+    data["_stamp"] = stamp
+    settings.GATE_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    wave_files = sorted(settings.GATE_CACHE_DIR.glob("wave-*.json"), key=lambda f: f.stat().st_mtime)
+    for stale in wave_files[:-5]:
+        stale.unlink(missing_ok=True)
+    (settings.GATE_CACHE_DIR / f"wave-{stamp}.json").write_text(json.dumps(data), encoding="utf-8")
+
+
+def _run_suite_once(root, suite_command, stamp):
+    """Cheap compile probe first: while the module does not compile, every unit's
+    verdict is the SAME compile error, and a `test-compile`/`tsc`/`collect-only`
+    probe says it in a fraction of a full-suite boot. Only a module that COMPILES
+    earns the expensive per-class verdicts."""
+    probe = _compile_probe_command(suite_command)
+    if probe:
+        print(f"[gate ] wave compile probe: {probe}")
+        try:
+            data = _tool_result(root, probe, settings.TEST_GATE_TIMEOUT)
+        except (OSError, subprocess.TimeoutExpired):
+            data = None
+        # A decisive probe verdict (compile error OR toolchain failure before any test
+        # class ran) is the whole module's answer: booting the suite to rediscover the
+        # identical failure would burn a second full build per tree state.
+        if _tree_wide_failure(data):
+            _write_wave(data, stamp)
+            return data
+    print(f"[gate ] wave build for {root.name}: {suite_command}")
+    data = _tool_result(root, suite_command, settings.WAVE_GATE_TIMEOUT)
+    if not isinstance(data, dict):
+        return None
+    _write_wave(data, stamp)
+    return data
+
+
+def wave_gate_verdict(task, command):
+    """(reason, result) from ONE module-wide build shared by every unit's green gate,
+    or None to fall back to the per-unit scoped run.
+
+    Surefire/pytest/jest go compile the WHOLE module, so N scoped runs prove nothing
+    more than one suite run + per-class verdicts (which run-test-tool parses into
+    result["classes"]; this engine layer never looks at toolchain syntax). Verdicts are
+    cached per content fingerprint of the trees: a sibling re-weave costs exactly one
+    rebuild that refreshes every unit at once. Decisive tree-wide failures (compile
+    errors, toolchain boots that die before any class runs) are shared verbatim -
+    every unit would see the same failure in its own build.
+    """
+    if task.get("stage") != settings.TDD_STAGE:
+        return None
+    root = workspace.project_root_for(task["project"])
+    fp = _tree_fingerprint(root)
+    stamp = f"{task['project']}-v6-{fp}"
+    cache_file = settings.GATE_CACHE_DIR / f"wave-{stamp}.json"
+    data = None
+    if cache_file.is_file():
+        try:
+            data = json.loads(cache_file.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            data = None
+    # A cached tree-wide failure serves EVERY unit regardless of how the unit's own
+    # command is shaped: the fact is about the tree, not the selector. (This is also
+    # where a scoped fallback that primed its decisive verdict gets reused for free.)
+    if data is not None and _tree_wide_failure(data):
+        return _shared_verdict(data, task)
+    suite = _suite_command(command)
+    selector = _selector_of(command)
+    if not suite or not selector:
+        return None
+    if data is None:
+        try:
+            data = _run_suite_once(root, suite, stamp)
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            return f"test gate: wave build could not run: {exc}", {"status": "not_run",
+                                                                    "reason": str(exc)}
+    if not isinstance(data, dict) or data.get("status") == "not_run":
+        return None
+    if _tree_wide_failure(data):
+        return _shared_verdict(data, task)
+    classes = data.get("classes") or {}
+    if not classes:
+        return None
+    matches = [k for k in classes if _matches_class(k, selector)]
+    if len(matches) != 1:
+        return None  # unknown or ambiguous class: keep the scoped verdict path
+    key = matches[0]
+    if classes[key] == "passed":
+        counts = data.get("counts") or {}
+        print(f"[gate ] {task['id']} wave verdict: green ({key})")
+        return None, {"status": "passed", "counts": counts}
+    unit_failures = [f for f in (data.get("failures") or [])
+                     if isinstance(f, dict) and _matches_class(key, f.get("test", ""))]
+    excerpt = [line for line in (data.get("excerpt") or []) if selector.lower() in str(line).lower()]
+    shared = {"status": "assertion_failure", "exit_code": data.get("exit_code", 1),
+              "failures": unit_failures or [{"test": key, "message": ""}],
+              "counts": data.get("counts") or {}, "missing_symbols": [], "missing_packages": []}
+    if excerpt:
+        shared["excerpt"] = excerpt
+    print(f"[gate ] {task['id']} wave verdict: red ({key})")
+    return f"test gate: {_failure_detail(shared, task)}", shared
+
+
 def green_test_result(task):
     """Run the recorded test; return (reason_or_None, tool_result_or_None).
 
@@ -286,6 +854,7 @@ def green_test_result(task):
         "--cmd", command,
         "--timeout", str(settings.TEST_GATE_TIMEOUT),
     ]
+    ensure_wrapper_executables(workspace.project_root_for(task["project"]))
     fixed = repair_test_imports(workspace.project_root_for(task["project"]))
     if fixed:
         print(f"[test] {task['id']} repaired missing imports in {fixed} test file(s)")
@@ -293,6 +862,10 @@ def green_test_result(task):
     if memo is not None:
         print(f"[test] {task['id']} cached verdict (tree unchanged)")
         return memo.get("reason"), memo.get("result")
+    wave = wave_gate_verdict(task, command)
+    if wave is not None:
+        _write_memo(task, wave[0], wave[1])
+        return wave
     print(f"[test] {task['id']} re-running recorded test: {command}")
     with telemetry.span("blackboard.test_gate", {"task": task["id"]}) as current:
         try:
@@ -324,8 +897,15 @@ def green_test_result(task):
             print(f"[test] {task['id']} green ({counts.get('run', '?')} tests passed)")
             _write_memo(task, None, result)
             return None, result
-        reason = f"test gate: {_failure_detail(result)}"
+        if _tree_wide_failure(result):
+            # This scoped build just proved a tree-wide verdict: publish it to the wave
+            # cache so every sibling unit at this fingerprint shares it for free instead
+            # of re-deriving byte-identical output with its own full build.
+            root = workspace.project_root_for(task["project"])
+            _write_wave(result, f"{task['project']}-v6-{_tree_fingerprint(root)}")
+        reason = f"test gate: {_failure_detail(result, task)}"
         telemetry.mark_error(current, reason)
         print(f"[test] {task['id']} {reason}")
-        _write_memo(task, reason, result)
+        if result.get("status") != "not_run":
+            _write_memo(task, reason, result)
         return reason, result

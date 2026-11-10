@@ -1,0 +1,16 @@
+{
+  "id": "T2-026",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-026",
+    "T2-022"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ledger/application/port/in/QueryTelemetryLedgerUseCase.java",
+  "kind": "code",
+  "layer": "application",
+  "feature": null,
+  "export": "QueryTelemetryLedgerUseCase",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "IMPLEMENT QueryTelemetryLedgerUseCase so the frozen test passes; Java 17, Spring Boot 3, non-blocking, no cross-context domain imports, no hardcoded config values. Spec: Telemetry Event Ledger inbound read port (open-host query side, domain types only): Flux<TelemetryRecord> history(String deviceId, Instant from, Instant toExclusive) all revisions ordered by tDevice, revision; Flux<TelemetryRecord> latestHistory(String deviceId, Instant from, Instant toExclusive) only the latest revision per (metric, tDevice) ordered by tDevice; Flux<TelemetryRecord> revisionChain(String deviceId, String metric, Instant tDevice) audit chain ordered by revision."
+}

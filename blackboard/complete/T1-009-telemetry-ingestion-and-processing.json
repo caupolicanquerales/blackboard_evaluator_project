@@ -3,15 +3,13 @@
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
-    "T0-001",
-    "T0-002",
-    "T0-003"
+    "T0-001"
   ],
-  "path": "src/test/java/com/pulsestream/telemetry/ledger/infrastructure/R2dbcEventRevisionRepositoryTest.java",
+  "path": "src/test/java/com/pulsestream/telemetry/intake/domain/ValidationStatusTest.java",
   "kind": "test",
-  "layer": "infrastructure",
+  "layer": "domain",
   "feature": null,
-  "export": "R2dbcEventRevisionRepositoryTest",
-  "intent": "Context Telemetry Event Ledger. Test R2dbcEventRevisionRepository (DatabaseClient mocked): append inserts into telemetry.event_revisions only (no UPDATE/DELETE statements), history query by device/metric and time range ordered by revision, latest-revision query, duplicate key surfaces as error.",
-  "project": "telemetry-ingestion-and-processing"
+  "export": "ValidationStatus",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "TEST for ValidationStatus at src/main/java/com/pulsestream/telemetry/intake/domain/ValidationStatus.java. JUnit 5 + AssertJ (+ Mockito, reactor-test StepVerifier for reactive code); cover every invariant and behavior below, including failure cases, using only the pinned surfaces of collaborators. Unit under test: Telemetry Intake & Validation domain enum ValidationStatus {UNVALIDATED, VALID, VALIDATION_FAILED}. UNVALIDATED is only the state of a freshly received sample; after validation a sample is always VALID or VALIDATION_FAILED, never dropped."
 }

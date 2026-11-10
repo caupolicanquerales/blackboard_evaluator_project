@@ -1,0 +1,15 @@
+{
+  "id": "T3-035",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-035"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/broadcasting/application/port/in/BroadcastTelemetryUseCase.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "BroadcastTelemetryUseCase",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "REFACTOR BroadcastTelemetryUseCase: inspect the implementation for layering violations, blocking calls, unbounded buffers, hardcoded values and invariant gaps; improve clarity without changing the public surface or breaking tests. Spec: Telemetry Stream Broadcasting inbound port consuming TelemetrySampleSequenced and TelemetryWindowClosed: Mono<Void> broadcastSample(TelemetrySampleEvent sample), Mono<Void> broadcastWindow(TelemetryWindowClosedEvent window), Flux<BroadcastItem> stream(String deviceId) where null deviceId means all devices."
+}

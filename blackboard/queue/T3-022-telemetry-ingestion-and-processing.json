@@ -1,0 +1,15 @@
+{
+  "id": "T3-022",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-022"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ledger/domain/TelemetryRecord.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "TelemetryRecord",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "REFACTOR TelemetryRecord: inspect the implementation for layering violations, blocking calls, unbounded buffers, hardcoded values and invariant gaps; improve clarity without changing the public surface or breaking tests. Spec: Telemetry Event Ledger aggregate root (append-only). Immutable record TelemetryRecord(UUID id, String deviceId, String metric, double value, Instant tDevice, Instant tIngress, String validationStatus, int revision, UUID supersedesId). Invariants: revision >= 0; revision 0 iff supersedesId null; non-blank strings, non-null id/instants/status. Static original(deviceId, metric, value, tDevice, tIngress, validationStatus) creates revision 0 with random UUID. TelemetryRecord reviseWith(double value, Instant tIngress, String validationStatus) returns a NEW record: new UUID, same deviceId/metric/tDevice, revision+1, supersedesId = this.id. No mutators: corrections append revisions, never alter history."
+}

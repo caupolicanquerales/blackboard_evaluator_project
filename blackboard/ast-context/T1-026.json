@@ -1,0 +1,114 @@
+{
+  "task_id": "T1-026",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "QueryTelemetryLedgerUseCase",
+    "constructors": [],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "useCase",
+        "method": "history",
+        "args": [
+          "DEVICE",
+          "T1",
+          "T3"
+        ]
+      },
+      {
+        "receiver": "useCase",
+        "method": "history",
+        "args": [
+          "DEVICE",
+          "T1",
+          "T2"
+        ]
+      },
+      {
+        "receiver": "useCase",
+        "method": "history",
+        "args": [
+          "\"other-device\"",
+          "T1",
+          "T3"
+        ]
+      },
+      {
+        "receiver": "useCase",
+        "method": "latestHistory",
+        "args": [
+          "DEVICE",
+          "T1",
+          "T3"
+        ]
+      },
+      {
+        "receiver": "useCase",
+        "method": "latestHistory",
+        "args": [
+          "DEVICE",
+          "T1",
+          "T2"
+        ]
+      },
+      {
+        "receiver": "useCase",
+        "method": "revisionChain",
+        "args": [
+          "DEVICE",
+          "METRIC",
+          "T1"
+        ]
+      },
+      {
+        "receiver": "useCase",
+        "method": "revisionChain",
+        "args": [
+          "DEVICE",
+          "\"unknown\"",
+          "T1"
+        ]
+      },
+      {
+        "receiver": "useCase",
+        "method": "revisionChain",
+        "args": [
+          "DEVICE",
+          "METRIC",
+          "T1"
+        ],
+        "stubbed_to": "Flux.just(record)"
+      }
+    ],
+    "verified": [
+      "revisionChain"
+    ],
+    "usage_lines": [
+      "class QueryTelemetryLedgerUseCaseTest {",
+      "private static final class InMemoryLedger implements QueryTelemetryLedgerUseCase {",
+      "QueryTelemetryLedgerUseCase useCase = ledgerWithRevisions(lateRev, late, early);",
+      "StepVerifier.create(useCase.history(DEVICE, T1, T3))",
+      "QueryTelemetryLedgerUseCase useCase = ledgerWithRevisions(atFrom, atTo);",
+      "StepVerifier.create(useCase.history(DEVICE, T1, T2))",
+      "QueryTelemetryLedgerUseCase useCase = ledgerWithRevisions(original(METRIC, T1, 1.0));",
+      "StepVerifier.create(useCase.history(\"other-device\", T1, T3)).verifyComplete();",
+      "QueryTelemetryLedgerUseCase useCase = ledgerWithRevisions(first, second, firstRev2, firstRev);",
+      "StepVerifier.create(useCase.latestHistory(DEVICE, T1, T3))",
+      "QueryTelemetryLedgerUseCase useCase = ledgerWithRevisions(temp, pressure);",
+      "StepVerifier.create(useCase.latestHistory(DEVICE, T1, T2).collectList())",
+      "QueryTelemetryLedgerUseCase useCase = ledgerWithRevisions(a, b, c);",
+      "StepVerifier.create(useCase.latestHistory(DEVICE, T1, T3))",
+      "QueryTelemetryLedgerUseCase useCase = ledgerWithRevisions(rev2, rev0, rev1, original(METRIC, T2, 5.0));",
+      "StepVerifier.create(useCase.revisionChain(DEVICE, METRIC, T1))",
+      "QueryTelemetryLedgerUseCase useCase = ledgerWithRevisions(original(METRIC, T1, 1.0));",
+      "StepVerifier.create(useCase.revisionChain(DEVICE, \"unknown\", T1)).verifyComplete();",
+      "QueryTelemetryLedgerUseCase useCase = mock(QueryTelemetryLedgerUseCase.class);",
+      "when(useCase.revisionChain(DEVICE, METRIC, T1)).thenReturn(Flux.just(record));",
+      "StepVerifier.create(useCase.revisionChain(DEVICE, METRIC, T1))",
+      "verify(useCase).revisionChain(DEVICE, METRIC, T1);"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

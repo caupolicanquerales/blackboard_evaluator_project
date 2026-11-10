@@ -1,23 +1,26 @@
 {
   "id": "T2-020",
   "project": "telemetry-ingestion-and-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/ledger/domain/TelemetryRevisionAppended.java",
-  "export": "TelemetryRevisionAppended",
-  "method": "TelemetryRevisionAppended",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/sequencing/application/port/in/SequenceTelemetryUseCase.java",
+  "export": "SequenceTelemetryUseCase",
+  "method": "onSampleReceived",
   "language": "java",
-  "framework": "springboot",
-  "skill": "java-springboot",
-  "signature": "TelemetryRevisionAppended",
-  "returns": "void",
+  "framework": "springboot3",
+  "skill": "java-standard-best-practices",
+  "signature": "Mono<Void> onSampleReceived(TelemetrySampleEvent sample)",
+  "returns": "Mono<Void>",
   "body": "",
-  "imports": [],
+  "imports": [
+    "reactor.core.publisher.Mono",
+    "com.pulsestream.telemetry.shared.events.TelemetrySampleEvent"
+  ],
   "missing": [],
-  "kind": "record",
+  "kind": "interface",
   "members": [
-    "TelemetryEventKey key",
-    "long revision"
+    "Mono<Void> onSampleReceived(TelemetrySampleEvent sample);",
+    "Mono<Void> flush();"
   ],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-06T19:22:13.993337+00:00"
+  "recorded_at": "2026-11-09T20:14:34.564260+00:00"
 }

@@ -27,6 +27,12 @@ REQUIRED_STR = ("id", "project", "targetFile", "export", "method",
                 "language", "framework", "skill", "signature", "returns", "body")
 KINDS = ("class", "interface", "enum", "record", "exception")
 REQUIRED_LIST = ("imports", "missing")
+# The complete payload schema. Keys OUTSIDE it are refused, never ignored: a silently
+# dropped field turns a tool-contract gap into endless "agent capability" failures
+# (a coder once shipped the right fix twice and the weave dropped it twice).
+OPTIONAL_KEYS = ("kind", "members", "annotations", "methodAnnotations",
+                 "extends", "implements", "stage", "executed", "recorded_at")
+ALLOWED_KEYS = frozenset(REQUIRED_STR) | frozenset(REQUIRED_LIST) | frozenset(OPTIONAL_KEYS)
 
 
 def validate(payload, task_id):
@@ -34,6 +40,12 @@ def validate(payload, task_id):
     errors = []
     if not isinstance(payload, dict):
         return ["payload must be a JSON object"]
+
+    unknown = sorted(str(key) for key in payload if str(key) not in ALLOWED_KEYS)
+    if unknown:
+        errors.append("unknown payload key(s): " + ", ".join(unknown)
+                      + " - not part of the schema and never ignored; schema keys: "
+                      + ", ".join(sorted(ALLOWED_KEYS)))
 
     for key in REQUIRED_STR:
         if key not in payload:
@@ -55,6 +67,17 @@ def validate(payload, task_id):
             continue
         if not isinstance(entries, list) or not all(isinstance(a, str) and a.strip() for a in entries):
             errors.append("%s must be a non-empty array of annotation strings" % key)
+
+    # Supertype clauses: the frozen test can demand IS-A (isInstanceOf(Port.class), DI by
+    # port type); the weaver lands them on the type header. Validate so a malformed guess
+    # is refused here, not silently dropped at weave time.
+    ext = payload.get("extends")
+    if ext is not None and not isinstance(ext, str):
+        errors.append("extends must be a string (the supertype the type extends; omit or empty for none)")
+    impl = payload.get("implements")
+    if impl is not None:
+        if not isinstance(impl, list) or not all(isinstance(s, str) and s.strip() for s in impl):
+            errors.append("implements must be an array of supertype names")
 
     kind = payload.get("kind")
     if kind is not None and kind not in KINDS:

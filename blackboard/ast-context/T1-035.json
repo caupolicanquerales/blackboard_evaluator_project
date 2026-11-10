@@ -1,0 +1,102 @@
+{
+  "task_id": "T1-035",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "BroadcastTelemetryUseCase",
+    "constructors": [],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "useCase",
+        "method": "stream",
+        "args": [
+          "null"
+        ]
+      },
+      {
+        "receiver": "useCase",
+        "method": "broadcastSample",
+        "args": [
+          "a"
+        ]
+      },
+      {
+        "receiver": "useCase",
+        "method": "broadcastSample",
+        "args": [
+          "b"
+        ]
+      },
+      {
+        "receiver": "useCase",
+        "method": "stream",
+        "args": [
+          "\"device-1\""
+        ]
+      },
+      {
+        "receiver": "useCase",
+        "method": "broadcastSample",
+        "args": [
+          "other"
+        ]
+      },
+      {
+        "receiver": "useCase",
+        "method": "broadcastSample",
+        "args": [
+          "mine"
+        ]
+      },
+      {
+        "receiver": "useCase",
+        "method": "broadcastWindow",
+        "args": [
+          "window"
+        ]
+      },
+      {
+        "receiver": "useCase",
+        "method": "broadcastSample",
+        "args": [
+          "sample(\"device-1\")"
+        ]
+      },
+      {
+        "receiver": "useCase",
+        "method": "broadcastSample",
+        "args": [
+          "null"
+        ]
+      },
+      {
+        "receiver": "useCase",
+        "method": "broadcastWindow",
+        "args": [
+          "null"
+        ]
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class BroadcastTelemetryUseCaseTest {",
+      "private BroadcastTelemetryUseCase useCase;",
+      "useCase = new InMemoryBroadcast();",
+      "StepVerifier.create(useCase.stream(null).take(2))",
+      "useCase.broadcastSample(a).block();",
+      "useCase.broadcastSample(b).block();",
+      "StepVerifier.create(useCase.stream(\"device-1\").take(1))",
+      "useCase.broadcastSample(other).block();",
+      "useCase.broadcastSample(mine).block();",
+      "StepVerifier.create(useCase.stream(\"device-1\").take(1))",
+      ".then(() -> useCase.broadcastWindow(window).block())",
+      "StepVerifier.create(useCase.broadcastSample(sample(\"device-1\"))).verifyComplete();",
+      "StepVerifier.create(useCase.broadcastSample(null)).expectError(RuntimeException.class).verify();",
+      "StepVerifier.create(useCase.broadcastWindow(null)).expectError(RuntimeException.class).verify();",
+      "private static final class InMemoryBroadcast implements BroadcastTelemetryUseCase {"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

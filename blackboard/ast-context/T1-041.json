@@ -1,0 +1,62 @@
+{
+  "task_id": "T1-041",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "TelemetryPipelineWiring",
+    "constructors": [
+      [
+        "validated",
+        "sequenced",
+        "backfills",
+        "windows",
+        "sequence",
+        "record",
+        "broadcast"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "wiring",
+        "method": "stop",
+        "args": []
+      },
+      {
+        "receiver": "wiring",
+        "method": "isRunning",
+        "args": []
+      },
+      {
+        "receiver": "wiring",
+        "method": "start",
+        "args": []
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class TelemetryPipelineWiringTest {",
+      "private TelemetryPipelineWiring wiring;",
+      "wiring = new TelemetryPipelineWiring(",
+      "wiring.stop();",
+      "assertThat(wiring.isRunning()).isFalse();",
+      "wiring.start();",
+      "assertThat(wiring.isRunning()).isTrue();",
+      "wiring.start();",
+      "wiring.start();",
+      "wiring.start();",
+      "wiring.start();",
+      "wiring.start();",
+      "wiring.start();",
+      "wiring.start();",
+      "wiring.start();",
+      "wiring.start();",
+      "wiring.stop();",
+      "assertThat(wiring.isRunning()).isFalse();",
+      "wiring.start();",
+      "wiring.stop();"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

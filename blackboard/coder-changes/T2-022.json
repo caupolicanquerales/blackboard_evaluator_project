@@ -1,24 +1,36 @@
 {
   "id": "T2-022",
   "project": "telemetry-ingestion-and-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/reordering/application/LedgerEventPort.java",
-  "export": "LedgerEventPort",
-  "method": "publish",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ledger/domain/TelemetryRecord.java",
+  "export": "TelemetryRecord",
+  "method": "reviseWith",
   "language": "java",
-  "framework": "springboot",
+  "framework": "springboot3",
   "skill": "java-springboot",
-  "signature": "Mono<Void> publish(Object event)",
-  "returns": "Mono<Void>",
-  "body": "",
+  "kind": "record",
+  "signature": "public TelemetryRecord reviseWith(double value, Instant tIngress, String validationStatus)",
+  "returns": "TelemetryRecord",
+  "body": "return new TelemetryRecord(UUID.randomUUID(), deviceId, metric, value, tDevice, tIngress, validationStatus, revision + 1, id);",
   "imports": [
-    "reactor.core.publisher.Mono"
+    "java.time.Instant",
+    "java.util.Objects",
+    "java.util.UUID"
   ],
   "missing": [],
-  "kind": "interface",
   "members": [
-    "Mono<Void> publish(Object event);"
+    "UUID id",
+    "String deviceId",
+    "String metric",
+    "double value",
+    "Instant tDevice",
+    "Instant tIngress",
+    "String validationStatus",
+    "int revision",
+    "UUID supersedesId",
+    "public TelemetryRecord {\n    Objects.requireNonNull(id, \"id must not be null\");\n    if (deviceId == null || deviceId.isBlank()) {\n        throw new IllegalArgumentException(\"deviceId must not be blank\");\n    }\n    if (metric == null || metric.isBlank()) {\n        throw new IllegalArgumentException(\"metric must not be blank\");\n    }\n    Objects.requireNonNull(tDevice, \"tDevice must not be null\");\n    Objects.requireNonNull(tIngress, \"tIngress must not be null\");\n    if (validationStatus == null || validationStatus.isBlank()) {\n        throw new IllegalArgumentException(\"validationStatus must not be blank\");\n    }\n    if (revision < 0) {\n        throw new IllegalArgumentException(\"revision must not be negative\");\n    }\n    if ((revision == 0) != (supersedesId == null)) {\n        throw new IllegalArgumentException(\"revision 0 must have no supersedesId and revisions above 0 must have one\");\n    }\n}",
+    "public static TelemetryRecord original(String deviceId, String metric, double value, Instant tDevice, Instant tIngress, String validationStatus) {\n    return new TelemetryRecord(UUID.randomUUID(), deviceId, metric, value, tDevice, tIngress, validationStatus, 0, null);\n}"
   ],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-06T19:22:49.077750+00:00"
+  "recorded_at": "2026-11-09T20:08:19.690962+00:00"
 }

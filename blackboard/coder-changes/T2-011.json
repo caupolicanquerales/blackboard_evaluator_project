@@ -1,26 +1,25 @@
 {
   "id": "T2-011",
   "project": "telemetry-ingestion-and-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/intake/domain/SensorMetricBoundary.java",
+  "export": "SensorMetricBoundary",
+  "method": "contains",
   "language": "java",
-  "framework": "springboot",
-  "skill": "java-springboot",
-  "signature": "TelemetryBackfillDetected(String metric, Instant timestamp, Instant windowStart)",
-  "returns": "void",
-  "body": "",
-  "missing": [],
-  "targetFile": "src/main/java/com/pulsestream/telemetry/reordering/domain/TelemetryBackfillDetected.java",
-  "export": "TelemetryBackfillDetected",
-  "method": "TelemetryBackfillDetected",
+  "framework": "springboot3",
+  "skill": "java-springboot3",
   "kind": "record",
+  "signature": "public boolean contains(double value)",
+  "returns": "boolean",
   "members": [
     "String metric",
-    "Instant timestamp",
-    "Instant windowStart"
+    "Double min",
+    "Double max",
+    "public SensorMetricBoundary {\n    if (metric == null || metric.isBlank()) {\n        throw new IllegalArgumentException(\"metric must not be blank\");\n    }\n    if (min != null && max != null && min.doubleValue() > max.doubleValue()) {\n        throw new IllegalArgumentException(\"min must not exceed max\");\n    }\n}"
   ],
-  "imports": [
-    "java.time.Instant"
-  ],
+  "body": "if (Double.isNaN(value) || Double.isInfinite(value)) {\n    return false;\n}\nif (min != null && value < min.doubleValue()) {\n    return false;\n}\nreturn max == null || value <= max.doubleValue();",
+  "imports": [],
+  "missing": [],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-06T19:23:27.177821+00:00"
+  "recorded_at": "2026-11-09T20:22:49.000293+00:00"
 }

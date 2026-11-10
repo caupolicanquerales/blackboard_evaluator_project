@@ -1,0 +1,10 @@
+{
+  "bounces": 0,
+  "consumed": 2,
+  "contract": "10ee54125edca10e",
+  "fed": "test gate: status=error; exit_code=#; blame: r#dbctelemetryledgerrepository.java:#,# ] com.pulsestream.telemetry.ledger.infrastructure.r#dbctelem || r#dbctelemetryledgerrepository.java:#,# ] cannot assign a value to final variable repository || r#dbctelemetryledgerrepository.java:#,# ] cannot assign a value to final variable template || r#dbctelemetryledgerrepository.java:#,# ] com.pulsestream.telemetry.ledger.infrastructure.r#dbctelem || r#dbctelemetryledgerrepository.java:#,# ] cannot assign a value to final variable repository || r#dbctelemetryledgerrepository.java:#,# ] cannot assign a value to final variable template",
+  "id": "T2-030",
+  "reason": "test gate: status=error; exit_code=1; blame: R2dbcTelemetryLedgerRepository.java:9,8 ] com.pulsestream.telemetry.ledger.infrastructure.R2dbcTelem || R2dbcTelemetryLedgerRepository.java:16,13 ] cannot assign a value to final variable repository || R2dbcTelemetryLedgerRepository.java:17,13 ] cannot assign a value to final variable template || R2dbcTelemetryLedgerRepository.java:9,8 ] com.pulsestream.telemetry.ledger.infrastructure.R2dbcTelem || R2dbcTelemetryLedgerRepository.java:16,13 ] cannot assign a value to final variable repository || R2dbcTelemetryLedgerRepository.java:17,13 ] cannot assign a value to final variable template",
+  "signature": "test gate: status=error; exit_code=#; blame: r#dbctelemetryledgerrepository.java:#,# ] com.pulsestream.telemetry.ledger.infrastructure.r#dbctelem || r#dbctelemetryledgerrepository.java:#,# ] cannot assign a value to final variable repository || r#dbctelemetryledgerrepository.java:#,# ] cannot assign a value to final variable template || r#dbctelemetryledgerrepository.java:#,# ] com.pulsestream.telemetry.ledger.infrastructure.r#dbctelem || r#dbctelemetryledgerrepository.java:#,# ] cannot assign a value to final variable repository || r#dbctelemetryledgerrepository.java:#,# ] cannot assign a value to final variable template",
+  "updated": 1794333493
+}

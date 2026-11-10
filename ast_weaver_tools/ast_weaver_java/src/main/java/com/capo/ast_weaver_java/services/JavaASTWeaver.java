@@ -9,6 +9,7 @@ import com.capo.ast_weaver_java.services.weave.PayloadNames;
 import com.capo.ast_weaver_java.services.weave.PayloadParser;
 import com.capo.ast_weaver_java.services.weave.SemanticFixups;
 import com.capo.ast_weaver_java.services.weave.SourceFiles;
+import com.capo.ast_weaver_java.services.weave.SuperTypeWeaver;
 import com.capo.ast_weaver_java.services.weave.TypeDeclarations;
 import com.capo.ast_weaver_java.services.weave.TypeSkeletons;
 import com.github.javaparser.ast.CompilationUnit;
@@ -19,6 +20,7 @@ import com.github.javaparser.ast.body.TypeDeclaration;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -32,6 +34,7 @@ import java.util.Objects;
  * SourceFiles
  * ImportWeaver      -> payload.imports()
  * TypeDeclarations  -> the owner type inside the file
+ * SuperTypeWeaver   -> payload extends/implements clauses (adapters IS-A their port)
  * PayloadParser     -> every member text via the context ladder
  * MemberWeaver      -> merge by AST identity (replace twins, never duplicate)
  * AnnotationWeaver  -> type annotations
@@ -60,25 +63,36 @@ public final class JavaASTWeaver {
 
         String kind = PayloadNames.normalizeKind(payload.kind());
         String simpleTypeName = PayloadNames.simpleTypeName(payload.export());
+        List<String> typeParameters = PayloadNames.typeParameters(payload.export());
         boolean newFile = !Files.isRegularFile(targetPath);
 
         CompilationUnit cu = newFile
-            ? TypeSkeletons.create(kind, simpleTypeName, PayloadNames.packageOf(payload.export(), targetPath))
+            ? TypeSkeletons.create(kind, simpleTypeName, typeParameters,
+                PayloadNames.packageOf(payload.export(), targetPath))
             : SourceFiles.loadExisting(targetPath);
 
         ImportWeaver.apply(cu, payload.imports());
         TypeDeclaration<?> owner = newFile
             ? cu.getTypes().get(0)
-            : TypeDeclarations.findOrCreate(cu, simpleTypeName, kind);
+            : TypeDeclarations.findOrCreate(cu, simpleTypeName, kind, typeParameters);
 
         if (owner != null) {
+            SuperTypeWeaver.apply(owner, payload.extendsType(), payload.implementsTypes());
             MemberWeaver.merge(owner,
                 PayloadParser.members(payload.members(), TypeDeclarations.kindOf(owner), simpleTypeName),
                 newFile && owner instanceof RecordDeclaration);
             AnnotationWeaver.applyAll(owner, payload.annotations());
 
             if (!"interface".equals(kind) && !payload.body().isBlank()) {
-                MethodDeclaration target = MethodWeaver.selectOrCreate(owner, payload);
+                // Full-declaration signatures replace the method wholesale; the bare
+                // contract spelling keeps the create/select + reconcile path.
+                MethodDeclaration target = MethodWeaver.fullDeclaration(payload)
+                    .map(declaration -> MethodWeaver.replaceInPlace(owner, declaration))
+                    .orElseGet(() -> {
+                        MethodDeclaration selected = MethodWeaver.selectOrCreate(owner, payload);
+                        MethodWeaver.reconcileFromSignature(selected, payload);
+                        return selected;
+                    });
                 AnnotationWeaver.applyAll(target, payload.methodAnnotations());
                 target.setBody(PayloadParser.body(payload.body()));
             } else if ("interface".equals(kind)) {

@@ -1,0 +1,17 @@
+{
+  "id": "T1-019",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-001",
+    "T1-003"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/sequencing/domain/SlidingWindowAssemblerTest.java",
+  "kind": "test",
+  "layer": "domain",
+  "feature": null,
+  "export": "SlidingWindowAssembler",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "TEST for SlidingWindowAssembler at src/main/java/com/pulsestream/telemetry/sequencing/domain/SlidingWindowAssembler.java. JUnit 5 + AssertJ (+ Mockito, reactor-test StepVerifier for reactive code); cover every invariant and behavior below, including failure cases, using only the pinned surfaces of collaborators. Unit under test: Telemetry Sequencing & Windowing domain (single device, not thread-safe). Constructor SlidingWindowAssembler(Duration size, Duration slide) with size >= slide > 0. List<TelemetryWindowClosedEvent> add(TelemetrySampleEvent orderedSample): windows start at epoch multiples of slide and span [start, start+size); a window closes (and is returned, ascending windowStart) when a sample with tDevice >= windowEnd is added; the sample belongs to every window containing its tDevice. List<TelemetryWindowClosedEvent> flush() closes all open non-empty windows. Empty windows are never emitted. Size/slide come from configuration, never hardcoded."
+}

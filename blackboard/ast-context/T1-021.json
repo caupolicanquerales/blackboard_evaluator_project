@@ -1,0 +1,55 @@
+{
+  "task_id": "T1-021",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "SequencingService",
+    "constructors": [
+      [
+        "Duration.ofSeconds(10)",
+        "100",
+        "Duration.ofSeconds(10)",
+        "Duration.ofSeconds(10)",
+        "sampleChannel",
+        "backfillChannel",
+        "windowChannel"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "service",
+        "method": "onSampleReceived",
+        "args": [
+          "sample"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "flush",
+        "args": []
+      },
+      {
+        "receiver": "service",
+        "method": "onSampleReceived",
+        "args": [
+          "sample(\"d1\", 6)"
+        ]
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class SequencingServiceTest {",
+      "private SequencingService service;",
+      "service = serviceWithBackfillCapacity(100);",
+      "private SequencingService serviceWithBackfillCapacity(int backfillCapacity) {",
+      "return new SequencingService(",
+      "StepVerifier.create(service.onSampleReceived(sample)).verifyComplete();",
+      "StepVerifier.create(service.flush()).verifyComplete();",
+      "service = serviceWithBackfillCapacity(1);",
+      "StepVerifier.create(service.onSampleReceived(sample(\"d1\", 6)))"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

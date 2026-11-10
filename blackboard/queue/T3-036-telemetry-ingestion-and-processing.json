@@ -1,0 +1,15 @@
+{
+  "id": "T3-036",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-036"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/broadcasting/application/BroadcastingService.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "BroadcastingService",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "REFACTOR BroadcastingService: inspect the implementation for layering violations, blocking calls, unbounded buffers, hardcoded values and invariant gaps; improve clarity without changing the public surface or breaking tests. Spec: Telemetry Stream Broadcasting use case implementing BroadcastTelemetryUseCase. Constructor BroadcastingService(TelemetryStreamGateway gateway, BoundedEventChannel<TelemetryStreamPublishedEvent> streamPublications, Clock clock). broadcastSample/broadcastWindow map to BroadcastItem, publish through the gateway, then publish TelemetryStreamPublishedEvent(kind, deviceId, sampleCount, clock.instant()); a failure publishing that audit event is swallowed (onErrorResume) so it never blocks broadcasting. stream(deviceId) = gateway.items() filtered by deviceId when non-null. Broadcasting never influences ordering."
+}

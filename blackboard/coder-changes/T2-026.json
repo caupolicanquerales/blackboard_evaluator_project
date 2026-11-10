@@ -1,27 +1,28 @@
 {
   "id": "T2-026",
   "project": "telemetry-ingestion-and-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/ledger/application/TelemetryLedgerRepository.java",
-  "export": "TelemetryLedgerRepository",
-  "method": "TelemetryLedgerRepository",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ledger/application/port/in/QueryTelemetryLedgerUseCase.java",
+  "export": "QueryTelemetryLedgerUseCase",
+  "method": "history",
   "language": "java",
-  "framework": "springboot",
+  "framework": "springboot3",
   "skill": "java-springboot",
-  "signature": "List<TelemetryRevision> findRevisions(TelemetryEventKey key)",
-  "returns": "void",
-  "body": "",
   "kind": "interface",
-  "members": [
-    "List<TelemetryRevision> findRevisions(TelemetryEventKey key);",
-    "TelemetryRevision append(TelemetryRevision revision);"
-  ],
+  "signature": "Flux<TelemetryRecord> history(String deviceId, Instant from, Instant toExclusive)",
+  "returns": "Flux<TelemetryRecord>",
+  "body": "",
   "imports": [
-    "com.pulsestream.telemetry.ledger.domain.TelemetryEventKey",
-    "com.pulsestream.telemetry.ledger.domain.TelemetryRevision",
-    "java.util.List"
+    "com.pulsestream.telemetry.ledger.domain.TelemetryRecord",
+    "java.time.Instant",
+    "reactor.core.publisher.Flux"
   ],
   "missing": [],
+  "members": [
+    "Flux<TelemetryRecord> history(String deviceId, Instant from, Instant toExclusive);",
+    "Flux<TelemetryRecord> latestHistory(String deviceId, Instant from, Instant toExclusive);",
+    "Flux<TelemetryRecord> revisionChain(String deviceId, String metric, Instant tDevice);"
+  ],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-06T19:21:22.956654+00:00"
+  "recorded_at": "2026-11-09T20:08:19.889031+00:00"
 }

@@ -288,6 +288,178 @@ class JavaASTWeaverGenericShapesTest {
             .hasMessageContaining("member: int = = 7");
     }
 
+    @Test
+    void weave_genericClassExport_newFileKeepsTypeParameterAndCompiles() throws IOException {
+        // The T2-006 incident: export declared BoundedEventChannel<T> but the created shell
+        // was plain `class BoundedEventChannel`, so every member mentioning T died in javac
+        // and no coder retry could escape the identical failure.
+        Path file = typedTarget("com.x.Channel");
+        CoderChangesPayload command = payload("com.x.Channel<T>", "publish", "publish(T event)", "void", "class",
+            List.of("private final T seed;", "public Channel(T seed) { this.seed = seed; }",
+                    "public T seed() { return seed; }"), "");
+
+        JavaASTWeaver.weave(file, command);
+        String result = Files.readString(file);
+        assertThat(result).contains("class Channel<T>");
+        assertCompiles(file);
+
+        JavaASTWeaver.weave(file, command);
+        String rewoven = Files.readString(file);
+        assertThat(countOf(rewoven, "class Channel")).isEqualTo(1L);
+        assertThat(countOf(rewoven, "<T>")).isEqualTo(1L);
+        assertCompiles(file);
+    }
+
+    @Test
+    void weave_genericClassExportOntoExistingPlainShell_addsParameterOnce() throws IOException {
+        Path file = givenSource("com.x.Box", """
+            package com.x;
+
+            public class Box {
+                public void keep() { }
+            }
+            """);
+
+        JavaASTWeaver.weave(file, payload("com.x.Box<T>", "value", "value()", "T", "class",
+            List.of("private final T value;", "public Box(T value) { this.value = value; }"), "return value;"));
+        String result = Files.readString(file);
+        assertThat(result).contains("class Box<T>").contains("keep()");
+        assertCompiles(file);
+
+        JavaASTWeaver.weave(file, payload("com.x.Box<T>", "value", "value()", "T", "class",
+            List.of("private final T value;", "public Box(T value) { this.value = value; }"), "return value;"));
+        String rewoven = Files.readString(file);
+        assertThat(countOf(rewoven, "<T>")).isEqualTo(1L);
+        assertCompiles(file);
+    }
+
+    @Test
+    void weave_multiParameterBoundedExport_splitsParametersNotWords() throws IOException {
+        Path file = typedTarget("com.x.Table");
+
+        JavaASTWeaver.weave(file, payload("com.x.Table<K, V extends Comparable<V>>", "lookup", "lookup(K key)", "V",
+            "class", List.of(), "return null;"));
+
+        String result = Files.readString(file);
+        assertThat(result).contains("class Table<K, V extends Comparable<V>>");
+        assertCompiles(file);
+    }
+
+    @Test
+    void weave_adapterPayloadWithImplements_landsOnPortAndCompiles() throws IOException {
+        // The T2-037 incident: the frozen test demanded `isInstanceOf(TelemetryStreamGateway.class)`
+        // and the payload had no field to say it, so no coder retry could ever converge.
+        Path port = givenSource("com.x.StreamPort", """
+            package com.x;
+
+            public interface StreamPort {
+                void publish(String item);
+            }
+            """);
+        Path file = typedTarget("com.x.Reactor");
+        CoderChangesPayload command = superPayload("com.x.Reactor", "publish", "publish(String item)", "void",
+            "class", List.of("public void publish(String item) { }"), "// no-op", "", List.of("StreamPort"));
+
+        JavaASTWeaver.weave(file, command);
+        String result = Files.readString(file);
+        assertThat(result).contains("class Reactor implements StreamPort");
+        assertCompiles(port, file);
+
+        JavaASTWeaver.weave(file, command);
+        String rewoven = Files.readString(file);
+        assertThat(countOf(rewoven, "implements StreamPort")).isEqualTo(1L);
+        assertCompiles(port, file);
+    }
+
+    @Test
+    void weave_extendsClause_replacesOnlyTheExceptionPlaceholderAndKeepsRealParents() throws IOException {
+        Path base = givenSource("com.x.BaseChannel", """
+            package com.x;
+
+            public abstract class BaseChannel {
+                public abstract String name();
+            }
+            """);
+        Path file = typedTarget("com.x.Failure");
+
+        JavaASTWeaver.weave(file, superPayload("com.x.Failure", "name", "name()", "String", "exception",
+            List.of(), "return \"failure\";", "BaseChannel", List.of()));
+        String result = Files.readString(file);
+        assertThat(result).contains("extends BaseChannel").doesNotContain("extends RuntimeException");
+        assertCompiles(base, file);
+    }
+
+    @Test
+    void weave_staticFactorySignature_reconcilesExistingInstanceMethod() throws IOException {
+        // The T2-031 trap: the frozen test calls Resp.from(record) from a static context
+        // while the landed method is an instance one. Signature tokens used to be dropped
+        // for existing methods, so no re-emit could ever converge.
+        Path file = givenSource("com.x.Resp", """
+            package com.x;
+
+            public class Resp {
+                private final String value;
+
+                public Resp(String value) {
+                    this.value = value;
+                }
+
+                public Resp from(String raw) {
+                    return new Resp(raw);
+                }
+            }
+            """);
+
+        JavaASTWeaver.weave(file, payload("com.x.Resp", "from", "public static Resp from(String raw)", "Resp",
+            "class", List.of(), "return new Resp(raw.intern());"));
+        String result = Files.readString(file);
+        assertThat(result).contains("public static Resp from(String raw)");
+        assertCompiles(file);
+
+        JavaASTWeaver.weave(file, payload("com.x.Resp", "from", "public static Resp from(String raw)", "Resp",
+            "class", List.of(), "return new Resp(raw.intern());"));
+        assertThat(countOf(Files.readString(file), "Resp from(String")).isEqualTo(1L);
+        assertCompiles(file);
+    }
+
+    @Test
+    void weave_fullDeclarationSignature_replacesMethodWholesaleKeepsAnnotations() throws IOException {
+        // Day-2 surgery: the signature may be a COMPLETE declaration; then the method is
+        // swapped in full text - modifiers, method-level generics, everything rides the
+        // text. No schema field is needed for a language shape the tool has not seen.
+        Path file = givenSource("com.x.Maper", """
+            package com.x;
+
+            public class Maper {
+                @Deprecated
+                public Object map(Object in) {
+                    return in.toString();
+                }
+            }
+            """);
+
+        CoderChangesPayload command = payload("com.x.Maper", "map", "public static <T> T map(T in)", "T",
+            "class", List.of(), "return in;");
+        JavaASTWeaver.weave(file, command);
+        String result = Files.readString(file);
+        assertThat(result).contains("public static <T> T map(T in)").contains("@Deprecated");
+        assertCompiles(file);
+
+        JavaASTWeaver.weave(file, command);
+        String rewoven = Files.readString(file);
+        assertThat(countOf(rewoven, "T map(T in)")).isEqualTo(1L);
+        assertThat(countOf(rewoven, "@Deprecated")).isEqualTo(1L);
+        assertCompiles(file);
+    }
+
+    private static CoderChangesPayload superPayload(String export, String method, String signature,
+            String returns, String kind, List<String> members, String body,
+            String extendsType, List<String> implementsTypes) {
+        return new CoderChangesPayload("T-1", "proj", "ignored.java", export, method, "java",
+            "spring-boot", signature, returns, kind, members, List.of(), body, List.of(),
+            List.of(), List.of(), true, extendsType, implementsTypes);
+    }
+
     private Path typedTarget(String export) throws IOException {
         Path file = tempDir.resolve(export.substring(export.lastIndexOf('.') + 1) + ".java");
         return file;
@@ -314,19 +486,20 @@ class JavaASTWeaverGenericShapesTest {
     }
 
     /** The real compiler, not the parse-only gate: full javac run so semantics are proven too. */
-    private static void assertCompiles(Path file) throws IOException {
+    private static void assertCompiles(Path... files) throws IOException {
         JavaCompiler javac = ToolProvider.getSystemJavaCompiler();
         assertThat(javac).as("tests require a JDK (javac), not a JRE").isNotNull();
         StringWriter log = new StringWriter();
         List<String> diagnostics = new java.util.ArrayList<>();
-        Path out = file.resolveSibling("classes");
+        Path out = files[0].resolveSibling("classes");
         Files.createDirectories(out);
         try (StandardJavaFileManager fm = javac.getStandardFileManager(
                 d -> diagnostics.add("line " + d.getLineNumber() + ": " + d.getMessage(null)), null, null)) {
-            Iterable<? extends javax.tools.JavaFileObject> units = fm.getJavaFileObjects(file.toFile());
+            Iterable<? extends javax.tools.JavaFileObject> units = fm.getJavaFileObjects(
+                java.util.Arrays.stream(files).map(Path::toFile).toArray(java.io.File[]::new));
             List<String> options = List.of("-proc:none", "-d", out.toString());
             boolean ok = javac.getTask(log, fm, null, options, List.of(), units).call();
-            assertThat(ok).as("woven source must compile:%n%s%n%s %s", file, log, diagnostics).isTrue();
+            assertThat(ok).as("woven source must compile:%n%s%n%s %s", files[0], log, diagnostics).isTrue();
         }
     }
 

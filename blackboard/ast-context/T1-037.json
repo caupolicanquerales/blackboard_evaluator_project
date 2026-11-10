@@ -1,0 +1,111 @@
+{
+  "task_id": "T1-037",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "ReactorTelemetryStreamGateway",
+    "constructors": [
+      [
+        "buffer"
+      ],
+      [
+        "4"
+      ],
+      [
+        "2"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "gateway",
+        "method": "publish",
+        "args": [
+          "item()"
+        ]
+      },
+      {
+        "receiver": "gateway",
+        "method": "items",
+        "args": []
+      },
+      {
+        "receiver": "gateway",
+        "method": "publish",
+        "args": [
+          "item"
+        ]
+      },
+      {
+        "receiver": "gateway",
+        "method": "publish",
+        "args": [
+          "early"
+        ]
+      },
+      {
+        "receiver": "gateway",
+        "method": "publish",
+        "args": [
+          "later"
+        ]
+      },
+      {
+        "receiver": "gateway",
+        "method": "items",
+        "args": [],
+        "returns": "Flux<BroadcastItem>"
+      },
+      {
+        "receiver": "gateway",
+        "method": "publish",
+        "args": [
+          "a"
+        ]
+      },
+      {
+        "receiver": "gateway",
+        "method": "publish",
+        "args": [
+          "b"
+        ]
+      },
+      {
+        "receiver": "gateway",
+        "method": "publish",
+        "args": [
+          "c"
+        ]
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class ReactorTelemetryStreamGatewayTest {",
+      "assertThatThrownBy(() -> new ReactorTelemetryStreamGateway(buffer))",
+      "assertThat(new ReactorTelemetryStreamGateway(4)).isInstanceOf(TelemetryStreamGateway.class);",
+      "ReactorTelemetryStreamGateway gateway = new ReactorTelemetryStreamGateway(4);",
+      "StepVerifier.create(gateway.publish(item())).verifyComplete();",
+      "ReactorTelemetryStreamGateway gateway = new ReactorTelemetryStreamGateway(4);",
+      "StepVerifier.create(gateway.items().take(1))",
+      ".then(() -> gateway.publish(item).block(TIMEOUT))",
+      "ReactorTelemetryStreamGateway gateway = new ReactorTelemetryStreamGateway(4);",
+      "gateway.publish(early).block(TIMEOUT);",
+      "StepVerifier.create(gateway.items().take(1))",
+      ".then(() -> gateway.publish(later).block(TIMEOUT))",
+      "ReactorTelemetryStreamGateway gateway = new ReactorTelemetryStreamGateway(4);",
+      "Flux<BroadcastItem> first = gateway.items().take(1);",
+      "Flux<BroadcastItem> second = gateway.items().take(1);",
+      ".then(() -> gateway.publish(item).block(TIMEOUT))",
+      "ReactorTelemetryStreamGateway gateway = new ReactorTelemetryStreamGateway(2);",
+      "StepVerifier slow = StepVerifier.create(gateway.items(), 0)",
+      "StepVerifier.create(gateway.publish(item())).verifyComplete();",
+      "ReactorTelemetryStreamGateway gateway = new ReactorTelemetryStreamGateway(2);",
+      "StepVerifier.create(gateway.items(), 0)",
+      "gateway.publish(a).block(TIMEOUT);",
+      "gateway.publish(b).block(TIMEOUT);",
+      "gateway.publish(c).block(TIMEOUT);"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

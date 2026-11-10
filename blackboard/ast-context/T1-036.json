@@ -1,0 +1,83 @@
+{
+  "task_id": "T1-036",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "BroadcastingService",
+    "constructors": [
+      [
+        "gateway",
+        "channel",
+        "Clock.fixed(NOW, ZoneOffset.UTC)"
+      ],
+      [
+        "gateway",
+        "failing",
+        "Clock.fixed(NOW, ZoneOffset.UTC)"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "failingService",
+        "method": "broadcastSample",
+        "args": [
+          "sample(\"dev-1\")"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "broadcastSample",
+        "args": [
+          "sample(\"dev-1\")"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "broadcastWindow",
+        "args": [
+          "window"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "stream",
+        "args": [
+          "null"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "stream",
+        "args": [
+          "\"dev-1\""
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "stream",
+        "args": [
+          "\"other\""
+        ]
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class BroadcastingServiceTest {",
+      "private BroadcastingService service;",
+      "service = new BroadcastingService(gateway, channel, Clock.fixed(NOW, ZoneOffset.UTC));",
+      "StepVerifier.create(service.broadcastSample(sample(\"dev-1\"))).verifyComplete();",
+      "StepVerifier.create(service.broadcastSample(sample(\"dev-1\"))).verifyComplete();",
+      "BroadcastingService failingService =",
+      "new BroadcastingService(gateway, failing, Clock.fixed(NOW, ZoneOffset.UTC));",
+      "StepVerifier.create(failingService.broadcastSample(sample(\"dev-1\"))).verifyComplete();",
+      "StepVerifier.create(service.broadcastSample(sample(\"dev-1\")))",
+      "StepVerifier.create(service.broadcastWindow(window)).verifyComplete();",
+      "StepVerifier.create(service.stream(null))",
+      "StepVerifier.create(service.stream(\"dev-1\"))",
+      "StepVerifier.create(service.stream(\"other\")).verifyComplete();"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

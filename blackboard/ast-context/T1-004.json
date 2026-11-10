@@ -3,33 +3,130 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "IntakeTelemetryUseCase",
+    "type": "TelemetryRevisionAppendedEvent",
     "constructors": [
       [
-        "policy",
-        "port",
-        "CLOCK"
+        "RECORD_ID",
+        "\"device-1\"",
+        "\"temperature\"",
+        "T_DEVICE",
+        "1"
+      ],
+      [
+        "RECORD_ID",
+        "\"device-1\"",
+        "\"temperature\"",
+        "T_DEVICE",
+        "2"
+      ],
+      [
+        "RECORD_ID",
+        "\"device-1\"",
+        "\"temperature\"",
+        "T_DEVICE",
+        "Integer.MAX_VALUE"
+      ],
+      [
+        "RECORD_ID",
+        "\"device-1\"",
+        "\"temperature\"",
+        "T_DEVICE",
+        "revision"
+      ],
+      [
+        "null",
+        "\"device-1\"",
+        "\"temperature\"",
+        "T_DEVICE",
+        "1"
+      ],
+      [
+        "RECORD_ID",
+        "null",
+        "\"temperature\"",
+        "T_DEVICE",
+        "1"
+      ],
+      [
+        "RECORD_ID",
+        "\"device-1\"",
+        "null",
+        "T_DEVICE",
+        "1"
+      ],
+      [
+        "RECORD_ID",
+        "\"device-1\"",
+        "\"temperature\"",
+        "null",
+        "1"
+      ],
+      [
+        "RECORD_ID",
+        "deviceId",
+        "\"temperature\"",
+        "T_DEVICE",
+        "1"
+      ],
+      [
+        "RECORD_ID",
+        "\"device-1\"",
+        "metric",
+        "T_DEVICE",
+        "1"
       ]
     ],
     "static_calls": [],
     "calls": [
       {
-        "receiver": "useCase",
-        "method": "ingest",
-        "args": [
-          "sample()"
-        ]
+        "receiver": "event",
+        "method": "recordId",
+        "args": []
+      },
+      {
+        "receiver": "event",
+        "method": "deviceId",
+        "args": []
+      },
+      {
+        "receiver": "event",
+        "method": "metric",
+        "args": []
+      },
+      {
+        "receiver": "event",
+        "method": "tDevice",
+        "args": []
+      },
+      {
+        "receiver": "event",
+        "method": "revision",
+        "args": []
       }
     ],
     "verified": [],
     "usage_lines": [
-      "class IntakeTelemetryUseCaseTest {",
-      "private final IntakeTelemetryUseCase useCase = new IntakeTelemetryUseCase(policy, port, CLOCK);",
-      "StepVerifier.create(useCase.ingest(sample())).verifyComplete();",
-      "StepVerifier.create(useCase.ingest(sample())).verifyComplete();",
-      "StepVerifier.create(useCase.ingest(sample())).verifyComplete();",
-      "StepVerifier.create(useCase.ingest(sample())).verifyComplete();",
-      "StepVerifier.create(useCase.ingest(sample()))"
+      "class TelemetryRevisionAppendedEventTest {",
+      "TelemetryRevisionAppendedEvent event =",
+      "new TelemetryRevisionAppendedEvent(RECORD_ID, \"device-1\", \"temperature\", T_DEVICE, 1);",
+      "assertThat(event.recordId()).isEqualTo(RECORD_ID);",
+      "assertThat(event.deviceId()).isEqualTo(\"device-1\");",
+      "assertThat(event.metric()).isEqualTo(\"temperature\");",
+      "assertThat(event.tDevice()).isEqualTo(T_DEVICE);",
+      "assertThat(event.revision()).isEqualTo(1);",
+      "TelemetryRevisionAppendedEvent a =",
+      "new TelemetryRevisionAppendedEvent(RECORD_ID, \"device-1\", \"temperature\", T_DEVICE, 2);",
+      "TelemetryRevisionAppendedEvent b =",
+      "new TelemetryRevisionAppendedEvent(RECORD_ID, \"device-1\", \"temperature\", T_DEVICE, 2);",
+      "assertThat(a).isEqualTo(b).hasSameHashCodeAs(b);",
+      "assertThatNoException().isThrownBy(() -> new TelemetryRevisionAppendedEvent(",
+      "assertThatThrownBy(() -> new TelemetryRevisionAppendedEvent(",
+      "assertThatThrownBy(() -> new TelemetryRevisionAppendedEvent(",
+      "assertThatThrownBy(() -> new TelemetryRevisionAppendedEvent(",
+      "assertThatThrownBy(() -> new TelemetryRevisionAppendedEvent(",
+      "assertThatThrownBy(() -> new TelemetryRevisionAppendedEvent(",
+      "assertThatThrownBy(() -> new TelemetryRevisionAppendedEvent(",
+      "assertThatThrownBy(() -> new TelemetryRevisionAppendedEvent("
     ]
   },
   "stderr": "",

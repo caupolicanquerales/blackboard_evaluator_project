@@ -1,0 +1,47 @@
+{
+  "task_id": "T1-039",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "TelemetryStreamController",
+    "constructors": [
+      [
+        "useCase"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "controller",
+        "method": "stream",
+        "args": [
+          "\"dev-1\""
+        ]
+      },
+      {
+        "receiver": "controller",
+        "method": "stream",
+        "args": [
+          "null"
+        ]
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class TelemetryStreamControllerTest {",
+      "TelemetryStreamController controller = new TelemetryStreamController(useCase);",
+      "StepVerifier.create(controller.stream(\"dev-1\")).verifyComplete();",
+      "TelemetryStreamController controller = new TelemetryStreamController(useCase);",
+      "StepVerifier.create(controller.stream(null)).verifyComplete();",
+      "TelemetryStreamController controller = new TelemetryStreamController(useCase);",
+      "StepVerifier.create(controller.stream(\"dev-1\"))",
+      "TelemetryStreamController controller = new TelemetryStreamController(useCase);",
+      "StepVerifier.create(controller.stream(\"dev-1\"), 0)",
+      "Method method = TelemetryStreamController.class.getMethod(\"stream\", String.class);",
+      "assertThat(TelemetryStreamController.class.isAnnotationPresent(RestController.class)).isTrue();",
+      "assertThat(pathOf(TelemetryStreamController.class, mapping)).isEqualTo(\"/api/v1/telemetry/stream\");"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

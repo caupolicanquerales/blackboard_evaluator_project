@@ -3,55 +3,226 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "AppendRevisionUseCase",
+    "type": "TelemetrySample",
     "constructors": [
       [
-        "repository",
-        "publisher"
+        "\"dev-1\"",
+        "\"temp\"",
+        "21.5",
+        "T_DEVICE",
+        "T_INGRESS",
+        "status"
+      ],
+      [
+        "null",
+        "\"temp\"",
+        "1.0",
+        "T_DEVICE",
+        "T_INGRESS",
+        "ValidationStatus.VALID"
+      ],
+      [
+        "blank",
+        "\"temp\"",
+        "1.0",
+        "T_DEVICE",
+        "T_INGRESS",
+        "ValidationStatus.VALID"
+      ],
+      [
+        "\"dev-1\"",
+        "null",
+        "1.0",
+        "T_DEVICE",
+        "T_INGRESS",
+        "ValidationStatus.VALID"
+      ],
+      [
+        "\"dev-1\"",
+        "blank",
+        "1.0",
+        "T_DEVICE",
+        "T_INGRESS",
+        "ValidationStatus.VALID"
+      ],
+      [
+        "\"dev-1\"",
+        "\"temp\"",
+        "1.0",
+        "null",
+        "T_INGRESS",
+        "ValidationStatus.VALID"
+      ],
+      [
+        "\"dev-1\"",
+        "\"temp\"",
+        "1.0",
+        "T_DEVICE",
+        "null",
+        "ValidationStatus.VALID"
+      ],
+      [
+        "\"dev-1\"",
+        "\"temp\"",
+        "1.0",
+        "T_DEVICE",
+        "T_INGRESS",
+        "null"
+      ],
+      [
+        "\"dev-1\"",
+        "\"temp\"",
+        "21.5",
+        "T_DEVICE",
+        "T_INGRESS.plusSeconds(60)",
+        "ValidationStatus.VALID"
       ]
     ],
-    "static_calls": [],
+    "static_calls": [
+      {
+        "method": "unvalidated",
+        "args": [
+          "\"dev-1\"",
+          "\"temp\"",
+          "21.5",
+          "T_DEVICE",
+          "T_INGRESS"
+        ]
+      },
+      {
+        "method": "unvalidated",
+        "args": [
+          "\" \"",
+          "\"temp\"",
+          "1.0",
+          "T_DEVICE",
+          "T_INGRESS"
+        ]
+      }
+    ],
     "calls": [
       {
-        "receiver": "useCase",
-        "method": "execute",
-        "args": [
-          "new AppendRevisionCommand(key, 21.5)"
-        ],
-        "returns": "TelemetryRevision"
+        "receiver": "a",
+        "method": "tDevice",
+        "args": []
       },
       {
-        "receiver": "useCase",
-        "method": "execute",
-        "args": [
-          "new AppendRevisionCommand(key, 22.0)"
-        ],
-        "returns": "TelemetryRevision"
+        "receiver": "a",
+        "method": "tIngress",
+        "args": []
       },
       {
-        "receiver": "useCase",
-        "method": "execute",
+        "receiver": "b",
+        "method": "tDevice",
+        "args": []
+      },
+      {
+        "receiver": "b",
+        "method": "tIngress",
+        "args": []
+      },
+      {
+        "receiver": "copy",
+        "method": "status",
+        "args": []
+      },
+      {
+        "receiver": "original",
+        "method": "withStatus",
         "args": [
-          "new AppendRevisionCommand(key, 22.0)"
+          "newStatus"
+        ],
+        "returns": "TelemetrySample"
+      },
+      {
+        "receiver": "original",
+        "method": "withStatus",
+        "args": [
+          "ValidationStatus.VALID"
+        ],
+        "returns": "TelemetrySample"
+      },
+      {
+        "receiver": "original",
+        "method": "status",
+        "args": []
+      },
+      {
+        "receiver": "original",
+        "method": "withStatus",
+        "args": [
+          "null"
         ]
       },
       {
-        "receiver": "useCase",
-        "method": "execute",
-        "args": [
-          "new AppendRevisionCommand(key, 21.5)"
-        ]
+        "receiver": "s",
+        "method": "deviceId",
+        "args": []
+      },
+      {
+        "receiver": "s",
+        "method": "metric",
+        "args": []
+      },
+      {
+        "receiver": "s",
+        "method": "value",
+        "args": []
+      },
+      {
+        "receiver": "s",
+        "method": "tDevice",
+        "args": []
+      },
+      {
+        "receiver": "s",
+        "method": "tIngress",
+        "args": []
+      },
+      {
+        "receiver": "s",
+        "method": "status",
+        "args": []
       }
     ],
     "verified": [],
     "usage_lines": [
-      "class AppendRevisionUseCaseTest {",
-      "private AppendRevisionUseCase useCase;",
-      "useCase = new AppendRevisionUseCase(repository, publisher);",
-      "TelemetryRevision result = useCase.execute(new AppendRevisionCommand(key, 21.5));",
-      "TelemetryRevision result = useCase.execute(new AppendRevisionCommand(key, 22.0));",
-      "useCase.execute(new AppendRevisionCommand(key, 22.0));",
-      "assertThatThrownBy(() -> useCase.execute(new AppendRevisionCommand(key, 21.5)))"
+      "class TelemetrySampleTest {",
+      "private static TelemetrySample sample(ValidationStatus status) {",
+      "return new TelemetrySample(\"dev-1\", \"temp\", 21.5, T_DEVICE, T_INGRESS, status);",
+      "TelemetrySample s = sample(ValidationStatus.VALID);",
+      "assertThat(s.deviceId()).isEqualTo(\"dev-1\");",
+      "assertThat(s.metric()).isEqualTo(\"temp\");",
+      "assertThat(s.value()).isEqualTo(21.5);",
+      "assertThat(s.tDevice()).isEqualTo(T_DEVICE);",
+      "assertThat(s.tIngress()).isEqualTo(T_INGRESS);",
+      "assertThat(s.status()).isEqualTo(ValidationStatus.VALID);",
+      "assertThatThrownBy(() -> new TelemetrySample(null, \"temp\", 1.0, T_DEVICE, T_INGRESS, ValidationStatus.VALID))",
+      "assertThatThrownBy(() -> new TelemetrySample(blank, \"temp\", 1.0, T_DEVICE, T_INGRESS, ValidationStatus.VALID))",
+      "assertThatThrownBy(() -> new TelemetrySample(\"dev-1\", null, 1.0, T_DEVICE, T_INGRESS, ValidationStatus.VALID))",
+      "assertThatThrownBy(() -> new TelemetrySample(\"dev-1\", blank, 1.0, T_DEVICE, T_INGRESS, ValidationStatus.VALID))",
+      "assertThatThrownBy(() -> new TelemetrySample(\"dev-1\", \"temp\", 1.0, null, T_INGRESS, ValidationStatus.VALID))",
+      "assertThatThrownBy(() -> new TelemetrySample(\"dev-1\", \"temp\", 1.0, T_DEVICE, null, ValidationStatus.VALID))",
+      "assertThatThrownBy(() -> new TelemetrySample(\"dev-1\", \"temp\", 1.0, T_DEVICE, T_INGRESS, null))",
+      "TelemetrySample s = TelemetrySample.unvalidated(\"dev-1\", \"temp\", 21.5, T_DEVICE, T_INGRESS);",
+      "assertThat(s).isEqualTo(sample(ValidationStatus.UNVALIDATED));",
+      "assertThat(s.status()).isEqualTo(ValidationStatus.UNVALIDATED);",
+      "assertThatThrownBy(() -> TelemetrySample.unvalidated(\" \", \"temp\", 1.0, T_DEVICE, T_INGRESS))",
+      "TelemetrySample original = sample(ValidationStatus.UNVALIDATED);",
+      "TelemetrySample copy = original.withStatus(newStatus);",
+      "assertThat(copy.status()).isEqualTo(newStatus);",
+      "assertThat(copy).usingRecursiveComparison().ignoringFields(\"status\")",
+      ".isEqualTo(original);",
+      "TelemetrySample original = sample(ValidationStatus.UNVALIDATED);",
+      "TelemetrySample copy = original.withStatus(ValidationStatus.VALID);",
+      "assertThat(copy).isNotSameAs(original);",
+      "assertThat(original.status()).isEqualTo(ValidationStatus.UNVALIDATED);",
+      "TelemetrySample original = sample(ValidationStatus.UNVALIDATED);",
+      "assertThatThrownBy(() -> original.withStatus(null)).isInstanceOf(RuntimeException.class);",
+      "TelemetrySample a = sample(ValidationStatus.VALID);",
+      "TelemetrySample b = new TelemetrySample(\"dev-1\", \"temp\", 21.5, T_DEVICE, T_INGRESS.plusSeconds(60),",
+      "assertThat(b.tDevice()).isEqualTo(a.tDevice());",
+      "assertThat(b.tIngress()).isNotEqualTo(a.tIngress());"
     ]
   },
   "stderr": "",

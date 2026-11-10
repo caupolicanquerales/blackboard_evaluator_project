@@ -1,0 +1,86 @@
+{
+  "task_id": "T1-012",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "SensorMetricBoundaryPolicy",
+    "constructors": [
+      [
+        "boundaries()"
+      ],
+      [
+        "source"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "policy",
+        "method": "validate",
+        "args": [
+          "sample(\"temperature\", 20.5)"
+        ],
+        "returns": "TelemetrySample"
+      },
+      {
+        "receiver": "policy",
+        "method": "validate",
+        "args": [
+          "sample(\"temperature\", value)"
+        ]
+      },
+      {
+        "receiver": "policy",
+        "method": "validate",
+        "args": [
+          "sample(\"humidity\", 10.0)"
+        ]
+      },
+      {
+        "receiver": "policy",
+        "method": "validate",
+        "args": [
+          "sample(\"TeMpErAtUrE\", 20.0)"
+        ]
+      },
+      {
+        "receiver": "policy",
+        "method": "validate",
+        "args": [
+          "input"
+        ],
+        "returns": "TelemetrySample"
+      },
+      {
+        "receiver": "policy",
+        "method": "validate",
+        "args": [
+          "sample(\"temperature\", 20.0)"
+        ]
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class SensorMetricBoundaryPolicyTest {",
+      "SensorMetricBoundaryPolicy policy = new SensorMetricBoundaryPolicy(boundaries());",
+      "TelemetrySample result = policy.validate(sample(\"temperature\", 20.5));",
+      "SensorMetricBoundaryPolicy policy = new SensorMetricBoundaryPolicy(boundaries());",
+      "assertThat(policy.validate(sample(\"temperature\", value)).status())",
+      "SensorMetricBoundaryPolicy policy = new SensorMetricBoundaryPolicy(boundaries());",
+      "assertThat(policy.validate(sample(\"temperature\", value)).status())",
+      "SensorMetricBoundaryPolicy policy = new SensorMetricBoundaryPolicy(boundaries());",
+      "assertThatNoException().isThrownBy(() -> policy.validate(sample(\"temperature\", value)));",
+      "assertThat(policy.validate(sample(\"temperature\", value)).status())",
+      "SensorMetricBoundaryPolicy policy = new SensorMetricBoundaryPolicy(boundaries());",
+      "assertThat(policy.validate(sample(\"humidity\", 10.0)).status())",
+      "SensorMetricBoundaryPolicy policy = new SensorMetricBoundaryPolicy(boundaries());",
+      "assertThat(policy.validate(sample(\"TeMpErAtUrE\", 20.0)).status())",
+      "SensorMetricBoundaryPolicy policy = new SensorMetricBoundaryPolicy(boundaries());",
+      "TelemetrySample result = policy.validate(input);",
+      "SensorMetricBoundaryPolicy policy = new SensorMetricBoundaryPolicy(source);",
+      "assertThat(policy.validate(sample(\"temperature\", 20.0)).status())"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

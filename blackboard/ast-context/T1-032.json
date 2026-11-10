@@ -1,0 +1,22 @@
+{
+  "task_id": "T1-032",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "LedgerQueryController",
+    "constructors": [
+      [
+        "useCase"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [],
+    "verified": [],
+    "usage_lines": [
+      "class LedgerQueryControllerTest {",
+      "client = WebTestClient.bindToController(new LedgerQueryController(useCase)).build();"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

@@ -1,0 +1,18 @@
+{
+  "id": "T1-024",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-022",
+    "T1-001",
+    "T1-002"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/ledger/application/port/in/RecordTelemetryUseCaseTest.java",
+  "kind": "test",
+  "layer": "application",
+  "feature": null,
+  "export": "RecordTelemetryUseCase",
+  "project": "telemetry-ingestion-and-processing",
+  "intent": "TEST for RecordTelemetryUseCase at src/main/java/com/pulsestream/telemetry/ledger/application/port/in/RecordTelemetryUseCase.java. JUnit 5 + AssertJ (+ Mockito, reactor-test StepVerifier for reactive code); cover every invariant and behavior below, including failure cases, using only the pinned surfaces of collaborators. Unit under test: Telemetry Event Ledger inbound port consuming TelemetrySampleSequenced and TelemetryBackfillDetected: Mono<TelemetryRecord> recordSequenced(TelemetrySampleEvent sample) and Mono<TelemetryRecord> recordBackfill(TelemetryBackfillDetectedEvent event). Each emits the appended (or already existing, for idempotent replays) record."
+}

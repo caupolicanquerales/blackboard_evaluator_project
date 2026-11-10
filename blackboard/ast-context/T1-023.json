@@ -1,0 +1,166 @@
+{
+  "task_id": "T1-023",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "TelemetryLedgerRepository",
+    "constructors": [],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "repository",
+        "method": "append",
+        "args": [
+          "record"
+        ]
+      },
+      {
+        "receiver": "repository",
+        "method": "append",
+        "args": [
+          "first"
+        ]
+      },
+      {
+        "receiver": "repository",
+        "method": "append",
+        "args": [
+          "revised"
+        ]
+      },
+      {
+        "receiver": "repository",
+        "method": "findRevisionChain",
+        "args": [
+          "\"dev-1\"",
+          "\"temp\"",
+          "T0"
+        ]
+      },
+      {
+        "receiver": "repository",
+        "method": "append",
+        "args": [
+          "late"
+        ]
+      },
+      {
+        "receiver": "repository",
+        "method": "append",
+        "args": [
+          "earlyRev"
+        ]
+      },
+      {
+        "receiver": "repository",
+        "method": "append",
+        "args": [
+          "early"
+        ]
+      },
+      {
+        "receiver": "repository",
+        "method": "findHistory",
+        "args": [
+          "\"dev-1\"",
+          "T0",
+          "T2"
+        ]
+      },
+      {
+        "receiver": "repository",
+        "method": "append",
+        "args": [
+          "atFrom"
+        ]
+      },
+      {
+        "receiver": "repository",
+        "method": "append",
+        "args": [
+          "atTo"
+        ]
+      },
+      {
+        "receiver": "repository",
+        "method": "findHistory",
+        "args": [
+          "\"dev-1\"",
+          "T0",
+          "T1"
+        ]
+      },
+      {
+        "receiver": "repository",
+        "method": "append",
+        "args": [
+          "original(\"dev-2\", \"temp\", T0)"
+        ]
+      },
+      {
+        "receiver": "repository",
+        "method": "append",
+        "args": [
+          "third"
+        ]
+      },
+      {
+        "receiver": "repository",
+        "method": "append",
+        "args": [
+          "second"
+        ]
+      },
+      {
+        "receiver": "repository",
+        "method": "findLatestRevision",
+        "args": [
+          "\"dev-1\"",
+          "\"temp\"",
+          "T0"
+        ]
+      },
+      {
+        "receiver": "repository",
+        "method": "append",
+        "args": [
+          "original(\"dev-1\", \"humidity\", T0)"
+        ]
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class TelemetryLedgerRepositoryTest {",
+      "private TelemetryLedgerRepository repository;",
+      "repository = new InMemoryLedger();",
+      "StepVerifier.create(repository.append(record)).expectNext(record).verifyComplete();",
+      "repository.append(first).block();",
+      "repository.append(revised).block();",
+      "StepVerifier.create(repository.findRevisionChain(\"dev-1\", \"temp\", T0))",
+      "repository.append(late).block();",
+      "repository.append(earlyRev).block();",
+      "repository.append(early).block();",
+      "StepVerifier.create(repository.findHistory(\"dev-1\", T0, T2))",
+      "repository.append(atFrom).block();",
+      "repository.append(atTo).block();",
+      "StepVerifier.create(repository.findHistory(\"dev-1\", T0, T1))",
+      "repository.append(original(\"dev-2\", \"temp\", T0)).block();",
+      "StepVerifier.create(repository.findHistory(\"dev-1\", T0, T2)).verifyComplete();",
+      "repository.append(first).block();",
+      "repository.append(third).block();",
+      "repository.append(second).block();",
+      "StepVerifier.create(repository.findLatestRevision(\"dev-1\", \"temp\", T0))",
+      "StepVerifier.create(repository.findLatestRevision(\"dev-1\", \"temp\", T0)).verifyComplete();",
+      "repository.append(third).block();",
+      "repository.append(first).block();",
+      "repository.append(second).block();",
+      "StepVerifier.create(repository.findRevisionChain(\"dev-1\", \"temp\", T0))",
+      "repository.append(original(\"dev-1\", \"humidity\", T0)).block();",
+      "StepVerifier.create(repository.findRevisionChain(\"dev-1\", \"temp\", T0)).verifyComplete();",
+      "List<String> names = Arrays.stream(TelemetryLedgerRepository.class.getDeclaredMethods())",
+      "private static final class InMemoryLedger implements TelemetryLedgerRepository {"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

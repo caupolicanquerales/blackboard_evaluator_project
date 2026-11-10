@@ -133,7 +133,7 @@ def _used_without_import(text: str, imported_or_same: set, declared: set, extern
                   "ConcurrentModificationException", "TimeoutException"}
     # java.lang is never importable-by-name in a test and never needs a producer task:
     # StringBuilder there was reported as an unclosed import of the domain.
-    blocklist |= test_gate.JAVA_LANG_NAMES
+    blocklist |= test_gate.java_lang_names()
     return {name for name in (found - imported_or_same - declared - blocklist - qualified
                             - (external or set()))
             if _is_type_shape(name)}

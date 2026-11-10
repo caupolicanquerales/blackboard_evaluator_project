@@ -41,6 +41,5 @@
         "returns": "Flux<TelemetryEvent>"
       }
     ]
-  },
-  "error": "agent finished but src/test/java/com/pulsestream/telemetry/intake/infrastructure/InProcessTelemetryEventBusTest.java was not created"
+  }
 }

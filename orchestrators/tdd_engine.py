@@ -87,7 +87,7 @@ def _unresolvable_missing(result, task):
     # method/variable mismatches between woven units: real code defects the normal
     # retry loop fixes with the javac log, not aborts.
     tokens = {t for t in _identifier_tokens(raw) if t[:1].isupper() and tasks.is_type_shape(t)}
-    tokens -= test_gate.JAVA_LANG_NAMES | set(test_gate.JDK_TYPES)
+    tokens -= test_gate.java_lang_names() | set(test_gate.JDK_TYPES)
     if not tokens:
         return []
     resolvable = _resolvable_types(task.get("project", ""), task["id"])

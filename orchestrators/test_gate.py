@@ -24,6 +24,7 @@ JAVA_LANG_NAMES = {
     "String", "Integer", "Long", "Double", "Float", "Boolean", "Byte", "Short", "Character",
     "Object", "Class", "System", "Thread", "Runnable", "Iterable", "Exception", "RuntimeException",
     "Error", "Number", "Math", "Void", "StringBuilder", "StringBuffer", "Comparable", "Enum", "Record",
+    "Throwable", "CharSequence", "Cloneable", "AutoCloseable", "StackTraceElement", "Package",
     "NoSuchMethodException",
     # Complete java.lang throwable inventory: reflection signature tests write
     # `throws NoSuchFieldException` / `catch (AssertionError` against these built-ins;
@@ -51,6 +52,60 @@ JDK_TYPES = {
     "Instant": "java.time", "ChronoUnit": "java.time", "Duration": "java.time",
     "BigDecimal": "java.math", "Collectors": "java.util.stream", "Stream": "java.util.stream",
 }
+
+# The static lists above are SEEDS, never the truth: hand-enumerating a language's
+# vocabulary is the treadmill that killed a run on `Throwable` (a java.lang type no
+# one had typed yet). The authoritative inventory is derived ONCE from the installed
+# JDK's module filesystem (jrt:) and cached; every consumer of JAVA_LANG_NAMES gets
+# the derived superset. No JDK or a failed probe falls back to the seed silently -
+# worst case returns to the pre-probe behavior, never a false gap.
+_JLANG_PROBE = '''
+import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.stream.Stream;
+
+public class JLangTypes {
+    public static void main(String[] args) throws Exception {
+        FileSystem fs = FileSystems.getFileSystem(URI.create("jrt:/"));
+        try (Stream<Path> s = Files.list(fs.getPath("/modules/java.base/java/lang"))) {
+            s.map(p -> p.getFileName().toString())
+             .filter(n -> n.endsWith(".class") && !n.contains("$"))
+             .map(n -> n.substring(0, n.length() - 6))
+             .sorted()
+             .forEach(System.out::println);
+        }
+    }
+}
+'''
+
+
+def java_lang_names():
+    """JAVA_LANG_NAMES plus every top-level java.lang type of the installed JDK."""
+    cache = settings.GATE_CACHE_DIR / "javalang-types.txt"
+    names = set(JAVA_LANG_NAMES)
+    try:
+        names |= {n for n in cache.read_text(encoding="utf-8").split() if n}
+        return names
+    except OSError:
+        pass
+    import subprocess
+    import tempfile
+    try:
+        with tempfile.TemporaryDirectory() as td:
+            src = pathlib.Path(td) / "JLangTypes.java"
+            src.write_text(_JLANG_PROBE, encoding="utf-8")
+            out = subprocess.run(["java", str(src)], capture_output=True, text=True, timeout=60)
+        derived = {n for n in out.stdout.split() if n and n[0].isupper() and not n.islower()}
+        if out.returncode == 0 and len(derived) >= 40:
+            settings.GATE_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+            cache.write_text("\n".join(sorted(derived)), encoding="utf-8")
+            names |= derived
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return names
 
 
 _REPAIR_STATE = {}   # str(root) -> tree fingerprint the last repair pass ran on
@@ -81,6 +136,7 @@ def repair_test_imports(project_root):
     test_root = root / "src" / "test" / "java"
     if not main_root.is_dir() or not test_root.is_dir():
         return 0
+    jlang = java_lang_names()   # derived java.lang superset (post-guard: cold passes only)
 
     top_main = {}     # package -> names declared AS the file's own top-level type
     nested_main = {}  # (package, name) -> enclosing file stems holding the nested type
@@ -154,7 +210,7 @@ def repair_test_imports(project_root):
             imported_simple = set(re.findall(r"import (?:static )?[\w.]*?\.([A-Z]\w*);", src))
             additions = []
             for cls in sorted(set(re.findall(r"\b([A-Z]\w*)\b", src))):
-                if cls in JAVA_LANG_NAMES or cls in imported_simple or cls in own_declared:
+                if cls in jlang or cls in imported_simple or cls in own_declared:
                     continue
                 if cls in top_main.get(own_pkg, set()):
                     continue  # same-package top-level: already in scope
@@ -172,7 +228,7 @@ def repair_test_imports(project_root):
                     continue  # already referenced through its outer type: no import needed
                 additions.append(stmt)
             for cls, jdk_pkg in JDK_TYPES.items():
-                if cls in JAVA_LANG_NAMES or cls in imported_simple or cls in own_declared:
+                if cls in jlang or cls in imported_simple or cls in own_declared:
                     continue
                 if any(name == cls for (_p, name) in nested_main) or \
                    any(cls in names for names in top_main.values()):
@@ -184,7 +240,7 @@ def repair_test_imports(project_root):
             # names stay with the agents - a guessed package compiles against the
             # wrong library, which is worse than the compile error the loop reacts to.
             for cls in sorted(set(re.findall(r"\b([A-Z]\w*)\b", src))):
-                if cls in JAVA_LANG_NAMES or cls in imported_simple or cls in own_declared:
+                if cls in jlang or cls in imported_simple or cls in own_declared:
                     continue
                 if any(name == cls for (_p, name) in nested_main) or \
                    any(cls in names for names in top_main.values()):

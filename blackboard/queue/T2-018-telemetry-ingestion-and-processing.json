@@ -44,6 +44,5 @@
         "returns": "Flux<TelemetryEvent>"
       }
     ]
-  },
-  "error": "dependsOn T1-018 not resolvable in queue or complete"
+  }
 }

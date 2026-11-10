@@ -3,66 +3,15 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "TelemetryWindowClosedEvent",
-    "constructors": [
-      [
-        "deviceId",
-        "start",
-        "end",
-        "samples"
-      ]
-    ],
+    "type": "TelemetryContracts",
+    "constructors": [],
     "static_calls": [],
-    "calls": [
-      {
-        "receiver": "e",
-        "method": "deviceId",
-        "args": []
-      },
-      {
-        "receiver": "e",
-        "method": "windowStart",
-        "args": []
-      },
-      {
-        "receiver": "e",
-        "method": "windowEnd",
-        "args": []
-      },
-      {
-        "receiver": "e",
-        "method": "samples",
-        "args": []
-      }
-    ],
+    "calls": [],
     "verified": [],
     "usage_lines": [
-      "class TelemetryWindowClosedEventTest {",
-      "private static TelemetryWindowClosedEvent event(String deviceId, Instant start, Instant end,",
-      "return new TelemetryWindowClosedEvent(deviceId, start, end, samples);",
-      "TelemetryWindowClosedEvent e = event(\"dev-1\", START, END, samples);",
-      "assertThat(e.deviceId()).isEqualTo(\"dev-1\");",
-      "assertThat(e.windowStart()).isEqualTo(START);",
-      "assertThat(e.windowEnd()).isEqualTo(END);",
-      "assertThat(e.samples()).containsExactly(sample(1), sample(2));",
-      "TelemetryWindowClosedEvent e = event(\"dev-1\", START, END, List.of());",
-      "assertThat(e.samples()).isEmpty();",
-      "assertThatThrownBy(() -> event(null, START, END, List.of()))",
-      "assertThatThrownBy(() -> event(blank, START, END, List.of()))",
-      "assertThatThrownBy(() -> event(\"dev-1\", null, END, List.of()))",
-      "assertThatThrownBy(() -> event(\"dev-1\", START, null, List.of()))",
-      "assertThatThrownBy(() -> event(\"dev-1\", START, START, List.of()))",
-      "assertThatThrownBy(() -> event(\"dev-1\", END, START, List.of()))",
-      "assertThatThrownBy(() -> event(\"dev-1\", START, END, null))",
-      "TelemetryWindowClosedEvent e = event(\"dev-1\", START, END, source);",
-      "assertThat(e.samples()).containsExactly(sample(1));",
-      "TelemetryWindowClosedEvent e = event(\"dev-1\", START, END, List.of(sample(1)));",
-      "assertThatThrownBy(() -> e.samples().add(sample(2)))",
-      "TelemetryWindowClosedEvent e = event(\"dev-1\", START, END,",
-      "assertThat(e.samples()).extracting(TelemetrySampleEvent::tDevice)",
-      "TelemetryWindowClosedEvent a = event(\"dev-1\", START, END, List.of(sample(1)));",
-      "TelemetryWindowClosedEvent b = event(\"dev-1\", START, END, List.of(sample(1)));",
-      "assertThat(a).isEqualTo(b).hasSameHashCodeAs(b);"
+      "class TelemetryContractsTest {",
+      "assertThat(Modifier.isFinal(TelemetryContracts.class.getModifiers())).isTrue();",
+      "for (Constructor<?> c : TelemetryContracts.class.getDeclaredConstructors()) {"
     ]
   },
   "stderr": "",

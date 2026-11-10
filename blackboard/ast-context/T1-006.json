@@ -3,24 +3,39 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "BoundedEventChannel",
+    "type": "IngestTelemetryUseCase",
     "constructors": [],
     "static_calls": [],
-    "calls": [],
+    "calls": [
+      {
+        "receiver": "useCase",
+        "method": "ingest",
+        "args": [
+          "List.of(sample(60), sample(61))"
+        ]
+      },
+      {
+        "receiver": "useCase",
+        "method": "ingest",
+        "args": [
+          "List.of(sample(60), sample(-1))"
+        ]
+      },
+      {
+        "receiver": "useCase",
+        "method": "ingest",
+        "args": [
+          "List.of()"
+        ]
+      }
+    ],
     "verified": [],
     "usage_lines": [
-      "class BoundedEventChannelTest {",
-      "assertThatThrownBy(() -> new BoundedEventChannel<String>(\"events\", capacity))",
-      "BoundedEventChannel<String> channel = new BoundedEventChannel<>(\"telemetry\", 4);",
-      "BoundedEventChannel<String> channel = new BoundedEventChannel<>(\"telemetry\", 4);",
-      "BoundedEventChannel<String> channel = new BoundedEventChannel<>(\"telemetry\", 4);",
-      "BoundedEventChannel<String> channel = new BoundedEventChannel<>(\"telemetry\", 4);",
-      "BoundedEventChannel<String> channel = new BoundedEventChannel<>(\"telemetry\", 4);",
-      "BoundedEventChannel<String> channel = new BoundedEventChannel<>(\"telemetry\", 2);",
-      ".isInstanceOf(BoundedEventChannel.OverflowException.class))",
-      "BoundedEventChannel<String> channel = new BoundedEventChannel<>(\"telemetry\", 2);",
-      "BoundedEventChannel<String> channel = new BoundedEventChannel<>(\"telemetry\", 1);",
-      ".isInstanceOf(BoundedEventChannel.OverflowException.class)"
+      "class IngestTelemetryUseCaseTest {",
+      "private final IngestTelemetryUseCase useCase = samples -> Mono.fromSupplier(() -> {",
+      "StepVerifier.create(useCase.ingest(List.of(sample(60), sample(61))))",
+      "StepVerifier.create(useCase.ingest(List.of(sample(60), sample(-1))))",
+      "StepVerifier.create(useCase.ingest(List.of()))"
     ]
   },
   "stderr": "",

@@ -1,0 +1,46 @@
+{
+  "id": "T1-018",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-003",
+    "T1-012",
+    "T1-016"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/ledger/api/TelemetryRecordControllerTest.java",
+  "kind": "test",
+  "project": "telemetry-ingestion-processing",
+  "layer": "interface",
+  "feature": null,
+  "export": "TelemetryRecordController",
+  "intent": "TEST for TelemetryRecordController. Write JUnit 5 + AssertJ tests (StepVerifier for reactive types, Mockito for collaborators, WebTestClient for controllers) asserting ONLY the ast_hints API and the invariants below; cover happy paths, boundaries and error cases. Context: Telemetry Record Ledger read endpoints (open-host query). @RestController, constructor TelemetryRecordController(TelemetryRecordQueryUseCase useCase). GET /api/v1/telemetry/records/{deviceId}/{metricType}/revisions?tDevice=<ISO instant> -> history(@PathVariable String deviceId, @PathVariable MetricType metricType, @RequestParam Instant tDevice). GET /api/v1/telemetry/records/{deviceId}/{metricType}?from=<ISO>&to=<ISO> -> latestInRange(@PathVariable String deviceId, @PathVariable MetricType metricType, @RequestParam Instant from, @RequestParam Instant to). Read-only: no write endpoints. Nested public DTO record RevisionResponse(String deviceId, TelemetryContracts.MetricType metricType, Instant tDevice, Instant tIngress, double value, TelemetryContracts.ValidationStatus status, int revision, TelemetryContracts.RevisionReason reason) maps from the domain TelemetryRecordRevision (private mapping). Test with WebTestClient and a mocked use case.",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ledger.api",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetryContracts",
+        "task_id": "T2-003"
+      },
+      {
+        "type": "TelemetryRecordRevision",
+        "task_id": "T2-012"
+      },
+      {
+        "type": "TelemetryRecordQueryUseCase",
+        "task_id": "T2-016"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Flux<TelemetryRecordController.RevisionResponse> history(String deviceId, TelemetryContracts.MetricType metricType, Instant tDevice)",
+        "returns": "Flux<TelemetryRecordController.RevisionResponse>"
+      },
+      {
+        "signature": "Flux<TelemetryRecordController.RevisionResponse> latestInRange(String deviceId, TelemetryContracts.MetricType metricType, Instant from, Instant to)",
+        "returns": "Flux<TelemetryRecordController.RevisionResponse>"
+      }
+    ]
+  }
+}

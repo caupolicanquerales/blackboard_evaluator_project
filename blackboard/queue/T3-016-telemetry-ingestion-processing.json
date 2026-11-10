@@ -1,0 +1,39 @@
+{
+  "id": "T3-016",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-016"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ledger/application/TelemetryRecordQueryUseCase.java",
+  "kind": "refactor",
+  "project": "telemetry-ingestion-processing",
+  "layer": "application",
+  "feature": null,
+  "export": "TelemetryRecordQueryUseCase",
+  "intent": "REFACTOR TelemetryRecordQueryUseCase: inspect the implementation for layering violations (domain free of framework/DTO types), blocking calls, unbounded buffers, hardcoded values and duplication; refactor while keeping the public API and tests green. Unit definition: Context: Telemetry Record Ledger read side (open-host query). Inbound port (interface), domain types only. history returns every revision of one sample for audit, ascending by revision; latestRevision-per-sample range read returns the latest revision of each sample with tDevice in [from, to], ascending by tDevice.",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ledger.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetryContracts",
+        "task_id": "T2-003"
+      },
+      {
+        "type": "TelemetryRecordRevision",
+        "task_id": "T2-012"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Flux<TelemetryRecordRevision> history(String deviceId, TelemetryContracts.MetricType metricType, Instant tDevice)",
+        "returns": "Flux<TelemetryRecordRevision>"
+      },
+      {
+        "signature": "Flux<TelemetryRecordRevision> latestInRange(String deviceId, TelemetryContracts.MetricType metricType, Instant from, Instant to)",
+        "returns": "Flux<TelemetryRecordRevision>"
+      }
+    ]
+  }
+}

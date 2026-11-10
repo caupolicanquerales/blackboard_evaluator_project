@@ -1,8 +1,0 @@
-{
-  "status": "not_run",
-  "reason": "EXEC_ERROR: [Errno 13] Permission denied: './mvnw'",
-  "command": "./mvnw -Dtest=R2dbcTelemetryLedgerRepositoryTest test",
-  "task_id": "T1-030",
-  "executed": true,
-  "recorded_at": "2026-11-09T19:30:55.447796+00:00"
-}

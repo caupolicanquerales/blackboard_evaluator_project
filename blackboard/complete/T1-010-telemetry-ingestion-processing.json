@@ -1,0 +1,36 @@
+{
+  "id": "T1-010",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-003"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/chronology/application/ReconcileChronologyUseCaseTest.java",
+  "kind": "test",
+  "project": "telemetry-ingestion-processing",
+  "layer": "application",
+  "feature": null,
+  "export": "ReconcileChronologyUseCase",
+  "intent": "TEST for ReconcileChronologyUseCase. Write JUnit 5 + AssertJ tests (StepVerifier for reactive types, Mockito for collaborators, WebTestClient for controllers) asserting ONLY the ast_hints API and the invariants below; cover happy paths, boundaries and error cases. Context: Chronology Reconciliation. Inbound port (interface) with domain types only. reconcile feeds one validated or VALIDATION_FAILED-tagged sample into the reorder window and publishes the resulting ordered or backfill events; it never re-evaluates sensor boundaries. flush publishes all still-buffered samples in order (used on shutdown). Non-blocking.",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.chronology.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetryContracts",
+        "task_id": "T2-003"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> reconcile(TelemetryContracts.TelemetrySample sample, TelemetryContracts.ValidationStatus status)",
+        "returns": "Mono<Void>"
+      },
+      {
+        "signature": "Mono<Void> flush()",
+        "returns": "Mono<Void>"
+      }
+    ]
+  }
+}

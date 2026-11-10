@@ -279,8 +279,13 @@ check("E7 cascade shape outranks the budget rule (no ping-pong)", "T2-915" not i
 import tasks as tasks_mod
 import task_queue
 
+PROVIDER_HINTS = {"package": "com.demo.cfg", "implements": [], "dependencies": [],
+                  "methods": [{"signature": "window()", "returns": "Duration"}]}
+provider = dict(task(tid="T2-704", export="Cfg", deps=()), ast_hints=PROVIDER_HINTS)
+(providers := ROOT / "blackboard" / "draft-g0.json").write_text(json.dumps([provider]))
+check("G0 provider lands", task_queue.emit_tasks([str(providers)]) is None)
 HINTS = {"package": "com.demo.ledger", "implements": ["UseCase"],
-         "dependencies": [{"type": "Repo", "task_id": "T2-011"}],
+         "dependencies": [{"type": "Cfg", "task_id": "T2-704"}],
          "methods": [{"signature": "record(SampleEvent e)", "returns": "Mono<Receipt>"}]}
 full2 = dict(task(tid="T2-700", export="Service", deps=()), ast_hints=HINTS)
 check("G1 complete contract table accepted at planning",
@@ -294,7 +299,7 @@ check("G3 resume mode still loads the legacy 11-key task",
 no_surf = dict(full2); no_surf["ast_hints"] = {**HINTS, "methods": []}
 check("G4 implements-without-methods refused (single API truth)",
       "methods" in str(tasks_mod.validate(no_surf, {}, planning=True)))
-unpinned = dict(full2); unpinned["ast_hints"] = {**HINTS, "dependencies": ["Repo"]}
+unpinned = dict(full2); unpinned["ast_hints"] = {**HINTS, "dependencies": ["Cfg"]}
 check("G5 unpinned collaborator refused",
       "dependencies" in str(tasks_mod.validate(unpinned, {}, planning=True)))
 draft = ROOT / "blackboard" / "draft-g.json"
@@ -308,6 +313,33 @@ rc_g2 = task_queue.emit_tasks([str(draft)])
 check("G7 emit refuses the prose-only plan (the seed-002 shape)",
       bool(rc_g2) and "ast_hints" in str(rc_g2)
       and not (settings.QUEUE_DIR / "T2-703-p.json").is_file(), str(rc_g2))
+# cross-task: a pinned producer MUST spell its surface (the TelemetryProperties case)
+empty_provider = dict(task(tid="T2-705", export="Props", deps=()),
+                      ast_hints={"package": "com.demo.cfg", "implements": [],
+                                 "dependencies": [], "methods": []})
+consumer = dict(task(tid="T2-706", export="User", deps=("T2-705",)),
+                ast_hints={"package": "com.demo.app", "implements": [],
+                           "dependencies": [{"type": "Props", "task_id": "T2-705"}],
+                           "methods": [{"signature": "run()", "returns": "void"}]})
+draft.write_text(json.dumps([empty_provider, consumer]))
+rc_x = task_queue.emit_tasks([str(draft)])
+check("G8 pinned producer with empty methods refuses the whole batch",
+      bool(rc_x) and "T2-705" in str(rc_x) and "methods is empty" in str(rc_x), str(rc_x))
+fixed_provider = dict(empty_provider)
+fixed_provider["ast_hints"] = {**fixed_provider["ast_hints"],
+                               "methods": [{"signature": "windowSeconds()", "returns": "long"}]}
+draft.write_text(json.dumps([fixed_provider, consumer]))
+rc_ok = task_queue.emit_tasks([str(draft)])
+check("G9 batch lands once the producer spells its surface",
+      rc_ok is None and (settings.QUEUE_DIR / "T2-705-p.json").is_file(), str(rc_ok))
+dangling = dict(task(tid="T2-707", export="Later", deps=()),
+                ast_hints={"package": "com.demo.app", "implements": [],
+                           "dependencies": [{"type": "Ghost", "task_id": "T2-899"}],
+                           "methods": [{"signature": "go()", "returns": "void"}]})
+draft.write_text(json.dumps([dangling]))
+rc_d = task_queue.emit_tasks([str(draft)])
+check("G10 dangling collaborator pin refused at emit",
+      bool(rc_d) and "T2-899" in str(rc_d), str(rc_d))
 
 import builtins
 import contextlib

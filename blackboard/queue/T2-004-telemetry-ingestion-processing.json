@@ -1,0 +1,30 @@
+{
+  "id": "T2-004",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-004"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/shared/events/BoundedEventChannel.java",
+  "kind": "code",
+  "project": "telemetry-ingestion-processing",
+  "layer": "shared",
+  "feature": null,
+  "export": "BoundedEventChannel",
+  "intent": "IMPLEMENT BoundedEventChannel so the stage 1 test passes, matching ast_hints exactly (Java 21, Spring Boot 3, non-blocking, no hardcoded operational values). Context: in-process event bus between bounded contexts (shared kernel). Generic final class BoundedEventChannel<T> with constructor BoundedEventChannel(int capacity) (capacity > 0 else IllegalArgumentException) backed by Sinks.many().multicast().onBackpressureBuffer(capacity, false). publish(T event): non-blocking; emits the non-null event and completes empty; if the bounded buffer is full (overflow) it returns Mono.error(IllegalStateException) so producers see backpressure instead of unbounded growth; never blocks and never drops silently. stream(): returns the hot Flux<T> of the sink for subscribers. Capacity comes from configuration at construction, not from the class.",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.shared.events",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "Mono<Void> publish(T event)",
+        "returns": "Mono<Void>"
+      },
+      {
+        "signature": "Flux<T> stream()",
+        "returns": "Flux<T>"
+      }
+    ]
+  }
+}

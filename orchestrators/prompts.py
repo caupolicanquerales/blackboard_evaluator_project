@@ -320,7 +320,10 @@ Follow these steps exactly, once per domain:
      "returns"}] every boundary method the unit must provide, with parameter and return
      types spelled exactly as the language's own declaration for that unit - including
      the methods of every implemented supertype; "returns" is "" when there is none.
-     Pure value objects may leave "methods" empty. This table is the single API truth:
+     Pure value objects may leave "methods" empty - UNLESS another task pins that unit
+     as a collaborator: a consumed type's own table must then spell every member its
+     consumers touch (accessors included), or the consumers improvise it.
+     This table is the single API truth:
      the tester asserts ONLY against it and the coder implements exactly it. A signature
      missing from the table gets improvised twice, and two frozen artifacts contradict.
 

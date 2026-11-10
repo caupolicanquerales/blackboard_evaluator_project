@@ -1,0 +1,53 @@
+{
+  "id": "T3-020",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-020"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/shared/config/PipelineSubscriptions.java",
+  "kind": "refactor",
+  "project": "telemetry-ingestion-processing",
+  "layer": "shared",
+  "feature": null,
+  "export": "PipelineSubscriptions",
+  "intent": "REFACTOR PipelineSubscriptions: inspect the implementation for layering violations (domain free of framework/DTO types), blocking calls, unbounded buffers, hardcoded values and duplication; refactor while keeping the public API and tests green. Unit definition: Context: event bridge between contexts (Intake -> Chronology Reconciliation -> Ledger). Implements org.springframework.context.SmartLifecycle. Constructor PipelineSubscriptions(BoundedEventChannel<TelemetryContracts.TelemetrySampleValidated> validatedChannel, BoundedEventChannel<TelemetryContracts.TelemetrySampleValidationFailed> failedChannel, ReconcileChronologyUseCase reconcile, BoundedEventChannel<TelemetryContracts.TelemetrySampleOrdered> orderedChannel, BoundedEventChannel<TelemetryContracts.TelemetryBackfillDetected> backfillChannel, AppendTelemetryRecordUseCase append). start(): idempotent; subscribes four pipelines, each with concatMap so ordering is preserved and demand is bounded: validated -> reconcile(sample, VALID); failed -> reconcile(sample, VALIDATION_FAILED); ordered -> append.appendOrdered; backfill -> append.appendBackfill. A per-event error is logged and swallowed (onErrorResume) so one bad event never cancels a subscription. stop(): idempotent; non-blocking: runs reconcile.flush() then disposes all subscriptions once flush completes. isRunning() reflects the started state. Subscriptions are owned and disposed here (no leaks).",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.shared.config",
+    "implements": [
+      "SmartLifecycle"
+    ],
+    "dependencies": [
+      {
+        "type": "TelemetryContracts",
+        "task_id": "T2-003"
+      },
+      {
+        "type": "BoundedEventChannel",
+        "task_id": "T2-004"
+      },
+      {
+        "type": "ReconcileChronologyUseCase",
+        "task_id": "T2-010"
+      },
+      {
+        "type": "AppendTelemetryRecordUseCase",
+        "task_id": "T2-015"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "void start()",
+        "returns": ""
+      },
+      {
+        "signature": "void stop()",
+        "returns": ""
+      },
+      {
+        "signature": "boolean isRunning()",
+        "returns": "boolean"
+      }
+    ]
+  }
+}

@@ -1,8 +1,0 @@
-{
-  "status": "not_run",
-  "reason": "EXEC_ERROR: [Errno 13] Permission denied: './mvnw'",
-  "command": "./mvnw -Dtest=TelemetryPipelineWiringTest test",
-  "task_id": "T1-041",
-  "executed": true,
-  "recorded_at": "2026-11-09T20:01:39.173443+00:00"
-}

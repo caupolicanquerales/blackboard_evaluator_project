@@ -1,0 +1,50 @@
+{
+  "id": "T2-007",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-007",
+    "T2-003",
+    "T2-004",
+    "T2-005",
+    "T2-006"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/intake/application/IngestTelemetryService.java",
+  "kind": "code",
+  "project": "telemetry-ingestion-processing",
+  "layer": "application",
+  "feature": null,
+  "export": "IngestTelemetryService",
+  "intent": "IMPLEMENT IngestTelemetryService so the stage 1 test passes, matching ast_hints exactly (Java 21, Spring Boot 3, non-blocking, no hardcoded operational values). Context: Telemetry Intake. Implements IngestTelemetryUseCase. Constructor IngestTelemetryService(SensorBoundaryValidator validator, BoundedEventChannel<TelemetryContracts.TelemetrySampleValidated> validatedChannel, BoundedEventChannel<TelemetryContracts.TelemetrySampleValidationFailed> failedChannel). Invariant: every sample is validated before downstream propagation, in order (Flux.concatMap): VALID -> publish TelemetrySampleValidated; VALIDATION_FAILED -> publish TelemetrySampleValidationFailed with reason \"SENSOR_METRIC_BOUNDARY_VIOLATION\" carrying the full original sample; invalid samples are never dropped. Channel overflow errors propagate to the caller (backpressure). Result is the count of samples published. Fully non-blocking, no block() calls.",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.intake.application",
+    "implements": [
+      "IngestTelemetryUseCase"
+    ],
+    "dependencies": [
+      {
+        "type": "TelemetryContracts",
+        "task_id": "T2-003"
+      },
+      {
+        "type": "BoundedEventChannel",
+        "task_id": "T2-004"
+      },
+      {
+        "type": "SensorBoundaryValidator",
+        "task_id": "T2-005"
+      },
+      {
+        "type": "IngestTelemetryUseCase",
+        "task_id": "T2-006"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Integer> ingest(List<TelemetryContracts.TelemetrySample> samples)",
+        "returns": "Mono<Integer>"
+      }
+    ]
+  },
+  "error": "dependsOn T2-005 not resolvable in queue or complete"
+}

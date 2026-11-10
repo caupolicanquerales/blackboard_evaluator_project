@@ -1,0 +1,38 @@
+{
+  "id": "T1-005",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-001",
+    "T1-003"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/intake/domain/SensorBoundaryValidatorTest.java",
+  "kind": "test",
+  "project": "telemetry-ingestion-processing",
+  "layer": "domain",
+  "feature": null,
+  "export": "SensorBoundaryValidator",
+  "intent": "TEST for SensorBoundaryValidator. Write JUnit 5 + AssertJ tests (StepVerifier for reactive types, Mockito for collaborators, WebTestClient for controllers) asserting ONLY the ast_hints API and the invariants below; cover happy paths, boundaries and error cases. Context: Telemetry Intake. Owns Sensor Metric Boundaries. Constructor SensorBoundaryValidator(TelemetryProperties.Boundaries boundaries). validate returns ValidationStatus.VALID or VALIDATION_FAILED, never throws for out-of-range values and never drops a sample. Rules (limits from the injected boundaries only): HEART_RATE and POWER and CADENCE valid when min <= value <= max inclusive; SWIM_PACE valid when value > swimPaceMinSecondsPer100m (strict); GROUND_CONTACT_TIME and RESPIRATION valid when value is finite and >= 0; any NaN/infinite value is VALIDATION_FAILED. Pure, stateless, thread-safe.",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.intake.domain",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetryProperties",
+        "task_id": "T2-001"
+      },
+      {
+        "type": "TelemetryContracts",
+        "task_id": "T2-003"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "ValidationStatus validate(TelemetryContracts.TelemetrySample sample)",
+        "returns": "TelemetryContracts.ValidationStatus"
+      }
+    ]
+  },
+  "error": "dependsOn T1-001 not resolvable in queue or complete"
+}

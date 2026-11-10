@@ -1,0 +1,53 @@
+{
+  "id": "T3-014",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-014"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ledger/infrastructure/R2dbcTelemetryRecordRepository.java",
+  "kind": "refactor",
+  "project": "telemetry-ingestion-processing",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "R2dbcTelemetryRecordRepository",
+  "intent": "REFACTOR R2dbcTelemetryRecordRepository: inspect the implementation for layering violations (domain free of framework/DTO types), blocking calls, unbounded buffers, hardcoded values and duplication; refactor while keeping the public API and tests green. Unit definition: Context: Telemetry Record Ledger, infrastructure adapter. Implements TelemetryRecordRepository with Spring's R2DBC DatabaseClient; constructor R2dbcTelemetryRecordRepository(DatabaseClient databaseClient). Table telemetry.telemetry_record_revisions created by the Flyway migration V2 (db/migrations/V2__telemetry_record_revisions.sql): read its column names/types and map the entity (TelemetryRecordRevision <-> row) to them exactly, including enum-to-text and Instant conversion. SQL must be portable between PostgreSQL 16 and H2 in PostgreSQL mode. Insert-only: no UPDATE or DELETE statements exist. latestRevisionNumber uses MAX(revision) with COALESCE to 0; findLatestInRange selects the highest revision per (device_id, metric_type, t_device) within [from, to] ordered by t_device. Unique-constraint violations surface as the original error. Non-blocking; tested against in-process H2 with Flyway migrations applied.",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ledger.infrastructure",
+    "implements": [
+      "TelemetryRecordRepository"
+    ],
+    "dependencies": [
+      {
+        "type": "TelemetryContracts",
+        "task_id": "T2-003"
+      },
+      {
+        "type": "TelemetryRecordRevision",
+        "task_id": "T2-012"
+      },
+      {
+        "type": "TelemetryRecordRepository",
+        "task_id": "T2-013"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<TelemetryRecordRevision> append(TelemetryRecordRevision revision)",
+        "returns": "Mono<TelemetryRecordRevision>"
+      },
+      {
+        "signature": "Mono<Integer> latestRevisionNumber(String deviceId, TelemetryContracts.MetricType metricType, Instant tDevice)",
+        "returns": "Mono<Integer>"
+      },
+      {
+        "signature": "Flux<TelemetryRecordRevision> findHistory(String deviceId, TelemetryContracts.MetricType metricType, Instant tDevice)",
+        "returns": "Flux<TelemetryRecordRevision>"
+      },
+      {
+        "signature": "Flux<TelemetryRecordRevision> findLatestInRange(String deviceId, TelemetryContracts.MetricType metricType, Instant from, Instant to)",
+        "returns": "Flux<TelemetryRecordRevision>"
+      }
+    ]
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "id": "T3-008",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-008"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/intake/api/IngressPacketController.java",
+  "kind": "refactor",
+  "project": "telemetry-ingestion-processing",
+  "layer": "interface",
+  "feature": null,
+  "export": "IngressPacketController",
+  "intent": "REFACTOR IngressPacketController: inspect the implementation for layering violations (domain free of framework/DTO types), blocking calls, unbounded buffers, hardcoded values and duplication; refactor while keeping the public API and tests green. Unit definition: Context: Telemetry Intake open-host ingress contract. @RestController, constructor IngressPacketController(IngestTelemetryUseCase useCase, Clock clock). POST /api/v1/telemetry/packets (JSON) bound to receive(@Valid @RequestBody Mono<IngressPacketRequest>). Nested public DTO records (interface layer only): IngressPacketRequest(@NotBlank String deviceId, @NotEmpty @Valid List<SampleDto> samples) and SampleDto(@NotNull TelemetryContracts.MetricType metricType, @NotNull Instant tDevice, double value). The controller maps DTO to TelemetryContracts.TelemetrySample (private mapping), stamping tIngress with clock.instant(), calls useCase.ingest, and answers 202 Accepted with empty body. Invalid payloads (blank deviceId, empty samples, unknown metric) yield 400 via validation; physical boundary violations are NOT rejected here (they are tagged VALIDATION_FAILED downstream). Channel overflow (IllegalStateException) maps to 503 Service Unavailable signalling backpressure to producers. Test with WebTestClient and a mocked use case.",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.intake.api",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetryContracts",
+        "task_id": "T2-003"
+      },
+      {
+        "type": "IngestTelemetryUseCase",
+        "task_id": "T2-006"
+      },
+      {
+        "type": "IngestTelemetryService",
+        "task_id": "T2-007"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<ResponseEntity<Void>> receive(Mono<IngressPacketController.IngressPacketRequest> request)",
+        "returns": "Mono<ResponseEntity<Void>>"
+      }
+    ]
+  },
+  "error": "dependsOn T2-008 not resolvable in queue or complete"
+}

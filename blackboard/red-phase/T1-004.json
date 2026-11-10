@@ -1,8 +1,102 @@
 {
-  "status": "not_run",
-  "reason": "EXEC_ERROR: [Errno 13] Permission denied: './mvnw'",
-  "command": "./mvnw -Dtest=TelemetryRevisionAppendedEventTest test",
+  "status": "compile_error",
+  "exit_code": 1,
+  "missing_symbols": [
+    "BoundedEventChannel"
+  ],
+  "missing_packages": [],
+  "failures": [],
+  "counts": {},
+  "classes": {},
+  "member_demands": [
+    {
+      "member": "BoundedEventChannel",
+      "owner": "BoundedEventChannelTest",
+      "kind": "class",
+      "context": "assertThatThrownBy(() -> new BoundedEventChannel<String>(capacity))"
+    }
+  ],
+  "problem_kinds": [
+    {
+      "file": "BoundedEventChannelTest.java",
+      "line": 16,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "BoundedEventChannelTest.java",
+      "line": 22,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "BoundedEventChannelTest.java",
+      "line": 27,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "BoundedEventChannelTest.java",
+      "line": 34,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "BoundedEventChannelTest.java",
+      "line": 48,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "BoundedEventChannelTest.java",
+      "line": 60,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "BoundedEventChannelTest.java",
+      "line": 71,
+      "kind": "missing-symbol"
+    }
+  ],
+  "excerpt": [
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/shared/events/BoundedEventChannelTest.java:[22,24] cannot find symbol",
+    "[ERROR]   symbol:   class BoundedEventChannel",
+    "[ERROR]   location: class com.pulsestream.telemetry.shared.events.BoundedEventChannelTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/shared/events/BoundedEventChannelTest.java:[27,9] cannot find symbol",
+    "[ERROR]   symbol:   class BoundedEventChannel",
+    "[ERROR]   location: class com.pulsestream.telemetry.shared.events.BoundedEventChannelTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/shared/events/BoundedEventChannelTest.java:[27,51] cannot find symbol",
+    "[ERROR]   symbol:   class BoundedEventChannel",
+    "[ERROR]   location: class com.pulsestream.telemetry.shared.events.BoundedEventChannelTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/shared/events/BoundedEventChannelTest.java:[34,9] cannot find symbol",
+    "[ERROR]   symbol:   class BoundedEventChannel",
+    "[ERROR]   location: class com.pulsestream.telemetry.shared.events.BoundedEventChannelTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/shared/events/BoundedEventChannelTest.java:[34,51] cannot find symbol",
+    "[ERROR]   symbol:   class BoundedEventChannel",
+    "[ERROR]   location: class com.pulsestream.telemetry.shared.events.BoundedEventChannelTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/shared/events/BoundedEventChannelTest.java:[48,9] cannot find symbol",
+    "[ERROR]   symbol:   class BoundedEventChannel",
+    "[ERROR]   location: class com.pulsestream.telemetry.shared.events.BoundedEventChannelTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/shared/events/BoundedEventChannelTest.java:[48,51] cannot find symbol",
+    "[ERROR]   symbol:   class BoundedEventChannel",
+    "[ERROR]   location: class com.pulsestream.telemetry.shared.events.BoundedEventChannelTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/shared/events/BoundedEventChannelTest.java:[60,9] cannot find symbol",
+    "[ERROR]   symbol:   class BoundedEventChannel",
+    "[ERROR]   location: class com.pulsestream.telemetry.shared.events.BoundedEventChannelTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/shared/events/BoundedEventChannelTest.java:[60,51] cannot find symbol",
+    "[ERROR]   symbol:   class BoundedEventChannel",
+    "[ERROR]   location: class com.pulsestream.telemetry.shared.events.BoundedEventChannelTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/shared/events/BoundedEventChannelTest.java:[71,9] cannot find symbol",
+    "[ERROR]   symbol:   class BoundedEventChannel",
+    "[ERROR]   location: class com.pulsestream.telemetry.shared.events.BoundedEventChannelTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/shared/events/BoundedEventChannelTest.java:[71,51] cannot find symbol",
+    "[ERROR]   symbol:   class BoundedEventChannel",
+    "[ERROR]   location: class com.pulsestream.telemetry.shared.events.BoundedEventChannelTest",
+    "[ERROR] -> [Help 1]",
+    "[ERROR] ",
+    "[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.",
+    "[ERROR] Re-run Maven using the -X switch to enable full debug logging.",
+    "[ERROR] ",
+    "[ERROR] For more information about the errors and possible solutions, please read the following articles:",
+    "[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException"
+  ],
+  "command": "./mvnw -Dtest=BoundedEventChannelTest test",
   "task_id": "T1-004",
   "executed": true,
-  "recorded_at": "2026-11-09T19:35:11.976606+00:00"
+  "recorded_at": "2026-11-10T18:47:39.486500+00:00"
 }

@@ -1,0 +1,59 @@
+{
+  "id": "T2-011",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-011",
+    "T2-001",
+    "T2-003",
+    "T2-004",
+    "T2-009",
+    "T2-010"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/chronology/application/ChronologyReconciliationService.java",
+  "kind": "code",
+  "project": "telemetry-ingestion-processing",
+  "layer": "application",
+  "feature": null,
+  "export": "ChronologyReconciliationService",
+  "intent": "IMPLEMENT ChronologyReconciliationService so the stage 1 test passes, matching ast_hints exactly (Java 21, Spring Boot 3, non-blocking, no hardcoded operational values). Context: Chronology Reconciliation. Implements ReconcileChronologyUseCase. Constructor ChronologyReconciliationService(ReorderWindowBuffer buffer, BoundedEventChannel<TelemetryContracts.TelemetrySampleOrdered> orderedChannel, BoundedEventChannel<TelemetryContracts.TelemetryBackfillDetected> backfillChannel, TelemetryProperties.Chronology config). reconcile calls buffer.accept; each released TelemetrySampleOrdered is published to orderedChannel in order. If Result.late: with LatePolicy.APPEND_AS_BACKFILL publish TelemetryBackfillDetected(sample, status, lateness) to backfillChannel; with LatePolicy.REJECT publish nothing and complete (logged). VALIDATION_FAILED samples keep their status and are ordered like any other. flush publishes buffer.drain() results to orderedChannel. Window duration and late policy come only from the injected config. Non-blocking, no block().",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.chronology.application",
+    "implements": [
+      "ReconcileChronologyUseCase"
+    ],
+    "dependencies": [
+      {
+        "type": "TelemetryProperties",
+        "task_id": "T2-001"
+      },
+      {
+        "type": "TelemetryContracts",
+        "task_id": "T2-003"
+      },
+      {
+        "type": "BoundedEventChannel",
+        "task_id": "T2-004"
+      },
+      {
+        "type": "ReorderWindowBuffer",
+        "task_id": "T2-009"
+      },
+      {
+        "type": "ReconcileChronologyUseCase",
+        "task_id": "T2-010"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> reconcile(TelemetryContracts.TelemetrySample sample, TelemetryContracts.ValidationStatus status)",
+        "returns": "Mono<Void>"
+      },
+      {
+        "signature": "Mono<Void> flush()",
+        "returns": "Mono<Void>"
+      }
+    ]
+  },
+  "error": "dependsOn T2-001 not resolvable in queue or complete"
+}

@@ -1,0 +1,49 @@
+{
+  "id": "T1-013",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-003",
+    "T1-012"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/ledger/domain/TelemetryRecordRepositoryTest.java",
+  "kind": "test",
+  "project": "telemetry-ingestion-processing",
+  "layer": "domain",
+  "feature": null,
+  "export": "TelemetryRecordRepository",
+  "intent": "TEST for TelemetryRecordRepository. Write JUnit 5 + AssertJ tests (StepVerifier for reactive types, Mockito for collaborators, WebTestClient for controllers) asserting ONLY the ast_hints API and the invariants below; cover happy paths, boundaries and error cases. Context: Telemetry Record Ledger. Outbound repository port (interface), domain types only. append inserts a new revision and never updates or deletes (a duplicate (deviceId, metricType, tDevice, revision) errors); latestRevisionNumber emits the highest revision or 0 when none; findHistory emits all revisions of one sample ascending by revision (audit); findLatestInRange emits, for each tDevice in [from, to] inclusive, only its highest revision, ascending by tDevice.",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ledger.domain",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetryContracts",
+        "task_id": "T2-003"
+      },
+      {
+        "type": "TelemetryRecordRevision",
+        "task_id": "T2-012"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<TelemetryRecordRevision> append(TelemetryRecordRevision revision)",
+        "returns": "Mono<TelemetryRecordRevision>"
+      },
+      {
+        "signature": "Mono<Integer> latestRevisionNumber(String deviceId, TelemetryContracts.MetricType metricType, Instant tDevice)",
+        "returns": "Mono<Integer>"
+      },
+      {
+        "signature": "Flux<TelemetryRecordRevision> findHistory(String deviceId, TelemetryContracts.MetricType metricType, Instant tDevice)",
+        "returns": "Flux<TelemetryRecordRevision>"
+      },
+      {
+        "signature": "Flux<TelemetryRecordRevision> findLatestInRange(String deviceId, TelemetryContracts.MetricType metricType, Instant from, Instant to)",
+        "returns": "Flux<TelemetryRecordRevision>"
+      }
+    ]
+  }
+}

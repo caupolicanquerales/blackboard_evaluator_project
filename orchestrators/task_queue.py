@@ -206,6 +206,30 @@ def emit_tasks(paths):
                     continue
                 index[task["id"]] = task
                 staged.append(task)
+        # Cross-task completeness: a unit pinned by anyone as a collaborator must spell
+        # the surface its consumers touch - an empty method table there forces two
+        # consumers to improvise the same type differently (the seed-002 pair-defect root).
+        producers: dict = {}
+        for source in list(index.values()) + staged:
+            if not isinstance(source, dict):
+                continue
+            for dep in (source.get("ast_hints") or {}).get("dependencies", []):
+                if isinstance(dep, dict) and str(dep.get("task_id", "")).strip():
+                    producers.setdefault(str(dep["task_id"]), set()).add(
+                        f"{source.get('id')}: {dep.get('type')}")
+        for producer_id, consumers in producers.items():
+            producer = index.get(producer_id)
+            if producer is None:
+                errors.append(f"collaborator pin {producer_id} (by {sorted(consumers)[:2]}) "
+                              "references no task in the batch, queue or complete")
+                continue
+            if int(producer.get("stage") or 0) not in (1, 2):
+                continue
+            if not (producer.get("ast_hints") or {}).get("methods"):
+                errors.append(
+                    f"{producer_id}: pinned as a collaborator by "
+                    f"{sorted(consumers)[:3]} but its ast_hints.methods is empty - "
+                    "spell the surface (accessors included) every consumer touches")
         if errors:
             reason = "\n".join(errors + [
                 "Fix EVERY error above with one rewrite of the draft file, then re-emit once."])

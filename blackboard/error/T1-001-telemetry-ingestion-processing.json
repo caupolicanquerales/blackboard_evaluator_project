@@ -1,0 +1,22 @@
+{
+  "id": "T1-001",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/shared/config/TelemetryPropertiesTest.java",
+  "kind": "test",
+  "project": "telemetry-ingestion-processing",
+  "layer": "shared",
+  "feature": null,
+  "export": "TelemetryProperties",
+  "intent": "TEST for TelemetryProperties. Write JUnit 5 + AssertJ tests (StepVerifier for reactive types, Mockito for collaborators, WebTestClient for controllers) asserting ONLY the ast_hints API and the invariants below; cover happy paths, boundaries and error cases. Context: shared kernel of Telemetry Ingestion & Processing (all three bounded contexts). Externalized configuration record bound with @ConfigurationProperties(prefix = \"telemetry\") (constructor binding, no setters, no default values in code). Shape: record TelemetryProperties(Boundaries boundaries, int channelCapacity, Chronology chronology, Ledger ledger) with nested public records: Boundary(double min, double max); Boundaries(Boundary heartRate, Boundary power, Boundary cadence, double swimPaceMinSecondsPer100m); Chronology(Duration reorderWindow, LatePolicy latePolicy); Ledger(int appendMaxAttempts, Duration appendBackoff); and nested enum LatePolicy {APPEND_AS_BACKFILL, REJECT}. Invariants (compact-constructor validation, IllegalArgumentException): Boundary min <= max; channelCapacity > 0; reorderWindow positive; appendMaxAttempts >= 1; appendBackoff non-negative; all references non-null. No value is hardcoded here; values come from application.yml.",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.shared.config",
+    "implements": [],
+    "dependencies": [],
+    "methods": []
+  },
+  "error": "agent finished but src/test/java/com/pulsestream/telemetry/shared/config/TelemetryPropertiesTest.java was not created"
+}

@@ -1,0 +1,35 @@
+{
+  "id": "T3-015",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-015"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ledger/application/AppendTelemetryRecordUseCase.java",
+  "kind": "refactor",
+  "project": "telemetry-ingestion-processing",
+  "layer": "application",
+  "feature": null,
+  "export": "AppendTelemetryRecordUseCase",
+  "intent": "REFACTOR AppendTelemetryRecordUseCase: inspect the implementation for layering violations (domain free of framework/DTO types), blocking calls, unbounded buffers, hardcoded values and duplication; refactor while keeping the public API and tests green. Unit definition: Context: Telemetry Record Ledger. Inbound port (interface), domain types only. appendOrdered and appendBackfill each append exactly one new revision of the sample and emit the TelemetryRecordAppended event; emits empty when the append permanently failed (dead-lettered). Existing revisions are never modified.",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ledger.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetryContracts",
+        "task_id": "T2-003"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<TelemetryContracts.TelemetryRecordAppended> appendOrdered(TelemetryContracts.TelemetrySampleOrdered ordered)",
+        "returns": "Mono<TelemetryContracts.TelemetryRecordAppended>"
+      },
+      {
+        "signature": "Mono<TelemetryContracts.TelemetryRecordAppended> appendBackfill(TelemetryContracts.TelemetryBackfillDetected backfill)",
+        "returns": "Mono<TelemetryContracts.TelemetryRecordAppended>"
+      }
+    ]
+  }
+}

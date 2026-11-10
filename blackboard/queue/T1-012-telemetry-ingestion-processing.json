@@ -1,0 +1,27 @@
+{
+  "id": "T1-012",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-003"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/ledger/domain/TelemetryRecordRevisionTest.java",
+  "kind": "test",
+  "project": "telemetry-ingestion-processing",
+  "layer": "domain",
+  "feature": null,
+  "export": "TelemetryRecordRevision",
+  "intent": "TEST for TelemetryRecordRevision. Write JUnit 5 + AssertJ tests (StepVerifier for reactive types, Mockito for collaborators, WebTestClient for controllers) asserting ONLY the ast_hints API and the invariants below; cover happy paths, boundaries and error cases. Context: Telemetry Record Ledger. Immutable aggregate-root value record TelemetryRecordRevision(String deviceId, TelemetryContracts.MetricType metricType, Instant tDevice, Instant tIngress, double value, TelemetryContracts.ValidationStatus status, int revision, TelemetryContracts.RevisionReason reason). Invariants: all references non-null (NullPointerException); revision >= 1 (IllegalArgumentException). Identity is (deviceId, metricType, tDevice, revision). Records are append-only: no withers or mutators; a correction is a new instance with a higher revision.",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ledger.domain",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetryContracts",
+        "task_id": "T2-003"
+      }
+    ],
+    "methods": []
+  }
+}

@@ -2,67 +2,360 @@
   "status": "compile_error",
   "exit_code": 1,
   "missing_symbols": [
-    "SensorMetricBoundaryPolicy",
     "TelemetrySample",
-    "ValidationStatus",
     "BoundedEventChannel",
-    "TelemetrySampleEvent",
-    "IngestTelemetryService",
-    "IngressPacket",
-    "SensorMetricBoundary",
-    "IngestTelemetryUseCase",
-    "SampleRequest",
-    "IngressPacketRequest",
-    "TelemetryLedgerRepository",
-    "TelemetryRecord",
-    "LedgerQueryService",
-    "TelemetryRevisionAppendedEvent",
-    "TelemetryBackfillDetectedEvent",
-    "RecordTelemetryService",
-    "QueryTelemetryLedgerUseCase",
-    "RecordTelemetryUseCase",
-    "TelemetryRecordR2dbcRepository",
-    "SequenceTelemetryUseCase"
+    "MetricType",
+    "ValidationStatus",
+    "RevisionReason",
+    "TelemetrySampleValidated",
+    "TelemetrySampleValidationFailed",
+    "TelemetrySampleOrdered",
+    "TelemetryBackfillDetected",
+    "TelemetryRecordAppended",
+    "AppendFailed"
   ],
   "missing_packages": [
-    "com.pulsestream.telemetry.intake.interfaces.IngressPacketRequest"
+    "com.pulsestream.telemetry.shared.events.TelemetryContracts"
   ],
   "failures": [],
   "counts": {},
+  "classes": {},
+  "member_demands": [
+    {
+      "member": "TelemetrySample",
+      "owner": "TelemetryContractsTest",
+      "kind": "class",
+      "context": "import com.pulsestream.telemetry.shared.events.TelemetryContracts.TelemetrySampleValidationFailed;"
+    },
+    {
+      "member": "BoundedEventChannel",
+      "owner": "BoundedEventChannelTest",
+      "kind": "class",
+      "context": "assertThatThrownBy(() -> new BoundedEventChannel<String>(capacity))"
+    },
+    {
+      "member": "TelemetrySampleValidated",
+      "owner": "TelemetryContractsTest",
+      "kind": "class",
+      "context": "assertThat(new TelemetrySampleValidated(sample()).sample()).isEqualTo(sample());"
+    },
+    {
+      "member": "TelemetrySampleValidationFailed",
+      "owner": "TelemetryContractsTest",
+      "kind": "class",
+      "context": "TelemetrySampleValidationFailed e = new TelemetrySampleValidationFailed(sample(), \"out of range\");"
+    },
+    {
+      "member": "TelemetrySampleOrdered",
+      "owner": "TelemetryContractsTest",
+      "kind": "class",
+      "context": "TelemetrySampleOrdered e = new TelemetrySampleOrdered(sample(), ValidationStatus.VALID);"
+    },
+    {
+      "member": "TelemetryBackfillDetected",
+      "owner": "TelemetryContractsTest",
+      "kind": "class",
+      "context": "TelemetryBackfillDetected e = new TelemetryBackfillDetected(sample(),"
+    },
+    {
+      "member": "TelemetryRecordAppended",
+      "owner": "TelemetryContractsTest",
+      "kind": "class",
+      "context": "TelemetryRecordAppended e = new TelemetryRecordAppended(\"dev-1\", MetricType.POWER, T_DEVICE, 2,"
+    },
+    {
+      "member": "AppendFailed",
+      "owner": "TelemetryContractsTest",
+      "kind": "class",
+      "context": "AppendFailed e = new AppendFailed(\"dev-1\", MetricType.CADENCE, T_DEVICE, \"db down\");"
+    }
+  ],
+  "problem_kinds": [
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 6,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 7,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 8,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 9,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 10,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 11,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 12,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 13,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 14,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 15,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 27,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "BoundedEventChannelTest.java",
+      "line": 16,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "BoundedEventChannelTest.java",
+      "line": 22,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "BoundedEventChannelTest.java",
+      "line": 27,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "BoundedEventChannelTest.java",
+      "line": 34,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "BoundedEventChannelTest.java",
+      "line": 48,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "BoundedEventChannelTest.java",
+      "line": 60,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "BoundedEventChannelTest.java",
+      "line": 71,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 28,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 33,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 34,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 35,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 41,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 40,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 46,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 47,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 52,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 55,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 68,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 69,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 76,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 82,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 88,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 94,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 100,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 105,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 111,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 119,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 125,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 131,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 134,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 139,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 145,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 151,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 152,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 155,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 161,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 167,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 173,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 179,
+      "kind": "missing-symbol"
+    }
+  ],
   "excerpt": [
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/ledger/infrastructure/R2dbcTelemetryLedgerRepositoryTest.java:[51,20] cannot find symbol",
-    "[ERROR]   symbol:   class TelemetryRecord",
-    "[ERROR]   location: class com.pulsestream.telemetry.ledger.infrastructure.R2dbcTelemetryLedgerRepositoryTest",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/ledger/infrastructure/TelemetryRecordEntityTest.java:[6,47] cannot find symbol",
-    "[ERROR]   symbol:   class TelemetryRecord",
-    "[ERROR]   location: package com.pulsestream.telemetry.ledger.domain",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/ledger/infrastructure/TelemetryRecordEntityTest.java:[22,20] cannot find symbol",
-    "[ERROR]   symbol:   class TelemetryRecord",
-    "[ERROR]   location: class com.pulsestream.telemetry.ledger.infrastructure.TelemetryRecordEntityTest",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/ledger/infrastructure/TelemetryRecordEntityTest.java:[26,20] cannot find symbol",
-    "[ERROR]   symbol:   class TelemetryRecord",
-    "[ERROR]   location: class com.pulsestream.telemetry.ledger.infrastructure.TelemetryRecordEntityTest",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/ledger/interfaces/LedgerQueryControllerTest.java:[9,60] cannot find symbol",
-    "[ERROR]   symbol:   class QueryTelemetryLedgerUseCase",
-    "[ERROR]   location: package com.pulsestream.telemetry.ledger.application.port.in",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/ledger/interfaces/LedgerQueryControllerTest.java:[28,13] cannot find symbol",
-    "[ERROR]   symbol:   class QueryTelemetryLedgerUseCase",
-    "[ERROR]   location: class com.pulsestream.telemetry.ledger.interfaces.LedgerQueryControllerTest",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/ledger/interfaces/TelemetryRecordResponseTest.java:[6,47] cannot find symbol",
-    "[ERROR]   symbol:   class TelemetryRecord",
-    "[ERROR]   location: package com.pulsestream.telemetry.ledger.domain",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/sequencing/application/port/in/SequenceTelemetryUseCaseTest.java:[5,47] cannot find symbol",
-    "[ERROR]   symbol:   class TelemetrySampleEvent",
-    "[ERROR]   location: package com.pulsestream.telemetry.shared.events",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/sequencing/application/port/in/SequenceTelemetryUseCaseTest.java:[19,20] cannot find symbol",
-    "[ERROR]   symbol:   class TelemetrySampleEvent",
-    "[ERROR]   location: class com.pulsestream.telemetry.sequencing.application.port.in.SequenceTelemetryUseCaseTest",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/sequencing/application/port/in/SequenceTelemetryUseCaseTest.java:[23,60] cannot find symbol",
-    "[ERROR]   symbol:   class SequenceTelemetryUseCase",
-    "[ERROR]   location: class com.pulsestream.telemetry.sequencing.application.port.in.SequenceTelemetryUseCaseTest",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/sequencing/application/port/in/SequenceTelemetryUseCaseTest.java:[24,20] cannot find symbol",
-    "[ERROR]   symbol:   class TelemetrySampleEvent",
-    "[ERROR]   location: class com.pulsestream.telemetry.sequencing.application.port.in.SequenceTelemetryUseCaseTest.RecordingUseCase",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/shared/events/TelemetryContractsTest.java:[215,9] cannot find symbol",
+    "[ERROR]   symbol:   class AppendFailed",
+    "[ERROR]   location: class com.pulsestream.telemetry.shared.events.TelemetryContractsTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/shared/events/TelemetryContractsTest.java:[215,30] cannot find symbol",
+    "[ERROR]   symbol:   class AppendFailed",
+    "[ERROR]   location: class com.pulsestream.telemetry.shared.events.TelemetryContractsTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/shared/events/TelemetryContractsTest.java:[215,52] cannot find symbol",
+    "[ERROR]   symbol:   variable MetricType",
+    "[ERROR]   location: class com.pulsestream.telemetry.shared.events.TelemetryContractsTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/shared/events/TelemetryContractsTest.java:[218,46] cannot find symbol",
+    "[ERROR]   symbol:   variable MetricType",
+    "[ERROR]   location: class com.pulsestream.telemetry.shared.events.TelemetryContractsTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/shared/events/TelemetryContractsTest.java:[225,38] cannot find symbol",
+    "[ERROR]   symbol:   class AppendFailed",
+    "[ERROR]   location: class com.pulsestream.telemetry.shared.events.TelemetryContractsTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/shared/events/TelemetryContractsTest.java:[225,57] cannot find symbol",
+    "[ERROR]   symbol:   variable MetricType",
+    "[ERROR]   location: class com.pulsestream.telemetry.shared.events.TelemetryContractsTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/shared/events/TelemetryContractsTest.java:[231,38] cannot find symbol",
+    "[ERROR]   symbol:   class AppendFailed",
+    "[ERROR]   location: class com.pulsestream.telemetry.shared.events.TelemetryContractsTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/shared/events/TelemetryContractsTest.java:[237,38] cannot find symbol",
+    "[ERROR]   symbol:   class AppendFailed",
+    "[ERROR]   location: class com.pulsestream.telemetry.shared.events.TelemetryContractsTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/shared/events/TelemetryContractsTest.java:[237,56] cannot find symbol",
+    "[ERROR]   symbol:   variable MetricType",
+    "[ERROR]   location: class com.pulsestream.telemetry.shared.events.TelemetryContractsTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/shared/events/TelemetryContractsTest.java:[243,38] cannot find symbol",
+    "[ERROR]   symbol:   class AppendFailed",
+    "[ERROR]   location: class com.pulsestream.telemetry.shared.events.TelemetryContractsTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/shared/events/TelemetryContractsTest.java:[243,56] cannot find symbol",
+    "[ERROR]   symbol:   variable MetricType",
+    "[ERROR]   location: class com.pulsestream.telemetry.shared.events.TelemetryContractsTest",
     "[ERROR] -> [Help 1]",
     "[ERROR] ",
     "[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.",
@@ -71,8 +364,8 @@
     "[ERROR] For more information about the errors and possible solutions, please read the following articles:",
     "[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException"
   ],
-  "command": "sh ./mvnw -Dtest=TelemetryWindowClosedEventTest test",
+  "command": "./mvnw -Dtest=TelemetryContractsTest test",
   "task_id": "T1-003",
   "executed": true,
-  "recorded_at": "2026-11-09T19:53:22.610707+00:00"
+  "recorded_at": "2026-11-10T18:48:37.388495+00:00"
 }

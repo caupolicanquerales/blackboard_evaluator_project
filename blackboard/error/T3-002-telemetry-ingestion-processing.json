@@ -1,0 +1,27 @@
+{
+  "id": "T3-002",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-002"
+  ],
+  "path": "src/main/resources/application.yml",
+  "kind": "refactor",
+  "project": "telemetry-ingestion-processing",
+  "layer": "root",
+  "feature": null,
+  "export": "application.yml",
+  "intent": "REFACTOR application.yml: inspect the implementation for layering violations (domain free of framework/DTO types), blocking calls, unbounded buffers, hardcoded values and duplication; refactor while keeping the public API and tests green. Unit definition: Context: externalized operational configuration for all contexts. YAML file binding the telemetry.* keys of TelemetryProperties: telemetry.boundaries.heart-rate (min 30, max 240 BPM), power (0-2500 W), cadence (0-220 RPM), swim-pace-min-seconds-per-100m 45 (value must be strictly greater); telemetry.channel-capacity 1024; telemetry.chronology.reorder-window PT60S and late-policy APPEND_AS_BACKFILL; telemetry.ledger.append-max-attempts 5 and append-backoff PT0.2S. Data access: default profile uses in-process H2 in PostgreSQL mode (spring.r2dbc.url r2dbc:h2:mem:///telemetry;DB_CLOSE_DELAY=-1;MODE=PostgreSQL; spring.flyway.url jdbc:h2:mem:telemetry;DB_CLOSE_DELAY=-1;MODE=PostgreSQL) so the app and tests boot without external services; spring.flyway.enabled true, spring.flyway.locations filesystem:db/migrations (V1 then V2 from the database tasks), spring.flyway.schemas telemetry, create-schemas true. A 'postgres' profile document overrides r2dbc/flyway URLs, user and password from environment variables (no secrets in file). Expose only health and info actuator endpoints. Test: a @SpringBootTest/ApplicationContextRunner test asserting TelemetryProperties binds with these values and Flyway migrations apply on H2.",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.shared.config",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetryProperties",
+        "task_id": "T2-001"
+      }
+    ],
+    "methods": []
+  },
+  "error": "dependsOn T2-002 not resolvable in queue or complete"
+}

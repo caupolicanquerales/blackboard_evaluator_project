@@ -2,67 +2,433 @@
   "status": "compile_error",
   "exit_code": 1,
   "missing_symbols": [
-    "SensorMetricBoundaryPolicy",
+    "ReconcileChronologyUseCase",
     "TelemetrySample",
     "ValidationStatus",
-    "BoundedEventChannel",
-    "TelemetrySampleEvent",
-    "IngestTelemetryService",
-    "IngressPacket",
-    "SensorMetricBoundary",
+    "ReorderWindowBuffer",
+    "MetricType",
+    "TelemetrySampleOrdered",
+    "TelemetryContracts",
     "IngestTelemetryUseCase",
-    "SampleRequest",
-    "IngressPacketRequest",
-    "TelemetryLedgerRepository",
-    "TelemetryRecord",
-    "LedgerQueryService",
-    "QueryTelemetryLedgerUseCase",
-    "TelemetryRecordR2dbcRepository",
-    "Window",
-    "Channels",
-    "Boundary",
-    "TelemetryProperties"
+    "TelemetryBackfillDetected",
+    "AppendTelemetryRecordUseCase",
+    "TelemetryRecordAppended",
+    "RevisionReason"
   ],
   "missing_packages": [
-    "com.pulsestream.telemetry.intake.interfaces.IngressPacketRequest",
-    "com.pulsestream.telemetry.shared.config.TelemetryProperties"
+    "com.pulsestream.telemetry.shared.events.TelemetryContracts"
   ],
   "failures": [],
   "counts": {},
+  "classes": {},
+  "member_demands": [
+    {
+      "member": "ReconcileChronologyUseCase",
+      "owner": "ReconcileChronologyUseCaseTest",
+      "kind": "class",
+      "context": "import com.pulsestream.telemetry.shared.events.TelemetryContracts.TelemetrySample;"
+    },
+    {
+      "member": "TelemetrySample",
+      "owner": "ReconcileChronologyUseCaseTest",
+      "kind": "class",
+      "context": "private static TelemetrySample sample() {"
+    },
+    {
+      "member": "ValidationStatus",
+      "owner": "ReconcileChronologyUseCaseTest",
+      "kind": "class",
+      "context": "void reconcile_sampleWithAnyStatus_completesEmpty(ValidationStatus status) {"
+    },
+    {
+      "member": "ValidationStatus",
+      "owner": "ReorderWindowBufferTest",
+      "kind": "class",
+      "context": "import com.pulsestream.telemetry.shared.events.TelemetryContracts.TelemetrySampleOrdered;"
+    },
+    {
+      "member": "ReorderWindowBuffer",
+      "owner": "ReorderWindowBufferTest",
+      "kind": "class",
+      "context": "private ReorderWindowBuffer buffer;"
+    },
+    {
+      "member": "MetricType",
+      "owner": "ReorderWindowBufferTest",
+      "kind": "class",
+      "context": "private static TelemetrySample sample(String device, MetricType type, long seconds) {"
+    },
+    {
+      "member": "TelemetrySample",
+      "owner": "ReorderWindowBufferTest",
+      "kind": "class",
+      "context": "private static TelemetrySample sample(String device, MetricType type, long seconds) {"
+    },
+    {
+      "member": "TelemetrySampleOrdered",
+      "owner": "ReorderWindowBufferTest",
+      "kind": "class",
+      "context": "private static List<Instant> times(List<TelemetrySampleOrdered> ordered) {"
+    },
+    {
+      "member": "IngestTelemetryUseCase",
+      "owner": "IngestTelemetryUseCaseTest",
+      "kind": "class",
+      "context": "import com.pulsestream.telemetry.shared.events.TelemetryContracts.MetricType;"
+    },
+    {
+      "member": "TelemetrySample",
+      "owner": "IngestTelemetryUseCaseTest",
+      "kind": "class",
+      "context": "private static TelemetrySample sample(double value) {"
+    },
+    {
+      "member": "TelemetrySample",
+      "owner": "AppendTelemetryRecordUseCaseTest",
+      "kind": "class",
+      "context": "import com.pulsestream.telemetry.shared.events.TelemetryContracts.TelemetrySampleOrdered;"
+    },
+    {
+      "member": "TelemetrySampleOrdered",
+      "owner": "AppendTelemetryRecordUseCaseTest",
+      "kind": "class",
+      "context": "private static TelemetrySampleOrdered ordered() {"
+    },
+    {
+      "member": "TelemetryBackfillDetected",
+      "owner": "AppendTelemetryRecordUseCaseTest",
+      "kind": "class",
+      "context": "private static TelemetryBackfillDetected backfill() {"
+    },
+    {
+      "member": "AppendTelemetryRecordUseCase",
+      "owner": "AppendTelemetryRecordUseCaseTest",
+      "kind": "class",
+      "context": "private static final class InMemoryUseCase implements AppendTelemetryRecordUseCase {"
+    },
+    {
+      "member": "TelemetryRecordAppended",
+      "owner": "InMemoryUseCase",
+      "kind": "class",
+      "context": "private final Map<String, List<TelemetryRecordAppended>> revisions = new HashMap<>();"
+    },
+    {
+      "member": "TelemetrySampleOrdered",
+      "owner": "InMemoryUseCase",
+      "kind": "class",
+      "context": "public Mono<TelemetryRecordAppended> appendOrdered(TelemetrySampleOrdered ordered) {"
+    },
+    {
+      "member": "TelemetryBackfillDetected",
+      "owner": "InMemoryUseCase",
+      "kind": "class",
+      "context": "public Mono<TelemetryRecordAppended> appendBackfill(TelemetryBackfillDetected backfill) {"
+    },
+    {
+      "member": "TelemetrySample",
+      "owner": "InMemoryUseCase",
+      "kind": "class",
+      "context": "private Mono<TelemetryRecordAppended> append(TelemetrySample s, RevisionReason reason) {"
+    },
+    {
+      "member": "RevisionReason",
+      "owner": "InMemoryUseCase",
+      "kind": "class",
+      "context": "private Mono<TelemetryRecordAppended> append(TelemetrySample s, RevisionReason reason) {"
+    },
+    {
+      "member": "TelemetrySample",
+      "owner": "TelemetryContractsTest",
+      "kind": "class",
+      "context": "import com.pulsestream.telemetry.shared.events.TelemetryContracts.TelemetrySampleValidationFailed;"
+    }
+  ],
+  "problem_kinds": [
+    {
+      "file": "ReconcileChronologyUseCaseTest.java",
+      "line": 9,
+      "kind": "other"
+    },
+    {
+      "file": "ReconcileChronologyUseCaseTest.java",
+      "line": 10,
+      "kind": "other"
+    },
+    {
+      "file": "ReconcileChronologyUseCaseTest.java",
+      "line": 11,
+      "kind": "other"
+    },
+    {
+      "file": "ReconcileChronologyUseCaseTest.java",
+      "line": 24,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "ReconcileChronologyUseCaseTest.java",
+      "line": 26,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "ReconcileChronologyUseCaseTest.java",
+      "line": 32,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "ReorderWindowBufferTest.java",
+      "line": 6,
+      "kind": "other"
+    },
+    {
+      "file": "ReorderWindowBufferTest.java",
+      "line": 7,
+      "kind": "other"
+    },
+    {
+      "file": "ReorderWindowBufferTest.java",
+      "line": 8,
+      "kind": "other"
+    },
+    {
+      "file": "ReorderWindowBufferTest.java",
+      "line": 9,
+      "kind": "other"
+    },
+    {
+      "file": "ReorderWindowBufferTest.java",
+      "line": 20,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "ReorderWindowBufferTest.java",
+      "line": 22,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "ReorderWindowBufferTest.java",
+      "line": 29,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "ReorderWindowBufferTest.java",
+      "line": 33,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "ReorderWindowBufferTest.java",
+      "line": 37,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "IngestTelemetryUseCaseTest.java",
+      "line": 5,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "IngestTelemetryUseCaseTest.java",
+      "line": 6,
+      "kind": "other"
+    },
+    {
+      "file": "IngestTelemetryUseCaseTest.java",
+      "line": 7,
+      "kind": "other"
+    },
+    {
+      "file": "IngestTelemetryUseCaseTest.java",
+      "line": 21,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "IngestTelemetryUseCaseTest.java",
+      "line": 31,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "AppendTelemetryRecordUseCaseTest.java",
+      "line": 5,
+      "kind": "other"
+    },
+    {
+      "file": "AppendTelemetryRecordUseCaseTest.java",
+      "line": 6,
+      "kind": "other"
+    },
+    {
+      "file": "AppendTelemetryRecordUseCaseTest.java",
+      "line": 7,
+      "kind": "other"
+    },
+    {
+      "file": "AppendTelemetryRecordUseCaseTest.java",
+      "line": 8,
+      "kind": "other"
+    },
+    {
+      "file": "AppendTelemetryRecordUseCaseTest.java",
+      "line": 9,
+      "kind": "other"
+    },
+    {
+      "file": "AppendTelemetryRecordUseCaseTest.java",
+      "line": 10,
+      "kind": "other"
+    },
+    {
+      "file": "AppendTelemetryRecordUseCaseTest.java",
+      "line": 11,
+      "kind": "other"
+    },
+    {
+      "file": "AppendTelemetryRecordUseCaseTest.java",
+      "line": 27,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "AppendTelemetryRecordUseCaseTest.java",
+      "line": 31,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "AppendTelemetryRecordUseCaseTest.java",
+      "line": 35,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "AppendTelemetryRecordUseCaseTest.java",
+      "line": 40,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "AppendTelemetryRecordUseCaseTest.java",
+      "line": 41,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "AppendTelemetryRecordUseCaseTest.java",
+      "line": 49,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "AppendTelemetryRecordUseCaseTest.java",
+      "line": 54,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "AppendTelemetryRecordUseCaseTest.java",
+      "line": 58,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 6,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 7,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 8,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 9,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 10,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 11,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 12,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 13,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 14,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 15,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryContractsTest.java",
+      "line": 27,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "ReconcileChronologyUseCaseTest.java",
+      "line": 31,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "ReconcileChronologyUseCaseTest.java",
+      "line": 27,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "ReconcileChronologyUseCaseTest.java",
+      "line": 33,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "ReconcileChronologyUseCaseTest.java",
+      "line": 43,
+      "kind": "missing-symbol"
+    }
+  ],
   "excerpt": [
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/intake/application/IngestTelemetryServiceTest.java:[35,23] cannot find symbol",
-    "[ERROR]   symbol:   class SensorMetricBoundaryPolicy",
-    "[ERROR]   location: class com.pulsestream.telemetry.intake.application.IngestTelemetryServiceTest",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/intake/application/IngestTelemetryServiceTest.java:[36,24] cannot find symbol",
-    "[ERROR]   symbol:   class BoundedEventChannel",
-    "[ERROR]   location: class com.pulsestream.telemetry.intake.application.IngestTelemetryServiceTest",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/intake/application/IngestTelemetryServiceTest.java:[37,23] cannot find symbol",
-    "[ERROR]   symbol:   class IngestTelemetryService",
-    "[ERROR]   location: class com.pulsestream.telemetry.intake.application.IngestTelemetryServiceTest",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/intake/application/IngestTelemetryServiceTest.java:[41,9] cannot find symbol",
-    "[ERROR]   symbol:   class TelemetrySample",
-    "[ERROR]   location: class com.pulsestream.telemetry.intake.application.IngestTelemetryServiceTest",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/intake/application/IngestTelemetryServiceTest.java:[41,39] cannot find symbol",
-    "[ERROR]   symbol:   class TelemetrySample",
-    "[ERROR]   location: class com.pulsestream.telemetry.intake.application.IngestTelemetryServiceTest",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/intake/application/IngestTelemetryServiceTest.java:[51,9] cannot find symbol",
-    "[ERROR]   symbol:   class IngressPacket",
-    "[ERROR]   location: class com.pulsestream.telemetry.intake.application.IngestTelemetryServiceTest",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/intake/application/IngestTelemetryServiceTest.java:[51,37] cannot find symbol",
-    "[ERROR]   symbol:   class IngressPacket",
-    "[ERROR]   location: class com.pulsestream.telemetry.intake.application.IngestTelemetryServiceTest",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/intake/application/IngestTelemetryServiceTest.java:[58,9] cannot find symbol",
-    "[ERROR]   symbol:   class TelemetrySample",
-    "[ERROR]   location: class com.pulsestream.telemetry.intake.application.IngestTelemetryServiceTest",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/intake/application/IngestTelemetryServiceTest.java:[58,36] cannot find symbol",
-    "[ERROR]   symbol:   class TelemetrySample",
-    "[ERROR]   location: class com.pulsestream.telemetry.intake.application.IngestTelemetryServiceTest",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/intake/application/IngestTelemetryServiceTest.java:[59,78] cannot find symbol",
+    "[ERROR]   location: class com.pulsestream.telemetry.chronology.domain.ReorderWindowBufferTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/chronology/domain/ReorderWindowBufferTest.java:[128,36] cannot find symbol",
+    "[ERROR]   symbol:   variable MetricType",
+    "[ERROR]   location: class com.pulsestream.telemetry.chronology.domain.ReorderWindowBufferTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/chronology/domain/ReorderWindowBufferTest.java:[130,28] package ReorderWindowBuffer does not exist",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/chronology/domain/ReorderWindowBufferTest.java:[130,77] cannot find symbol",
+    "[ERROR]   symbol:   variable MetricType",
+    "[ERROR]   location: class com.pulsestream.telemetry.chronology.domain.ReorderWindowBufferTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/chronology/domain/ReorderWindowBufferTest.java:[131,28] package ReorderWindowBuffer does not exist",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/chronology/domain/ReorderWindowBufferTest.java:[131,77] cannot find symbol",
+    "[ERROR]   symbol:   variable MetricType",
+    "[ERROR]   location: class com.pulsestream.telemetry.chronology.domain.ReorderWindowBufferTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/chronology/domain/ReorderWindowBufferTest.java:[139,34] cannot find symbol",
     "[ERROR]   symbol:   variable ValidationStatus",
-    "[ERROR]   location: class com.pulsestream.telemetry.intake.application.IngestTelemetryServiceTest",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/intake/application/IngestTelemetryServiceTest.java:[64,24] cannot find symbol",
-    "[ERROR]   symbol:   class TelemetrySampleEvent",
-    "[ERROR]   location: class com.pulsestream.telemetry.intake.application.IngestTelemetryServiceTest",
+    "[ERROR]   location: class com.pulsestream.telemetry.chronology.domain.ReorderWindowBufferTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/chronology/domain/ReorderWindowBufferTest.java:[141,14] cannot find symbol",
+    "[ERROR]   symbol:   class TelemetrySampleOrdered",
+    "[ERROR]   location: class com.pulsestream.telemetry.chronology.domain.ReorderWindowBufferTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/chronology/domain/ReorderWindowBufferTest.java:[144,34] cannot find symbol",
+    "[ERROR]   symbol:   variable ValidationStatus",
+    "[ERROR]   location: class com.pulsestream.telemetry.chronology.domain.ReorderWindowBufferTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/chronology/domain/ReorderWindowBufferTest.java:[143,41] cannot find symbol",
+    "[ERROR]   symbol:   variable TelemetrySampleOrdered",
+    "[ERROR]   location: class com.pulsestream.telemetry.chronology.domain.ReorderWindowBufferTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/chronology/domain/ReorderWindowBufferTest.java:[149,36] cannot find symbol",
+    "[ERROR]   symbol:   variable MetricType",
+    "[ERROR]   location: class com.pulsestream.telemetry.chronology.domain.ReorderWindowBufferTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/chronology/domain/ReorderWindowBufferTest.java:[150,36] cannot find symbol",
+    "[ERROR]   symbol:   variable MetricType",
+    "[ERROR]   location: class com.pulsestream.telemetry.chronology.domain.ReorderWindowBufferTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/chronology/domain/ReorderWindowBufferTest.java:[151,36] cannot find symbol",
+    "[ERROR]   symbol:   variable MetricType",
+    "[ERROR]   location: class com.pulsestream.telemetry.chronology.domain.ReorderWindowBufferTest",
     "[ERROR] -> [Help 1]",
     "[ERROR] ",
     "[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.",
@@ -71,8 +437,8 @@
     "[ERROR] For more information about the errors and possible solutions, please read the following articles:",
     "[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException"
   ],
-  "command": "sh ./mvnw -Dtest=IngestTelemetryServiceTest test",
+  "command": "./mvnw -Dtest=AppendTelemetryRecordUseCaseTest test",
   "task_id": "T1-015",
   "executed": true,
-  "recorded_at": "2026-11-09T19:37:29.552439+00:00"
+  "recorded_at": "2026-11-10T18:51:40.192418+00:00"
 }

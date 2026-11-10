@@ -1,0 +1,54 @@
+{
+  "id": "T2-026",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-026",
+    "T2-017",
+    "T2-010",
+    "T2-002"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ledger/api/LedgerController.java",
+  "kind": "code",
+  "layer": "interface",
+  "feature": null,
+  "export": "LedgerController",
+  "intent": "Implement LedgerController making the T1 tests pass, exactly per ast_hints. Unit: Context Telemetry Event Ledger. @RestController /api/v1/ledger read-only (open-host query endpoints). GET /records/{recordId}/revisions -> Flux<RevisionResponse> in revision order; GET /records/{recordId}/latest -> Mono<RevisionResponse>, 404 ResponseStatusException when absent; GET /history?deviceId&metricType&from&to -> Flux<RevisionResponse> ordered by t_device. Nested record RevisionResponse(UUID recordId, int revisionNumber, String reason, String deviceId, String metricType, double value, Instant deviceTimestamp, Instant ingressTimestamp, String validationStatus, Instant recordedAt) with static from(EventRevision). Constructor(TelemetryHistoryQueryService). No write endpoints.",
+  "project": "telemetry-ingestion-and-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ledger.api",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetryHistoryQueryService",
+        "task_id": "T2-017"
+      },
+      {
+        "type": "EventRevision",
+        "task_id": "T2-010"
+      },
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-002"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Flux<LedgerController.RevisionResponse> revisions(UUID recordId)",
+        "returns": "Flux<LedgerController.RevisionResponse>"
+      },
+      {
+        "signature": "Mono<LedgerController.RevisionResponse> latest(UUID recordId)",
+        "returns": "Mono<LedgerController.RevisionResponse>"
+      },
+      {
+        "signature": "Flux<LedgerController.RevisionResponse> history(String deviceId, TelemetrySample.MetricType metricType, Instant from, Instant to)",
+        "returns": "Flux<LedgerController.RevisionResponse>"
+      },
+      {
+        "signature": "static LedgerController.RevisionResponse RevisionResponse.from(EventRevision revision)",
+        "returns": "LedgerController.RevisionResponse"
+      }
+    ]
+  }
+}

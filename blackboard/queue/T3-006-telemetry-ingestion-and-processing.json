@@ -1,0 +1,15 @@
+{
+  "id": "T3-006",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-006"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/shared/config/TelemetryConfig.java",
+  "kind": "refactor",
+  "layer": "shared",
+  "feature": null,
+  "export": "TelemetryConfig",
+  "intent": "Inspect and refactor TelemetryConfig without changing its ast_hints API: verify layering (domain types only in ports, no blocking calls, no hardcoded config values), reactive lifecycle/backpressure, and that tests stay green. Unit: Shared kernel of Intake/Ledger integration. @Configuration (not a boot class) with @EnableConfigurationProperties(TelemetryProperties.class). Beans: Clock systemUTC (injected everywhere, never Instant.now()), and ReorderWindow built from TelemetryProperties.reorderWindow().",
+  "project": "telemetry-ingestion-and-processing"
+}

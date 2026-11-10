@@ -1,0 +1,15 @@
+{
+  "id": "T3-011",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-011"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/intake/application/SensorMetricBoundaryProvider.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "SensorMetricBoundaryProvider",
+  "intent": "Inspect and refactor SensorMetricBoundaryProvider without changing its ast_hints API: verify layering (domain types only in ports, no blocking calls, no hardcoded config values), reactive lifecycle/backpressure, and that tests stay green. Unit: Context Telemetry Stream Intake. Outbound port supplying the configured Sensor Metric Boundary per metric; empty when none is configured (sample is then VALID). Domain types only.",
+  "project": "telemetry-ingestion-and-processing"
+}

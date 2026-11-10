@@ -1,0 +1,26 @@
+{
+  "id": "T1-007",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/shared/config/TelemetryYamlBindingTest.java",
+  "kind": "test",
+  "layer": "root",
+  "feature": null,
+  "export": "TelemetryYamlBindingTest",
+  "intent": "Write JUnit 5 + AssertJ (Mockito / StepVerifier where reactive) tests for application.yml, asserting only against ast_hints. Unit: Externalized configuration file src/main/resources/application.yml: telemetry.* keys binding TelemetryProperties (boundaries HEART_RATE 30-240, POWER 0-2500, CADENCE 0-220, SWIM_PACE min 45 minExclusive with large max; reorder-window PT60S; flush-interval; event-buffer-capacity; overflow-strategy; late-packet-policy APPEND_REVISION; retry-max-attempts; retry-backoff; dead-letter-capacity), spring.r2dbc.url/credentials from env with H2 (r2dbc:h2:mem) default for tests, spring.flyway.* JDBC url, actuator exposure. This is the only place these values live.",
+  "project": "telemetry-ingestion-and-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.shared.config",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetryProperties",
+        "task_id": "T2-001"
+      }
+    ],
+    "methods": []
+  }
+}

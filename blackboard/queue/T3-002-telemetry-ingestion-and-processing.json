@@ -1,0 +1,15 @@
+{
+  "id": "T3-002",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-002"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/intake/domain/TelemetrySample.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "TelemetrySample",
+  "intent": "Inspect and refactor TelemetrySample without changing its ast_hints API: verify layering (domain types only in ports, no blocking calls, no hardcoded config values), reactive lifecycle/backpressure, and that tests stay green. Unit: Context Telemetry Stream Intake. Immutable record TelemetrySample(UUID recordId, String deviceId, MetricType metricType, double value, Instant deviceTimestamp, Instant ingressTimestamp, ValidationStatus validationStatus). Nested enums MetricType{HEART_RATE,POWER,CADENCE,GROUND_CONTACT_TIME,RESPIRATION,SWIM_STROKE,SWIM_PACE} and ValidationStatus{VALID,VALIDATION_FAILED}. Invariants: deviceId non-blank, all other fields non-null; t_device is the ordering authority, t_ingress never used for ordering; a failed sample keeps its payload. recordId identity is deterministic: UUID.nameUUIDFromBytes of deviceId|metricType|deviceTimestamp (static recordIdFor). withStatus returns a copy with the new status.",
+  "project": "telemetry-ingestion-and-processing"
+}

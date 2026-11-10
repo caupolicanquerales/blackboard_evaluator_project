@@ -1,0 +1,32 @@
+{
+  "id": "T2-015",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-015",
+    "T2-008"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ledger/application/DeadLetterSink.java",
+  "kind": "code",
+  "layer": "application",
+  "feature": null,
+  "export": "DeadLetterSink",
+  "intent": "Implement DeadLetterSink making the T1 tests pass, exactly per ast_hints. Unit: Context Telemetry Event Ledger. Outbound port for events that could not be recorded after retries. reject captures the event and cause without blocking.",
+  "project": "telemetry-ingestion-and-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ledger.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetryEvent",
+        "task_id": "T2-008"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> reject(TelemetryEvent event, Throwable cause)",
+        "returns": "Mono<Void>"
+      }
+    ]
+  }
+}

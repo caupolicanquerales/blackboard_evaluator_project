@@ -1,0 +1,75 @@
+{
+  "task_id": "T1-026",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "LedgerController",
+    "constructors": [],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "controller",
+        "method": "revisions",
+        "args": [
+          "first.recordId()"
+        ],
+        "returns": "List<RevisionResponse>"
+      },
+      {
+        "receiver": "controller",
+        "method": "revisions",
+        "args": [
+          "id"
+        ]
+      },
+      {
+        "receiver": "controller",
+        "method": "latest",
+        "args": [
+          "second.recordId()"
+        ],
+        "returns": "RevisionResponse"
+      },
+      {
+        "receiver": "controller",
+        "method": "latest",
+        "args": [
+          "id"
+        ]
+      },
+      {
+        "receiver": "controller",
+        "method": "history",
+        "args": [
+          "DEVICE",
+          "TelemetrySample.MetricType.HEART_RATE",
+          "from",
+          "to"
+        ]
+      },
+      {
+        "receiver": "controller",
+        "method": "history",
+        "args": [
+          "DEVICE",
+          "TelemetrySample.MetricType.POWER",
+          "from",
+          "to"
+        ]
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class LedgerControllerTest {",
+      "private LedgerController controller;",
+      "List<RevisionResponse> result = controller.revisions(first.recordId()).collectList().block();",
+      "assertThat(controller.revisions(id).collectList().block()).isEmpty();",
+      "RevisionResponse result = controller.latest(second.recordId()).block();",
+      "assertThatThrownBy(() -> controller.latest(id).block())",
+      "List<RevisionResponse> result = controller",
+      "assertThatThrownBy(() -> controller"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

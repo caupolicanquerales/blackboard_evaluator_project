@@ -1,0 +1,47 @@
+{
+  "id": "T2-016",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-016",
+    "T2-014",
+    "T2-010",
+    "T2-008",
+    "T2-002"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ledger/application/RecordTelemetryService.java",
+  "kind": "code",
+  "layer": "application",
+  "feature": null,
+  "export": "RecordTelemetryService",
+  "intent": "Implement RecordTelemetryService making the T1 tests pass, exactly per ast_hints. Unit: Context Telemetry Event Ledger. @Service. Constructor(TelemetryLedgerRepository, Clock). Never re-validates or reorders. record: Validated/ValidationFailed event -> if no revision exists append ORIGINAL (revision 1, failed payload retained); if one exists and value or status differs append CORRECTION, otherwise return the latest unchanged (idempotent replay). BackfillReordered -> append BACKFILL as latest.next(...) (ORIGINAL if none exists). WindowBuffered and RevisionAppended -> Mono.empty(). Existing revisions are never modified.",
+  "project": "telemetry-ingestion-and-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ledger.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetryLedgerRepository",
+        "task_id": "T2-014"
+      },
+      {
+        "type": "EventRevision",
+        "task_id": "T2-010"
+      },
+      {
+        "type": "TelemetryEvent",
+        "task_id": "T2-008"
+      },
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-002"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<EventRevision> record(TelemetryEvent event)",
+        "returns": "Mono<EventRevision>"
+      }
+    ]
+  }
+}

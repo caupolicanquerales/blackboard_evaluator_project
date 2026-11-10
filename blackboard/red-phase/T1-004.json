@@ -2,91 +2,474 @@
   "status": "compile_error",
   "exit_code": 1,
   "missing_symbols": [
-    "BoundedEventChannel"
+    "TelemetryIngestionService",
+    "TelemetryStreamService",
+    "IngressPacket",
+    "TelemetryIngestionController",
+    "IngressPacketRequest",
+    "SensorMetricBoundary",
+    "TelemetrySample",
+    "MetricType",
+    "SensorMetricBoundaryProvider",
+    "ReorderWindow",
+    "TelemetryEventBus",
+    "LatePacketPolicy",
+    "TelemetryEvent",
+    "TelemetryWindowBuffered",
+    "RawSample",
+    "SampleRequest",
+    "ValidationStatus"
   ],
-  "missing_packages": [],
+  "missing_packages": [
+    "com.pulsestream.telemetry.intake.api.TelemetryIngestionController",
+    "com.pulsestream.telemetry.intake.domain.TelemetrySample",
+    "com.pulsestream.telemetry.shared.event.TelemetryEvent",
+    "com.pulsestream.telemetry.shared.config",
+    "com.pulsestream.telemetry.shared.config.TelemetryProperties",
+    "com.pulsestream.telemetry.shared.event",
+    "com.pulsestream.telemetry.intake.domain.IngressPacket"
+  ],
   "failures": [],
   "counts": {},
   "classes": {},
   "member_demands": [
     {
-      "member": "BoundedEventChannel",
-      "owner": "BoundedEventChannelTest",
+      "member": "TelemetryIngestionService",
+      "owner": "TelemetryIngestionControllerTest",
       "kind": "class",
-      "context": "assertThatThrownBy(() -> new BoundedEventChannel<String>(capacity))"
+      "context": "import com.pulsestream.telemetry.intake.domain.TelemetrySample.MetricType;"
+    },
+    {
+      "member": "TelemetryStreamService",
+      "owner": "TelemetryIngestionControllerTest",
+      "kind": "class",
+      "context": "private TelemetryStreamService streamService;"
+    },
+    {
+      "member": "TelemetryIngestionController",
+      "owner": "TelemetryIngestionControllerTest",
+      "kind": "class",
+      "context": "private TelemetryIngestionController controller;"
+    },
+    {
+      "member": "IngressPacketRequest",
+      "owner": "TelemetryIngestionControllerTest",
+      "kind": "class",
+      "context": "private static IngressPacketRequest validRequest() {"
+    },
+    {
+      "member": "MetricType",
+      "owner": "SensorMetricBoundaryProviderTest",
+      "kind": "class",
+      "context": "import com.pulsestream.telemetry.intake.domain.TelemetrySample.MetricType;"
+    },
+    {
+      "member": "SensorMetricBoundary",
+      "owner": "SensorMetricBoundaryProviderTest",
+      "kind": "class",
+      "context": "private static SensorMetricBoundaryProvider providerWith(Map<MetricType, SensorMetricBoundary> boundaries) {"
+    },
+    {
+      "member": "SensorMetricBoundaryProvider",
+      "owner": "SensorMetricBoundaryProviderTest",
+      "kind": "class",
+      "context": "private static SensorMetricBoundaryProvider providerWith(Map<MetricType, SensorMetricBoundary> boundaries) {"
+    },
+    {
+      "member": "TelemetrySample",
+      "owner": "SensorMetricBoundaryProviderTest",
+      "kind": "class",
+      "context": "private static TelemetrySample sample(MetricType type, double value) {"
+    },
+    {
+      "member": "SensorMetricBoundaryProvider",
+      "owner": "TelemetryIngestionServiceTest",
+      "kind": "class",
+      "context": "import com.pulsestream.telemetry.shared.event.TelemetryEvent.TelemetrySampleValidated;"
+    },
+    {
+      "member": "TelemetryEventBus",
+      "owner": "TelemetryIngestionServiceTest",
+      "kind": "class",
+      "context": "private TelemetryEventBus bus;"
+    },
+    {
+      "member": "ReorderWindow",
+      "owner": "TelemetryIngestionServiceTest",
+      "kind": "class",
+      "context": "private TelemetryIngestionService service(ReorderWindow window, LatePacketPolicy policy) {"
+    },
+    {
+      "member": "LatePacketPolicy",
+      "owner": "TelemetryIngestionServiceTest",
+      "kind": "class",
+      "context": "private TelemetryIngestionService service(ReorderWindow window, LatePacketPolicy policy) {"
+    },
+    {
+      "member": "TelemetryIngestionService",
+      "owner": "TelemetryIngestionServiceTest",
+      "kind": "class",
+      "context": "private TelemetryIngestionService service(ReorderWindow window, LatePacketPolicy policy) {"
+    },
+    {
+      "member": "IngressPacket",
+      "owner": "TelemetryIngestionServiceTest",
+      "kind": "class",
+      "context": "private static IngressPacket.RawSample raw(long secondsFromNow) {"
+    },
+    {
+      "member": "TelemetryEvent",
+      "owner": "TelemetryIngestionServiceTest",
+      "kind": "class",
+      "context": "private List<TelemetryEvent> publishedEvents(int expected) {"
+    },
+    {
+      "member": "TelemetryEventBus",
+      "owner": "TelemetryStreamServiceTest",
+      "kind": "class",
+      "context": "private TelemetryEventBus bus;"
+    },
+    {
+      "member": "TelemetryStreamService",
+      "owner": "TelemetryStreamServiceTest",
+      "kind": "class",
+      "context": "private TelemetryStreamService service;"
+    },
+    {
+      "member": "TelemetryEvent",
+      "owner": "TelemetryStreamServiceTest",
+      "kind": "class",
+      "context": "private Sinks.Many<TelemetryEvent> sink;"
+    },
+    {
+      "member": "TelemetrySample",
+      "owner": "TelemetryStreamServiceTest",
+      "kind": "class",
+      "context": "private TelemetrySample sample;"
+    },
+    {
+      "member": "TelemetryWindowBuffered",
+      "owner": "TelemetryStreamServiceTest",
+      "kind": "class",
+      "context": "private TelemetryWindowBuffered window() {"
+    },
+    {
+      "member": "MetricType",
+      "owner": "IngressPacketTest",
+      "kind": "class",
+      "context": "import com.pulsestream.telemetry.intake.domain.TelemetrySample.MetricType;"
+    },
+    {
+      "member": "RawSample",
+      "owner": "IngressPacketTest",
+      "kind": "class",
+      "context": "private static RawSample raw(MetricType type, double value, Instant ts) {"
+    },
+    {
+      "member": "SampleRequest",
+      "owner": "TelemetryIngestionControllerTest",
+      "kind": "class",
+      "context": "List.of(new SampleRequest(MetricType.HEART_RATE, 61.5, DEVICE_TS)));"
+    },
+    {
+      "member": "IngressPacket",
+      "owner": "TelemetryIngestionControllerTest",
+      "kind": "class",
+      "context": "when(ingestionService.ingest(any(IngressPacket.class))).thenReturn(Mono.just(1L));"
+    },
+    {
+      "member": "TelemetryWindowBuffered",
+      "owner": "TelemetryIngestionControllerTest",
+      "kind": "class",
+      "context": "TelemetryWindowBuffered window ="
     }
   ],
   "problem_kinds": [
     {
-      "file": "BoundedEventChannelTest.java",
+      "file": "TelemetryIngestionControllerTest.java",
+      "line": 8,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryIngestionControllerTest.java",
+      "line": 9,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryIngestionControllerTest.java",
+      "line": 10,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryIngestionControllerTest.java",
+      "line": 11,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryIngestionControllerTest.java",
+      "line": 12,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryIngestionControllerTest.java",
+      "line": 13,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryIngestionControllerTest.java",
+      "line": 14,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryIngestionControllerTest.java",
+      "line": 15,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryIngestionControllerTest.java",
+      "line": 41,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryIngestionControllerTest.java",
+      "line": 43,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryIngestionControllerTest.java",
+      "line": 45,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryIngestionControllerTest.java",
+      "line": 53,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "SensorMetricBoundaryProviderTest.java",
+      "line": 5,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "SensorMetricBoundaryProviderTest.java",
+      "line": 6,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "SensorMetricBoundaryProviderTest.java",
+      "line": 7,
+      "kind": "other"
+    },
+    {
+      "file": "SensorMetricBoundaryProviderTest.java",
+      "line": 8,
+      "kind": "other"
+    },
+    {
+      "file": "SensorMetricBoundaryProviderTest.java",
+      "line": 21,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "SensorMetricBoundaryProviderTest.java",
+      "line": 25,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "SensorMetricBoundaryProviderTest.java",
+      "line": 43,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 11,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 12,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 13,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 14,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 15,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryIngestionServiceTest.java",
       "line": 16,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 17,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 18,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 19,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 20,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 40,
       "kind": "missing-symbol"
     },
     {
-      "file": "BoundedEventChannelTest.java",
-      "line": 22,
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 41,
       "kind": "missing-symbol"
     },
     {
-      "file": "BoundedEventChannelTest.java",
-      "line": 27,
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 53,
       "kind": "missing-symbol"
     },
     {
-      "file": "BoundedEventChannelTest.java",
-      "line": 34,
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 59,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 64,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 64,
       "kind": "missing-symbol"
     },
     {
-      "file": "BoundedEventChannelTest.java",
-      "line": 48,
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 68,
       "kind": "missing-symbol"
     },
     {
-      "file": "BoundedEventChannelTest.java",
-      "line": 60,
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 151,
       "kind": "missing-symbol"
     },
     {
-      "file": "BoundedEventChannelTest.java",
-      "line": 71,
+      "file": "TelemetryStreamServiceTest.java",
+      "line": 12,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryStreamServiceTest.java",
+      "line": 13,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryStreamServiceTest.java",
+      "line": 14,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryStreamServiceTest.java",
+      "line": 15,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryStreamServiceTest.java",
+      "line": 16,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryStreamServiceTest.java",
+      "line": 17,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryStreamServiceTest.java",
+      "line": 18,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryStreamServiceTest.java",
+      "line": 19,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryStreamServiceTest.java",
+      "line": 30,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryStreamServiceTest.java",
+      "line": 31,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryStreamServiceTest.java",
+      "line": 32,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryStreamServiceTest.java",
+      "line": 33,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryStreamServiceTest.java",
+      "line": 44,
       "kind": "missing-symbol"
     }
   ],
   "excerpt": [
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/shared/events/BoundedEventChannelTest.java:[22,24] cannot find symbol",
-    "[ERROR]   symbol:   class BoundedEventChannel",
-    "[ERROR]   location: class com.pulsestream.telemetry.shared.events.BoundedEventChannelTest",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/shared/events/BoundedEventChannelTest.java:[27,9] cannot find symbol",
-    "[ERROR]   symbol:   class BoundedEventChannel",
-    "[ERROR]   location: class com.pulsestream.telemetry.shared.events.BoundedEventChannelTest",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/shared/events/BoundedEventChannelTest.java:[27,51] cannot find symbol",
-    "[ERROR]   symbol:   class BoundedEventChannel",
-    "[ERROR]   location: class com.pulsestream.telemetry.shared.events.BoundedEventChannelTest",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/shared/events/BoundedEventChannelTest.java:[34,9] cannot find symbol",
-    "[ERROR]   symbol:   class BoundedEventChannel",
-    "[ERROR]   location: class com.pulsestream.telemetry.shared.events.BoundedEventChannelTest",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/shared/events/BoundedEventChannelTest.java:[34,51] cannot find symbol",
-    "[ERROR]   symbol:   class BoundedEventChannel",
-    "[ERROR]   location: class com.pulsestream.telemetry.shared.events.BoundedEventChannelTest",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/shared/events/BoundedEventChannelTest.java:[48,9] cannot find symbol",
-    "[ERROR]   symbol:   class BoundedEventChannel",
-    "[ERROR]   location: class com.pulsestream.telemetry.shared.events.BoundedEventChannelTest",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/shared/events/BoundedEventChannelTest.java:[48,51] cannot find symbol",
-    "[ERROR]   symbol:   class BoundedEventChannel",
-    "[ERROR]   location: class com.pulsestream.telemetry.shared.events.BoundedEventChannelTest",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/shared/events/BoundedEventChannelTest.java:[60,9] cannot find symbol",
-    "[ERROR]   symbol:   class BoundedEventChannel",
-    "[ERROR]   location: class com.pulsestream.telemetry.shared.events.BoundedEventChannelTest",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/shared/events/BoundedEventChannelTest.java:[60,51] cannot find symbol",
-    "[ERROR]   symbol:   class BoundedEventChannel",
-    "[ERROR]   location: class com.pulsestream.telemetry.shared.events.BoundedEventChannelTest",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/shared/events/BoundedEventChannelTest.java:[71,9] cannot find symbol",
-    "[ERROR]   symbol:   class BoundedEventChannel",
-    "[ERROR]   location: class com.pulsestream.telemetry.shared.events.BoundedEventChannelTest",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/shared/events/BoundedEventChannelTest.java:[71,51] cannot find symbol",
-    "[ERROR]   symbol:   class BoundedEventChannel",
-    "[ERROR]   location: class com.pulsestream.telemetry.shared.events.BoundedEventChannelTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/intake/application/SensorMetricBoundaryProviderTest.java:[33,60] cannot find symbol",
+    "[ERROR]   symbol:   variable MetricType",
+    "[ERROR]   location: class com.pulsestream.telemetry.intake.application.SensorMetricBoundaryProviderTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/intake/application/SensorMetricBoundaryProviderTest.java:[34,9] cannot find symbol",
+    "[ERROR]   symbol:   class SensorMetricBoundaryProvider",
+    "[ERROR]   location: class com.pulsestream.telemetry.intake.application.SensorMetricBoundaryProviderTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/intake/application/SensorMetricBoundaryProviderTest.java:[34,69] cannot find symbol",
+    "[ERROR]   symbol:   variable MetricType",
+    "[ERROR]   location: class com.pulsestream.telemetry.intake.application.SensorMetricBoundaryProviderTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/intake/application/SensorMetricBoundaryProviderTest.java:[36,18] cannot find symbol",
+    "[ERROR]   symbol:   class SensorMetricBoundary",
+    "[ERROR]   location: class com.pulsestream.telemetry.intake.application.SensorMetricBoundaryProviderTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/intake/application/SensorMetricBoundaryProviderTest.java:[36,70] cannot find symbol",
+    "[ERROR]   symbol:   variable MetricType",
+    "[ERROR]   location: class com.pulsestream.telemetry.intake.application.SensorMetricBoundaryProviderTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/intake/application/SensorMetricBoundaryProviderTest.java:[44,9] cannot find symbol",
+    "[ERROR]   symbol:   class SensorMetricBoundaryProvider",
+    "[ERROR]   location: class com.pulsestream.telemetry.intake.application.SensorMetricBoundaryProviderTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/intake/application/SensorMetricBoundaryProviderTest.java:[44,76] cannot find symbol",
+    "[ERROR]   symbol:   class MetricType",
+    "[ERROR]   location: class com.pulsestream.telemetry.intake.application.SensorMetricBoundaryProviderTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/intake/application/SensorMetricBoundaryProviderTest.java:[51,9] cannot find symbol",
+    "[ERROR]   symbol:   class SensorMetricBoundary",
+    "[ERROR]   location: class com.pulsestream.telemetry.intake.application.SensorMetricBoundaryProviderTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/intake/application/SensorMetricBoundaryProviderTest.java:[51,39] cannot find symbol",
+    "[ERROR]   symbol:   class SensorMetricBoundary",
+    "[ERROR]   location: class com.pulsestream.telemetry.intake.application.SensorMetricBoundaryProviderTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/intake/application/SensorMetricBoundaryProviderTest.java:[51,60] cannot find symbol",
+    "[ERROR]   symbol:   variable MetricType",
+    "[ERROR]   location: class com.pulsestream.telemetry.intake.application.SensorMetricBoundaryProviderTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/intake/application/SensorMetricBoundaryProviderTest.java:[52,9] cannot find symbol",
+    "[ERROR]   symbol:   class SensorMetricBoundaryProvider",
+    "[ERROR]   location: class com.pulsestream.telemetry.intake.application.SensorMetricBoundaryProviderTest",
     "[ERROR] -> [Help 1]",
     "[ERROR] ",
     "[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.",
@@ -95,8 +478,8 @@
     "[ERROR] For more information about the errors and possible solutions, please read the following articles:",
     "[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException"
   ],
-  "command": "./mvnw -Dtest=BoundedEventChannelTest test",
+  "command": "./mvnw -Dtest=IngressPacketTest test",
   "task_id": "T1-004",
   "executed": true,
-  "recorded_at": "2026-11-10T18:47:39.486500+00:00"
+  "recorded_at": "2026-11-10T19:04:58.997649+00:00"
 }

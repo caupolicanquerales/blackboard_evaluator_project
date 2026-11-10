@@ -1,0 +1,49 @@
+{
+  "id": "T2-019",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-019",
+    "T2-011",
+    "T2-003",
+    "T2-001",
+    "T2-002"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/intake/infrastructure/ConfiguredBoundaryProvider.java",
+  "kind": "code",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "ConfiguredBoundaryProvider",
+  "intent": "Implement ConfiguredBoundaryProvider making the T1 tests pass, exactly per ast_hints. Unit: Context Telemetry Stream Intake. @Component implementing SensorMetricBoundaryProvider, constructor(TelemetryProperties); preloads boundaries from TelemetryProperties.boundaries() keyed by MetricType name into SensorMetricBoundary instances; unknown/absent metric returns Optional.empty(); invalid keys fail fast at construction.",
+  "project": "telemetry-ingestion-and-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.intake.infrastructure",
+    "implements": [
+      "SensorMetricBoundaryProvider"
+    ],
+    "dependencies": [
+      {
+        "type": "SensorMetricBoundaryProvider",
+        "task_id": "T2-011"
+      },
+      {
+        "type": "SensorMetricBoundary",
+        "task_id": "T2-003"
+      },
+      {
+        "type": "TelemetryProperties",
+        "task_id": "T2-001"
+      },
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-002"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Optional<SensorMetricBoundary> boundaryFor(TelemetrySample.MetricType metricType)",
+        "returns": "Optional<SensorMetricBoundary>"
+      }
+    ]
+  }
+}

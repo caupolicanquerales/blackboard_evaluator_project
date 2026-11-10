@@ -1,0 +1,15 @@
+{
+  "id": "T3-026",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-026"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ledger/api/LedgerController.java",
+  "kind": "refactor",
+  "layer": "interface",
+  "feature": null,
+  "export": "LedgerController",
+  "intent": "Inspect and refactor LedgerController without changing its ast_hints API: verify layering (domain types only in ports, no blocking calls, no hardcoded config values), reactive lifecycle/backpressure, and that tests stay green. Unit: Context Telemetry Event Ledger. @RestController /api/v1/ledger read-only (open-host query endpoints). GET /records/{recordId}/revisions -> Flux<RevisionResponse> in revision order; GET /records/{recordId}/latest -> Mono<RevisionResponse>, 404 ResponseStatusException when absent; GET /history?deviceId&metricType&from&to -> Flux<RevisionResponse> ordered by t_device. Nested record RevisionResponse(UUID recordId, int revisionNumber, String reason, String deviceId, String metricType, double value, Instant deviceTimestamp, Instant ingressTimestamp, String validationStatus, Instant recordedAt) with static from(EventRevision). Constructor(TelemetryHistoryQueryService). No write endpoints.",
+  "project": "telemetry-ingestion-and-processing"
+}

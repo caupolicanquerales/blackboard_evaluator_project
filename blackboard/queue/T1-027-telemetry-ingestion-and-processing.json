@@ -1,0 +1,38 @@
+{
+  "id": "T1-027",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/shared/config/ApiExceptionHandlerTest.java",
+  "kind": "test",
+  "layer": "interface",
+  "feature": null,
+  "export": "ApiExceptionHandlerTest",
+  "intent": "Write JUnit 5 + AssertJ (Mockito / StepVerifier where reactive) tests for ApiExceptionHandler, asserting only against ast_hints. Unit: Shared kernel of Intake/Ledger integration. @RestControllerAdvice mapping errors to RFC 7807 ProblemDetail: WebExchangeBindException and ServerWebInputException -> 400 with field errors; IllegalArgumentException -> 400; IllegalStateException (event bus overflow, backpressure) -> 503 with Retry-After; no stack traces in bodies.",
+  "project": "telemetry-ingestion-and-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.shared.config",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "ProblemDetail handleBinding(WebExchangeBindException ex)",
+        "returns": "ProblemDetail"
+      },
+      {
+        "signature": "ProblemDetail handleBadInput(ServerWebInputException ex)",
+        "returns": "ProblemDetail"
+      },
+      {
+        "signature": "ProblemDetail handleIllegalArgument(IllegalArgumentException ex)",
+        "returns": "ProblemDetail"
+      },
+      {
+        "signature": "ProblemDetail handleOverflow(IllegalStateException ex)",
+        "returns": "ProblemDetail"
+      }
+    ]
+  }
+}

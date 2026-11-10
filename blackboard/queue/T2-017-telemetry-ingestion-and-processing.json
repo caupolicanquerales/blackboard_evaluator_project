@@ -1,0 +1,50 @@
+{
+  "id": "T2-017",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-017",
+    "T2-014",
+    "T2-010",
+    "T2-002"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ledger/application/TelemetryHistoryQueryService.java",
+  "kind": "code",
+  "layer": "application",
+  "feature": null,
+  "export": "TelemetryHistoryQueryService",
+  "intent": "Implement TelemetryHistoryQueryService making the T1 tests pass, exactly per ast_hints. Unit: Context Telemetry Event Ledger. @Service read use cases delegating to TelemetryLedgerRepository (constructor(TelemetryLedgerRepository)). history validates from<=to (IllegalArgumentException otherwise). latest is the latest effective revision of one record.",
+  "project": "telemetry-ingestion-and-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ledger.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetryLedgerRepository",
+        "task_id": "T2-014"
+      },
+      {
+        "type": "EventRevision",
+        "task_id": "T2-010"
+      },
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-002"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Flux<EventRevision> history(String deviceId, TelemetrySample.MetricType metricType, Instant from, Instant to)",
+        "returns": "Flux<EventRevision>"
+      },
+      {
+        "signature": "Flux<EventRevision> revisions(UUID recordId)",
+        "returns": "Flux<EventRevision>"
+      },
+      {
+        "signature": "Mono<EventRevision> latest(UUID recordId)",
+        "returns": "Mono<EventRevision>"
+      }
+    ]
+  }
+}

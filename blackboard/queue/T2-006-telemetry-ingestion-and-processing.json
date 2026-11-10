@@ -1,0 +1,41 @@
+{
+  "id": "T2-006",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-006",
+    "T2-001",
+    "T2-005"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/shared/config/TelemetryConfig.java",
+  "kind": "code",
+  "layer": "shared",
+  "feature": null,
+  "export": "TelemetryConfig",
+  "intent": "Implement TelemetryConfig making the T1 tests pass, exactly per ast_hints. Unit: Shared kernel of Intake/Ledger integration. @Configuration (not a boot class) with @EnableConfigurationProperties(TelemetryProperties.class). Beans: Clock systemUTC (injected everywhere, never Instant.now()), and ReorderWindow built from TelemetryProperties.reorderWindow().",
+  "project": "telemetry-ingestion-and-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.shared.config",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetryProperties",
+        "task_id": "T2-001"
+      },
+      {
+        "type": "ReorderWindow",
+        "task_id": "T2-005"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Clock clock()",
+        "returns": "Clock"
+      },
+      {
+        "signature": "ReorderWindow reorderWindow(TelemetryProperties properties)",
+        "returns": "ReorderWindow"
+      }
+    ]
+  }
+}

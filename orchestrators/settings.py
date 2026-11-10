@@ -67,6 +67,12 @@ AGENT_CALL_BUDGETS = {
 }
 CODER_BATCH_FIRST_CALLS = 4
 CODER_BATCH_CALLS_PER_UNIT = 3
+# A tester batch shares the cold start (skill, manifest) and pays per unit: write test,
+# run-test-tool red (+ one wrong-reason fix), write the red-phase record. Each unit's red
+# is still validated independently at close-out, so a thin batch red degrades to a
+# per-task rerun rather than a wrong freeze.
+TESTER_BATCH_FIRST_CALLS = 3
+TESTER_BATCH_CALLS_PER_UNIT = 4
 
 
 def call_budget(target_agent, units=1):
@@ -74,6 +80,8 @@ def call_budget(target_agent, units=1):
     budget = AGENT_CALL_BUDGETS.get(target_agent)
     if budget is None:
         return None
+    if target_agent == STAGE_AGENTS[TESTER_STAGE] and units > 1:
+        return TESTER_BATCH_FIRST_CALLS + TESTER_BATCH_CALLS_PER_UNIT * units
     if target_agent == STAGE_AGENTS[TDD_STAGE] and units > 1:
         return CODER_BATCH_FIRST_CALLS + CODER_BATCH_CALLS_PER_UNIT * units
     return budget

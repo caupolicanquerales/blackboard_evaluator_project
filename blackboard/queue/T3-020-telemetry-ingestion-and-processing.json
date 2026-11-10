@@ -1,0 +1,15 @@
+{
+  "id": "T3-020",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-020"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/intake/infrastructure/ReorderWindowFlusher.java",
+  "kind": "refactor",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "ReorderWindowFlusher",
+  "intent": "Inspect and refactor ReorderWindowFlusher without changing its ast_hints API: verify layering (domain types only in ports, no blocking calls, no hardcoded config values), reactive lifecycle/backpressure, and that tests stay green. Unit: Context Telemetry Stream Intake. @Component implementing SmartLifecycle. Constructor(TelemetryIngestionService, TelemetryProperties). start subscribes to Flux.interval(flushInterval) invoking flushReleasable with flatMap concurrency 1, onErrorResume logging and continuing (no overlapping/unbounded work); stop disposes the subscription; isRunning reflects it. Interval from config only.",
+  "project": "telemetry-ingestion-and-processing"
+}

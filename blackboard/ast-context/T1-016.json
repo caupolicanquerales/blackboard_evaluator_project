@@ -1,0 +1,83 @@
+{
+  "task_id": "T1-016",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "RecordTelemetryService",
+    "constructors": [
+      [
+        "repository",
+        "Clock.fixed(NOW, ZoneOffset.UTC)"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "service",
+        "method": "record",
+        "args": [
+          "validated(s)"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "record",
+        "args": [
+          "new TelemetryEvent.TelemetrySampleValidationFailed(s, NOW)"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "record",
+        "args": [
+          "validated(sample(125, TelemetrySample.ValidationStatus.VALID))"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "record",
+        "args": [
+          "validated(sample(120, TelemetrySample.ValidationStatus.VALID))"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "record",
+        "args": [
+          "new TelemetryEvent.TelemetryBackfillReordered(old, NOW)"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "record",
+        "args": [
+          "new TelemetryEvent.TelemetryBackfillReordered(s, NOW)"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "record",
+        "args": [
+          "event"
+        ]
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class RecordTelemetryServiceTest {",
+      "private RecordTelemetryService service;",
+      "service = new RecordTelemetryService(repository, Clock.fixed(NOW, ZoneOffset.UTC));",
+      "StepVerifier.create(service.record(validated(s)))",
+      "StepVerifier.create(service.record(new TelemetryEvent.TelemetrySampleValidationFailed(s, NOW)))",
+      "StepVerifier.create(service.record(validated(sample(125, TelemetrySample.ValidationStatus.VALID))))",
+      "StepVerifier.create(service.record(validated(sample(120, TelemetrySample.ValidationStatus.VALID))))",
+      "StepVerifier.create(service.record(validated(s)))",
+      "StepVerifier.create(service.record(new TelemetryEvent.TelemetryBackfillReordered(old, NOW)))",
+      "StepVerifier.create(service.record(new TelemetryEvent.TelemetryBackfillReordered(s, NOW)))",
+      "StepVerifier.create(service.record(event)).verifyComplete();",
+      "StepVerifier.create(service.record(event)).verifyComplete();"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

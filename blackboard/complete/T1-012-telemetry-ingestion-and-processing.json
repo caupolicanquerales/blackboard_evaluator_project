@@ -1,0 +1,59 @@
+{
+  "id": "T1-012",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/intake/application/TelemetryIngestionServiceTest.java",
+  "kind": "test",
+  "layer": "application",
+  "feature": null,
+  "export": "TelemetryIngestionServiceTest",
+  "intent": "Write JUnit 5 + AssertJ (Mockito / StepVerifier where reactive) tests for TelemetryIngestionService, asserting only against ast_hints. Unit: Context Telemetry Stream Intake. @Service, non-blocking, no blocking I/O. Constructor(SensorMetricBoundaryProvider, TelemetryEventBus, ReorderWindow, TelemetryProperties, Clock). ingest: for each sample of packet.toSamples() in order: validate via boundary (VALIDATION_FAILED tagged, never dropped), publish TelemetrySampleValidated or TelemetrySampleValidationFailed, offer to ReorderWindow; if outOfOrder publish TelemetryBackfillReordered; if late publish TelemetryBackfillReordered only when latePacketPolicy is APPEND_REVISION. Emits the number of samples processed; publish errors (overflow) propagate. flushReleasable: drains ReorderWindow.drainReleasable(clock.instant()) and, if non-empty, publishes TelemetryWindowBuffered(samples, first t_device, last t_device, now); empty otherwise. Never reads Ledger.",
+  "project": "telemetry-ingestion-and-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.intake.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "SensorMetricBoundaryProvider",
+        "task_id": "T2-011"
+      },
+      {
+        "type": "TelemetryEventBus",
+        "task_id": "T2-009"
+      },
+      {
+        "type": "ReorderWindow",
+        "task_id": "T2-005"
+      },
+      {
+        "type": "TelemetryProperties",
+        "task_id": "T2-001"
+      },
+      {
+        "type": "IngressPacket",
+        "task_id": "T2-004"
+      },
+      {
+        "type": "TelemetryEvent",
+        "task_id": "T2-008"
+      },
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-002"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Long> ingest(IngressPacket packet)",
+        "returns": "Mono<Long>"
+      },
+      {
+        "signature": "Mono<Void> flushReleasable()",
+        "returns": "Mono<Void>"
+      }
+    ]
+  }
+}

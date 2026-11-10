@@ -1,0 +1,49 @@
+{
+  "id": "T2-018",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-018",
+    "T2-009",
+    "T2-008",
+    "T2-001"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/intake/infrastructure/InProcessTelemetryEventBus.java",
+  "kind": "code",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "InProcessTelemetryEventBus",
+  "intent": "Implement InProcessTelemetryEventBus making the T1 tests pass, exactly per ast_hints. Unit: Context Telemetry Stream Intake. @Component implementing TelemetryEventBus over Sinks.many().multicast().onBackpressureBuffer(TelemetryProperties.eventBufferCapacity(), false). publish uses tryEmitNext: on FAIL_OVERFLOW/FAIL_NON_SERIALIZED apply overflowStrategy (REJECT -> Mono.error(IllegalStateException); RETRY -> retry up to retryMaxAttempts spaced by retryBackoff, then error). No sample silently dropped, no blocking. stream returns sink.asFlux(). Constructor(TelemetryProperties).",
+  "project": "telemetry-ingestion-and-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.intake.infrastructure",
+    "implements": [
+      "TelemetryEventBus"
+    ],
+    "dependencies": [
+      {
+        "type": "TelemetryEventBus",
+        "task_id": "T2-009"
+      },
+      {
+        "type": "TelemetryEvent",
+        "task_id": "T2-008"
+      },
+      {
+        "type": "TelemetryProperties",
+        "task_id": "T2-001"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> publish(TelemetryEvent event)",
+        "returns": "Mono<Void>"
+      },
+      {
+        "signature": "Flux<TelemetryEvent> stream()",
+        "returns": "Flux<TelemetryEvent>"
+      }
+    ]
+  },
+  "error": "dependsOn T1-018 not resolvable in queue or complete"
+}

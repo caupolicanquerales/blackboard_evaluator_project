@@ -60,7 +60,7 @@ tools: ["read", "edit", "search", "execute"]
 
 ## Tool budget and scope
 
-- At most 8 tool calls: assigned skill, task/manifest read, pinned collaborator task reads, one test write, `run-test-tool` (twice
+- At most 8 tool calls: assigned skill, task/manifest read, pinned collaborator task reads (records live at `blackboard/queue/<task-id>-<project>.json`; in BATCH MODE several units share one session: budget is 3 base + 4 per unit - load skills and manifests ONCE, then per unit: write test, run it, write its red-phase record), one test write, `run-test-tool` (twice
   at most: red run plus one fix), red-phase writer.
 - Skills live only in `.opencode/skills/`; read the assigned `SKILL.md` once, never a folder listing.
 - Never run `git`; never read `orchestrators/`, `ast_tools/`, `ast_weaver_tools/`, or another unit's

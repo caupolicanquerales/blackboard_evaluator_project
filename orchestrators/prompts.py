@@ -108,6 +108,34 @@ def _coder_contract(task_ids):
     )
 
 
+def _collaborator_tables(task):
+    """Pinned collaborators inlined in the tester's own message: name, producing task,
+    package, supertypes and method table. The engine already holds these records; making
+    the agent hunt for `blackboard/queue/<id>-<project>.json` by trial wasted tool calls
+    and produced bogus 'records not found' blocks (T1-018). An unsatisfied pin is
+    surfaced explicitly so the agent reports the plan hole instead of guessing."""
+    hints = task.get("ast_hints") or {}
+    deps = [d for d in (hints.get("dependencies") or []) if isinstance(d, dict)]
+    if not deps:
+        return ""
+    index = task_queue.load_index(include_error=True)
+    lines = ["Collaborators (API truth for construction, calls and stubs - the producing"
+             " task's ast_hints, no file hunt needed):"]
+    for dep in deps:
+        producer = index.get(str(dep.get("task_id", "")))
+        name = str(dep.get("type", "")).rsplit(".", 1)[-1]
+        if not isinstance(producer, dict):
+            lines.append(f"- {name} (producer {dep.get('task_id')}): NOT FOUND in queue or "
+                         "complete - PLAN HOLE: report it as blocked, never guess its surface")
+            continue
+        ph = producer.get("ast_hints") or {}
+        methods = "; ".join(f"{m.get('signature')}: {m.get('returns')}"
+                            for m in (ph.get("methods") or [])[:8])
+        lines.append(f"- {name} ({ph.get('package', '?')}) by {producer['id']}: "
+                     f"implements {ph.get('implements') or []}; methods: {methods or '(value object)'}")
+    return "\n" + "\n".join(lines) + "\n"
+
+
 def build_task_message(task, feedback=None):
     """Agent-facing task prompt: instruction line plus the task JSON payload.
 
@@ -122,6 +150,8 @@ def build_task_message(task, feedback=None):
         "Resolve `path` against the project root above. Task JSON:\n"
     )
     message += json.dumps({key: task.get(key) for key in settings.PROMPT_KEYS}, indent=2)
+    if task["stage"] == settings.TESTER_STAGE:
+        message += _collaborator_tables(task)
     if task["stage"] == settings.TDD_STAGE:
         t1 = next((d for d in task.get("dependsOn", []) if str(d).startswith("T1-")), None)
         if t1:
@@ -172,22 +202,34 @@ def _unit_brief(task, t1_id):
 
 
 def build_batch_message(tasks, feedback=None):
-    """One coder session producing payloads for several same-domain stage-2 tasks."""
+    """One session producing for several same-domain tasks (stage 1 tests, stage 2 payloads)."""
     first = tasks[0]
-    instruction = STAGE_INSTRUCTIONS.get(first["stage"], "Complete these blackboard tasks.")
+    stage = first["stage"]
+    instruction = STAGE_INSTRUCTIONS.get(stage, "Complete these blackboard tasks.")
+    if stage == settings.TESTER_STAGE:
+        duty = (f"BATCH MODE: for EACH of the {len(tasks)} tasks below write the test at the "
+                "task `path`, run it once through run-test-tool to confirm it fails as a "
+                "proper red (fix and rerun that unit's test only if it fails for the WRONG "
+                "reason), and write its red-phase record through the writer script "
+                "(`--task-id <id>` per unit). Load the stack and skills ONCE and reuse them; "
+                "do not skip any task; never open or run another unit's test.")
+    else:
+        duty = (f"BATCH MODE: produce and persist a payload for EACH of the {len(tasks)} tasks below "
+                "(writer script once per task id, `--task-id <id>`); load the stack and skills once and "
+                "reuse them across tasks; do not skip any task.")
     message = (
         f"Repository root (blackboard root for all writer/reader scripts): {settings.ROOT}\n"
         f"Project root (task `path` resolves here): {workspace.project_root_for(first['project'])}\n"
         f"{instruction}\n"
-        f"BATCH MODE: produce and persist a payload for EACH of the {len(tasks)} tasks below "
-        "(writer script once per task id, `--task-id <id>`); load the stack and skills once and "
-        "reuse them across tasks; do not skip any task.\n\n"
+        f"{duty}\n\n"
     )
     for task in tasks:
         t1 = next((d for d in task.get("dependsOn", []) if str(d).startswith("T1-")), None)
         block = json.dumps({key: task.get(key) for key in settings.PROMPT_KEYS}, indent=2)
         extra = ""
-        if t1:
+        if stage == settings.TESTER_STAGE:
+            extra = _collaborator_tables(task)
+        elif t1:
             extra = (f"\nUnit artifacts: mandatory `blackboard/red-phase/{t1}.json` and "
                      f"`blackboard/ast-context/{t1}.json`"
                      f" | {_unit_brief(task, t1)}")

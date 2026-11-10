@@ -1,0 +1,15 @@
+{
+  "id": "T3-017",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-017"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ledger/application/TelemetryHistoryQueryService.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "TelemetryHistoryQueryService",
+  "intent": "Inspect and refactor TelemetryHistoryQueryService without changing its ast_hints API: verify layering (domain types only in ports, no blocking calls, no hardcoded config values), reactive lifecycle/backpressure, and that tests stay green. Unit: Context Telemetry Event Ledger. @Service read use cases delegating to TelemetryLedgerRepository (constructor(TelemetryLedgerRepository)). history validates from<=to (IllegalArgumentException otherwise). latest is the latest effective revision of one record.",
+  "project": "telemetry-ingestion-and-processing"
+}

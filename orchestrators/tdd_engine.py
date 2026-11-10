@@ -137,6 +137,27 @@ def _sibling_payloads_pending(task):
     return [pid for pid in dispatchers.payloadless_t2_ids(project) if pid != task["id"]]
 
 
+def _testless_peers(task):
+    """This task plus same-domain stage-1 tasks whose test file is not on disk yet.
+    Writing distinct test files cannot race (the shared target/ risk is the RUN, and
+    each unit still runs its own red probe); the batch message carries each unit's
+    collaborator table, so testers share the cold start - skills, manifest, baseline -
+    that a per-unit session pays twenty times over."""
+    root = workspace.project_root_for(task["project"])
+    same = []
+    for f in sorted(settings.QUEUE_DIR.glob(f"T1-*-{task['project']}.json")):
+        try:
+            peer = json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(peer, dict) or peer.get("id") == task["id"]:
+            continue
+        path = str(peer.get("path", ""))
+        if path and not (root / path).is_file():
+            same.append(peer)
+    return [task] + sorted(same, key=lambda p: str(p.get("path")))
+
+
 def _payloadless_peers(task):
     """This task plus same-domain stage-2 tasks still lacking a coder payload."""
     mine = dispatchers.payloadless_t2_ids(task.get("project", ""))
@@ -826,6 +847,31 @@ def drain_queue(args, invoke_for_task):
                     print(f"[skip-agent] {task['id']} test and valid red record on disk; "
                           "contract dispatched without a new session")
                     return True, ""
+            if (task["stage"] == settings.TESTER_STAGE and feedback is None
+                    and not (workspace.project_root_for(task["project"]) / task["path"]).is_file()):
+                batch = getattr(invoke_for_task, "batch", None)
+                siblings = _testless_peers(task) if batch else []
+                if len(siblings) >= BATCH_MIN_PEERS:
+                    picked = siblings[:BATCH_MAX]
+                    print(f"[batch ] {task['id']} batching tester tasks for {len(picked)} tasks of {task['project']}")
+                    try:
+                        ok_batch, reason_batch = batch(picked)
+                    except Exception as exc:  # noqa: BLE001
+                        ok_batch, reason_batch = False, str(exc)
+                    my_test = workspace.project_root_for(task["project"]) / task["path"]
+                    if my_test.is_file():
+                        ok_close, reason_close = _tester_close_out(task)
+                        if ok_close:
+                            print(f"[batch ] {task['id']} test written and red validated by "
+                                  "the batch session; contract dispatched")
+                            return True, ""
+                        # A thin batch red (passed, unrun, malformed) must NOT quarantine the
+                        # unit: fall through to a dedicated session that re-derives it properly.
+                        print(f"[batch ] {task['id']} batch test red invalid ({reason_close[:90]}); "
+                              "falling back to per-task")
+                    else:
+                        print(f"[batch ] {task['id']} batch wrote no test"
+                              f"{'' if ok_batch else ' (' + reason_batch[:120] + ')'}; falling back to per-task")
             if task["stage"] == settings.TDD_STAGE:
                 # A coder session without the unit's AST contract is a guessing session:
                 # the payloads get weaved happily and die at the green wave, one coder

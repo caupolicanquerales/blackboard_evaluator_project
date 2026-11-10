@@ -1,0 +1,47 @@
+{
+  "id": "T2-020",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-020",
+    "T2-012",
+    "T2-001"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/intake/infrastructure/ReorderWindowFlusher.java",
+  "kind": "code",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "ReorderWindowFlusher",
+  "intent": "Implement ReorderWindowFlusher making the T1 tests pass, exactly per ast_hints. Unit: Context Telemetry Stream Intake. @Component implementing SmartLifecycle. Constructor(TelemetryIngestionService, TelemetryProperties). start subscribes to Flux.interval(flushInterval) invoking flushReleasable with flatMap concurrency 1, onErrorResume logging and continuing (no overlapping/unbounded work); stop disposes the subscription; isRunning reflects it. Interval from config only.",
+  "project": "telemetry-ingestion-and-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.intake.infrastructure",
+    "implements": [
+      "SmartLifecycle"
+    ],
+    "dependencies": [
+      {
+        "type": "TelemetryIngestionService",
+        "task_id": "T2-012"
+      },
+      {
+        "type": "TelemetryProperties",
+        "task_id": "T2-001"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "void start()",
+        "returns": ""
+      },
+      {
+        "signature": "void stop()",
+        "returns": ""
+      },
+      {
+        "signature": "boolean isRunning()",
+        "returns": "boolean"
+      }
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "id": "T3-025",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-025"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/intake/api/TelemetryIngestionController.java",
+  "kind": "refactor",
+  "layer": "interface",
+  "feature": null,
+  "export": "TelemetryIngestionController",
+  "intent": "Inspect and refactor TelemetryIngestionController without changing its ast_hints API: verify layering (domain types only in ports, no blocking calls, no hardcoded config values), reactive lifecycle/backpressure, and that tests stay green. Unit: Context Telemetry Stream Intake. @RestController /api/v1/telemetry. POST /packets: @Valid body IngressPacketRequest(String deviceId, List<SampleRequest> samples) with nested SampleRequest(TelemetrySample.MetricType metricType, Double value, Instant deviceTimestamp) (@NotBlank/@NotEmpty/@NotNull); ingressTimestamp is set from the injected Clock; maps to IngressPacket via toDomain(Instant) and returns 202 Accepted with body IngestionResponse(long accepted); overflow IllegalStateException is not swallowed. GET /stream/windows produces text/event-stream of TelemetryWindowBuffered from TelemetryStreamService.windows(). Constructor(TelemetryIngestionService, TelemetryStreamService, Clock).",
+  "project": "telemetry-ingestion-and-processing"
+}

@@ -1,0 +1,71 @@
+{
+  "task_id": "T1-017",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "TelemetryHistoryQueryService",
+    "constructors": [],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "service",
+        "method": "history",
+        "args": [
+          "DEVICE_ID",
+          "metric()",
+          "FROM",
+          "TO"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "history",
+        "args": [
+          "DEVICE_ID",
+          "metric()",
+          "FROM",
+          "FROM"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "history",
+        "args": [
+          "DEVICE_ID",
+          "metric()",
+          "TO",
+          "FROM"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "revisions",
+        "args": [
+          "RECORD_ID"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "latest",
+        "args": [
+          "RECORD_ID"
+        ]
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class TelemetryHistoryQueryServiceTest {",
+      "private TelemetryHistoryQueryService service;",
+      "StepVerifier.create(service.history(DEVICE_ID, metric(), FROM, TO)).verifyComplete();",
+      "StepVerifier.create(service.history(DEVICE_ID, metric(), FROM, FROM)).verifyComplete();",
+      "StepVerifier.create(Flux.defer(() -> service.history(DEVICE_ID, metric(), TO, FROM)))",
+      "StepVerifier.create(Flux.defer(() -> service.history(DEVICE_ID, metric(), TO, FROM)))",
+      "StepVerifier.create(service.history(DEVICE_ID, metric(), FROM, TO))",
+      "StepVerifier.create(service.revisions(RECORD_ID)).verifyComplete();",
+      "StepVerifier.create(service.latest(RECORD_ID)).verifyComplete();",
+      "StepVerifier.create(service.latest(RECORD_ID))"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

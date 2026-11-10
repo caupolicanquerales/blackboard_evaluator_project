@@ -364,6 +364,64 @@ with contextlib.redirect_stdout(buf2):
 out2 = buf2.getvalue()
 check("F3 status renders the board without error", rc == 0 and "quarantined" in out2, out2[:160])
 
+# --- H. tester batch + collaborator truth injected in the message ------------
+import prompts
+
+def t1task(tid, export, path, hints=None):
+    base = {"id": tid, "targetAgent": settings.STAGE_AGENTS[1], "stage": settings.TESTER_STAGE,
+            "dependsOn": ["T0-001"], "path": path, "kind": "test", "layer": "domain",
+            "feature": None, "export": export, "intent": "test it", "project": "p"}
+    if hints is not None:
+        base["ast_hints"] = hints
+    return base
+
+peers = [t1task(f"T1-80{i}", ch, f"src/test/java/{ch.lower()}/{ch}Test.java")
+         for i, ch in enumerate("ABCD")]
+for p_ in peers:
+    (settings.QUEUE_DIR / f"{p_['id']}-p.json").write_text(json.dumps(p_))
+sib = tdd_engine._testless_peers(peers[0])
+check("H1 testless peers gathered, self first",
+      sib[0]["id"] == "T1-800" and {"T1-801", "T1-802", "T1-803"} <= {s["id"] for s in sib},
+      str([s["id"] for s in sib]))
+done_test = ROOT / "proj" / "src" / "test" / "java" / "b"
+done_test.mkdir(parents=True, exist_ok=True)
+(done_test / "BTest.java").write_text("// exists now\n")
+sib2 = tdd_engine._testless_peers(peers[0])
+check("H2 units with a test on disk leave the batch",
+      "T1-801" not in {s["id"] for s in sib2} and {"T1-802", "T1-803"} <= {s["id"] for s in sib2},
+      str([s["id"] for s in sib2]))
+(done_test / "BTest.java").unlink()
+
+pinning = {"package": "com.demo.shared", "implements": [],
+           "dependencies": [{"type": "Widget", "task_id": "T2-800"}], "methods": []}
+widget = {"id": "T2-800", "targetAgent": settings.STAGE_AGENTS[2], "stage": 2,
+          "dependsOn": [], "path": "src/main/java/x/Widget.java", "kind": "code",
+          "layer": "domain", "feature": None, "export": "Widget", "intent": "build",
+          "project": "p",
+          "ast_hints": {"package": "com.demo.shared", "implements": [], "dependencies": [],
+                        "methods": [{"signature": "Widget(int w)", "returns": ""}]}}
+(settings.QUEUE_DIR / "T2-800-p.json").write_text(json.dumps(widget))
+msg_h = prompts.build_task_message(t1task("T1-805", "Echo", "src/test/java/e/EchoTest.java",
+                                          hints=pinning))
+check("H3 tester message inlines the collaborator API truth (T1-018 fix)",
+      "Collaborators" in msg_h and "Widget(int w)" in msg_h)
+orphan = t1task("T1-806", "Foxtrot", "src/test/java/f/FTest.java",
+                hints={"package": "x", "implements": [],
+                       "dependencies": [{"type": "Ghost", "task_id": "T2-899"}], "methods": []})
+msg_o = prompts.build_task_message(orphan)
+check("H4 unsatisfiable pin surfaces as a plan hole, never a guess",
+      "NOT FOUND" in msg_o and "PLAN HOLE" in msg_o)
+bm = prompts.build_batch_message(peers[:4])
+check("H5 batch duty is stage-correct for testers",
+      "BATCH MODE" in bm and "write the test" in bm
+      and "produce and persist a payload" not in bm)
+check("H6 tester batch budget scales per unit",
+      settings.call_budget(settings.STAGE_AGENTS[1], 4)
+      == settings.TESTER_BATCH_FIRST_CALLS + 4 * settings.TESTER_BATCH_CALLS_PER_UNIT)
+check("H7 single tester budget unchanged by the batch model",
+      settings.call_budget(settings.STAGE_AGENTS[1], 1)
+      == settings.AGENT_CALL_BUDGETS[settings.STAGE_AGENTS[1]])
+
 bad_names = [n for n, c in CHECKS if not c]
 print(f"\nENGINE-DECISIONS SUITE: {len(CHECKS) - len(bad_names)}/{len(CHECKS)}")
 print("FAILED:", bad_names if bad_names else "none")

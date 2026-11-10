@@ -1,0 +1,75 @@
+{
+  "id": "T1-010",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/ledger/domain/EventRevisionTest.java",
+  "kind": "test",
+  "layer": "domain",
+  "feature": null,
+  "export": "EventRevisionTest",
+  "intent": "Write JUnit 5 + AssertJ (Mockito / StepVerifier where reactive) tests for EventRevision, asserting only against ast_hints. Unit: Context Telemetry Event Ledger. Immutable append-only record EventRevision(UUID recordId, int revisionNumber, RevisionReason reason, String deviceId, TelemetrySample.MetricType metricType, double value, Instant deviceTimestamp, Instant ingressTimestamp, TelemetrySample.ValidationStatus validationStatus, Instant recordedAt) with nested enum RevisionReason{ORIGINAL,CORRECTION,BACKFILL}. Invariants: revisionNumber >=1; ORIGINAL only with revision 1; (recordId, revisionNumber) unique; history is never altered, corrections append a new revision. original builds revision 1 from a sample; next builds revisionNumber+1 from this revision's recordId and the new sample with the given reason.",
+  "project": "telemetry-ingestion-and-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ledger.domain",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-002"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "static EventRevision original(TelemetrySample sample, Instant recordedAt)",
+        "returns": "EventRevision"
+      },
+      {
+        "signature": "EventRevision next(TelemetrySample sample, EventRevision.RevisionReason reason, Instant recordedAt)",
+        "returns": "EventRevision"
+      },
+      {
+        "signature": "UUID recordId()",
+        "returns": "UUID"
+      },
+      {
+        "signature": "int revisionNumber()",
+        "returns": "int"
+      },
+      {
+        "signature": "EventRevision.RevisionReason reason()",
+        "returns": "EventRevision.RevisionReason"
+      },
+      {
+        "signature": "String deviceId()",
+        "returns": "String"
+      },
+      {
+        "signature": "TelemetrySample.MetricType metricType()",
+        "returns": "TelemetrySample.MetricType"
+      },
+      {
+        "signature": "double value()",
+        "returns": "double"
+      },
+      {
+        "signature": "Instant deviceTimestamp()",
+        "returns": "Instant"
+      },
+      {
+        "signature": "Instant ingressTimestamp()",
+        "returns": "Instant"
+      },
+      {
+        "signature": "TelemetrySample.ValidationStatus validationStatus()",
+        "returns": "TelemetrySample.ValidationStatus"
+      },
+      {
+        "signature": "Instant recordedAt()",
+        "returns": "Instant"
+      }
+    ]
+  }
+}

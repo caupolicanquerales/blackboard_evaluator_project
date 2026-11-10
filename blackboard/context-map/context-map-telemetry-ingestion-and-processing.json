@@ -1,0 +1,54 @@
+{
+  "schema_version": "1.0",
+  "report_type": "context-map",
+  "metadata": {
+    "generated_at": "2026-11-10T18:55:00Z",
+    "agent": "domain-context-mapping-specialist",
+    "source_report": "blackboard/domain"
+  },
+  "context_map": [
+    {
+      "upstream": "external",
+      "downstream": "Telemetry Stream Intake",
+      "relationship": "Anticorruption layer",
+      "direction": "external -> Telemetry Stream Intake",
+      "exchanged_information": "Ingress Packets carrying raw 1Hz samples from edge devices, bike computers and wearables, with device and ingress timestamps",
+      "boundary_protection": "Intake translates device payloads into Telemetry Samples, validates against Sensor Metric Boundaries and orders by Device Timestamp; device-specific formats and ingress time never leak into the model"
+    },
+    {
+      "upstream": "Telemetry Stream Intake",
+      "downstream": "Telemetry Event Ledger",
+      "relationship": "Customer-supplier",
+      "direction": "Telemetry Stream Intake -> Telemetry Event Ledger",
+      "exchanged_information": "Validated samples, validation-failed samples (payload retained) and backfill-reordered samples to be recorded",
+      "boundary_protection": "Ledger consumes published validation outcomes only; it never re-validates or reorders, and Intake never reads or mutates stored history. Ledger appends revisions rather than overwriting"
+    },
+    {
+      "upstream": "Telemetry Stream Intake",
+      "downstream": "external",
+      "relationship": "Open host service / published language",
+      "direction": "Telemetry Stream Intake -> external",
+      "exchanged_information": "Windowed validated telemetry and validation outcomes broadcast to downstream analytics streams",
+      "boundary_protection": "Stable published event vocabulary with backpressure-aware delivery; consumers cannot reach Intake internals such as reorder window state. Consumer identity is an open question"
+    }
+  ],
+  "cross_boundary_flows": [
+    {
+      "business_process": "Live telemetry ingestion: edge packet received, validated, ordered, broadcast and recorded in the ledger as append-only history",
+      "contexts_involved": [
+        "Telemetry Stream Intake",
+        "Telemetry Event Ledger"
+      ],
+      "consistency_expectation": "Immediate within Intake for validation and ordering; eventual for the Ledger recording. Failure to record must not block intake (backpressure applies); recording is retried"
+    },
+    {
+      "business_process": "Late packet backfill: delayed packet within the 60s window is reordered by device timestamp and a revision is appended to the ledger",
+      "contexts_involved": [
+        "Telemetry Stream Intake",
+        "Telemetry Event Ledger"
+      ],
+      "consistency_expectation": "Eventual; history is temporarily missing the backfilled revision until the Ledger appends it, original records stay unaltered",
+      "notes": "Open questions: handling of packets later than 60s (reject or accept as revision) is unspecified; downstream analytics consumers and device identity/session ownership are undefined and may need a separate context. Confidence: medium"
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "id": "T1-002",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/intake/domain/TelemetrySampleTest.java",
+  "kind": "test",
+  "layer": "domain",
+  "feature": null,
+  "export": "TelemetrySampleTest",
+  "intent": "Write JUnit 5 + AssertJ (Mockito / StepVerifier where reactive) tests for TelemetrySample, asserting only against ast_hints. Unit: Context Telemetry Stream Intake. Immutable record TelemetrySample(UUID recordId, String deviceId, MetricType metricType, double value, Instant deviceTimestamp, Instant ingressTimestamp, ValidationStatus validationStatus). Nested enums MetricType{HEART_RATE,POWER,CADENCE,GROUND_CONTACT_TIME,RESPIRATION,SWIM_STROKE,SWIM_PACE} and ValidationStatus{VALID,VALIDATION_FAILED}. Invariants: deviceId non-blank, all other fields non-null; t_device is the ordering authority, t_ingress never used for ordering; a failed sample keeps its payload. recordId identity is deterministic: UUID.nameUUIDFromBytes of deviceId|metricType|deviceTimestamp (static recordIdFor). withStatus returns a copy with the new status.",
+  "project": "telemetry-ingestion-and-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.intake.domain",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "static UUID recordIdFor(String deviceId, TelemetrySample.MetricType metricType, Instant deviceTimestamp)",
+        "returns": "UUID"
+      },
+      {
+        "signature": "TelemetrySample withStatus(TelemetrySample.ValidationStatus status)",
+        "returns": "TelemetrySample"
+      },
+      {
+        "signature": "UUID recordId()",
+        "returns": "UUID"
+      },
+      {
+        "signature": "String deviceId()",
+        "returns": "String"
+      },
+      {
+        "signature": "TelemetrySample.MetricType metricType()",
+        "returns": "TelemetrySample.MetricType"
+      },
+      {
+        "signature": "double value()",
+        "returns": "double"
+      },
+      {
+        "signature": "Instant deviceTimestamp()",
+        "returns": "Instant"
+      },
+      {
+        "signature": "Instant ingressTimestamp()",
+        "returns": "Instant"
+      },
+      {
+        "signature": "TelemetrySample.ValidationStatus validationStatus()",
+        "returns": "TelemetrySample.ValidationStatus"
+      }
+    ]
+  }
+}

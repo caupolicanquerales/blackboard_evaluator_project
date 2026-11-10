@@ -1,0 +1,43 @@
+{
+  "id": "T2-021",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-021",
+    "T2-010",
+    "T2-002",
+    "T0-002",
+    "T0-003"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ledger/infrastructure/TelemetryRecordEventEntity.java",
+  "kind": "code",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "TelemetryRecordEventEntity",
+  "intent": "Implement TelemetryRecordEventEntity making the T1 tests pass, exactly per ast_hints. Unit: Context Telemetry Event Ledger. R2DBC entity mapped to table ledger.telemetry_record_events (columns per migration V2: record id, revision number, revision reason, device, metric type, value, device/ingress timestamps, validation status, recorded_at; enums stored as the migration's enum types). Mutable-free mapping class (@Table). fromDomain/toDomain are lossless inverse mappings of EventRevision.",
+  "project": "telemetry-ingestion-and-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ledger.infrastructure",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "EventRevision",
+        "task_id": "T2-010"
+      },
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-002"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "static TelemetryRecordEventEntity fromDomain(EventRevision revision)",
+        "returns": "TelemetryRecordEventEntity"
+      },
+      {
+        "signature": "EventRevision toDomain()",
+        "returns": "EventRevision"
+      }
+    ]
+  }
+}

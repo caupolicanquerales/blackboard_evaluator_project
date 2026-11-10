@@ -1,0 +1,57 @@
+{
+  "id": "T1-024",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/ledger/infrastructure/LedgerEventSubscriberTest.java",
+  "kind": "test",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "LedgerEventSubscriberTest",
+  "intent": "Write JUnit 5 + AssertJ (Mockito / StepVerifier where reactive) tests for LedgerEventSubscriber, asserting only against ast_hints. Unit: Context Telemetry Event Ledger. @Component implementing SmartLifecycle. Constructor(TelemetryEventBus, RecordTelemetryService, DeadLetterSink, TelemetryProperties). start subscribes to bus.stream() and calls record per event with flatMap bounded concurrency; each record retried with retryWhen(Retry.backoff(retryMaxAttempts, retryBackoff)); after exhaustion the event goes to DeadLetterSink.reject and the stream continues. Recording is eventual and never blocks intake. stop disposes; isRunning reflects it.",
+  "project": "telemetry-ingestion-and-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ledger.infrastructure",
+    "implements": [
+      "SmartLifecycle"
+    ],
+    "dependencies": [
+      {
+        "type": "TelemetryEventBus",
+        "task_id": "T2-009"
+      },
+      {
+        "type": "RecordTelemetryService",
+        "task_id": "T2-016"
+      },
+      {
+        "type": "DeadLetterSink",
+        "task_id": "T2-015"
+      },
+      {
+        "type": "TelemetryProperties",
+        "task_id": "T2-001"
+      },
+      {
+        "type": "TelemetryEvent",
+        "task_id": "T2-008"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "void start()",
+        "returns": ""
+      },
+      {
+        "signature": "void stop()",
+        "returns": ""
+      },
+      {
+        "signature": "boolean isRunning()",
+        "returns": "boolean"
+      }
+    ]
+  }
+}

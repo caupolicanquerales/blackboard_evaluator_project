@@ -1,0 +1,83 @@
+{
+  "task_id": "T1-012",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "TelemetryIngestionService",
+    "constructors": [
+      [
+        "boundaries",
+        "bus",
+        "window",
+        "props",
+        "clock"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "service",
+        "method": "ingest",
+        "args": [
+          "packet(raw(-30), raw(-20))"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "ingest",
+        "args": [
+          "packet(raw(-10), raw(-30))"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "ingest",
+        "args": [
+          "packet(raw(-200))"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "ingest",
+        "args": [
+          "packet(raw(-30))"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "flushReleasable",
+        "args": []
+      },
+      {
+        "receiver": "service",
+        "method": "ingest",
+        "args": [
+          "packet(raw(-200), raw(-100))"
+        ]
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class TelemetryIngestionServiceTest {",
+      "private TelemetryIngestionService service(ReorderWindow window, LatePacketPolicy policy) {",
+      "return new TelemetryIngestionService(boundaries, bus, window, props, clock);",
+      "var service = service(new ReorderWindow(WINDOW), LatePacketPolicy.APPEND_REVISION);",
+      "StepVerifier.create(service.ingest(packet(raw(-30), raw(-20)))).expectNext(2L).verifyComplete();",
+      "var service = service(new ReorderWindow(WINDOW), LatePacketPolicy.APPEND_REVISION);",
+      "StepVerifier.create(service.ingest(packet(raw(-10), raw(-30)))).expectNext(2L).verifyComplete();",
+      "var service = service(window, LatePacketPolicy.APPEND_REVISION);",
+      "StepVerifier.create(service.ingest(packet(raw(-200)))).expectNext(1L).verifyComplete();",
+      "var service = service(window, LatePacketPolicy.REJECT_FROM_WINDOW);",
+      "StepVerifier.create(service.ingest(packet(raw(-200)))).expectNext(1L).verifyComplete();",
+      "var service = service(new ReorderWindow(WINDOW), LatePacketPolicy.APPEND_REVISION);",
+      "StepVerifier.create(service.ingest(packet(raw(-30))))",
+      "var service = service(new ReorderWindow(WINDOW), LatePacketPolicy.APPEND_REVISION);",
+      "StepVerifier.create(service.flushReleasable()).verifyComplete();",
+      "var service = service(new ReorderWindow(WINDOW), LatePacketPolicy.APPEND_REVISION);",
+      "StepVerifier.create(service.ingest(packet(raw(-200), raw(-100)))).expectNext(2L).verifyComplete();",
+      "StepVerifier.create(service.flushReleasable()).verifyComplete();"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

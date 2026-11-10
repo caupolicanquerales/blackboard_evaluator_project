@@ -1,0 +1,51 @@
+{
+  "id": "T1-003",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/intake/domain/SensorMetricBoundaryTest.java",
+  "kind": "test",
+  "layer": "domain",
+  "feature": null,
+  "export": "SensorMetricBoundaryTest",
+  "intent": "Write JUnit 5 + AssertJ (Mockito / StepVerifier where reactive) tests for SensorMetricBoundary, asserting only against ast_hints. Unit: Context Telemetry Stream Intake. Value object SensorMetricBoundary(MetricType metricType, double min, double max, boolean minExclusive) expressing a physical limit (HR 30-240, power 0-2500, cadence 0-220, swim pace >45 s/100m). Values come from configuration, never literals. isWithin is true when value is inside [min,max] (min excluded when minExclusive); validate returns the sample tagged VALID or VALIDATION_FAILED (payload retained, never dropped). Rejects min>max and NaN.",
+  "project": "telemetry-ingestion-and-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.intake.domain",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-002"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "boolean isWithin(double value)",
+        "returns": "boolean"
+      },
+      {
+        "signature": "TelemetrySample validate(TelemetrySample sample)",
+        "returns": "TelemetrySample"
+      },
+      {
+        "signature": "TelemetrySample.MetricType metricType()",
+        "returns": "TelemetrySample.MetricType"
+      },
+      {
+        "signature": "double min()",
+        "returns": "double"
+      },
+      {
+        "signature": "double max()",
+        "returns": "double"
+      },
+      {
+        "signature": "boolean minExclusive()",
+        "returns": "boolean"
+      }
+    ]
+  }
+}

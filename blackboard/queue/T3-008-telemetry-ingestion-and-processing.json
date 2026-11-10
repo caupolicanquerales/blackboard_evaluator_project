@@ -1,0 +1,15 @@
+{
+  "id": "T3-008",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-008"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/shared/event/TelemetryEvent.java",
+  "kind": "refactor",
+  "layer": "shared",
+  "feature": null,
+  "export": "TelemetryEvent",
+  "intent": "Inspect and refactor TelemetryEvent without changing its ast_hints API: verify layering (domain types only in ports, no blocking calls, no hardcoded config values), reactive lifecycle/backpressure, and that tests stay green. Unit: Shared kernel of Intake/Ledger integration. Published language: sealed interface TelemetryEvent with Instant occurredAt() and nested records TelemetrySampleValidated(TelemetrySample sample, Instant occurredAt), TelemetrySampleValidationFailed(TelemetrySample sample, Instant occurredAt), TelemetryBackfillReordered(TelemetrySample sample, Instant occurredAt), TelemetryWindowBuffered(List<TelemetrySample> samples, Instant windowStart, Instant windowEnd, Instant occurredAt), TelemetryRevisionAppended(UUID recordId, int revisionNumber, Instant occurredAt). Records are non-null and immutable (lists copied).",
+  "project": "telemetry-ingestion-and-processing"
+}

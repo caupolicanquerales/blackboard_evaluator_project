@@ -1,0 +1,193 @@
+{
+  "task_id": "T1-005",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "ReorderWindow",
+    "constructors": [
+      [
+        "WINDOW"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "window",
+        "method": "offer",
+        "args": [
+          "sampleAt(10)"
+        ],
+        "returns": "ReorderWindow.OfferResult"
+      },
+      {
+        "receiver": "window",
+        "method": "bufferedCount",
+        "args": []
+      },
+      {
+        "receiver": "window",
+        "method": "offer",
+        "args": [
+          "sampleAt(10)"
+        ]
+      },
+      {
+        "receiver": "window",
+        "method": "offer",
+        "args": [
+          "sampleAt(11)"
+        ],
+        "returns": "ReorderWindow.OfferResult"
+      },
+      {
+        "receiver": "window",
+        "method": "offer",
+        "args": [
+          "sampleAt(8)"
+        ],
+        "returns": "ReorderWindow.OfferResult"
+      },
+      {
+        "receiver": "window",
+        "method": "drainReleasable",
+        "args": [
+          "BASE.plusSeconds(100)"
+        ]
+      },
+      {
+        "receiver": "window",
+        "method": "offer",
+        "args": [
+          "sampleAt(5)"
+        ],
+        "returns": "ReorderWindow.OfferResult"
+      },
+      {
+        "receiver": "window",
+        "method": "offer",
+        "args": [
+          "s3"
+        ]
+      },
+      {
+        "receiver": "window",
+        "method": "offer",
+        "args": [
+          "s1"
+        ]
+      },
+      {
+        "receiver": "window",
+        "method": "offer",
+        "args": [
+          "s2"
+        ]
+      },
+      {
+        "receiver": "window",
+        "method": "drainReleasable",
+        "args": [
+          "BASE.plusSeconds(100)"
+        ],
+        "returns": "List<TelemetrySample>"
+      },
+      {
+        "receiver": "window",
+        "method": "offer",
+        "args": [
+          "boundary"
+        ]
+      },
+      {
+        "receiver": "window",
+        "method": "drainReleasable",
+        "args": [
+          "BASE.plusSeconds(10).plus(WINDOW)"
+        ],
+        "returns": "List<TelemetrySample>"
+      },
+      {
+        "receiver": "window",
+        "method": "offer",
+        "args": [
+          "recent"
+        ]
+      },
+      {
+        "receiver": "window",
+        "method": "drainReleasable",
+        "args": [
+          "BASE.plusSeconds(12)"
+        ],
+        "returns": "List<TelemetrySample>"
+      },
+      {
+        "receiver": "window",
+        "method": "offer",
+        "args": [
+          "old"
+        ]
+      },
+      {
+        "receiver": "window",
+        "method": "drainReleasable",
+        "args": [
+          "BASE.plusSeconds(10)"
+        ],
+        "returns": "List<TelemetrySample>"
+      },
+      {
+        "receiver": "window",
+        "method": "offer",
+        "args": [
+          "newerDevice"
+        ]
+      },
+      {
+        "receiver": "window",
+        "method": "offer",
+        "args": [
+          "olderDevice"
+        ],
+        "returns": "ReorderWindow.OfferResult"
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class ReorderWindowTest {",
+      "private ReorderWindow window;",
+      "window = new ReorderWindow(WINDOW);",
+      "ReorderWindow.OfferResult result = window.offer(sampleAt(10));",
+      "assertThat(window.bufferedCount()).isEqualTo(1);",
+      "window.offer(sampleAt(10));",
+      "ReorderWindow.OfferResult result = window.offer(sampleAt(11));",
+      "assertThat(window.bufferedCount()).isEqualTo(2);",
+      "window.offer(sampleAt(10));",
+      "ReorderWindow.OfferResult result = window.offer(sampleAt(8));",
+      "assertThat(window.bufferedCount()).isEqualTo(2);",
+      "window.offer(sampleAt(10));",
+      "window.drainReleasable(BASE.plusSeconds(100));",
+      "ReorderWindow.OfferResult result = window.offer(sampleAt(5));",
+      "assertThat(window.bufferedCount()).isZero();",
+      "window.offer(s3);",
+      "window.offer(s1);",
+      "window.offer(s2);",
+      "List<TelemetrySample> released = window.drainReleasable(BASE.plusSeconds(100));",
+      "assertThat(window.bufferedCount()).isZero();",
+      "window.offer(boundary);",
+      "List<TelemetrySample> released = window.drainReleasable(BASE.plusSeconds(10).plus(WINDOW));",
+      "window.offer(recent);",
+      "List<TelemetrySample> released = window.drainReleasable(BASE.plusSeconds(12));",
+      "assertThat(window.bufferedCount()).isEqualTo(1);",
+      "window.offer(recent);",
+      "window.offer(old);",
+      "List<TelemetrySample> released = window.drainReleasable(BASE.plusSeconds(10));",
+      "assertThat(window.bufferedCount()).isEqualTo(1);",
+      "assertThat(window.drainReleasable(BASE.plusSeconds(100))).isEmpty();",
+      "window.offer(newerDevice);",
+      "ReorderWindow.OfferResult result = window.offer(olderDevice);"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

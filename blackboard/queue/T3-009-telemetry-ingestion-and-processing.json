@@ -1,0 +1,15 @@
+{
+  "id": "T3-009",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-009"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/shared/event/TelemetryEventBus.java",
+  "kind": "refactor",
+  "layer": "shared",
+  "feature": null,
+  "export": "TelemetryEventBus",
+  "intent": "Inspect and refactor TelemetryEventBus without changing its ast_hints API: verify layering (domain types only in ports, no blocking calls, no hardcoded config values), reactive lifecycle/backpressure, and that tests stay green. Unit: Shared kernel of Intake/Ledger integration. Port of the bounded in-process reactive bridge. publish emits one event to subscribers without blocking, completing when accepted and erroring when the overflow strategy rejects; stream returns a hot, backpressure-aware Flux of all events (subscribers see events published after subscribing). Ledger depends only on this port, never on Intake internals.",
+  "project": "telemetry-ingestion-and-processing"
+}

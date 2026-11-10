@@ -1,0 +1,55 @@
+{
+  "id": "T1-025",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/intake/api/TelemetryIngestionControllerTest.java",
+  "kind": "test",
+  "layer": "interface",
+  "feature": null,
+  "export": "TelemetryIngestionControllerTest",
+  "intent": "Write JUnit 5 + AssertJ (Mockito / StepVerifier where reactive) tests for TelemetryIngestionController, asserting only against ast_hints. Unit: Context Telemetry Stream Intake. @RestController /api/v1/telemetry. POST /packets: @Valid body IngressPacketRequest(String deviceId, List<SampleRequest> samples) with nested SampleRequest(TelemetrySample.MetricType metricType, Double value, Instant deviceTimestamp) (@NotBlank/@NotEmpty/@NotNull); ingressTimestamp is set from the injected Clock; maps to IngressPacket via toDomain(Instant) and returns 202 Accepted with body IngestionResponse(long accepted); overflow IllegalStateException is not swallowed. GET /stream/windows produces text/event-stream of TelemetryWindowBuffered from TelemetryStreamService.windows(). Constructor(TelemetryIngestionService, TelemetryStreamService, Clock).",
+  "project": "telemetry-ingestion-and-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.intake.api",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetryIngestionService",
+        "task_id": "T2-012"
+      },
+      {
+        "type": "TelemetryStreamService",
+        "task_id": "T2-013"
+      },
+      {
+        "type": "IngressPacket",
+        "task_id": "T2-004"
+      },
+      {
+        "type": "TelemetryEvent",
+        "task_id": "T2-008"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<ResponseEntity<TelemetryIngestionController.IngestionResponse>> ingest(TelemetryIngestionController.IngressPacketRequest request)",
+        "returns": "Mono<ResponseEntity<TelemetryIngestionController.IngestionResponse>>"
+      },
+      {
+        "signature": "Flux<TelemetryEvent.TelemetryWindowBuffered> streamWindows()",
+        "returns": "Flux<TelemetryEvent.TelemetryWindowBuffered>"
+      },
+      {
+        "signature": "IngressPacket IngressPacketRequest.toDomain(Instant ingressTimestamp)",
+        "returns": "IngressPacket"
+      },
+      {
+        "signature": "long IngestionResponse.accepted()",
+        "returns": "long"
+      }
+    ]
+  }
+}

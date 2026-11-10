@@ -1,0 +1,15 @@
+{
+  "id": "T0-004",
+  "targetAgent": "agent-container",
+  "stage": 0,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "db/migrations/flyway.conf",
+  "kind": "bootstrap",
+  "layer": "root",
+  "feature": null,
+  "export": "flyway.conf",
+  "intent": "Configuration profile: Flyway startup migration settings for PostgreSQL 16 in db/migrations/flyway.conf (locations, schema, validation, clean disabled, env-based credentials, embeddable PostgreSQL test substitute) for context telemetry-ingestion-and-processing (Telemetry Event Ledger).",
+  "project": "telemetry-ingestion-and-processing"
+}

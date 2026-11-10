@@ -3,15 +3,98 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "TelemetryContracts",
-    "constructors": [],
+    "type": "SensorMetricBoundary",
+    "constructors": [
+      [
+        "MetricType.HEART_RATE",
+        "30.0",
+        "240.0",
+        "false"
+      ],
+      [
+        "MetricType.SWIM_PACE",
+        "45.0",
+        "600.0",
+        "true"
+      ],
+      [
+        "MetricType.POWER",
+        "2500.0",
+        "0.0",
+        "false"
+      ],
+      [
+        "MetricType.POWER",
+        "Double.NaN",
+        "2500.0",
+        "false"
+      ],
+      [
+        "MetricType.POWER",
+        "0.0",
+        "Double.NaN",
+        "false"
+      ]
+    ],
     "static_calls": [],
-    "calls": [],
+    "calls": [
+      {
+        "receiver": "boundary",
+        "method": "metricType",
+        "args": []
+      },
+      {
+        "receiver": "boundary",
+        "method": "min",
+        "args": []
+      },
+      {
+        "receiver": "boundary",
+        "method": "max",
+        "args": []
+      },
+      {
+        "receiver": "boundary",
+        "method": "minExclusive",
+        "args": []
+      },
+      {
+        "receiver": "swimPace",
+        "method": "isWithin",
+        "args": [
+          "value"
+        ]
+      },
+      {
+        "receiver": "swimPace",
+        "method": "validate",
+        "args": [
+          "sample(MetricType.SWIM_PACE, 45.0)"
+        ],
+        "returns": "TelemetrySample"
+      }
+    ],
     "verified": [],
     "usage_lines": [
-      "class TelemetryContractsTest {",
-      "assertThat(Modifier.isFinal(TelemetryContracts.class.getModifiers())).isTrue();",
-      "for (Constructor<?> c : TelemetryContracts.class.getDeclaredConstructors()) {"
+      "class SensorMetricBoundaryTest {",
+      "private static SensorMetricBoundary heartRate() {",
+      "return new SensorMetricBoundary(MetricType.HEART_RATE, 30.0, 240.0, false);",
+      "SensorMetricBoundary boundary = new SensorMetricBoundary(MetricType.SWIM_PACE, 45.0, 600.0, true);",
+      "assertThat(boundary.metricType()).isEqualTo(MetricType.SWIM_PACE);",
+      "assertThat(boundary.min()).isEqualTo(45.0);",
+      "assertThat(boundary.max()).isEqualTo(600.0);",
+      "assertThat(boundary.minExclusive()).isTrue();",
+      "assertThat(heartRate().isWithin(value)).isEqualTo(expected);",
+      "SensorMetricBoundary swimPace = new SensorMetricBoundary(MetricType.SWIM_PACE, 45.0, 600.0, true);",
+      "assertThat(swimPace.isWithin(value)).isEqualTo(expected);",
+      "assertThat(heartRate().isWithin(Double.NaN)).isFalse();",
+      "TelemetrySample result = heartRate().validate(input);",
+      "TelemetrySample result = heartRate().validate(input);",
+      "SensorMetricBoundary swimPace = new SensorMetricBoundary(MetricType.SWIM_PACE, 45.0, 600.0, true);",
+      "TelemetrySample result = swimPace.validate(sample(MetricType.SWIM_PACE, 45.0));",
+      "assertThatThrownBy(() -> new SensorMetricBoundary(MetricType.POWER, 2500.0, 0.0, false))",
+      "assertThatThrownBy(() -> new SensorMetricBoundary(MetricType.POWER, Double.NaN, 2500.0, false))",
+      "assertThatThrownBy(() -> new SensorMetricBoundary(MetricType.POWER, 0.0, Double.NaN, false))"
     ]
   },
   "stderr": "",

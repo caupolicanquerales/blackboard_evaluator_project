@@ -1,0 +1,15 @@
+{
+  "id": "T3-022",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-022"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ledger/infrastructure/R2dbcTelemetryLedgerRepository.java",
+  "kind": "refactor",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "R2dbcTelemetryLedgerRepository",
+  "intent": "Inspect and refactor R2dbcTelemetryLedgerRepository without changing its ast_hints API: verify layering (domain types only in ports, no blocking calls, no hardcoded config values), reactive lifecycle/backpressure, and that tests stay green. Unit: Context Telemetry Event Ledger. @Repository implementing TelemetryLedgerRepository with R2dbcEntityTemplate/DatabaseClient (constructor(R2dbcEntityTemplate)); INSERT only, never UPDATE/DELETE. Queries: latest by recordId ordered revision_number desc limit 1; revisions ordered by revision_number asc; history filtered by device, metric, t_device range ordered by t_device. Unique (record_id, revision_number) violation surfaces as an error. Works on PostgreSQL and the H2 substitute.",
+  "project": "telemetry-ingestion-and-processing"
+}

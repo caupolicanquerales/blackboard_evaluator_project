@@ -1,0 +1,15 @@
+{
+  "id": "T3-015",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-015"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ledger/application/DeadLetterSink.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "DeadLetterSink",
+  "intent": "Inspect and refactor DeadLetterSink without changing its ast_hints API: verify layering (domain types only in ports, no blocking calls, no hardcoded config values), reactive lifecycle/backpressure, and that tests stay green. Unit: Context Telemetry Event Ledger. Outbound port for events that could not be recorded after retries. reject captures the event and cause without blocking.",
+  "project": "telemetry-ingestion-and-processing"
+}

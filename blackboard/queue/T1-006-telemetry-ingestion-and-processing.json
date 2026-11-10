@@ -1,0 +1,39 @@
+{
+  "id": "T1-006",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/shared/config/TelemetryConfigTest.java",
+  "kind": "test",
+  "layer": "shared",
+  "feature": null,
+  "export": "TelemetryConfigTest",
+  "intent": "Write JUnit 5 + AssertJ (Mockito / StepVerifier where reactive) tests for TelemetryConfig, asserting only against ast_hints. Unit: Shared kernel of Intake/Ledger integration. @Configuration (not a boot class) with @EnableConfigurationProperties(TelemetryProperties.class). Beans: Clock systemUTC (injected everywhere, never Instant.now()), and ReorderWindow built from TelemetryProperties.reorderWindow().",
+  "project": "telemetry-ingestion-and-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.shared.config",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetryProperties",
+        "task_id": "T2-001"
+      },
+      {
+        "type": "ReorderWindow",
+        "task_id": "T2-005"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Clock clock()",
+        "returns": "Clock"
+      },
+      {
+        "signature": "ReorderWindow reorderWindow(TelemetryProperties properties)",
+        "returns": "ReorderWindow"
+      }
+    ]
+  }
+}

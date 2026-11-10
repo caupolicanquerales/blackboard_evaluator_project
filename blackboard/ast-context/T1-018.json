@@ -1,0 +1,67 @@
+{
+  "task_id": "T1-018",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "InProcessTelemetryEventBus",
+    "constructors": [
+      [
+        "properties(8, TelemetryProperties.OverflowStrategy.REJECT, 1)"
+      ],
+      [
+        "properties(1, TelemetryProperties.OverflowStrategy.REJECT, 1)"
+      ],
+      [
+        "properties(1, TelemetryProperties.OverflowStrategy.RETRY, 2)"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "bus",
+        "method": "stream",
+        "args": []
+      },
+      {
+        "receiver": "bus",
+        "method": "publish",
+        "args": [
+          "event"
+        ]
+      },
+      {
+        "receiver": "bus",
+        "method": "publish",
+        "args": [
+          "mock(TelemetryEvent.class)"
+        ]
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class InProcessTelemetryEventBusTest {",
+      "InProcessTelemetryEventBus bus =",
+      "new InProcessTelemetryEventBus(properties(8, TelemetryProperties.OverflowStrategy.REJECT, 1));",
+      "StepVerifier.create(bus.stream().take(1))",
+      ".then(() -> StepVerifier.create(bus.publish(event)).verifyComplete())",
+      "InProcessTelemetryEventBus bus =",
+      "new InProcessTelemetryEventBus(properties(8, TelemetryProperties.OverflowStrategy.REJECT, 1));",
+      "StepVerifier.create(bus.publish(mock(TelemetryEvent.class))).verifyComplete();",
+      "InProcessTelemetryEventBus bus =",
+      "new InProcessTelemetryEventBus(properties(1, TelemetryProperties.OverflowStrategy.REJECT, 1));",
+      "bus.stream().subscribe(new reactor.core.publisher.BaseSubscriber<>() {",
+      ".concatMap(i -> bus.publish(mock(TelemetryEvent.class)));",
+      "InProcessTelemetryEventBus bus =",
+      "new InProcessTelemetryEventBus(properties(1, TelemetryProperties.OverflowStrategy.RETRY, 2));",
+      "bus.stream().subscribe(new reactor.core.publisher.BaseSubscriber<>() {",
+      ".concatMap(i -> bus.publish(mock(TelemetryEvent.class)));",
+      "InProcessTelemetryEventBus bus =",
+      "new InProcessTelemetryEventBus(properties(8, TelemetryProperties.OverflowStrategy.REJECT, 1));",
+      "assertThat(bus.stream()).isNotNull();",
+      "StepVerifier.create(Flux.merge(bus.stream().take(1), bus.stream().take(1)))",
+      ".then(() -> bus.publish(event).block(Duration.ofSeconds(1)))"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

@@ -8,6 +8,7 @@ failure has been shown to a coder yet) - the exact questions the drain answers w
 relaunched, so the operator sees WHY the board is where it is without reading a log.
 """
 import json
+import os
 import subprocess
 import sys
 import time
@@ -86,6 +87,78 @@ def show():
         print("  orchestrator processes: " + (", ".join(pids) if pids else "none running"))
     except Exception:
         pass
+    _token_rollup()
+
+
+def _token_rollup():
+    """Session token totals since the current process (or the last hour): the burn
+    question answered continuously instead of by post-mortem. Reads the backend's own
+    session-state event files; every field is optional - absence is reported, never guessed."""
+    import datetime
+    import glob
+    import time as _time
+    def gint(u, *keys):
+        for k in keys:
+            try:
+                v = int(u.get(k) or 0)
+            except (TypeError, ValueError):
+                v = 0
+            if v:
+                return v
+        return 0
+    cutoff = None
+    try:
+        out = subprocess.run(["ps", "-eo", "pid,lstart,cmd"], capture_output=True,
+                             text=True, timeout=5).stdout
+        for line in out.splitlines():
+            if "orchestrator_github" in line and "grep" not in line:
+                stamp = " ".join(line.split()[1:6])
+                cutoff = datetime.datetime.strptime(stamp, "%a %b %d %H:%M:%S %Y").timestamp()
+                break
+    except Exception:
+        pass
+    if cutoff is None:
+        cutoff = _time.time() - 3600
+    tin = tout = n = 0
+    worst = (0, 0.0)
+    for f in glob.glob(os.path.expanduser("~/.copilot/session-state/*/events.jsonl")):
+        try:
+            m = os.path.getmtime(f)
+        except OSError:
+            continue
+        if m < cutoff:
+            continue
+        s_in = s_out = 0
+        try:
+            for line in open(f, errors="ignore"):
+                if "usage" not in line:
+                    continue
+                try:
+                    e = json.loads(line)
+                except Exception:
+                    continue
+                srcs = [s for s in ((e.get("data") if isinstance(e.get("data"), dict) else {}), e)
+                        if isinstance(s, dict)]
+                for src in srcs:
+                    u = src.get("usage") or src.get("tokens")
+                    if isinstance(u, dict):
+                        s_in += gint(u, "input_tokens", "inputTokens", "prompt_tokens")
+                        s_out += gint(u, "output_tokens", "outputTokens", "completion_tokens")
+        except OSError:
+            continue
+        if s_in or s_out:
+            n += 1
+            tin += s_in
+            tout += s_out
+            if s_in > worst[0]:
+                worst = (s_in, m)
+    done = (sum(1 for _ in settings.COMPLETE_DIR.glob("T?-*.json"))
+            if settings.COMPLETE_DIR.is_dir() else 0)
+    print(f"  tokens since launch: sessions={n} input={tin:,} output={tout:,}"
+          + (f" | per completed unit={tin // done:,}" if done else ""))
+    if worst[0]:
+        print("  largest session input: " + f"{worst[0]:,}"
+              " at " + datetime.datetime.fromtimestamp(worst[1]).strftime("%H:%M"))
 
 
 def main():

@@ -1,0 +1,574 @@
+{
+  "status": "compile_error",
+  "exit_code": 1,
+  "missing_symbols": [
+    "TelemetrySample",
+    "TelemetryIngestionService",
+    "TelemetryStreamService",
+    "IngressPacket",
+    "TelemetryIngestionController",
+    "IngressPacketRequest",
+    "SensorMetricBoundary",
+    "MetricType",
+    "SensorMetricBoundaryProvider",
+    "ReorderWindow",
+    "TelemetryProperties",
+    "TelemetryEventBus",
+    "LatePacketPolicy",
+    "TelemetryEvent",
+    "TelemetryWindowBuffered",
+    "RawSample",
+    "ValidationStatus",
+    "ConfiguredBoundaryProvider",
+    "ReorderWindowFlusher",
+    "TelemetryHistoryQueryService",
+    "EventRevision",
+    "LedgerController"
+  ],
+  "missing_packages": [
+    "com.pulsestream.telemetry.shared.event",
+    "com.pulsestream.telemetry.intake.api.TelemetryIngestionController",
+    "com.pulsestream.telemetry.intake.domain.TelemetrySample",
+    "com.pulsestream.telemetry.shared.event.TelemetryEvent",
+    "com.pulsestream.telemetry.shared.config.TelemetryProperties",
+    "com.pulsestream.telemetry.intake.domain.IngressPacket",
+    "com.pulsestream.telemetry.ledger.api.LedgerController"
+  ],
+  "failures": [],
+  "counts": {},
+  "classes": {},
+  "member_demands": [
+    {
+      "member": "TelemetryIngestionService",
+      "owner": "TelemetryIngestionControllerTest",
+      "kind": "class",
+      "context": "import com.pulsestream.telemetry.intake.domain.TelemetrySample.MetricType;"
+    },
+    {
+      "member": "TelemetryStreamService",
+      "owner": "TelemetryIngestionControllerTest",
+      "kind": "class",
+      "context": "private TelemetryStreamService streamService;"
+    },
+    {
+      "member": "TelemetryIngestionController",
+      "owner": "TelemetryIngestionControllerTest",
+      "kind": "class",
+      "context": "private TelemetryIngestionController controller;"
+    },
+    {
+      "member": "IngressPacketRequest",
+      "owner": "TelemetryIngestionControllerTest",
+      "kind": "class",
+      "context": "private static IngressPacketRequest validRequest() {"
+    },
+    {
+      "member": "MetricType",
+      "owner": "SensorMetricBoundaryProviderTest",
+      "kind": "class",
+      "context": "import com.pulsestream.telemetry.intake.domain.TelemetrySample.MetricType;"
+    },
+    {
+      "member": "SensorMetricBoundary",
+      "owner": "SensorMetricBoundaryProviderTest",
+      "kind": "class",
+      "context": "private static SensorMetricBoundaryProvider providerWith(Map<MetricType, SensorMetricBoundary> boundaries) {"
+    },
+    {
+      "member": "SensorMetricBoundaryProvider",
+      "owner": "SensorMetricBoundaryProviderTest",
+      "kind": "class",
+      "context": "private static SensorMetricBoundaryProvider providerWith(Map<MetricType, SensorMetricBoundary> boundaries) {"
+    },
+    {
+      "member": "TelemetrySample",
+      "owner": "SensorMetricBoundaryProviderTest",
+      "kind": "class",
+      "context": "private static TelemetrySample sample(MetricType type, double value) {"
+    },
+    {
+      "member": "SensorMetricBoundaryProvider",
+      "owner": "TelemetryIngestionServiceTest",
+      "kind": "class",
+      "context": "import com.pulsestream.telemetry.shared.event.TelemetryEvent.TelemetrySampleValidated;"
+    },
+    {
+      "member": "TelemetryEventBus",
+      "owner": "TelemetryIngestionServiceTest",
+      "kind": "class",
+      "context": "private TelemetryEventBus bus;"
+    },
+    {
+      "member": "ReorderWindow",
+      "owner": "TelemetryIngestionServiceTest",
+      "kind": "class",
+      "context": "private TelemetryIngestionService service(ReorderWindow window, LatePacketPolicy policy) {"
+    },
+    {
+      "member": "LatePacketPolicy",
+      "owner": "TelemetryIngestionServiceTest",
+      "kind": "class",
+      "context": "private TelemetryIngestionService service(ReorderWindow window, LatePacketPolicy policy) {"
+    },
+    {
+      "member": "TelemetryIngestionService",
+      "owner": "TelemetryIngestionServiceTest",
+      "kind": "class",
+      "context": "private TelemetryIngestionService service(ReorderWindow window, LatePacketPolicy policy) {"
+    },
+    {
+      "member": "IngressPacket",
+      "owner": "TelemetryIngestionServiceTest",
+      "kind": "class",
+      "context": "private static IngressPacket.RawSample raw(long secondsFromNow) {"
+    },
+    {
+      "member": "TelemetryEvent",
+      "owner": "TelemetryIngestionServiceTest",
+      "kind": "class",
+      "context": "private List<TelemetryEvent> publishedEvents(int expected) {"
+    },
+    {
+      "member": "TelemetryEventBus",
+      "owner": "TelemetryStreamServiceTest",
+      "kind": "class",
+      "context": "private TelemetryEventBus bus;"
+    },
+    {
+      "member": "TelemetryStreamService",
+      "owner": "TelemetryStreamServiceTest",
+      "kind": "class",
+      "context": "private TelemetryStreamService service;"
+    },
+    {
+      "member": "TelemetryEvent",
+      "owner": "TelemetryStreamServiceTest",
+      "kind": "class",
+      "context": "private Sinks.Many<TelemetryEvent> sink;"
+    },
+    {
+      "member": "TelemetrySample",
+      "owner": "TelemetryStreamServiceTest",
+      "kind": "class",
+      "context": "private TelemetrySample sample;"
+    },
+    {
+      "member": "TelemetryWindowBuffered",
+      "owner": "TelemetryStreamServiceTest",
+      "kind": "class",
+      "context": "private TelemetryWindowBuffered window() {"
+    },
+    {
+      "member": "MetricType",
+      "owner": "IngressPacketTest",
+      "kind": "class",
+      "context": "import com.pulsestream.telemetry.intake.domain.TelemetrySample.MetricType;"
+    },
+    {
+      "member": "RawSample",
+      "owner": "IngressPacketTest",
+      "kind": "class",
+      "context": "private static RawSample raw(MetricType type, double value, Instant ts) {"
+    },
+    {
+      "member": "ReorderWindow",
+      "owner": "ReorderWindowTest",
+      "kind": "class",
+      "context": "private ReorderWindow window;"
+    },
+    {
+      "member": "TelemetrySample",
+      "owner": "ReorderWindowTest",
+      "kind": "class",
+      "context": "private static TelemetrySample sampleAt(long offsetSeconds) {"
+    },
+    {
+      "member": "SensorMetricBoundary",
+      "owner": "SensorMetricBoundaryTest",
+      "kind": "class",
+      "context": "import com.pulsestream.telemetry.intake.domain.TelemetrySample.MetricType;"
+    },
+    {
+      "member": "MetricType",
+      "owner": "SensorMetricBoundaryTest",
+      "kind": "class",
+      "context": "private static TelemetrySample sample(MetricType type, double value) {"
+    },
+    {
+      "member": "TelemetrySample",
+      "owner": "SensorMetricBoundaryTest",
+      "kind": "class",
+      "context": "private static TelemetrySample sample(MetricType type, double value) {"
+    },
+    {
+      "member": "MetricType",
+      "owner": "TelemetrySampleTest",
+      "kind": "class",
+      "context": "import com.pulsestream.telemetry.intake.domain.TelemetrySample.MetricType;"
+    },
+    {
+      "member": "ValidationStatus",
+      "owner": "TelemetrySampleTest",
+      "kind": "class",
+      "context": "Instant ingressTs, ValidationStatus status, UUID id) {"
+    },
+    {
+      "member": "TelemetrySample",
+      "owner": "TelemetrySampleTest",
+      "kind": "class",
+      "context": "private static TelemetrySample sample(String deviceId, MetricType type, Instant deviceTs,"
+    },
+    {
+      "member": "ConfiguredBoundaryProvider",
+      "owner": "ConfiguredBoundaryProviderTest",
+      "kind": "class",
+      "context": "private static ConfiguredBoundaryProvider providerWith(Map<String, TelemetryProperties.Boundary> boundaries) {"
+    },
+    {
+      "member": "TelemetryProperties",
+      "owner": "InProcessTelemetryEventBusTest",
+      "kind": "class",
+      "context": "import com.pulsestream.telemetry.shared.event.TelemetryEvent;"
+    },
+    {
+      "member": "TelemetryIngestionService",
+      "owner": "ReorderWindowFlusherTest",
+      "kind": "class",
+      "context": "private TelemetryIngestionService ingestionService;"
+    },
+    {
+      "member": "ReorderWindowFlusher",
+      "owner": "ReorderWindowFlusherTest",
+      "kind": "class",
+      "context": "private ReorderWindowFlusher flusher;"
+    },
+    {
+      "member": "TelemetryProperties",
+      "owner": "ReorderWindowFlusherTest",
+      "kind": "class",
+      "context": "private static TelemetryProperties properties() {"
+    },
+    {
+      "member": "TelemetryHistoryQueryService",
+      "owner": "LedgerControllerTest",
+      "kind": "class",
+      "context": "private TelemetryHistoryQueryService service;"
+    },
+    {
+      "member": "LedgerController",
+      "owner": "LedgerControllerTest",
+      "kind": "class",
+      "context": "private LedgerController controller;"
+    },
+    {
+      "member": "TelemetrySample",
+      "owner": "LedgerControllerTest",
+      "kind": "class",
+      "context": "private static TelemetrySample sample(double value) {"
+    },
+    {
+      "member": "EventRevision",
+      "owner": "LedgerControllerTest",
+      "kind": "class",
+      "context": "private static EventRevision original() {"
+    }
+  ],
+  "problem_kinds": [
+    {
+      "file": "TelemetryIngestionControllerTest.java",
+      "line": 2,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryIngestionControllerTest.java",
+      "line": 3,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryIngestionControllerTest.java",
+      "line": 10,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryIngestionControllerTest.java",
+      "line": 11,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryIngestionControllerTest.java",
+      "line": 12,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryIngestionControllerTest.java",
+      "line": 13,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryIngestionControllerTest.java",
+      "line": 14,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryIngestionControllerTest.java",
+      "line": 15,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryIngestionControllerTest.java",
+      "line": 16,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryIngestionControllerTest.java",
+      "line": 17,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryIngestionControllerTest.java",
+      "line": 43,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryIngestionControllerTest.java",
+      "line": 45,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryIngestionControllerTest.java",
+      "line": 47,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryIngestionControllerTest.java",
+      "line": 55,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "SensorMetricBoundaryProviderTest.java",
+      "line": 5,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "SensorMetricBoundaryProviderTest.java",
+      "line": 6,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "SensorMetricBoundaryProviderTest.java",
+      "line": 7,
+      "kind": "other"
+    },
+    {
+      "file": "SensorMetricBoundaryProviderTest.java",
+      "line": 8,
+      "kind": "other"
+    },
+    {
+      "file": "SensorMetricBoundaryProviderTest.java",
+      "line": 21,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "SensorMetricBoundaryProviderTest.java",
+      "line": 25,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "SensorMetricBoundaryProviderTest.java",
+      "line": 43,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 2,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 12,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 13,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 14,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 15,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 16,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 17,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 18,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 19,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 20,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 21,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 41,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 42,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 54,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 60,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 65,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 65,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 69,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryIngestionServiceTest.java",
+      "line": 152,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryStreamServiceTest.java",
+      "line": 14,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryStreamServiceTest.java",
+      "line": 15,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryStreamServiceTest.java",
+      "line": 16,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryStreamServiceTest.java",
+      "line": 17,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryStreamServiceTest.java",
+      "line": 18,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryStreamServiceTest.java",
+      "line": 19,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryStreamServiceTest.java",
+      "line": 20,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryStreamServiceTest.java",
+      "line": 21,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryStreamServiceTest.java",
+      "line": 32,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryStreamServiceTest.java",
+      "line": 33,
+      "kind": "missing-symbol"
+    }
+  ],
+  "excerpt": [
+    "[ERROR]   symbol:   class TelemetryIngestionService",
+    "[ERROR]   location: class com.pulsestream.telemetry.intake.infrastructure.ReorderWindowFlusherTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/intake/infrastructure/ReorderWindowFlusherTest.java:[33,13] cannot find symbol",
+    "[ERROR]   symbol:   class ReorderWindowFlusher",
+    "[ERROR]   location: class com.pulsestream.telemetry.intake.infrastructure.ReorderWindowFlusherTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/intake/infrastructure/ReorderWindowFlusherTest.java:[147,20] cannot find symbol",
+    "[ERROR]   symbol:   class TelemetryProperties",
+    "[ERROR]   location: class com.pulsestream.telemetry.intake.infrastructure.ReorderWindowFlusherTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/intake/infrastructure/ReorderWindowFlusherTest.java:[151,20] cannot find symbol",
+    "[ERROR]   symbol:   class TelemetryProperties",
+    "[ERROR]   location: class com.pulsestream.telemetry.intake.infrastructure.ReorderWindowFlusherTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/ledger/api/LedgerControllerTest.java:[7,47] cannot find symbol",
+    "[ERROR]   symbol:   class TelemetrySample",
+    "[ERROR]   location: package com.pulsestream.telemetry.intake.domain",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/ledger/api/LedgerControllerTest.java:[8,61] package com.pulsestream.telemetry.ledger.api.LedgerController does not exist",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/ledger/api/LedgerControllerTest.java:[9,52] cannot find symbol",
+    "[ERROR]   symbol:   class TelemetryHistoryQueryService",
+    "[ERROR]   location: package com.pulsestream.telemetry.ledger.application",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/ledger/api/LedgerControllerTest.java:[10,47] cannot find symbol",
+    "[ERROR]   symbol:   class EventRevision",
+    "[ERROR]   location: package com.pulsestream.telemetry.ledger.domain",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/ledger/api/LedgerControllerTest.java:[33,13] cannot find symbol",
+    "[ERROR]   symbol:   class TelemetryHistoryQueryService",
+    "[ERROR]   location: class com.pulsestream.telemetry.ledger.api.LedgerControllerTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/ledger/api/LedgerControllerTest.java:[36,13] cannot find symbol",
+    "[ERROR]   symbol:   class LedgerController",
+    "[ERROR]   location: class com.pulsestream.telemetry.ledger.api.LedgerControllerTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/ledger/api/LedgerControllerTest.java:[38,20] cannot find symbol",
+    "[ERROR]   symbol:   class TelemetrySample",
+    "[ERROR]   location: class com.pulsestream.telemetry.ledger.api.LedgerControllerTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-and-processing/src/test/java/com/pulsestream/telemetry/ledger/api/LedgerControllerTest.java:[44,20] cannot find symbol",
+    "[ERROR]   symbol:   class EventRevision",
+    "[ERROR]   location: class com.pulsestream.telemetry.ledger.api.LedgerControllerTest",
+    "[ERROR] -> [Help 1]",
+    "[ERROR] ",
+    "[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.",
+    "[ERROR] Re-run Maven using the -X switch to enable full debug logging.",
+    "[ERROR] ",
+    "[ERROR] For more information about the errors and possible solutions, please read the following articles:",
+    "[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException"
+  ],
+  "command": "./mvnw -Dtest=ApiExceptionHandlerTest test",
+  "task_id": "T1-027",
+  "executed": true,
+  "recorded_at": "2026-11-10T19:51:14.092940+00:00"
+}

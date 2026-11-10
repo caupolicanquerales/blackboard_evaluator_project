@@ -1,0 +1,177 @@
+{
+  "task_id": "T1-010",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "EventRevision",
+    "constructors": [],
+    "static_calls": [
+      {
+        "method": "original",
+        "args": [
+          "sample(1.5)",
+          "RECORDED_AT"
+        ]
+      },
+      {
+        "method": "original",
+        "args": [
+          "sample(1.0)",
+          "RECORDED_AT"
+        ]
+      }
+    ],
+    "calls": [
+      {
+        "receiver": "first",
+        "method": "next",
+        "args": [
+          "sample(2.5)",
+          "EventRevision.RevisionReason.CORRECTION",
+          "LATER"
+        ],
+        "returns": "EventRevision"
+      },
+      {
+        "receiver": "first",
+        "method": "recordId",
+        "args": []
+      },
+      {
+        "receiver": "first",
+        "method": "next",
+        "args": [
+          "sample(3.0)",
+          "EventRevision.RevisionReason.BACKFILL",
+          "LATER"
+        ],
+        "returns": "EventRevision"
+      },
+      {
+        "receiver": "first",
+        "method": "next",
+        "args": [
+          "sample(2.5)",
+          "EventRevision.RevisionReason.CORRECTION",
+          "LATER"
+        ]
+      },
+      {
+        "receiver": "first",
+        "method": "revisionNumber",
+        "args": []
+      },
+      {
+        "receiver": "first",
+        "method": "value",
+        "args": []
+      },
+      {
+        "receiver": "first",
+        "method": "reason",
+        "args": []
+      },
+      {
+        "receiver": "revision",
+        "method": "revisionNumber",
+        "args": []
+      },
+      {
+        "receiver": "revision",
+        "method": "reason",
+        "args": []
+      },
+      {
+        "receiver": "revision",
+        "method": "recordedAt",
+        "args": []
+      },
+      {
+        "receiver": "revision",
+        "method": "recordId",
+        "args": []
+      },
+      {
+        "receiver": "revision",
+        "method": "deviceId",
+        "args": []
+      },
+      {
+        "receiver": "revision",
+        "method": "metricType",
+        "args": []
+      },
+      {
+        "receiver": "revision",
+        "method": "value",
+        "args": []
+      },
+      {
+        "receiver": "revision",
+        "method": "deviceTimestamp",
+        "args": []
+      },
+      {
+        "receiver": "revision",
+        "method": "ingressTimestamp",
+        "args": []
+      },
+      {
+        "receiver": "second",
+        "method": "revisionNumber",
+        "args": []
+      },
+      {
+        "receiver": "second",
+        "method": "recordId",
+        "args": []
+      },
+      {
+        "receiver": "second",
+        "method": "reason",
+        "args": []
+      },
+      {
+        "receiver": "second",
+        "method": "value",
+        "args": []
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class EventRevisionTest {",
+      "EventRevision revision = EventRevision.original(sample(1.5), RECORDED_AT);",
+      "assertThat(revision.revisionNumber()).isEqualTo(1);",
+      "assertThat(revision.reason()).isEqualTo(EventRevision.RevisionReason.ORIGINAL);",
+      "assertThat(revision.recordedAt()).isEqualTo(RECORDED_AT);",
+      "EventRevision revision = EventRevision.original(sample(1.5), RECORDED_AT);",
+      "assertThat(revision.recordId()).isEqualTo(RECORD_ID);",
+      "assertThat(revision.deviceId()).isEqualTo(\"device-1\");",
+      "assertThat(revision.metricType()).isEqualTo(TelemetrySample.MetricType.values()[0]);",
+      "assertThat(revision.value()).isEqualTo(1.5);",
+      "assertThat(revision.deviceTimestamp()).isEqualTo(DEVICE_TS);",
+      "assertThat(revision.ingressTimestamp()).isEqualTo(INGRESS_TS);",
+      "EventRevision first = EventRevision.original(sample(1.5), RECORDED_AT);",
+      "EventRevision second = first.next(sample(2.5), EventRevision.RevisionReason.CORRECTION, LATER);",
+      "assertThat(second.revisionNumber()).isEqualTo(2);",
+      "assertThat(second.recordId()).isEqualTo(first.recordId());",
+      "assertThat(second.reason()).isEqualTo(EventRevision.RevisionReason.CORRECTION);",
+      "assertThat(second.value()).isEqualTo(2.5);",
+      "assertThat(second.recordedAt()).isEqualTo(LATER);",
+      "EventRevision first = EventRevision.original(sample(1.5), RECORDED_AT);",
+      "EventRevision second = first.next(sample(3.0), EventRevision.RevisionReason.BACKFILL, LATER);",
+      "assertThat(second.reason()).isEqualTo(EventRevision.RevisionReason.BACKFILL);",
+      "EventRevision first = EventRevision.original(sample(1.5), RECORDED_AT);",
+      "first.next(sample(2.5), EventRevision.RevisionReason.CORRECTION, LATER);",
+      "assertThat(first.revisionNumber()).isEqualTo(1);",
+      "assertThat(first.value()).isEqualTo(1.5);",
+      "assertThat(first.reason()).isEqualTo(EventRevision.RevisionReason.ORIGINAL);",
+      "EventRevision third = EventRevision.original(sample(1.0), RECORDED_AT)",
+      ".next(sample(2.0), EventRevision.RevisionReason.CORRECTION, LATER)",
+      ".next(sample(3.0), EventRevision.RevisionReason.CORRECTION, LATER);",
+      "assertThat(third.revisionNumber()).isEqualTo(3);"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

@@ -2,51 +2,17 @@
 name: mcp-server-springboot
 description: Creates Spring Boot Maven projects by calling the generateSpringBootProject tool of the Spring Boot MCP server running in the Docker image named by SPRINGBOOT_MCP_IMAGE in the project .env file. Use when the agent must check, start or create the springboot-mcp container, or generate a new Spring Boot project.
 ---
-
-# Spring Boot MCP server
-
-## Purpose
-Generate a Spring Boot Maven project through the MCP tool `generateSpringBootProject`. The server creates the project in the shared folder and returns a text status. The project is ready when the response contains `BUILD SUCCESS` or `PROJECT READY`.
-
-## Server facts
-- Image, port: `SPRINGBOOT_MCP_IMAGE` and `SPRINGBOOT_MCP_PORT` (default `8900`) from the project-root `.env`. Run all commands from the project root.
-- Container: `springboot-mcp`. MCP over SSE: `GET /sse`, then `POST /mcp/message?sessionId=...`.
-- Volume: `$(pwd)/../mcp_workspace` mounted at `/workspace`; projects go to `/workspace/projects`.
-
-## Step 1: Ensure the container is up
-Run this single block. It loads `.env`, reuses a running or stopped container, creates one otherwise, and waits for SSE readiness:
-
+# Purpose
+Spring Boot Maven project via `generateSpringBootProject(artifactId, ...)`; ready = `BUILD SUCCESS`|`PROJECT READY`.
+# Facts
+`SPRINGBOOT_MCP_IMAGE`/`SPRINGBOOT_MCP_PORT` (8900) from `.env`. Container `springboot-mcp`; MCP over SSE: GET /sse, POST /mcp/message?sessionId=...
+# Step 1 - ensure container (one block, project root)
     export $(grep -v '^#' .env | xargs); P="${SPRINGBOOT_MCP_PORT:-8900}"; [ -n "$SPRINGBOOT_MCP_IMAGE" ] || { echo MISSING_IMAGE; exit 1; }
     S=$(docker ps -a --filter "name=^springboot-mcp$" --format '{{.Status}}')
     case "$S" in Up*) ;; "") if (command -v ss >/dev/null && ss -ltn "sport = :$P" | grep -q ":$P ") || (command -v lsof >/dev/null && lsof -iTCP:"$P" -sTCP:LISTEN >/dev/null); then echo PORT_BUSY; exit 1; fi; mkdir -p "$(pwd)/../mcp_workspace/projects"; docker run -d --name springboot-mcp --user "$(id -u):$(id -g)" -e HOME=/tmp -p "$P:8900" -v "$(pwd)/../mcp_workspace:/workspace" "$SPRINGBOOT_MCP_IMAGE" >/dev/null ;; *) docker start springboot-mcp >/dev/null ;; esac
-    for i in $(seq 1 60); do c=$(curl -s -m 2 -o /dev/null -w '%{http_code}' "http://localhost:$P/sse"); [ "$c" = 200 ] && break; sleep 1; done; [ "$c" = 200 ] && echo READY || { docker logs --tail 50 springboot-mcp; echo NOT_READY; exit 1; }
-
-Outcomes:
-- `MISSING_IMAGE`: tell the user `.env` lacks the image name, and stop.
-- `PORT_BUSY`: tell the user to set a free `SPRINGBOOT_MCP_PORT` in `.env`, and stop. Do not kill processes.
-- `NOT_READY`: report the logs, and stop. Do not call the tool.
-- `READY`: go to Step 2.
-
-`--user` runs the server as the host UID so generated files are owned by the host user. `HOME=/tmp` gives Maven and Spring Initializr a writable home.
-
-
-## Step 2: Collect parameters
-- `dependencies` (required): comma-separated Spring Initializr IDs, for example `web,data-jpa,postgresql`. Ask if missing.
-- `bootVersion` (optional): leave empty so Initializr uses its default GA. Pass a value only if the user asks, without `.RELEASE`.
-- Java version: default to 21. The MCP tool does not accept a `javaVersion` argument, so apply it to the generated POM as described in Step 3.
-- `groupId` (optional, for example `com.example`); `artifactId` (optional, default `demo`, letters, digits, `-`, `_`, `.`).
-
-## Step 3: Invoke the tool
-Call `generateSpringBootProject` on `http://localhost:$SPRINGBOOT_MCP_PORT/sse` (default `8900`). It generates the project into `/workspace/projects/<artifactId>-<timestamp>` and runs `mvn clean install -X`, logging to `mvn-build.log` in that folder.
-
-## Scaffold Verification (engine contract for the bootstrap agent)
-- Embeddable substitute: ANY of `data-jpa`, `data-r2dbc`, `jdbc`, `postgresql`, `mssql`, `oracle`, `flyway`, `r2dbc-*` in the dependency list REQUIRES `h2` in the SAME initial generation call, so the generated `contextLoads` test passes without an external database.
-- Regenerate-once: if `mvn-build.log` shows a datasource/connection/configuration failure, regenerate once with the substitute present and the DEFAULT GA version. Never fix it by removing the persistence dependency, by pinning a different version to mask a build failure, or by hand-writing `pom.xml`.
-- Wrapper permissions: after moving the scaffold out of `mcp_workspace`, verify `mvnw` carries the executable bit (`test -x mvnw`, else `chmod +x mvnw`); the docker copy path routinely drops it and every later gate command is `./mvnw ...`.
-- Version drift: Initializr only serves versions currently GA (Boot 3.x may be gone while a strategy still names it). A rejected `bootVersion` (HTTP 400 or a version error) means: regenerate IMMEDIATELY with the default GA, keep every other parameter, record the deviation in the Step 4 report, and continue - never halt or ask for a version in headless mode, and never pin a different version to mask a BUILD FAILURE (that is the regenerate-once rule's problem, not the version's).
-
-After generation, set `<java.version>21</java.version>` in the generated `pom.xml`, then run `./mvnw clean install` from the generated project to verify Java 21 before moving or reporting the scaffold. Do not pass `javaVersion` to the MCP tool; its current schema rejects additional properties.
-
-## Step 4: Report
-- `BUILD SUCCESS`: project ready at `mcp_workspace/projects/<folder>`; run with `./mvnw spring-boot:run`.
-- Failure or `BUILD FAILURE`: report the error and the `mvn-build.log` path. Do not retry with the same parameters.
+    for i in $(seq 1 60); do c=$(curl -s -m 2 -o /dev/null -w '%{http_code}' "http://localhost:$P/sse"); [ "$c" = 200 ] && break; sleep 1; done; [ "$c" = 200 ] && echo READY || { docker logs --tail 50 springboot-mcp; echo NOT_READY; }
+READY => Step 2; MISSING_IMAGE/PORT_BUSY/NOT_READY => report it + log tail, stop. Never `docker exec`; one shared container.
+# Step 2
+Call it, artifactId kebab-case (empty => default); BUILD SUCCESS => Step 3 else report verbatim.
+# Step 3 - verification (mandatory)
+`mcp_workspace/projects/<name>/pom.xml`: `<java.version>` = strategy pin; drift => ONE regeneration (corrected params). Report name, path, status; never edit generated code.

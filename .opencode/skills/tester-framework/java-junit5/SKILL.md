@@ -2,62 +2,15 @@
 name: java-junit5
 description: Use when the agent-tester writes or reviews Java unit tests with JUnit 5, AssertJ, or Mockito for a blackboard task (stage 1 red phase). Covers test structure, naming, assertions, parameterized and exception tests, Mockito doubles, and what to avoid. Test code only.
 ---
-
-# java-junit5
-
-## Rules
-- Test code only, at task `path`; never edit `src/main`, `pom.xml`, scaffolds.
-- Deps: only those in `pom.xml`; missing → report.
-- Imports: `org.junit.jupiter.api.*`, static AssertJ. BANNED: `org.junit.Test/Assert`, `javax.*`, Hamcrest mixed with AssertJ.
-- Class `<Export>Test`, package mirrors production; no `@SpringBootTest`.
-- Name `method_condition_expected`; one behavior per test; <15 lines; AAA.
-- No shared mutable state; `@BeforeEach` only for stateless fixtures.
-
-## Assertions
-- AssertJ: `isEqualTo`, `hasSize(n).containsExactly(..)`, `isPresent().contains(v)`, `usingRecursiveComparison()`.
-- BigDecimal: `isEqualByComparingTo`.
-- Several checks: `assertAll`.
-- Exceptions: `assertThatThrownBy(() -> ..).isInstanceOf(T)`; no-throw: `assertThatNoException().isThrownBy(..)`.
-- Parameterized: `@ParameterizedTest` + `@CsvSource`/`@ValueSource`/`@EnumSource`/`@MethodSource`.
-
-## Mockito
-- Only out-of-unit collaborators; never mock value objects, records, or unit.
-- `@ExtendWith(MockitoExtension.class)`, `@Mock`, `@InjectMocks`.
-- `when().thenReturn()`, `thenThrow()`, `verify(m, never())`, `verifyNoMoreInteractions`, `ArgumentCaptor`.
-- Strict stubs: remove unused; `lenient()` only if intent needs. No `mockStatic`/`mockConstruction` unless intent names them.
-- Simple ports: private static in-memory fake.
-
-## Spring (only if intent requires)
-- Web: `@WebMvcTest` + `@MockBean` (Boot 3.x) or `@MockitoBean` (Boot 3.4+); check pom; `MockMvc`.
-- Persistence: `@DataJpaTest`, embedded DB only.
-- `@SpringBootTest` only for explicit integration.
-
-## Validation and environment
-- Test every intent constraint: null, blank, negative, range, duplicate.
-- Bean Validation: `Validation.buildDefaultValidatorFactory().getValidator()`, `jakarta.*`.
-- Time: inject `Clock`, `Clock.fixed(..)`; never `Instant.now()`.
-- Fixed ids; never `UUID.randomUUID()` for equality.
-- No network, DB, or file I/O except `@TempDir Path`.
-
-## Red phase
-- Reference intent's API; if missing, keep reference and report symbol. No stubs or placeholder classes.
-- Expect compile error or assertion failure; a passing test is invalid.
-- `--cmd` is argv-only (no shell): no `&&`, `;`, `|`, redirects, or `$VAR`.
-- Run via tool, never raw Maven; keep the test summary in the output (no `-q` on the green
-  re-run: the tool needs execution evidence and reports a silent exit-0 as `not_run`):
-  `python3 .opencode/skills/tester-framework/run-test-tool.py --cwd <project_root> --cmd "./mvnw -Dtest=<TestClass> test"`
-- Use its JSON as the red-phase result: `status`, `missing_symbols`, `failures`, `counts`.
-- Persist it (overwrites on each loop), piping the tool output into the writer:
-  `... run-test-tool.py ... | python3 .github/skills/read-write-file-ddd/writer-red-phase/write-red-phase.py --root <project_root> --task-id <id> --cmd "<the same test command>"`
-- Writer creates `blackboard/red-phase/<id>.json` with `executed: true`; the orchestrator continues only after this file exists.
-
-## BANNED
-- `assertTrue(true)`, empty tests, `@Disabled`, commented asserts.
-- `toString()` or reflection on private fields; `Thread.sleep`; real timeouts.
-- Catching `Exception`/`Throwable`; `try { fail(); } catch`.
-- Testing framework behavior; shared static state; order dependence; `System.out`.
-- Recomputing production logic for expected values.
-
-## Output
-- One class at task path; report red outcome: compile error (missing symbols) or assertion failures, with counts.
-.
+# Rules
+Test code only at `path`; never `src/main`/`pom.xml`. Deps: pom-declared (missing => report). Imports: org.junit.jupiter.api.*, static AssertJ; banned org.junit.*, javax.*, Hamcrest. Class `<Export>Test`; package = ast_hints.package; NO @SpringBootTest. `method_condition_expected`; one behavior/test; <15 lines; AAA; no shared state.
+# Assertions
+isEqualTo; hasSize(n).containsExactly(...); isPresent().contains(v); usingRecursiveComparison(); BigDecimal.isEqualByComparingTo; assertAll; assertThatThrownBy(...).isInstanceOf(T); @ParameterizedTest + @CsvSource/@EnumSource/@MethodSource.
+# Doubles
+Mock only out-of-unit collaborators; never records/value objects/your unit. @ExtendWith(MockitoExtension.class), @Mock/@InjectMocks; when/thenReturn/thenThrow; verify(m,never()), ArgumentCaptor; strict stubs (lenient() only if intent demands); no mockStatic/mockConstruction unless named. Simple ports: in-memory fake OK. Reactive: StepVerifier, never .blockFirst().
+# Spring (only if intent requires)
+Web: @WebMvcTest + @MockBean (Boot 3.x)/@MockitoBean (3.4+), MockMvc - check pom. @DataJpaTest + embedded DB. @SpringBootTest only explicit integration.
+# Coverage & red
+Every intent constraint: null/blank/negative/range/duplicate/boundary. Injected Clock; @TempDir; no network/system env. Expected red = compile_error (missing symbols) or assertion_failure; passing => fix the test. Nested types via enclosing type.
+# Run + record
+`python3 <repo>/.opencode/skills/tester-framework/run-test-tool.py --cwd <project root> --cmd "./mvnw -Dtest=<Class> test"` piped to `write-red-phase.py --root <repo> --task-id <id> --cmd "<argv>"`. Max 2 runs. Forbidden: @Disabled, always-true asserts, sleeps, unseeded random, production edits.

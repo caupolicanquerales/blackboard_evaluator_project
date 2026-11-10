@@ -798,3 +798,24 @@ engine runs the scoped command itself (shape shared with the green gate via
 test_gate.command_from_test_path), pipes the official writer, revalidates. A session is
 charged only when the TEST itself is wrong, never to re-observe a build result.
 Pinned as H8-H10; gauntlet 80/80.
+
+## 22. Profile & skill compression: every agent body and SKILL.md under 450 tokens
+
+Motivation: per-turn session cost is dominated by the fixed prompt - agent profile +
+loaded skills ride on EVERY turn of EVERY session. Nine passes compressed all 9 agents
+(18 files incl. the .github mirrors, kept byte-identical bodies), 15 SKILL.md and the
+2 previously-empty tech-stack skills down to <=1740 chars (~450 tokens) each.
+
+What was preserved verbatim, because these are functional identifiers, not prose:
+writer/tool command lines and their flags, exit-code semantics, blackboard paths,
+payload key names, schema key lists, the mcp-server container blocks, gauntlet-checked
+message substrings. What was removed: connective prose and - more importantly -
+DUPLICATION: coder/tester profiles restated stack syntax that already lives in the
+stack skills; the profiles now delegate ("syntax and payload shaping live in the stack
+skill") so a stack rule has exactly one home.
+
+Incidental contamination fix: tech-stack/java-springboot3 had shipped with the seed's
+base package hardcoded (`com.pulsestream.telemetry`); it now reads the value from the
+strategy's module_layout.base_package - agents/skills remain stack-generic (verified:
+no seed identifier survives in .opencode/{agents,skills}). Gauntlet after compression:
+80/80 green (the H5/H8 substrings live in orchestrators/prompts.py, untouched).

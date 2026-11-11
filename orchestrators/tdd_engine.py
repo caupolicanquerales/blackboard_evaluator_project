@@ -514,14 +514,22 @@ def _pending_bean_demand(result, task):
     defer (zero cost: the payload stays woven, the tree keeps compiling, and an
     auto-grant recharges this unit informed when the world moves). Charged instead
     when the demanded bean IS this unit's own exported type (making that type a bean
-    is its contract's work) or when NO pending peer owns it (a wiring gap beyond the
-    T2 wave: the capped attempt loop must surface it honestly, not wait forever).
+    is its contract's work), when the demanded CLASS is already materialized on the
+    tree (what is missing is REGISTRATION - a @Bean/@Component in someone's own file,
+    the plan's wiring unit; deferring every demanding unit deadlocks the domain on
+    one boot failure - observed live: 19 units blocked on SampleValidator while its
+    woven-but-locked class sat in the tree; the ledger caps bound bystander churn),
+    or when NO pending peer owns it at all (surfacing, not deadlock).
     """
     beans = result.get("bean_demands") if isinstance(result, dict) else None
     if not beans:
         return False
     simple = {str(bean).rsplit(".", 1)[-1] for bean in beans}
     if tasks.exported_product(task) in simple:
+        return False
+    materialized = {f.stem for f in
+                    test_gate.source_files(workspace.project_root_for(task.get("project", "")))}
+    if simple & materialized:
         return False
     owners = _queued_main_file_owners(task.get("project", ""))
     pending = set()

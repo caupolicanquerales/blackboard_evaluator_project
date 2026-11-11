@@ -1,0 +1,25 @@
+{
+  "id": "T2-003",
+  "project": "telemetry-ingestion-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ingestion/domain/SampleValidator.java",
+  "export": "SampleValidator",
+  "method": "validate",
+  "language": "java",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "kind": "class",
+  "signature": "public TelemetrySample validate(TelemetrySample sample)",
+  "returns": "TelemetrySample",
+  "body": "return properties.boundsFor(sample.metric())\n        .filter(bounds -> sample.value() >= bounds.min() && sample.value() <= bounds.max())\n        .map(bounds -> sample.withStatus(TelemetrySample.VALID))\n        .orElseGet(() -> sample.withStatus(TelemetrySample.VALIDATION_FAILED));",
+  "imports": [
+    "com.pulsestream.telemetry.shared.config.TelemetryProperties"
+  ],
+  "members": [
+    "private final TelemetryProperties properties",
+    "public SampleValidator(TelemetryProperties properties) { this.properties = properties; }"
+  ],
+  "missing": [],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-11T14:43:05.422176+00:00"
+}

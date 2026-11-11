@@ -181,6 +181,19 @@ test_gate._write_memo(keep_task, "red", {"status": "assertion_failure", "exit_co
 check("A17 nothing spliced into the tree -> nothing to keep",
       tdd_engine._payload_proven_harmless(keep_task) is False)
 
+# A18: the T2-003 domain freeze. The demanded class IS on the tree (woven by its
+# producer, gate or no gate): what is missing is a REGISTRATION someone can write in
+# their own file - deferring every demanding unit (including the plan's wiring unit)
+# deadlocks the domain, so CHARGE; ledger caps bound the bystander churn.
+(ROOT / "blackboard" / "queue" / "T2-061-p.json").write_text(json.dumps(validator_task))
+(ROOT / "proj" / "src" / "main" / "java" / "x" / "SampleValidator.java").write_text(
+    "package x;\npublic class SampleValidator { }\n")
+check("A18 materialized bean class + pending peer owner -> CHARGE (no domain deadlock)",
+      tdd_engine._blocked_by_peers(BEANY, repo_task) is False)
+(ROOT / "proj" / "src" / "main" / "java" / "x" / "SampleValidator.java").unlink()
+check("A18b same demand, class NOT materialized -> defer stays (waiting can resolve it)",
+      tdd_engine._blocked_by_peers(BEANY, repo_task) is True)
+
 # --- B. charge precedence: own frozen test first ------------------------------
 (ROOT / "blackboard" / "queue" / "T1-050-p.json").write_text(
     json.dumps(task(tid="T1-050", export="BoxTest", deps=[], stage=1,

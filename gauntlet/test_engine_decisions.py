@@ -20,7 +20,8 @@ import settings
 ROOT = Path("/tmp/opencode/gauntlet-engine")
 shutil.rmtree(ROOT, ignore_errors=True)
 for d in ("blackboard/attempts", "blackboard/red-phase", "blackboard/ast-context",
-          "blackboard/coder-changes", "blackboard/queue", "blackboard/error",
+          "blackboard/coder-changes", "blackboard/weave-results",
+          "blackboard/queue", "blackboard/error",
           "blackboard/gate-cache", "proj/src"):
     (ROOT / d).mkdir(parents=True)
 settings.ROOT = ROOT
@@ -158,6 +159,27 @@ check("A13 boot demand for the unit's OWN exported type CHARGES (make my type a 
 check("A14 boot demand no pending peer owns CHARGES (surfacing, not deadlock)",
       tdd_engine._blocked_by_peers(BEANY, repo_task) is False)
 (ROOT / "blackboard" / "complete" / "T2-061-p.json").unlink()
+
+# A15-A17: the quarantine revert policy (live T2-003 domain freeze): reverting a
+# payload the completed suite PROVED harmless deletes a type peers' files import and
+# holes the whole tree; reverting stays exactly for compile poison and unknown verdicts.
+keep_task = task(tid="T2-070", export="com.x.SampleValidator")
+(ROOT / "blackboard" / "coder-changes" / "T2-070.json").write_text(
+    json.dumps({"targetFile": "src/main/java/x/SampleValidator.java"}))
+(ROOT / "blackboard" / "weave-results" / "T2-070.json").write_text(json.dumps({"status": "ok"}))
+test_gate._write_memo(keep_task, "red", {"status": "assertion_failure", "exit_code": 1,
+                                         "failures": [], "counts": {}})
+check("A15 assertion_failure + payload woven in a COMPLETED suite = proven harmless -> KEEP",
+      tdd_engine._payload_proven_harmless(keep_task) is True)
+test_gate._write_memo(keep_task, "red", {"status": "compile_error", "exit_code": 1,
+                                         "missing_symbols": ["X"], "failures": [], "counts": {}})
+check("A16 compile_error verdict -> classic revert (poison or unknown)",
+      tdd_engine._payload_proven_harmless(keep_task) is False)
+(ROOT / "blackboard" / "weave-results" / "T2-070.json").unlink()
+test_gate._write_memo(keep_task, "red", {"status": "assertion_failure", "exit_code": 1,
+                                         "failures": [], "counts": {}})
+check("A17 nothing spliced into the tree -> nothing to keep",
+      tdd_engine._payload_proven_harmless(keep_task) is False)
 
 # --- B. charge precedence: own frozen test first ------------------------------
 (ROOT / "blackboard" / "queue" / "T1-050-p.json").write_text(

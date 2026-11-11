@@ -482,9 +482,31 @@ def _own_test_file(task):
     return ""
 
 
+def _payload_proven_harmless(task):
+    """True when a quarantine-time payload is PROVEN not to poison the shared tree.
+
+    The proof is the just-adjudicated verdict itself (fresh memo on current bytes):
+    status=assertion_failure means the whole module COMPILED and the suite RAN TO
+    COMPLETION with this payload spliced in, and the unit's own test class was the
+    one adjudicated red. Reverting such a payload deletes a type other units' files
+    import - it holes the shared tree and freezes every gate (the live T2-003
+    domain freeze: same-signature quarantine -> revert -> `missing=SampleValidator`
+    -> all 10 peers deferred, forever). A compile_error/not_run/timeout verdict (or
+    no fresh memo at all) keeps the classic revert: poison proven or unproven.
+    """
+    payload = settings.ROOT / "blackboard" / "coder-changes" / f"{task['id']}.json"
+    weave_result = settings.ROOT / "blackboard" / "weave-results" / f"{task['id']}.json"
+    if not (payload.is_file() and weave_result.is_file()):
+        return False
+    memo = test_gate.last_adjudicated(task)
+    if not isinstance(memo, dict):
+        return False
+    result = memo.get("result")
+    return isinstance(result, dict) and result.get("status") == "assertion_failure"
+
+
 def _pending_bean_demand(result, task):
     """True when a context-boot failure demands a bean a PENDING PEER must bring.
-
     `bean_demands` is the runner's normalized 'the application context needs a bean
     of type X' fact (every toolchain keeps its phrasing inside the tool). A boot-wide
     frozen test can only pass once the WHOLE bean graph exists: while a demanded bean
@@ -1017,10 +1039,16 @@ def drain_queue(args, invoke_for_task):
             push_eligible(task_id, stage, ready)
             return
         else:
+            proven_harmless = (stage == settings.TDD_STAGE and _payload_proven_harmless(task))
+            if proven_harmless:
+                detail = detail + " [WOVEN-CLEAN: payload compiles and the suite completes with it in the tree - left woven for peers; only this unit's own tests are red]"
             task_queue.send_to_error(file, detail, task)
             print(f"[fail] {task['id']}: {detail}")
-            if stage == settings.TDD_STAGE:
+            if stage == settings.TDD_STAGE and not proven_harmless:
                 dispatchers.revert_weave(task, discard_payload=True)
+            elif proven_harmless:
+                print(f"[keep ] {task['id']}: payload stays woven - reverting would hole every "
+                      "file that imports this unit's types (the T2-003 domain freeze)")
             remaining.discard(task_id)
             quarantine_dependents(task_id, by_id, files, dependents, remaining)
         processed["count"] += 1

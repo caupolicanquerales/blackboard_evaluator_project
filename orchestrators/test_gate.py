@@ -597,6 +597,17 @@ def _read_memo(task):
     return memo if isinstance(memo, dict) and memo.get("fingerprint") == _fingerprint(task) else None
 
 
+def last_adjudicated(task):
+    """The unit's most recent FRESH gate verdict ({'reason','result'}), or None.
+
+    The drain consults this at quarantine time to decide whether the failing unit's
+    payload is proven harmless to the shared tree (see tdd_engine): the value must
+    come from the CURRENT tree bytes, so a stale memo returns None - reverting is
+    then the safe default.
+    """
+    return _read_memo(task)
+
+
 def _write_memo(task, reason, result):
     settings.GATE_CACHE_DIR.mkdir(parents=True, exist_ok=True)
     memo = {"fingerprint": _fingerprint(task), "reason": reason,

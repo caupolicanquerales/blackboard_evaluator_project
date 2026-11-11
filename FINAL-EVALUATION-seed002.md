@@ -154,3 +154,45 @@ RUNTIME**: nothing in the plan owns application config, migration application, b
 scope, or request-encoding semantics — and the two contract-table contradictions (D1,
 D2) show the table currently pins shapes without pinning the behaviors those shapes
 make possible.
+
+## 6. Next-session checklist (plan-stage fixes to implement in skills + plan gate)
+Read first: PROCESS-REPORT-seed002.md §19 (ast_hints enforcement mechanism), §23 (all
+today's fixes), and this file §5. All changes are plan-stage (skills) + emit-time
+validators — never post-hoc test edits.
+1. `.opencode/skills/architect-practices/task-decomposition-dag/SKILL.md` (+ .github
+   mirror is a symlink — one edit): (a) EVERY duty an intent assigns must be executable
+   by that unit's own `path` artifact or name the owning unit — "also provide <other
+   file>" inside an intent is the D1..D3 root pattern; (b) if any task mentions
+   @ConfigurationProperties/operational values/seed literals, a CONFIG UNIT targeting
+   `src/main/resources/application.*` MUST be scheduled carrying those literal values;
+   (c) pinned request signatures must match the paired test intent encoding
+   (Flux<Dto> = streamed documents; List<Dto> = one array document); (d) ast_hints
+   entries may carry a `semantics` note (e.g. nullability, initial-state sentinel) and
+   MUST for mandatory fields whose type rejects null — the pre-validation state of
+   D1 must be a named constant in the producing unit's table.
+2. `.opencode/agents/agent-architect.md` + `.github/agents/agent-architect.agent.md`:
+   restate (a)-(d) as emission duties (profiles carry rules; skill carries vocabulary).
+3. `orchestrators/task_queue.py` (planning-mode validator, like §19's): reject a task
+   whose intent mentions a file artifact that is not its `path` and not any other
+   task's `path` (config-unit check); reject test+impl unit pairs whose pinned request
+   parameter type contradicts the test intent body-shape words. Emit-time = zero agent
+   sessions wasted.
+4. `.opencode/skills/architect-practices/database-persistence-strategy` + concrete
+   migration skill: a profile fragment must use the RUNTIME property namespace
+   (`spring.flyway.locations`, not `flyway.locations`) and name the consuming unit —
+   or not be written at all. Migrations folder and configured locations must align.
+5. `orchestrators/assembly.py`: deepen the §10.5 schema gate from marker to ALIGNMENT:
+   when `db/migrations/*.sql` is non-empty, the configured locations must contain ≥1
+   migration file (check both classpath-under-src and filesystem paths); else gate red
+   with the actionable line (assembly agent wires it — the only stage allowed).
+6. Tester profiles (`agent-tester` ×2) + `tester-framework` skill: repository/adapter
+   unit gates should use a persistence-slice test (stack skill gives the concrete
+   annotation); boot-wide context tests reserved for composition/wiring units — unless
+   the pinned plan says otherwise.
+7. Gauntlet: extend section G (plan validation) with the (a)-(d) fixtures — accept
+   aligned pairs, REJECT a config-less plan, an intent naming an unowned file, a
+   Flux-vs-array contradiction, and a null-rejecting mandatory field with no
+   initial-state constant. Keep the board wipe-and-rerun protocol of §19 after landing.
+Definition of done: gauntlet green; a fresh seed-002 drain shows D1/D2/D3 dying at
+EMIT time with named reasons (zero coder sessions spent on them), and the final suite
+has no red outside genuinely agent-incapable defects.

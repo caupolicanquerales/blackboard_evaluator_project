@@ -11,5 +11,6 @@
   "feature": null,
   "export": "R2dbcEventLogRepository",
   "intent": "Inspect SQL for append-only guarantee, parameter binding and no blocking; signatures unchanged.",
-  "project": "telemetry-ingestion-processing"
+  "project": "telemetry-ingestion-processing",
+  "error": "dependsOn T2-012 not resolvable in queue or complete"
 }

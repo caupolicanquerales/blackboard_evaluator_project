@@ -892,3 +892,41 @@ reserve boot-wide tests for wiring/assembly units (candidate for the tester prof
 task-decomposition skill next).
 Resume (run3, --retry): T2-012 runs its last granted session; boot failure now defers;
 peers proceed. Watch: first `[wait ] ... bean` line.
+
+### 23.2 R4 - the revert-freeze: WOVEN-CLEAN quarantine (run3 -> run4)
+T2-003's pair-defect quarantine REVERTED SampleValidator.java - a type ten peers'
+files import. Every unit then deferred on `missing=SampleValidator` (compile hole),
+auto-grant restored T2-003, its gate re-verified identically (the failure lives in
+TELEMETRYSAMPLE's null-guard vs the frozen test's null construction - nothing the
+validator's payload can change), reverted again: a 2-session-per-3-minutes freeze
+loop that had already cost the domain twice. The revert doctrine ("quarantined code
+must not poison the shared tree") is right for COMPILE poison and wrong for a payload
+the COMPLETED SUITE JUST PROVED harmless: module compiled, suite ran to completion,
+peers' classes all adjudicated, only the unit's own class red. New rule (commit
+43c0479, gauntlet A15-A17): at quarantine, if the fresh verdict says assertion_failure
+and the payload is woven, KEEP it (`[keep]` + [WOVEN-CLEAN] marker on the error
+reason); compile_error/not_run/no-memo -> classic revert (poison proven or unproven).
+A kept unit that later turns green via re-verification closes without ever leaving
+the tree. Immediate effect (run4): T2-002/005/010 went green seconds after T2-003's
+[keep] - the domain unfroze.
+
+### 23.3 R5 - the materialized-bean deadlock and the first end-to-end boot recovery (run5)
+Even with bean_demands deferral, run4 deadlocked 19 units on one boot demand:
+`No qualifying bean of type SampleValidator` while the CLASS sat materialized (woven
+by the locked T2-003). Deferral was waiting for something waiting could never deliver:
+the missing piece is a REGISTRATION, the plan's wiring unit (T2-015, the only task
+whose ast_hints/intent owns bean wiring) can write in its own file - the §18 A10/A11
+materialized-port doctrine applied to the runtime graph. New rule (commit 5f?? ->
+"materialized-bean rule", gauntlet A18/A18b): once the demanded class exists on the
+tree, CHARGE the demanding units (bounded by same-signature break + fed marker +
+grant cap), never defer; class absent -> defer stays.
+run5 (11:49+): T2-012/T2-008 charged their repeat-break (~1 session each, [keep]-
+woven), T2-003 closed zero-session ('failure already shown'), T2-015 ran its informed
+attempt, registered the bean, WENT GREEN -> T2-009's boot failure resolved by the
+world moving and closed green via skip-agent re-verification at ZERO sessions.
+T3 evaluator wave flowing. 36/49 complete at 11:55, per-unit token cost in run5
+~19.5K (batch + ledger + wave-cache). Remaining quarantines: T2-003 (the honest
+architect-level pair defect: frozen T1-003 constructs TelemetrySample(status=null)
+while completed T2-002's ctor requireNonNull's it - operator/plan arbitration, NOT a
+tool bug, exactly the signal §6/§18 said to expect) and boot victims whose re-verify
+grants now proceed automatically.

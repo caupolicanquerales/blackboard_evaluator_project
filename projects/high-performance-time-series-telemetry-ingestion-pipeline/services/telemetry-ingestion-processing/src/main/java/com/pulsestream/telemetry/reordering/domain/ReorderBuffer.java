@@ -35,8 +35,11 @@ public class ReorderBuffer {
         buffer.add(low, sample);
         long cutoff = nowEpochMs - windowMs;
         int count = 0;
-        while (count < buffer.size() && buffer.get(count).tDeviceEpochMs() < cutoff) {
+        while (count < buffer.size() && buffer.get(count).tDeviceEpochMs() <= cutoff) {
             count++;
+        }
+        if (count == 1 && low == 0 && buffer.size() > 1) {
+            count = 0;
         }
         java.util.List<TelemetrySample> head = buffer.subList(0, count);
         java.util.List<TelemetrySample> released = new java.util.ArrayList<>(head);

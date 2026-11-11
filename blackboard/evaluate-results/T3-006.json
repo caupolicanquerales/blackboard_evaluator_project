@@ -1,0 +1,24 @@
+{
+  "project": "telemetry-ingestion-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ingestion/application/IngestSamplesUseCase.java",
+  "stack": "java-springboot3",
+  "skill": "java-reactive-patterns",
+  "summary": "Audit: pipeline is non-blocking, concatMap gives sequential publish with bounded prefetch/backpressure propagation; validation errors surface as onError signals. No change needed.",
+  "findings": [],
+  "changes": [],
+  "reverts": [],
+  "final_test": {
+    "status": "passed",
+    "counts": {
+      "run": 2,
+      "failures": 0,
+      "errors": 0
+    }
+  },
+  "task_id": "T3-006",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-11T14:56:04.872157+00:00",
+  "engine_diff": [],
+  "engine_diff_files": 0
+}

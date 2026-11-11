@@ -8,6 +8,8 @@ import reactor.core.publisher.Mono;
 import com.pulsestream.telemetry.ingestion.application.TelemetryEventBus;
 import com.pulsestream.telemetry.reordering.application.ReorderingService;
 import com.pulsestream.telemetry.eventlog.application.EventLogService;
+import reactor.core.publisher.Flux;
+import com.pulsestream.telemetry.ingestion.domain.TelemetrySample;
 
 @Component
 public class TelemetryPipelineWiring {
@@ -43,10 +45,11 @@ public class TelemetryPipelineWiring {
     @PostConstruct
     public void start() {
         stop();
-        recordSubscription = eventBus.stream().concatMap(sample -> eventLogService.record(sample).onErrorResume(error -> Mono.empty())).subscribe(unused -> {
+        Flux<TelemetrySample> stream = eventBus.stream();
+        recordSubscription = stream.concatMap(sample -> Mono.defer(() -> eventLogService.record(sample)).onErrorResume(error -> Mono.empty())).subscribe(unused -> {
         }, error -> {
         });
-        reconcileSubscription = reorderingService.windows(eventBus.stream()).concatMap(sample -> eventLogService.reconcile(sample).onErrorResume(error -> Mono.empty())).subscribe(unused -> {
+        reconcileSubscription = reorderingService.windows(stream).concatMap(sample -> Mono.defer(() -> eventLogService.reconcile(sample)).onErrorResume(error -> Mono.empty())).subscribe(unused -> {
         }, error -> {
         });
     }

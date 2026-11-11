@@ -1,0 +1,37 @@
+{
+  "project": "telemetry-ingestion-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/eventlog/domain/EventLogRepository.java",
+  "stack": "java-springboot3",
+  "skill": "java-springboot3",
+  "summary": "Normalized port declaration style; signatures unchanged.",
+  "findings": [
+    "Port is domain-typed and append-only (no update/delete).",
+    "appendRecord and appendRevision both append; kept since signatures must not change."
+  ],
+  "changes": [
+    "Removed redundant public modifier and fully-qualified Mono on appendRecord",
+    "Sorted imports"
+  ],
+  "reverts": [],
+  "final_test": {
+    "status": "passed",
+    "command": "./mvnw -Dtest=EventLogRepositoryTest test",
+    "run": 4,
+    "failures": 0,
+    "errors": 0
+  },
+  "task_id": "T3-011",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-11T14:54:56.911713+00:00",
+  "engine_diff": [
+    {
+      "file": "src/main/java/com/pulsestream/telemetry/eventlog/domain/EventLogRepository.java",
+      "added": 3,
+      "removed": 3,
+      "capped": false,
+      "patch": "--- a/src/main/java/com/pulsestream/telemetry/eventlog/domain/EventLogRepository.java\n+++ b/src/main/java/com/pulsestream/telemetry/eventlog/domain/EventLogRepository.java\n@@ -1,8 +1,8 @@\n package com.pulsestream.telemetry.eventlog.domain;\n \n+import com.pulsestream.telemetry.ingestion.domain.TelemetrySample;\n+import reactor.core.publisher.Flux;\n import reactor.core.publisher.Mono;\n-import reactor.core.publisher.Flux;\n-import com.pulsestream.telemetry.ingestion.domain.TelemetrySample;\n \n public interface EventLogRepository {\n \n@@ -10,5 +10,5 @@\n \n     Flux<TelemetrySample> findByDeviceAndRange(String deviceId, long fromEpochMs, long toEpochMs);\n \n-    public reactor.core.publisher.Mono<Boolean> appendRecord(TelemetrySample sample);\n+    Mono<Boolean> appendRecord(TelemetrySample sample);\n }"
+    }
+  ],
+  "engine_diff_files": 1
+}

@@ -3,9 +3,9 @@
   "consumed": 3,
   "contract": "cd2222f42376d822",
   "fed": "test gate: status=assertion_failure; exit_code=#; tests=# failures=# errors=#; failed com.pulsestream.telemetry.ingestion.domain.samplevalidatortest:",
-  "grants": 2,
+  "grants": 3,
   "id": "T2-003",
   "reason": "test gate: status=assertion_failure; exit_code=1; tests=3 failures=0 errors=3; failed com.pulsestream.telemetry.ingestion.domain.SampleValidatorTest: ",
   "signature": "test gate: status=assertion_failure; exit_code=#; tests=# failures=# errors=#; failed com.pulsestream.telemetry.ingestion.domain.samplevalidatortest:",
-  "updated": 1794408217
+  "updated": 1794408698
 }

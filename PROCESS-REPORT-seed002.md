@@ -862,3 +862,33 @@ Resume evidence (run2): `[skip] discovery files already valid` (zero re-billing)
 mapping GREEN in 4 calls ("writer accepted it" on the first try), strategy/db sessions
 normal (9-15 calls; architect 15/12 WARN noted - session completed, hard kill never
 fired). Drain continues toward the first clean per-stage measurement.
+
+### 23.1 R3 - the context-boot deadlock (T2-012): attribution now covers RUNTIME graphs
+The validation drain stopped itself at the mutual deadlock the §8/§14 pattern predicted:
+T2-012's FROZEN test (T1-012, tester-authored) is `@SpringBootTest` - a unit-scoped
+gate that can only pass when the WHOLE bean graph exists. Boot died demanding
+`No qualifying bean of type SampleValidator` - a PENDING peer's exported product (T2-003,
+still queued). No payload of T2-012 could ever converge: the engine charged 3 attempts
++ 2 informed grants (~5 sessions) on an impossible verdict, then quarantined, and the
+quarantine REVERT removed the class other frozen tests import - every remaining test
+file stopped compiling, all 10 peer units deferred on it, fatal "no progress". Layered
+root causes: (a) `assertion_failure` bypassed `_blocked_by_peers` (status filter was
+compile-only), (b) wave per-unit verdicts DROPPED attribution fields, (c) the §13.1
+fix-4 family (supertype deferral) had no runtime-graph counterpart.
+Fixed (commit 70c0743, gauntlet G18+A12-A14, 96/96):
+1. run-test-tool emits `bean_demands:[simpleType]` for context-boot demands (Spring
+   phrasing parsed in the tool only; neutrality rule held).
+2. test_gate carries bean_demands/member_demands/problem_kinds through the wave per-unit
+   verdict; memo_version 6->7 (stale fieldless verdicts cannot replay).
+3. tdd_engine._pending_bean_demand: DEFER (zero cost, payload stays woven, tree keeps
+   compiling) while a queued/quarantined peer owns a demanded bean; CHARGE when the bean
+   is the unit's own exported type (making one's own type a bean IS the unit's contract)
+   or when no pending peer owns it (surfacing, capped, honest - assembly territory).
+4. This also closes the revert-hole cascade: the boot-blocked unit no longer quarantines,
+   so its class stays on the tree and peers keep compiling.
+Eval signal recorded (NOT fixed in scripts): testers writing `@SpringBootTest` unit
+gates couples stage-2 verification to full-graph assembly; the plan invariant should
+reserve boot-wide tests for wiring/assembly units (candidate for the tester profile +
+task-decomposition skill next).
+Resume (run3, --retry): T2-012 runs its last granted session; boot failure now defers;
+peers proceed. Watch: first `[wait ] ... bean` line.

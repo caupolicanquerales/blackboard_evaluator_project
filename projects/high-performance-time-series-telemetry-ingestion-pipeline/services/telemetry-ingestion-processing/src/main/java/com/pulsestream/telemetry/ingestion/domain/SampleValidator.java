@@ -1,7 +1,9 @@
 package com.pulsestream.telemetry.ingestion.domain;
 
 import com.pulsestream.telemetry.shared.config.TelemetryProperties;
+import org.springframework.stereotype.Component;
 
+@Component
 public class SampleValidator {
 
     private final TelemetryProperties properties;

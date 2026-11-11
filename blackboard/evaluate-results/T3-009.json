@@ -1,0 +1,41 @@
+{
+  "project": "telemetry-ingestion-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/reordering/domain/ReorderBuffer.java",
+  "stack": "java-springboot",
+  "skill": "coder-framework/java-springboot",
+  "summary": "Extracted insertOrdered/countExpired, used imported types, documented tie-breaking and hold-back rule; behavior unchanged.",
+  "findings": [
+    "Insertion uses binary search (O(log n) search, O(n) shift); stable for equal timestamps (upper bound).",
+    "Hold-back rule (count==1, inserted first, others buffered) looks like a green-phase special case; preserved because tests depend on it.",
+    "Buffer unbounded; capacity bounding is outside signature scope."
+  ],
+  "changes": [
+    "Replaced fully-qualified java.util names with imports",
+    "Split accept into insertOrdered and countExpired",
+    "Clarifying comments"
+  ],
+  "reverts": [],
+  "final_test": {
+    "status": "passed",
+    "command": "./mvnw -Dtest=ReorderBufferTest test",
+    "counts": {
+      "run": 8,
+      "failures": 0,
+      "errors": 0
+    }
+  },
+  "task_id": "T3-009",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-11T14:58:50.966772+00:00",
+  "engine_diff": [
+    {
+      "file": "src/main/java/com/pulsestream/telemetry/reordering/domain/ReorderBuffer.java",
+      "added": 23,
+      "removed": 12,
+      "capped": false,
+      "patch": "--- a/src/main/java/com/pulsestream/telemetry/reordering/domain/ReorderBuffer.java\n+++ b/src/main/java/com/pulsestream/telemetry/reordering/domain/ReorderBuffer.java\n@@ -7,7 +7,7 @@\n \n public class ReorderBuffer {\n \n-    private final java.util.List<TelemetrySample> buffer = new java.util.ArrayList<>();\n+    private final List<TelemetrySample> buffer = new ArrayList<>();\n \n     private final long windowMs;\n \n@@ -15,13 +15,27 @@\n         this.windowMs = properties.reorderWindowSeconds() * 1000L;\n     }\n \n-    public java.util.List<TelemetrySample> drain() {\n-        java.util.List<TelemetrySample> all = new java.util.ArrayList<>(buffer);\n+    public List<TelemetrySample> drain() {\n+        List<TelemetrySample> all = new ArrayList<>(buffer);\n         buffer.clear();\n         return all;\n     }\n \n-    public java.util.List<TelemetrySample> accept(TelemetrySample sample, long nowEpochMs) {\n+    public List<TelemetrySample> accept(TelemetrySample sample, long nowEpochMs) {\n+        int insertedAt = insertOrdered(sample);\n+        int count = countExpired(nowEpochMs - windowMs);\n+        // A lone late sample that sorts first is held back while newer ones remain buffered.\n+        if (count == 1 && insertedAt == 0 && buffer.size() > 1) {\n+            count = 0;\n+        }\n+        List<TelemetrySample> head = buffer.subList(0, count);\n+        List<TelemetrySample> released = new ArrayList<>(head);\n+        head.clear();\n+        return released;\n+    }\n+\n+    // Upper-bound binary search keeps equal timestamps in arrival order (stable).\n+    private int insertOrdered(TelemetrySample sample) {\n         int low = 0;\n         int high = buffer.size();\n         while (low < high) {\n@@ -33,17 +47,14 @@\n             }\n         }\n         buffer.add(low, sample);\n-        long cutoff = nowEpochMs - windowMs;\n+        return low;\n+    }\n+\n+    private int countExpired(long cutoff) {\n         int count = 0;\n         while (count < buffer.size() && buffer.get(count).tDeviceEpochMs() <= cutoff) {\n             count++;\n         }\n-        if (count == 1 && low == 0 && buffer.size() > 1) {\n-            count = 0;\n-        }\n-        java.util.List<TelemetrySample> head = buffer.subList(0, count);\n-        java.util.List<TelemetrySample> released = new java.util.ArrayList<>(head);\n-        head.clear();\n-        return released;\n+        return count;\n     }\n }"
+    }
+  ],
+  "engine_diff_files": 1
+}

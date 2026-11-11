@@ -111,6 +111,25 @@ def java_lang_names():
 _REPAIR_STATE = {}   # str(root) -> tree fingerprint the last repair pass ran on
 
 
+_JAVA_NON_CODE = re.compile(
+    r'"""(?:[^\\]|\\.)*?"""'          # text blocks
+    r'|"(?:[^"\\\n]|\\.)*"'           # string literals
+    r"|'(?:[^'\\\n]|\\.)*'"           # char literals
+    r'|//[^\n]*'                      # line comments
+    r'|/\*.*?\*/', re.S)               # block comments
+
+
+def _strip_non_code(text):
+    """Comment/string-blind view of a Java source. The used-name scanners MUST read
+    only this view: scanning raw text let a word inside a prose comment
+    ('// A lone late sample...') resolve to a unique classpath class
+    (checkerframework `...units.qual.A`) and the engine INSERTED A REAL IMPORT
+    into a main-tree file between gates, breaking the whole module compile
+    (observed live, run6 12:10:00).
+    """
+    return _JAVA_NON_CODE.sub(" ", text)
+
+
 def repair_test_imports(project_root):
     """Deterministically fix missing or malformed same-project imports in Java sources.
 
@@ -206,10 +225,11 @@ def repair_test_imports(project_root):
             original = src
             src, _n = re.subn(r"^import ([\w.]+)\.([A-Z]\w*);$", _reroute, src, flags=re.M)
             rewrote = src != original
-            own_declared = set(re.findall(r"\b(?:class|interface|enum|record)\s+([A-Z]\w*)", src))
-            imported_simple = set(re.findall(r"import (?:static )?[\w.]*?\.([A-Z]\w*);", src))
+            code = _strip_non_code(src)   # name scanners read code ONLY (see _strip_non_code)
+            own_declared = set(re.findall(r"\b(?:class|interface|enum|record)\s+([A-Z]\w*)", code))
+            imported_simple = set(re.findall(r"import (?:static )?[\w.]*?\.([A-Z]\w*);", code))
             additions = []
-            for cls in sorted(set(re.findall(r"\b([A-Z]\w*)\b", src))):
+            for cls in sorted(set(re.findall(r"\b([A-Z]\w*)\b", code))):
                 if cls in jlang or cls in imported_simple or cls in own_declared:
                     continue
                 if cls in top_main.get(own_pkg, set()):
@@ -223,7 +243,7 @@ def repair_test_imports(project_root):
                 stmt = next(iter(candidates))
                 if stmt in src:
                     continue
-                if any(re.search(rf"\b{outer}\.{cls}\b", src)
+                if any(re.search(rf"\b{outer}\.{cls}\b", code)
                        for outer in {o for (p, n), os_ in nested_main.items() if n == cls for o in os_}):
                     continue  # already referenced through its outer type: no import needed
                 additions.append(stmt)
@@ -233,20 +253,20 @@ def repair_test_imports(project_root):
                 if any(name == cls for (_p, name) in nested_main) or \
                    any(cls in names for names in top_main.values()):
                     continue
-                if re.search(r"\b" + cls + r"\b", src):
+                if re.search(r"\b" + cls + r"\b", code):
                     additions.append(f"import {jdk_pkg}.{cls};")
             # Unambiguous dependency-provided types used bare (tester/coder forgot the
             # import): add the FQCN the classpath actually offers. Ambiguous simple
             # names stay with the agents - a guessed package compiles against the
             # wrong library, which is worse than the compile error the loop reacts to.
-            for cls in sorted(set(re.findall(r"\b([A-Z]\w*)\b", src))):
+            for cls in sorted(set(re.findall(r"\b([A-Z]\w*)\b", code))):
                 if cls in jlang or cls in imported_simple or cls in own_declared:
                     continue
                 if any(name == cls for (_p, name) in nested_main) or \
                    any(cls in names for names in top_main.values()):
                     continue
                 fqs = external_index.get(cls) or ()
-                if len(fqs) == 1 and re.search(r"(?<![\w.])" + cls + r"\b", src) \
+                if len(fqs) == 1 and re.search(r"(?<![\w.])" + cls + r"\b", code) \
                         and f"import {fqs[0]};" not in src:
                     additions.append(f"import {fqs[0]};")
             if rewrote:

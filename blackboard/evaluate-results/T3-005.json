@@ -1,0 +1,23 @@
+{
+  "project": "telemetry-ingestion-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ingestion/infrastructure/InMemoryTelemetryEventBus.java",
+  "stack": "java-springboot3-webflux",
+  "skill": "java-springboot3",
+  "summary": "CLEAN: emission is retried on FAIL_NON_SERIALIZED (thread-safe, non-blocking), capacity comes from TelemetryProperties.busBufferCapacity(), no secrets/sinks/unbounded collections. No edits.",
+  "findings": [
+    "Retry loop on FAIL_NON_SERIALIZED is a short CPU spin, but non-blocking and standard; left unchanged to preserve behavior."
+  ],
+  "changes": [],
+  "reverts": [],
+  "final_test": {
+    "command": "./mvnw -Dtest=InMemoryTelemetryEventBusTest test",
+    "status": "passed",
+    "source": "gate-cache/T2-005 (unit unchanged since)"
+  },
+  "task_id": "T3-005",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-11T14:57:32.791291+00:00",
+  "engine_diff": [],
+  "engine_diff_files": 0
+}

@@ -513,6 +513,33 @@ check("H10 scoped command shapes derived from path+markers",
       and test_gate.command_from_test_path("src/a_test.py", proj).startswith("python3 -m pytest")
       and test_gate.command_from_test_path("src/a.rb", proj) is None)
 
+# --- R. import repair reads CODE, never prose ---------------------------------
+# The run6 self-inflicted tree break: a word inside a COMMENT ('// A lone late
+# sample...') resolved to a unique classpath class and the engine inserted a real
+# import into a MAIN file between gates, freezing every unit on compile_error.
+rroot = ROOT / "repairtree"
+(rroot / "src" / "main" / "java" / "x").mkdir(parents=True)
+(rroot / "src" / "test" / "java" / "x").mkdir(parents=True)
+holder = rroot / "src" / "main" / "java" / "x" / "Holder.java"
+holder.write_text("package x;\n\n// A lone late sample mentions LocalDate in prose.\n"
+                  "public class Holder { String s = \"InOrder\"; }\n")
+user = rroot / "src" / "test" / "java" / "x" / "HolderTest.java"
+user.write_text("package x;\n\npublic class HolderTest { Zeta w; }\n")
+_real_ext = test_gate.external_type_index
+test_gate.external_type_index = lambda root: {"A": ("org.checker.qual.A",),
+                                              "LocalDate": ("java.time.LocalDate",),
+                                              "Zeta": ("com.ext.Zeta",)}
+try:
+    test_gate.repair_test_imports(rroot)
+finally:
+    test_gate.external_type_index = _real_ext
+check("R1 comment/string words never trigger import insertion (run6 tree-break pin)",
+      "org.checker.qual" not in holder.read_text()
+      and "java.time" not in holder.read_text()
+      and "com.ext" not in holder.read_text(), holder.read_text()[:220])
+check("R2 repair still fires for a real bare use in code (no over-correction)",
+      "import com.ext.Zeta;" in user.read_text(), user.read_text()[:220])
+
 bad_names = [n for n, c in CHECKS if not c]
 print(f"\nENGINE-DECISIONS SUITE: {len(CHECKS) - len(bad_names)}/{len(CHECKS)}")
 print("FAILED:", bad_names if bad_names else "none")

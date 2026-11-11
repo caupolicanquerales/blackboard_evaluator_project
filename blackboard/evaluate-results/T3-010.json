@@ -1,0 +1,28 @@
+{
+  "project": "telemetry-ingestion-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/reordering/application/ReorderingService.java",
+  "stack": "java-springboot3",
+  "skill": "java-springboot3",
+  "summary": "Audit only: no behavior-preserving change possible without altering constructor/signatures. CLEAN.",
+  "findings": [
+    "ReorderingService holds a single injected ReorderBuffer shared by every subscription of windows(); concurrent or repeated subscriptions share mutable buffer state. Fixing needs a per-subscription buffer factory (constructor signature change) - out of scope.",
+    "Clock is read per element inside concatMapIterable and the drain is deferred, so no state is captured at assembly time; pipeline itself is cold and stateless."
+  ],
+  "changes": [],
+  "reverts": [],
+  "final_test": {
+    "command": "./mvnw -Dtest=ReorderingServiceTest test",
+    "status": "passed",
+    "counts": {
+      "run": 4,
+      "failures": 0,
+      "errors": 0
+    }
+  },
+  "task_id": "T3-010",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-11T14:58:06.104858+00:00",
+  "engine_diff": [],
+  "engine_diff_files": 0
+}

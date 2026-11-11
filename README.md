@@ -6,20 +6,35 @@ The orchestrator reads a seed document, discovers bounded contexts, plans the ar
 
 The same workflow can run with either **OpenCode** or **GitHub Copilot CLI**.
 
+Contents:
+
+- [What the project does](#what-the-project-does)
+- [How it works](#how-it-works) — pipeline, stages, agents
+- [Core mechanisms](#core-mechanisms) — planning, red phase, weaving, test gate, assembly, attempts, cost, observability
+- [Gauntlet](#gauntlet-engine-regression-suite) — pre-flight for the engine itself
+- [Repository layout](#repository-layout) · [Prerequisites](#prerequisites) · [Quick start](#quick-start) · [Options](#common-options)
+- [The blackboard task model](#the-blackboard-task-model) — including the `ast_hints` contract table
+- [Scheduling and failure handling](#scheduling-and-failure-handling) · [Verification](#verification) · [Telemetry](#optional-telemetry)
+- [Customizing the system](#customizing-the-system) · [Project status and evaluation runs](#project-status-and-evaluation-runs)
+
 ## What the project does
 
 - Applies Domain-Driven Design (DDD) to split a business description into bounded contexts.
 - Creates an execution strategy and a separate project for each discovered domain.
 - Selects persistence technologies and queues database migration tasks.
-- Breaks application work into dependency-aware test, code, and evaluation tasks.
-- Runs each new test in **red phase**, records the result, and extracts **AST context** for the target class/method to guide the coder.
+- Breaks application work into dependency-aware test, code, and evaluation tasks, each carrying an **`ast_hints` contract table** (package, supertypes, pinned collaborators, exact method signatures) that is validated at emit time — contradictory or under-specified plans are rejected before any agent session is billed.
+- Runs each new test in **red phase**, records the result, and extracts **AST context** for the target class/method to guide the coder. A missing red record is re-derived deterministically by the engine; a session is never paid to re-observe a build result.
+- Batches both stage-1 testers and stage-2 coders: one session writes up to four same-domain units, sharing a budget that scales with the batch.
 - Processes tasks with an in-memory dependency graph instead of repeatedly searching the queue after every task.
-- Groups ready work by domain to improve execution locality and make logs easier to follow.
+- Groups ready work by domain to improve execution locality and make logs easier to follow; a domain's green test gate runs as **one wave** once all payloads are woven, and verdicts are memoized by source-tree fingerprint.
+- Attributes green-gate failures to the owning unit — including **runtime bean-graph demands** — so a unit is never charged for a peer's missing bean.
 - Gives every task a stable, readable filename such as `T0-023-treasury-fx.json`.
 - Validates task schemas and dependencies, quarantines invalid work, and records failures; quarantined tasks can be restored with `--retry`.
 - Audits test-import closure before draining, so a domain that can never go green stops the run early instead of burning agent calls.
-- Enforces per-agent tool-call budgets and batches coder payloads to keep session cost proportional to the work.
+- Enforces per-agent tool-call budgets, kills runaway sessions, caps the number of *billed* sessions per unit through an attempt ledger with honest grant accounting, and keeps every agent profile and skill document under 450 tokens.
 - Runs independent domains concurrently with `--parallel` while preserving stage order.
+- Boots the generated application through a stage-4 assembly gate backed by the scaffold's own smoke test.
+- Ships a **gauntlet** — a 105-case engine regression suite that pins every incident class observed during live drains — and a read-only board status tool with token rollups.
 - Supports optional compilation/build checks and OpenTelemetry tracing.
 
 ## How it works
@@ -31,34 +46,35 @@ Business description (seed/*.md)
    Domain boundary discovery
               |
               v
-       Context mapping
+        Context mapping
               |
               v
    Execution strategy per domain
               |
               v
- Database planning and stage 0 tasks
+  Database planning and stage 0 tasks
               |
               v
- Application task decomposition
+  Application task decomposition (ast_hints contract tables)
               |
               v
-   Red-phase test execution
+   Plan validation + emit gates (schema, closure, contract)
               |
               v
-   AST context extraction
+    Red-phase test execution (batched testers)
               |
               v
-       Validated blackboard queue
+    AST context extraction
               |
               v
-  Closure and Docker audit
+   Dependency-aware, domain-grouped drain:
+   coder (batched) -> weave -> wave test gate -> evaluator
               |
               v
- Dependency-aware, domain-grouped execution
+    Stage-4 assembly gate (application boots)
               |
               v
- Generated projects under projects/<name>/services/
+  Generated projects under projects/<name>/services/
 ```
 
 ### Processing stages
@@ -66,9 +82,9 @@ Business description (seed/*.md)
 | Stage | Agent / Tool | Responsibility |
 | --- | --- | --- |
 | 0 | `agent-container` | Generate the domain project scaffold and database artifacts. |
-| 1 | `agent-tester` | Write tests for one implementation-ready unit, run the red-phase check, and record the result. |
+| 1 | `agent-tester` | Write tests for implementation-ready units (up to four per batch session), run the red-phase check, and record the result. |
 | - | `ast-dispatcher` | Extract AST context for the target class/method into `blackboard/ast-context/<id>.json`. |
-| 2 | `agent-coder` | Implement the unit described by the task, guided by the test and AST context. |
+| 2 | `agent-coder` | Emit the payload (pure method body + creation metadata) for the unit described by the task, guided by the test, AST context, and `ast_hints` table; up to four units per batch session. |
 | - | `code-weaver-dispatcher` | Splice the coder payload into the source tree and record `blackboard/weave-results/<id>.json`. |
 | 3 | `agent-evaluator` | TDD refactor: audit clean code, architecture, performance, and security while keeping the recorded test green; record `blackboard/evaluate-results/<id>.json`. |
 | 4 | `agent-assembly` | Application assembly: boot the generated application. Stack-agnostic — detects the framework, loads its skill from `assembly-framework/`, closes runtime wiring gaps in production sources only, and re-runs the scaffold smoke test until the application starts. The orchestrator verifies the boot with its own deterministic gate; there is no agent artifact to trust. |
@@ -77,8 +93,16 @@ Before these stages, two specialists create the DDD artifacts:
 
 - `domain-boundary-discovery-specialist` writes one domain boundary file per subdomain.
 - `domain-context-mapping-specialist` writes the corresponding context maps.
-- `agent-architect` writes execution strategies and decomposes the work into tasks.
+- `agent-architect` writes execution strategies and decomposes the work into tasks, including each unit's `ast_hints` contract table.
 - `agent-database-architect` selects storage technologies and queues database tasks.
+
+## Core mechanisms
+
+### Plan-time contracts (`ast_hints`)
+
+Every stage-1/stage-2 task may carry an `ast_hints` table — `package`, `implements`, `dependencies` (each collaborator pinned to the task that produces it), and `methods` (exact signature + return spelling). The board validates the table shape at emit time, and a **cross-task gate** rejects any plan that pins a collaborator whose own table does not spell the surface its consumers use. A tester writes assertions only against this table; a coder creates or edits exactly the pinned surface. Because the table is injected directly into the tester's and coder's messages, agents do not hunt the board for filenames.
+
+The seed-002 final evaluation (see [Project status](#project-status-and-evaluation-runs)) attributes the remaining terminal defects to plan content, not mechanism: the table pins *shapes*, and nullability/encoding semantics still live in prose — the follow-up checklist in `FINAL-EVALUATION-seed002.md` §6 is the roadmap for making those first-class.
 
 ### Red-phase checks and AST context extraction
 
@@ -88,6 +112,10 @@ Stage 1 is not just "write a test". The tester agent:
 2. Writes the test at the task `path`.
 3. Runs only that test through `tester-framework/run-test-tool.py`, which parses the output and classifies it as `passed`, `compile_error`, `assertion_failure`, or `not_run`.
 4. Persists the result with `read-write-file-ddd/writer-red-phase/write-red-phase.py` as `blackboard/red-phase/<id>.json`. The file must contain `{"executed": true}` for the orchestrator to proceed.
+
+When at least four stage-1 tasks of the same domain still have no test file on disk, the engine opens a **tester batch session**: one `agent-tester` run writes up to four units, sharing a budget (3 calls for the first unit plus 4 per additional one) whose session timeout scales with the batch. Each unit still runs its own red probe, and the batch message carries each unit's collaborator table so testers share the cold start a per-unit session pays twenty times over. If the batch writes no test, the tasks fall back to ordinary per-task sessions; a thin batch red (passed, unrun, malformed) never quarantines the siblings.
+
+If a test file is on disk but its red record was lost (a session killed mid-unit), `dispatchers.derive_red_phase()` re-runs the scoped command through `run-test-tool.py` and persists the verdict through the official writer — zero sessions spent re-observing a build result the engine can produce itself. A genuinely wrong red still falls through to a real session, because the re-derived record passes the same validation gate.
 
 After validating the red-phase record, the OpenCode orchestrator invokes the **AST dispatcher**:
 
@@ -124,22 +152,37 @@ The dispatcher:
 - Create-if-missing: when the target class or overload does not exist yet (the usual red for new units), the JAR creates the file (package from the FQ `export` or the Maven path), the type, and the method using payload `returns` (`void` when blank), optional `kind` (`class|interface|enum|record`) and `members` (constructor/fields, abstract signatures, enum constants, record components). Member injection is idempotent (normalized-text dedupe), so deferred re-weaves never duplicate fields or ctors. Existing methods keep lexical-preserving edits; created nodes print with the default formatter.
 - Writes the run record to `blackboard/weave-results/<id>.json` with `executed: true`.
 
-A weaving failure is not fatal noise: its compact reason (e.g. body parse error, no overload matching the signature) becomes `agent-coder` retry feedback, so the coder re-emits the payload with `--retry` and the orchestrator weaves again before re-running the gate.
+Two safeguards keep repeated weaves clean:
 
-When at least four stage-2 tasks of the same domain still have no payload, the engine opens a **batch session**: one `agent-coder` run produces up to four units, sharing a single tool budget (4 calls for the first unit plus 3 per additional one) with a session timeout that scales with the batch. If the batch writes no payload, the tasks fall back to ordinary per-task sessions. A woven task defers its green gate while sibling payloads are still pending, so a domain's test gate never runs against a half-woven source tree.
+- **Weave baseline**: before the first weave of a unit, the target file is snapshotted into `blackboard/weave-baseline/<id>/`. Before a *new* payload re-weaves the same file, the engine restores the pre-weave state, so retry payloads cannot merge onto the previous splice and accumulate duplicate constructors or vestigial methods. Cache hits (unchanged payload) never reach a re-weave.
+- **Payload rejects don't burn attempts**: when the rejection comes from the weaver tool itself (the payload does not parse, no builder matched, unsupported grammar), the reason is prefixed and bounced back to the coder without counting a TDD attempt — the unit's code never ran, and a session on a tool rejection is pure waste. Genuine compile/assertion failures still consume attempts.
+
+Coder batching mirrors the tester batching: when at least four stage-2 tasks of the same domain still have no payload, one `agent-coder` batch run produces up to four units (4 calls for the first plus 3 per additional), and if the batch writes no payload the tasks fall back to per-task sessions.
 
 ### Green-phase test gate
 
-Immediately after weaving, the orchestrator re-executes the tester's scoped test command through the shared `tester-framework/run-test-tool.py` — no agent involvement. Before running, it deterministically adds missing same-project imports to test files (a tester can reference a production type in another package without importing it; an added import never changes behavior). The command is read from the `command` key that `write-red-phase.py` records in `blackboard/red-phase/<id>.json`; legacy records without a command get it rebuilt from the stage-1 task path for the detected framework. The verdict — pass or fail — is then memoized in `blackboard/gate-cache/<id>.json` keyed by a fingerprint of the coder payload and both source trees: while nothing changes, the cached verdict is reused and the suite is not re-run. Gate outcomes:
+Immediately after weaving, the orchestrator re-executes the tester's scoped test command through the shared `tester-framework/run-test-tool.py` — no agent involvement. The gate is not run per unit: a woven task defers its gate while sibling payloads of the domain are still pending, so **one wave of full builds decides the whole domain** against a complete source tree, instead of one build per unit where every failure belongs to a peer that never ran.
+
+Before running, the engine deterministically adds missing same-project imports to test files (a tester can reference a production type in another package without importing it; an added import never changes behavior). The name scanners read a **comment- and string-stripped view** of each file — an identifier mentioned in prose is not an import demand (an earlier build inserted a classpath-colliding `A` into a production file because a comment said "A lone late sample"). FQN resolution uses an **external type index** built once per build manifest and cached at `blackboard/external-index.json`.
+
+The command is read from the `command` key that `write-red-phase.py` records in `blackboard/red-phase/<id>.json`; legacy records without a command get it rebuilt from the stage-1 task path for the detected framework. The verdict — pass or fail — is memoized in `blackboard/gate-cache/<id>.json` keyed by a fingerprint of the coder payload and both source trees: while nothing changes, the cached verdict is reused and the suite is not re-run. Runner output is normalized per stack so wave failures arrive **named with messages** (e.g. Surefire console summary lines are rewritten to `Class.method:line » Kind message`); the engine reads only normalized fields and never parses a toolchain's text. Gate outcomes:
 
 | Result | Orchestrator behavior |
 | --- | --- |
 | `status: passed` | continue to the build gate, then mark the task complete (stage 3 `agent-evaluator` becomes ready) |
-| `assertion_failure` / `compile_error` / `error` | retry the stage 2 coder with the compact failure log (up to `MAX_TDD_RETRIES` = 3 attempts) |
+| `assertion_failure` / `compile_error` / `error` | retry the stage 2 coder with the compact failure log (up to `MAX_TDD_RETRIES` = 3 attempts, subject to the attempt ledger) |
 | `not_run` (silent exit-0, or a `&&`/`$VAR` command refused by the argv-only guard) | treated as failure and retried: an unexecuted suite never passes the gate |
 | still failing after 3 attempts | the task moves to `blackboard/error/` and its dependents are quarantined |
 | no `command` recorded and none derivable from the stage-1 path | the gate is skipped with a warning; the build gate still applies |
 | classification | patterns cover Maven/Surefire, Gradle, Jest/ts-jest, pytest, unittest, `go test`, and cargo; the tool ships its own suite in `run-test-tool-tests.py` |
+
+**Runtime bean-graph attribution.** A Spring context boot can fail because of a bean another unit is supposed to provide. The runner normalizes such context-boot demands into structured `bean_demands`; the engine then:
+
+- **defers** the booting unit while a pending peer owns the demanded bean (its payload stays woven — reverting it would open a hole in the shared test tree for the whole domain);
+- applies the **materialized-bean rule**: once the demanded bean's *class* is on the tree, the failure is a registration gap someone can write in their own file (the plan's wiring unit) — the booting unit is charged instead of deferred, or nineteen innocent units deadlock on one boot failure;
+- **charges** only own-bean or ownerless demands, capped and honestly recorded. Wave verdicts carry the attribution fields.
+
+**WOVEN-CLEAN quarantine.** When a unit finally quarantines, the engine reverts only the payloads the evidence proves poisonous. An *adjudicated* `assertion_failure` — the module compiled and the suite completed with the payload woven — keeps that payload in the tree; blanket-reverting failed units was deleting a type ten peers import and freezing an entire domain.
 
 Stage 3 reuses the same mechanism: `agent-evaluator` refactors against the test command recorded in `blackboard/red-phase/<T1-id>.json` (resolved through the task `dependsOn` chain), re-runs it through `run-test-tool.py` after every step, and persists an `evaluate-results` artifact via `writer-evaluate-results.py` — which refuses to write when the final test is not green. The hand-off back to the orchestrator is deterministic: (1) `evaluate_result_problem` checks that `blackboard/evaluate-results/<id>.json` exists, is `executed`, and reports `final_test.status == "passed"`; (2) the stage-3 verify step runs the final **global** compile/check gate for the domain project (`verify_project`, skipped under `--verify none`); (3) only then is the task moved from `blackboard/queue/` to `blackboard/complete/`. Any step failing sends the task to `blackboard/error/` with the reason. After the green hand-off, the engine appends `engine_diff` to the artifact: a ground-truth unified diff of every production source the session actually changed (computed by `refactor_audit.py` from before/after snapshots, not from the agent's self-reported `changes[]`).
 
@@ -150,9 +193,7 @@ The whole test source set compiles on every run, so a single imported production
 - Before draining, the pipeline scans each domain's test imports and aborts with a `task closure` error when an import has no producing task. `python3 orchestrators/closure.py` reports those gaps, and `python3 orchestrators/closure.py --emit` queues the missing stage-2 producer tasks (with matching stage-3 evaluators) through the validated queue writer.
 - At every drain, recorded red-phase results are scanned for packages imported by tests that no task produces and the scaffold classpath lacks. That is a build-file problem stage 2 is not allowed to edit, so the run aborts with a fatal reason instead of retrying. Stale records from before a build-file rewrite are ignored: fixing the scaffold is enough for the run to continue.
 
-### Session cost budgets
-
-Every assistant turn re-sends the whole transcript, so a session's cost is driven by its number of tool calls. Every prompt therefore states an explicit budget (container and database 10 calls, tester 8, coder 6, evaluator and assembly 12, architect 12; a coder batch shares a budget that scales with its unit count), and on the Copilot backend a session streaming past twice its budget is killed mid-run rather than left to burn tokens. Budgets cap one session; the *number* of sessions a unit may bill is capped by the attempt ledger (`blackboard/attempts/`, see Scheduling and failure handling) and by lifetime weave-reject bounce caps. `python3 orchestrators/session_audit.py` reads the local Copilot session records and reports, per agent, the turns, tool calls, and tokens, flagging calls that left the agent's own inputs (skill folder listings, orchestrator or AST-tool source reads, other tasks' records, board-folder listings such as `ls blackboard/coder-changes`, `git`); use `--since-hours`, `--budget-report`, or `--json` to slice the view.
+The "known JDK types" inventory is **derived from the installed JDK** (jrt-filesystem probe, cached, with a fallback vocabulary) instead of a hand-enumerated list — a closure gate must not kill a fresh run because some `java.lang` type was never written down.
 
 ### Application assembly (stage 4)
 
@@ -174,6 +215,42 @@ deterministic gate after every session, retrying the agent with the fresh log up
 
 The tester agent keeps deciding *which* test command proves the unit red (it needs domain judgment); the orchestrator owns *re-running* it for green (pure mechanics). Both use the same generic script, so the red and green executions are identical commands parsed by identical regexes.
 
+### Session cost budgets and compression
+
+Every assistant turn re-sends the whole transcript, so a session's cost is driven by its number of tool calls. Every prompt therefore states an explicit budget (discovery, mapping and container 10 calls, tester 8, coder 6, evaluator, assembly and architect 12, database 14; a coder batch shares a budget that scales with its unit count, 4 + 3 per extra unit, and a tester batch 3 + 4 per extra unit), and on the Copilot backend a session streaming past twice its budget (plus a slack of 4 calls) is killed mid-run rather than left to burn tokens. Budgets cap one session; the *number* of sessions a unit may bill is capped by the attempt ledger (see [Scheduling and failure handling](#scheduling-and-failure-handling)) and by lifetime weave-reject bounce caps.
+
+Because prompt size multiplies across every turn of every session, **all agent profiles and all skill documents are compressed to at most 450 tokens**, delegating language and framework syntax to the stack skills. Compression regressions — a doc teaching an invented payload key, or an approximate enum where the writer demands the canonical one — are pinned mechanically by the gauntlet's K-section (doc-vs-schema checks), and every writer rejection prints an `--emit-template` hint showing the true contract.
+
+`python3 orchestrators/session_audit.py` reads the local Copilot session records and reports, per agent, the turns, tool calls, and tokens, flagging calls that left the agent's own inputs (skill folder listings, orchestrator or AST-tool source reads, other tasks' records, board-folder listings such as `ls blackboard/coder-changes`, `git`); use `--since-hours`, `--budget-report`, or `--json` to slice the view.
+
+### Board status and observability
+
+`python3 orchestrators/status.py` is a read-only, restart-surviving view of the board:
+
+- queue / complete / quarantine counters, queue by stage, and the most recent completions;
+- for every quarantined unit, its attempt-ledger state (budget left, grants used, whether its last failure has been shown to a coder) and quarantine reason — the exact questions the drain answers when relaunched, so the operator sees *why* the board is where it is without reading a log;
+- whether an orchestrator process is currently running;
+- a **token rollup** read from the backend's own session-state events: sessions, input and output tokens since launch, cost per completed unit, and a watchdog line for the largest single session (a runaway is visible continuously instead of by post-mortem).
+
+Drain logs carry timestamps and a heartbeat so a stalled pass is distinguishable from a slow one.
+
+## Gauntlet: engine regression suite
+
+`gauntlet/` is the pre-flight for the pipeline itself: seconds of compute instead of hours of a live 80-unit drain discovering the same bug at agent-session prices.
+
+```bash
+python3 gauntlet/run_gauntlet.py            # skill-script + engine decision suites
+python3 gauntlet/run_gauntlet.py --weaver   # + the Java weaver JUnit (needs Maven)
+```
+
+| File | Tests | Allowed vocabulary |
+|---|---|---|
+| `gauntlet/test_skill_scripts.py` | writer payload schema; run-test-tool normalization | **compiler output text lives only here** — this tool owns syntax (41 cases) |
+| `gauntlet/test_engine_decisions.py` | attribution, wave sharing, attempt ledger + grants, auto-grant | structured fields only — no compiler strings (64 cases) |
+| `ast_weaver_tools/.../JavaASTWeaver*Test.java` | weaver grammar (generics, supertypes, static reconcile, idempotency) | Java — it *is* the Java tool |
+
+Two rules keep the engine stack-agnostic: orchestrator modules read only the runner's normalized fields (`status`, `missing_symbols`, `member_demands`, `classes`) and never parse a toolchain's text; and every incident class from the live drains has a pinned case here — silent payload-key drops (W), javac line shapes (G), receiver-vs-enclosing attribution (A/B), scheduling-hole aborts (A5-A6), rebuild storms (C), blind granted attempts and grant livelock (D/E), doc-vs-schema regressions (K), red-recovery pins (H), import-repair pins (R). **No merge without a case**: a fix that ships without a fixture here is how next week's incident is born.
+
 ## Repository layout
 
 ```text
@@ -184,23 +261,29 @@ The tester agent keeps deciding *which* test command proves the unit red (it nee
 │   ├── pipeline.py                # Shared CLI shape and full phase order
 │   ├── settings.py                # Repository layout, stages, schema, timeouts, call budgets
 │   ├── workspace.py               # Seed and project-root resolution
-│   ├── prompts.py                 # Agent prompt templates and builders
-│   ├── tasks.py                   # Task schema validation and ordering
-│   ├── task_queue.py              # Queue files: read, index, emit, quarantine
+│   ├── prompts.py                 # Agent prompt templates, batch messages, collaborator tables
+│   ├── tasks.py                   # Task schema validation (incl. ast_hints) and ordering
+│   ├── task_queue.py              # Queue files: read, index, emit, quarantine, cross-task gates
 │   ├── ddd.py                     # Discovery, context-map and strategy gates
 │   ├── assembly.py                # Stage 4: scaffold smoke-test detection, task emit, boot gate
 │   ├── closure.py                 # Test-import closure audit; emits missing producer tasks
 │   ├── refactor_audit.py          # Engine-computed diffs of what stage-3 sessions changed
 │   ├── session_audit.py           # Per-session tool-call/token cost audit (Copilot records)
+│   ├── status.py                  # Read-only board status, ledger states, token rollup
 │   ├── verification.py            # Framework build/check gates + Docker access gate
-│   ├── dispatchers.py             # Red-phase, AST/weaver dispatch, evaluate-result and gap checks
-│   ├── test_gate.py               # Green-phase test re-run: import repair, memoized verdicts
-│   ├── attempt_ledger.py          # Cross-pass TDD attempt memory: throttles coder SESSION COUNT
+│   ├── dispatchers.py             # Red-phase/AST/weaver dispatch, weave baseline, red recovery
+│   ├── test_gate.py               # Green gate: import repair, external index, wave verdicts,
+│   │                              #   bean_demands attribution, memoized verdicts, WOVEN-CLEAN
+│   ├── attempt_ledger.py          # Cross-pass TDD attempt memory: billed-session grants
 │   ├── agent_runners.py           # Subprocess plumbing and log tails
-│   ├── tdd_engine.py              # execute_with_tdd and drain_queue
+│   ├── tdd_engine.py              # execute_with_tdd, drain_queue, batching, deferrals
 │   ├── opencode_backend.py        # ``opencode run`` phase runners
 │   ├── copilot_backend.py         # Copilot CLI profiles and phase runners
 │   └── telemetry.py               # Optional OpenTelemetry integration
+├── gauntlet/                      # Engine regression suite (see above)
+│   ├── run_gauntlet.py            # Pre-flight runner (--weaver adds the Java JUnit)
+│   ├── test_skill_scripts.py      # Runner/writer normalization cases (owns compiler vocabulary)
+│   └── test_engine_decisions.py   # Engine decision cases (normalized fields only)
 ├── seed/                          # Input business descriptions
 ├── ast_tools/                     # AST extractor executables (e.g. ast_extrator_java)
 ├── ast_weaver_tools/              # Code-weaver executables (e.g. ast_weaver_java)
@@ -214,39 +297,41 @@ The tester agent keeps deciding *which* test command proves the unit red (it nee
 │   ├── ast-context/               # AST context extracted for each stage-1 task
 │   ├── coder-changes/             # Pure method-body payloads produced by agent-coder
 │   ├── weave-results/             # Code-weaver runs applied to the source tree
-│   ├── evaluate-results/          # Stage-3 refactor reports (final green test + engine diff attached)
+│   ├── weave-baseline/            # Pre-weave file snapshots (retry re-weaves start clean)
+│   ├── evaluate-results/          # Stage-3 refactor reports (final green test + engine diff)
 │   ├── gate-cache/                # Memoized green-test verdicts keyed by source-tree fingerprint
-│   └── attempts/                  # Per-unit TDD attempt ledger (lifetime budgets, last failure, informed retries)
+│   ├── attempts/                  # Per-unit TDD attempt ledger (grants, billed sessions, last failure)
+│   └── external-index.json        # Cached external classpath type index (per build manifest)
 ├── projects/                      # Generated source code
 ├── .opencode/
-│   ├── agents/                    # OpenCode agent definitions
+│   ├── agents/                    # OpenCode agent definitions (all <= 450 tokens)
 │   └── skills/                    # Architecture, stack, coding, testing, and AST guidance
 │       ├── tester-framework/      # Language/framework testing skills + run-test-tool.py
 │       ├── coder-framework/       # Coder rules (java-springboot, java-standard-best-practices)
 │       ├── assembly-framework/    # Per-stack boot skills (java-springboot, python-fastapi, typescript-nestjs)
 │       ├── ast-dispatcher/        # Language detection and AST executable dispatch
-│       ├── code-weaver-dispatcher/ # Language detection and code-weaver dispatch
+│       ├── code-weaver-dispatcher/# Language detection and code-weaver dispatch
 │       ├── read-write-file-ddd/   # Blackboard writers (red-phase, coder-changes, evaluate-results, ...)
 │       ├── architect-practices/   # DDD and architecture skills
 │       ├── tech-stack/            # Technology selection and migration skills
+│       ├── tech-stack-architect/  # Stack-specific architecture guidance (java-reactive-patterns)
 │       └── mcp-server-alternatives/ # Docker MCP scaffolding skills (Spring Boot, FastAPI, NestJS)
 ├── .github/
 │   ├── agents/                    # Copilot agent profiles
 │   └── skills/                    # Copilot-accessible skills (symlink to .opencode/skills)
-└── mcp_server/                    # Docker image sources for the scaffolding MCP servers
+├── mcp_server/                    # Docker image sources for the scaffolding MCP servers
+└── *-seed002.md                   # Evaluation reports from the seed-002 benchmark runs
 ```
 
 ## Prerequisites
 
-- Python 3.9 or newer.
+- Python 3.9 or newer (the orchestrators and the gauntlet use the standard library only; OpenTelemetry packages are optional).
 - One configured agent backend:
   - [OpenCode](https://opencode.ai/) with access to the configured model, or
   - [GitHub Copilot CLI](https://docs.github.com/en/copilot) available as `copilot`.
 - Docker when using the containerized MCP scaffolding servers. The pipeline checks daemon access before stage 0 and fails fast instead of spending agent runs; override with `--skip-docker-check`.
 - The build tools required by the generated projects, such as Maven/Gradle, Node.js, or another stack selected during planning.
 - Java 21 and Maven for the bundled Java AST extractor and code weaver. A fresh clone has no built JARs; the dispatchers compile both tool projects on first use within `TOOL_BUILD_TIMEOUT` seconds (default `900`).
-
-The orchestrators themselves use the Python standard library. OpenTelemetry packages are optional.
 
 Configure the AST extractor, the code weaver, and the MCP scaffolding images in `.env`:
 
@@ -278,9 +363,15 @@ Create a Markdown file in `seed/`. The first level-1 heading is used to derive t
 The repository includes two examples:
 
 - `seed/001_description.md`: a core banking platform covering Accounts, General Ledger, Payments, Treasury/FX, and Compliance/Risk.
-- `seed/002_description.md`: a high-performance time-series telemetry ingestion pipeline.
+- `seed/002_description.md`: a high-performance time-series telemetry ingestion pipeline — the benchmark used for the recorded evaluation runs.
 
-### 2. Run with OpenCode
+### 2. (Optional) run the gauntlet
+
+```bash
+python3 gauntlet/run_gauntlet.py
+```
+
+### 3. Run with OpenCode
 
 ```bash
 python3 orchestrators/orchestrator_opencode.py --seed seed/001_description.md
@@ -318,6 +409,12 @@ projects/my-banking-platform/
     └── compliance-risk/
 ```
 
+While a run is in flight, get the cumulative picture with:
+
+```bash
+python3 orchestrators/status.py
+```
+
 ## Common options
 
 Both orchestrators expose the same main pipeline options:
@@ -349,27 +446,38 @@ A task is a small JSON contract containing everything an agent needs to perform 
 
 ```json
 {
-  "id": "T0-023",
-  "targetAgent": "agent-container",
-  "stage": 0,
-  "dependsOn": ["T0-005"],
-  "path": "db/migrations/V1__store_setup.sql",
-  "kind": "bootstrap",
-  "layer": "root",
-  "feature": null,
-  "export": "treasury-fx-store-setup",
-  "intent": "Create the PostgreSQL store setup for the treasury-fx bounded context.",
-  "project": "treasury-fx"
+  "id": "T2-007",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": ["T1-007"],
+  "path": "src/main/java/com/example/treasury/fx/RateCalculator.java",
+  "kind": "implementation",
+  "layer": "domain",
+  "feature": "fx-rate",
+  "export": "com.example.treasury.fx.RateCalculator",
+  "intent": "Compute the mid rate for a currency pair from pinned provider quotes.",
+  "project": "treasury-fx",
+  "ast_hints": {
+    "package": "com.example.treasury.fx",
+    "implements": [],
+    "dependencies": [
+      {"type": "ExchangeRateProvider", "task_id": "T2-004"}
+    ],
+    "methods": [
+      {"signature": "midRate(String pair)", "returns": "java.math.BigDecimal"}
+    ]
+  }
 }
 ```
 
 Important conventions:
 
-- IDs use `T<stage>-<number>`, for example `T0-023` or `T2-104`.
+- IDs use `T<stage>-<number>` with stage `0`–`4`, for example `T0-023` or `T2-104`.
 - `dependsOn` references earlier task IDs and defines the execution graph.
 - `path` is relative to the domain project root, not the repository root.
 - `project` is the domain slug and determines the generated project, filename suffix, and execution grouping.
 - New queue filenames follow `<id>-<project>.json`, such as `T0-023-treasury-fx.json`.
+- `ast_hints` (optional, required from the architect on planning stages) is validated structurally at emit time: its keys are exactly `package`, `implements`, `dependencies`, `methods`; dependencies pin each consumed type to its producing task; methods carry the exact signature and return spelling. A cross-task gate rejects a plan whose pinned collaborator's own table does not spell the surface its consumers use. Older boards without the table remain readable.
 
 Tasks can be emitted manually through either backend:
 
@@ -389,11 +497,20 @@ At the start of a pass, the orchestrator loads and validates the queue, builds a
 
 This preserves stage order while keeping work from the same domain together. Completing a task updates dependent tasks immediately, without rescanning the queue.
 
-With `--parallel N`, independent domains drain concurrently while at most one task per project is in flight, so two builds never share a `target/` directory. Work that is blocked by not-yet-finished siblings — a woven task whose domain is still being woven, or an evaluator artifact pending while peer units remain queued — is deferred to a later pass instead of being marked failed.
+With `--parallel N`, independent domains drain concurrently while at most one task per project is in flight, so two builds never share a `target/` directory. Work that is blocked by not-yet-finished siblings — a woven task whose domain is still being woven, a unit whose bean demand belongs to a pending peer, or an evaluator artifact pending while peer units remain queued — is deferred to a later pass instead of being marked failed.
 
 Invalid tasks and failed executions are moved to `blackboard/error/` with an `error` field explaining the reason. Dependents of failed work are quarantined when they can no longer be resolved. Successful tasks move to `blackboard/complete/` using the same filename. After fixing the environment or the scaffold, relaunch with `--retry` to restore quarantined tasks to the queue.
 
-Stage 2 supports up to three implementation attempts when verification fails. The verification output is returned to the coder as focused feedback for the next attempt. These attempts are a **lifetime budget per contract**, recorded in `blackboard/attempts/<id>.json`: a later pass or a `--retry` restore of a unit whose task record, red record and AST contract are unchanged does NOT re-arm the budget from zero — it grants one informed attempt whose prompt already carries the previous failure, and a gate verdict whose normalized signature repeats a recorded failure quarantines the unit immediately instead of billing further coder sessions (a session costs a flat per-turn floor regardless of what the agent finds, so re-deriving a known failure is pure waste). The full budget returns only when the unit's contract actually moves. A structural "does not override/implements a supertype" conflict in the unit's own file is deferred, not charged, while the supertype's producing task is still unresolved: the adapter cannot converge on a moving port, and yesterday's wave proved the coder never converges on it blindly.
+### The attempt ledger
+
+Stage 2 supports up to three implementation attempts (`MAX_TDD_RETRIES` = 3) when verification fails. The verification output is returned to the coder as focused feedback for the next attempt. These attempts are a **lifetime budget per contract**, recorded in `blackboard/attempts/<id>.json`:
+
+- A later pass or a `--retry` restore of a unit whose task record, red record and AST contract are unchanged does **not** re-arm the budget from zero — it grants one informed attempt whose prompt already carries the previous failure, and a gate verdict whose normalized signature repeats a recorded failure quarantines the unit immediately instead of billing further coder sessions (a session costs a flat per-turn floor regardless of what the agent finds, so re-deriving a known failure is pure waste). The full budget returns only when the unit's contract actually moves. Up to `MAX_INFORMED_GRANTS` = 3 such grants exist.
+- **Grant accounting is honest**: a grant is consumed only when the attempt actually bills a session. Replay closes that quarantine a unit at zero billed sessions return the grant — a mechanism that spends nothing must not eat the budget cap.
+- A structural "does not override/implements a supertype" conflict in the unit's own file is deferred, not charged, while the supertype's producing task is still unresolved: the adapter cannot converge on a moving port.
+- A weaver *payload rejection* (bad grammar, no builder) bounces back for re-emission without counting an attempt at all.
+
+`python3 orchestrators/status.py` shows each quarantined unit's ledger state and whether a restore would advance, replay-close, or lock it.
 
 ## Verification
 
@@ -419,21 +536,34 @@ The OpenTelemetry SDK and an OTLP HTTP or gRPC trace exporter must also be insta
 ## Customizing the system
 
 - **Business input:** add or replace files in `seed/`.
-- **Agent behavior:** edit `.opencode/agents/` and the matching `.github/agents/` profiles.
+- **Agent behavior:** edit `.opencode/agents/` and the matching `.github/agents/` profiles — keep every profile body at or under 450 tokens; the gauntlet's K-section pins doc-vs-schema truth.
+- **Plan contracts:** the `ast_hints` rules live in `orchestrators/tasks.py` (schema) and `orchestrators/task_queue.py` (cross-task gate); vocabulary and emission duties in the architect skill and profiles.
 - **Test conventions:** update `agent-tester` and the skills under `tester-framework/<language-framework>/`.
 - **Red-phase record:** change `read-write-file-ddd/writer-red-phase/write-red-phase.py` or `orchestrators/dispatchers.py`.
 - **AST extraction:** add builders under `ast-dispatcher/builders/` and configure `AST_TOOL_ROOT`/`AST_JAR_NAME` in `.env`; the dispatchers build the JAR automatically when `target/` is missing (`TOOL_BUILD_TIMEOUT`).
-- **Code weaving:** add weavers under `code-weaver-dispatcher/builders/` and configure `WEAVER_TOOL_ROOT`/`WEAVER_JAR_NAME` in `.env`.
+- **Code weaving:** add weavers under `code-weaver-dispatcher/builders/` and configure `WEAVER_TOOL_ROOT`/`WEAVER_JAR_NAME` in `.env`. Weaver grammar changes go with JUnit cases in `ast_weaver_tools`.
+- **Green-gate behavior:** verdict normalization lives in `tester-framework/run-test-tool.py` (it owns all compiler vocabulary); attribution, deferrals, and WOVEN-CLEAN policy live in `orchestrators/test_gate.py` and `orchestrators/tdd_engine.py`. Add a gauntlet case with every behavior change.
 - **Architecture rules:** update the skills under `.opencode/skills/architect-practices/`.
-- **Technology choices:** update `.opencode/skills/tech-stack/` and the MCP scaffolding configuration (images in `.env`, sources under `mcp_server/`).
+- **Technology choices:** update `.opencode/skills/tech-stack/`, the stack-specific guidance under `tech-stack-architect/`, and the MCP scaffolding configuration (images in `.env`, sources under `mcp_server/`).
 - **Coding standards:** update the skills under `coder-framework/<language-framework>/`.
 - **Application assembly:** edit the per-stack skills under `assembly-framework/<language>-<framework>/` and the detection rules in `orchestrators/assembly.py`.
 - **Task closure:** tune gap detection and the auto-emitted producer tasks in `orchestrators/closure.py`.
-- **Cost control:** change the per-agent tool budgets and hard-kill factor in `orchestrators/settings.py` (`AGENT_CALL_BUDGETS`, `BUDGET_HARD_KILL_FACTOR`) and audit real spend with `orchestrators/session_audit.py`.
+- **Cost control:** change the per-agent tool budgets and hard-kill factor in `orchestrators/settings.py` (`AGENT_CALL_BUDGETS`, `BUDGET_HARD_KILL_FACTOR`) and audit real spend with `orchestrators/session_audit.py` and `orchestrators/status.py`.
 - **Queue behavior:** change `orchestrators/task_queue.py` and `orchestrators/tdd_engine.py`; both backends reuse them.
 
-Keep both backends' agent profiles aligned when changing the workflow.
+Keep both backends' agent profiles aligned when changing the workflow, and run `python3 gauntlet/run_gauntlet.py` before and after — no merge without a case.
 
-## Project status and safety
+## Project status and evaluation runs
 
-This is an experimental evaluator and orchestration project, not a guarantee of production-ready generated software. Agent runs can create and modify files, install project dependencies through their workflows, and execute build commands. Review generated code, migrations, security decisions, and test results before using them in a real environment.
+The pipeline is benchmarked against `seed/002_description.md` with the blackboard wiped clean between runs. The recorded reports live in the repository root:
+
+| Report | Content |
+| --- | --- |
+| `PROJECT-REPORT-seed002.md` | First-run artifact inspection (2026-11-09): why the generated service compiled but could not be shipped. |
+| `REPAIR-NOTES-seed002.md` | Contamination disclosure: operator code edits made before the "tune the process, not the artifact" directive. |
+| `PROCESS-REPORT-seed002.md` | The tuning narrative: every incident, its root cause, the fix, and the gauntlet section that pins it (§1–§23). |
+| `FINAL-EVALUATION-seed002.md` | The authoritative clean-run inspection: health probes, terminal-defect root-cause chains, per-agent scorecard, and the plan-stage fix checklist. |
+
+The current headline (clean validation drain, 2026-11-11, on the generated telemetry service): 45 of 51 units complete, the whole module green at `test-compile`, the application boots green on the scaffold smoke test, the 80-test suite at 65 green with every red isolated in exactly three locked classes and zero collateral reds or flakes across four reruns. No terminal defect was caused by the tooling — the three remaining ones are attributed to plan content (contradicting contract tables and unscheduled config duties), and `FINAL-EVALUATION-seed002.md` §5–§6 records the emit-time validators and skill rules that close those roots.
+
+This remains an experimental evaluator and orchestration project, not a guarantee of production-ready generated software. Agent runs can create and modify files, install project dependencies through their workflows, and execute build commands. Review generated code, migrations, security decisions, and test results before using them in a real environment.

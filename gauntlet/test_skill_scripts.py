@@ -189,6 +189,18 @@ beans = runner.parse(
 check("G18 context-boot bean demand normalized to simple name in bean_demands",
       beans == ["SampleValidator"], str(beans))
 
+# surefire CONSOLE summary style (`Class.method:line » Kind message`) must produce
+# NAMED failures: the live T2-003 pair-defect arrived as errors=3 with an EMPTY
+# message and coders iterated blind.
+console = runner.parse(
+    "[ERROR] Tests run: 3, Failures: 0, Errors: 3, Skipped: 0\n"
+    "[ERROR]   SampleValidatorTest.validate_sameInputTwice_isDeterministic:18 "
+    "\u00bb IllegalArgument validationStatus must not be null\n")
+named = [f for f in console[3] if f["test"]]
+check("G19 console summary failure lines are named with their message",
+      named and "validate_sameInputTwice" in named[0]["test"]
+      and "validationStatus must not be null" in named[0]["message"], str(console[3]))
+
 # --- 3. Agent-doc contract: profiles/skills must teach the writer's REAL keys ----
 # Root cause of the fresh-run mapping burn (2026-11-11): the §22 profile compression
 # rewrote the payload key list into invented vocabulary ("relationships[{type,...}]",

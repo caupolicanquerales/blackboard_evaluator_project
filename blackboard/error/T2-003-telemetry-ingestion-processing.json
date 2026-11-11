@@ -35,5 +35,6 @@
         "returns": "TelemetrySample"
       }
     ]
-  }
+  },
+  "error": "TDD failed after 3 attempts: test gate: status=assertion_failure; exit_code=1; tests=3 failures=0 errors=3; failed com.pulsestream.telemetry.ingestion.domain.SampleValidatorTest:  [failure signature identical to a previous attempt's]"
 }

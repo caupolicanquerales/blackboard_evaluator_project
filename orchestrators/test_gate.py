@@ -580,7 +580,7 @@ def _fingerprint(task):
         # must never replay a pre-kind verdict). v7: bean_demands joined (a context-boot
         # deferral must not replay a verdict that never carried the demand). v3: content
         # fingerprint + wave verdicts (per-file list, not global max-mtime).
-        "memo_version": 7,
+        "memo_version": 8,
         "payload": payload.stat().st_mtime_ns if payload.is_file() else 0,
         "tree": _tree_fingerprint(root),
     }, sort_keys=True)
@@ -861,7 +861,7 @@ def wave_gate_verdict(task, command):
         return None
     root = workspace.project_root_for(task["project"])
     fp = _tree_fingerprint(root)
-    stamp = f"{task['project']}-v7-{fp}"
+    stamp = f"{task['project']}-v8-{fp}"
     cache_file = settings.GATE_CACHE_DIR / f"wave-{stamp}.json"
     data = None
     if cache_file.is_file():
@@ -982,7 +982,7 @@ def green_test_result(task):
             # cache so every sibling unit at this fingerprint shares it for free instead
             # of re-deriving byte-identical output with its own full build.
             root = workspace.project_root_for(task["project"])
-            _write_wave(result, f"{task['project']}-v7-{_tree_fingerprint(root)}")
+            _write_wave(result, f"{task['project']}-v8-{_tree_fingerprint(root)}")
         reason = f"test gate: {_failure_detail(result, task)}"
         telemetry.mark_error(current, reason)
         print(f"[test] {task['id']} {reason}")

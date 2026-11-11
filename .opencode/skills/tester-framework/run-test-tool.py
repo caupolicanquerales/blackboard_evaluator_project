@@ -107,6 +107,12 @@ RE_JEST_SUITE = re.compile(r"^FAIL[ \t]+\S+")
 RE_JEST_CASE = re.compile(r"^\s*[×✕✖]\s+(.+)$")
 # go test: "--- FAIL: TestFoo (0.00s)"
 RE_GO_FAIL = re.compile(r"^--- FAIL: (\S+)")
+# Surefire console summary (NOT the .txt style): the failure/error sections list each
+# case as `Class.method[:line] » ExceptionKind message`. Without this branch the wave
+# verdicts carry UNNAMED, MESSAGE-LESS failures and retrying coders iterate blind (the
+# T2-003 pair-defect evidence: `errors=3` shown as an empty message).
+RE_JUNIT_SUMMARY = re.compile(
+    r"^\s*(?:\[ERROR\]\s+)?((?:[A-Za-z_$][\w$]*\.)+[A-Za-z_$][\w$]*)(?::\d+)?\s+\u00bb\s+(\S.*)$")
 # Assertion messages
 RE_ASSERT = re.compile(
     r"(AssertionError|AssertionFailedError|expected: |Expected:|expecting |Expecting |"
@@ -355,23 +361,28 @@ def parse(output, root=None):
             beans.append(bean.group(1).rsplit(".", 1)[-1])
 
         matched_failure = False
-        m = RE_JUNIT_FAIL.match(line)
+        m = RE_JUNIT_SUMMARY.match(line)
         if m:
-            failures.append({"test": m.group(1).strip(), "message": _follow_message(lines, i)})
+            failures.append({"test": m.group(1).strip(), "message": m.group(2).strip()[:300]})
             matched_failure = True
         else:
-            m = RE_GO_FAIL.match(line)
+            m = RE_JUNIT_FAIL.match(line)
             if m:
-                failures.append({"test": m.group(1), "message": _follow_message(lines, i)})
-                matched_failure = True
-            elif RE_JEST_SUITE.match(line):
-                failures.append({"test": line.strip(), "message": _follow_message(lines, i)})
+                failures.append({"test": m.group(1).strip(), "message": _follow_message(lines, i)})
                 matched_failure = True
             else:
-                m = RE_JEST_CASE.match(line)
+                m = RE_GO_FAIL.match(line)
                 if m:
-                    failures.append({"test": m.group(1).strip(), "message": _follow_message(lines, i)})
+                    failures.append({"test": m.group(1), "message": _follow_message(lines, i)})
                     matched_failure = True
+                elif RE_JEST_SUITE.match(line):
+                    failures.append({"test": line.strip(), "message": _follow_message(lines, i)})
+                    matched_failure = True
+                else:
+                    m = RE_JEST_CASE.match(line)
+                    if m:
+                        failures.append({"test": m.group(1).strip(), "message": _follow_message(lines, i)})
+                        matched_failure = True
         if not matched_failure and RE_ASSERT.search(line) and "Tests run" not in line:
             failures.append({"test": "", "message": line.strip()[:300]})
 

@@ -14,3 +14,5 @@ Web: @WebMvcTest + @MockBean (Boot 3.x)/@MockitoBean (3.4+), MockMvc - check pom
 Every intent constraint: null/blank/negative/range/duplicate/boundary. Injected Clock; @TempDir; no network/system env. Expected red = compile_error (missing symbols) or assertion_failure; passing => fix the test. Nested types via enclosing type.
 # Run + record
 `python3 <repo>/.opencode/skills/tester-framework/run-test-tool.py --cwd <project root> --cmd "./mvnw -Dtest=<Class> test"` piped to `write-red-phase.py --root <repo> --task-id <id> --cmd "<argv>"`. Max 2 runs. Forbidden: @Disabled, always-true asserts, sleeps, unseeded random, production edits.
+
+

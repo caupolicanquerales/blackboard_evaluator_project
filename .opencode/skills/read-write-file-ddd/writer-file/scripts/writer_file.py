@@ -977,6 +977,13 @@ def main():
     reason = validate_report(report)
     if reason:
         print(f"[writer-file] invalid report: {reason}", file=sys.stderr)
+        kind = next((k for k, v in REPORT_KINDS.items() if v == report_type), None)
+        if kind:
+            print(
+                f"[writer-file] hint: rerun this script with --emit-template {kind} "
+                "and match the skeleton's keys exactly",
+                file=sys.stderr,
+            )
         return EXIT_INVALID
 
     if args.check_source and report_type == REPORT_TYPE_FINAL:

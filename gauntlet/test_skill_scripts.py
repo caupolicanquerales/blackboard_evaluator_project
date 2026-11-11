@@ -177,6 +177,59 @@ probs_tsc = runner.parse("src/Order.ts(7,3): error TS2420: Class 'Order' incorre
 check("G17 tsc implements phrasing normalizes to the same kind",
       probs_tsc and probs_tsc[0]["kind"] == "supertype", str(probs_tsc))
 
+# --- 3. Agent-doc contract: profiles/skills must teach the writer's REAL keys ----
+# Root cause of the fresh-run mapping burn (2026-11-11): the §22 profile compression
+# rewrote the payload key list into invented vocabulary ("relationships[{type,...}]",
+# "shared_languages"); the agent obeyed the docs and every writer call was rejected
+# (10 paid calls, zero artifacts). These pins fail if docs and schema ever drift.
+ddd_writer = load_module(REPO / ".opencode/skills/read-write-file-ddd/writer-file/scripts/writer_file.py", "ddd_writer")
+
+DOC_PAIRS = {
+    "ctxmap": ([REPO / ".github/agents/domain-context-mapping-specialist.agent.md",
+                REPO / ".opencode/agents/domain-context-mapping-specialist.md",
+                REPO / ".opencode/skills/architect-practices/domain-context-mapping/SKILL.md"],
+               [*ddd_writer.CONTEXT_MAP_FILE_KEYS, *ddd_writer.CONTEXT_MAP_KEYS,
+                *ddd_writer.FLOW_REQUIRED_KEYS, "source_report"],
+               ["relationships[{", "trigger_event", "failure_posture", "type,direction"]),
+    "slice": ([REPO / ".github/agents/domain-boundary-discovery-specialist.agent.md",
+               REPO / ".opencode/agents/domain-boundary-discovery-specialist.md"],
+              [*ddd_writer.SLICE_KEYS, *ddd_writer.SUBDOMAIN_KEYS,
+               "term", "definition", "item", "impact_on_boundaries"],
+              []),
+}
+for kind, (docs, want_keys, banned) in DOC_PAIRS.items():
+    for doc in docs:
+        text = doc.read_text(encoding="utf-8")
+        missing = [k for k in want_keys if k not in text]
+        check(f"K1-{kind} {doc.name[:24]} teaches the writer keys", not missing, f"missing {missing}")
+        stale = [b for b in banned if b in text]
+        check(f"K2-{kind} no invented-schema vocabulary in {doc.name[:24]}", not stale, f"found {stale}")
+
+reject = subprocess.run([sys.executable, str(REPO / ".opencode/skills/read-write-file-ddd/writer-file/scripts/writer_file.py"),
+                         "--source", "-", "--report-type", "context-map", "--target", str(root / "cm.json")],
+                        input=json.dumps({"schema_version": "1.0", "report_type": "context-map"}),
+                        capture_output=True, text=True)
+check("K3 writer rejection names the one-call escape hatch (--emit-template)",
+      reject.returncode == 1 and "--emit-template context-map" in reject.stderr,
+      (reject.stderr or reject.stdout)[-200:])
+skeleton = subprocess.run([sys.executable, str(REPO / ".opencode/skills/read-write-file-ddd/writer-file/scripts/writer_file.py"),
+                           "--emit-template", "context-map"], capture_output=True, text=True)
+skeleton_ok = skeleton.returncode == 0
+# feed the emitted skeleton back through the writer: it must validate end-to-end
+# (cwd = a temp tree whose blackboard/domain provides the context names it cites)
+if skeleton_ok:
+    kit = Path(tempfile.mkdtemp())
+    (kit / "blackboard" / "domain").mkdir(parents=True)
+    (kit / "blackboard" / "domain" / "domain-boundary-pin.json").write_text(json.dumps(
+        {"bounded_contexts": [{"name": "Example Context"}]}), encoding="utf-8")
+    fed = subprocess.run([sys.executable, str(REPO / ".opencode/skills/read-write-file-ddd/writer-file/scripts/writer_file.py"),
+                          "--source", "-", "--report-type", "context-map",
+                          "--target", "blackboard/context-map/out.json"],
+                         input=skeleton.stdout, capture_output=True, text=True, cwd=kit)
+    skeleton_ok = fed.returncode == 0
+check("K4 context-map skeleton is schema-valid through the writer itself",
+      skeleton_ok, "emit or self-feed rejected")
+
 # --- summary -----------------------------------------------------------------
 bad_names = [n for n, c in CHECKS if not c]
 print(f"\nSKILL-SCRIPTS SUITE: {len(CHECKS) - len(bad_names)}/{len(CHECKS)}")

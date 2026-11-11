@@ -7,8 +7,8 @@ Boundary slices => validated context maps, one per slice in `blackboard/context-
 # Workflow
 1. Confirm inputs: each context has responsibility, language, owned invariants, source of truth. Invariant with 0 or 2 owners => return to discovery.
 2. Interactions per pair: what crosses; initiator; up/downstream; what never leaks; eventual vs immediate. Nothing crosses => separate ways.
-3. Relationships (choose by condition, not fashion; direction upstream->downstream):
-   Partnership - co-evolve (coupling risk). Shared kernel - minimal explicit shared model (keep tiny, name it). Customer-supplier - negotiated downstream needs. Conformist - downstream adopts upstream model (loses freedom). Anti-corruption layer - downstream translates foreign model (protects, costs maintenance). Published language - stable versioned contract for many consumers.
+3. Relationships (`relationship` EXACT enum; choose by condition, not fashion; direction upstream->downstream):
+   Partnership - co-evolve (coupling risk). Shared kernel - minimal explicit shared model (keep tiny, name it). Customer-supplier - negotiated downstream needs. Conformist - downstream adopts upstream model (loses freedom). Anticorruption layer - downstream translates foreign model (protects, costs maintenance). Open host service / published language - stable versioned contract for many consumers. Separate ways - nothing meaningful crosses.
 4. Flows: event, payload concept, initiator, consumers, consistency (transactional|eventual), failure posture (retry/idempotency/compensation).
 5. Protections: translate where models diverge; name what may cross (events, published language) and what may not (internals).
 6. Validate: publishes/consumes matched; unmatched terms flagged ambiguous; no unnamed coupling cycles.

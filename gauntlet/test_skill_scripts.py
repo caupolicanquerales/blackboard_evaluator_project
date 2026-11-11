@@ -189,7 +189,7 @@ DOC_PAIRS = {
                 REPO / ".opencode/agents/domain-context-mapping-specialist.md",
                 REPO / ".opencode/skills/architect-practices/domain-context-mapping/SKILL.md"],
                [*ddd_writer.CONTEXT_MAP_FILE_KEYS, *ddd_writer.CONTEXT_MAP_KEYS,
-                *ddd_writer.FLOW_REQUIRED_KEYS, "source_report"],
+                *ddd_writer.FLOW_REQUIRED_KEYS, "source_report", *ddd_writer.RELATIONSHIPS],
                ["relationships[{", "trigger_event", "failure_posture", "type,direction"]),
     "slice": ([REPO / ".github/agents/domain-boundary-discovery-specialist.agent.md",
                REPO / ".opencode/agents/domain-boundary-discovery-specialist.md"],

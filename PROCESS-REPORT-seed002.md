@@ -966,3 +966,12 @@ green): three real defects, each named with evidence:
    one informed pass pending.
 Everything else converged autonomously this clean run: 45 units, assembly green,
 and every stuck unit WOVEN-CLEAN (their code stays in the tree, peers compile).
+
+### 23.5 Validation drain verdict
+COMPLETE: 45/51 units, app boots, 80-test suite 65 green (all 15 reds in the 3 locked
+classes), zero operator product edits. Full artifact inspection + per-agent root-cause
+attribution moved to FINAL-EVALUATION-seed002.md — the three terminal defects are all
+PLAN-stage (two contract-table contradictions authored by the architect + one unschedulable
+config duty), and four latent runtime defects (empty bounds, 5s window vs 60s spec,
+migrations never applied, singleton mutable buffer) trace to the same root: the plan
+decomposed the domain but not the runtime. No terminal defect is tooling-caused anymore.

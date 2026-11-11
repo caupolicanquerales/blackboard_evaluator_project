@@ -1,0 +1,15 @@
+{
+  "id": "T3-001",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-001"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/shared/config/TelemetryProperties.java",
+  "kind": "refactor",
+  "layer": "shared",
+  "feature": null,
+  "export": "TelemetryProperties",
+  "intent": "Inspect and refactor TelemetryProperties: keep it immutable, defensively copy the bounds map, no hardcoded operational values in code, public signatures unchanged, tests stay green.",
+  "project": "telemetry-ingestion-processing"
+}

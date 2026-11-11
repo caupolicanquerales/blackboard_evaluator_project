@@ -1,0 +1,39 @@
+{
+  "id": "T2-014",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-014"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/eventlog/api/EventLogController.java",
+  "kind": "code",
+  "layer": "interface",
+  "feature": null,
+  "export": "EventLogController",
+  "intent": "@RestController GET /api/v1/telemetry/records delegating to EventLogService.query; thin, non-blocking, read-only (no mutating endpoints).",
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.eventlog.api",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "EventLogService",
+        "task_id": "T2-013"
+      },
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-002"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "public EventLogController(EventLogService service)",
+        "returns": ""
+      },
+      {
+        "signature": "public Flux<TelemetrySample> records(@RequestParam String deviceId, @RequestParam long from, @RequestParam long to)",
+        "returns": "reactor.core.publisher.Flux<TelemetrySample>"
+      }
+    ]
+  }
+}

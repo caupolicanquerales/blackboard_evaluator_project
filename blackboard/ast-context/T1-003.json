@@ -1,0 +1,59 @@
+{
+  "task_id": "T1-003",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "SampleValidator",
+    "constructors": [
+      [
+        "properties"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "validator",
+        "method": "validate",
+        "args": [
+          "sample(\"temp\", value)"
+        ],
+        "returns": "TelemetrySample"
+      },
+      {
+        "receiver": "validator",
+        "method": "validate",
+        "args": [
+          "sample(\"humidity\", 10.0)"
+        ],
+        "returns": "TelemetrySample"
+      },
+      {
+        "receiver": "validator",
+        "method": "validate",
+        "args": [
+          "input"
+        ],
+        "returns": "TelemetrySample"
+      },
+      {
+        "receiver": "validator",
+        "method": "validate",
+        "args": [
+          "input"
+        ]
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class SampleValidatorTest {",
+      "private final SampleValidator validator = new SampleValidator(properties);",
+      "TelemetrySample result = validator.validate(sample(\"temp\", value));",
+      "TelemetrySample result = validator.validate(sample(\"temp\", value));",
+      "TelemetrySample result = validator.validate(sample(\"humidity\", 10.0));",
+      "TelemetrySample result = validator.validate(input);",
+      "assertThat(validator.validate(input)).isEqualTo(validator.validate(input));"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

@@ -1,0 +1,46 @@
+{
+  "id": "T1-001",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/shared/config/TelemetryPropertiesTest.java",
+  "kind": "test",
+  "layer": "shared",
+  "feature": null,
+  "export": "TelemetryPropertiesTest",
+  "intent": "Shared config for all three contexts. Test that TelemetryProperties exposes reorder window seconds, bus buffer capacity and per-metric Bounds exactly as constructed, boundsFor returns Optional.empty for unknown metrics, and rejects non-positive window/capacity with IllegalArgumentException. No magic numbers asserted beyond constructor inputs.",
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.shared.config",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "public TelemetryProperties(long reorderWindowSeconds, int busBufferCapacity, java.util.Map<String, TelemetryProperties.Bounds> metricBounds)",
+        "returns": ""
+      },
+      {
+        "signature": "public long reorderWindowSeconds()",
+        "returns": "long"
+      },
+      {
+        "signature": "public int busBufferCapacity()",
+        "returns": "int"
+      },
+      {
+        "signature": "public java.util.Map<String, TelemetryProperties.Bounds> metricBounds()",
+        "returns": "java.util.Map<String, TelemetryProperties.Bounds>"
+      },
+      {
+        "signature": "public java.util.Optional<TelemetryProperties.Bounds> boundsFor(String metric)",
+        "returns": "java.util.Optional<TelemetryProperties.Bounds>"
+      },
+      {
+        "signature": "public record Bounds(double min, double max)",
+        "returns": ""
+      }
+    ]
+  }
+}

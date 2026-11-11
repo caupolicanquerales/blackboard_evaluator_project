@@ -1,0 +1,15 @@
+{
+  "id": "T3-010",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-010"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/reordering/application/ReorderingService.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "ReorderingService",
+  "intent": "Inspect reactive correctness (no shared mutable state leaks across subscriptions); signatures unchanged.",
+  "project": "telemetry-ingestion-processing"
+}

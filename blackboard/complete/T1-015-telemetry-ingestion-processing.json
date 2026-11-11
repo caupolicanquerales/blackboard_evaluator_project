@@ -1,0 +1,55 @@
+{
+  "id": "T1-015",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-002",
+    "T1-004",
+    "T1-010",
+    "T1-013"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/shared/config/TelemetryPipelineWiringTest.java",
+  "kind": "test",
+  "layer": "shared",
+  "feature": null,
+  "export": "TelemetryPipelineWiringTest",
+  "intent": "Cross-context event wiring with mocks: start() subscribes once to TelemetryEventBus.stream(); every sample is passed to EventLogService.record (idempotent append) and the stream is also fed through ReorderingService.windows; a failure in record does not terminate the subscription; stop() disposes subscriptions.",
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.shared.config",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetryEventBus",
+        "task_id": "T2-004"
+      },
+      {
+        "type": "ReorderingService",
+        "task_id": "T2-010"
+      },
+      {
+        "type": "EventLogService",
+        "task_id": "T2-013"
+      },
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-002"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "public TelemetryPipelineWiring(TelemetryEventBus eventBus, ReorderingService reorderingService, EventLogService eventLogService)",
+        "returns": ""
+      },
+      {
+        "signature": "public void start()",
+        "returns": "void"
+      },
+      {
+        "signature": "public void stop()",
+        "returns": "void"
+      }
+    ]
+  }
+}

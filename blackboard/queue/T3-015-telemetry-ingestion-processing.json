@@ -1,0 +1,15 @@
+{
+  "id": "T3-015",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-015"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/shared/config/TelemetryPipelineWiring.java",
+  "kind": "refactor",
+  "layer": "shared",
+  "feature": null,
+  "export": "TelemetryPipelineWiring",
+  "intent": "Inspect subscription lifecycle and error isolation; signatures unchanged.",
+  "project": "telemetry-ingestion-processing"
+}

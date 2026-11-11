@@ -1,0 +1,45 @@
+{
+  "id": "T1-009",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-001",
+    "T1-002"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/reordering/domain/ReorderBufferTest.java",
+  "kind": "test",
+  "layer": "domain",
+  "feature": null,
+  "export": "ReorderBufferTest",
+  "intent": "Backfill Reordering & Windowing. With window from TelemetryProperties: accept(sample, nowEpochMs) returns the samples whose tDeviceEpochMs <= now - window, ordered ascending by tDeviceEpochMs (never t_ingress); a late sample arriving within the window is placed in correct chronological position; samples inside the window are retained; drain() returns all remaining sorted by t_device and empties the buffer.",
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.reordering.domain",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetryProperties",
+        "task_id": "T2-001"
+      },
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-002"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "public ReorderBuffer(TelemetryProperties properties)",
+        "returns": ""
+      },
+      {
+        "signature": "public java.util.List<TelemetrySample> accept(TelemetrySample sample, long nowEpochMs)",
+        "returns": "java.util.List<TelemetrySample>"
+      },
+      {
+        "signature": "public java.util.List<TelemetrySample> drain()",
+        "returns": "java.util.List<TelemetrySample>"
+      }
+    ]
+  }
+}

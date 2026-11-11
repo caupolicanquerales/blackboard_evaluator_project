@@ -1,0 +1,15 @@
+{
+  "id": "T3-002",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-002"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/domain/TelemetrySample.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "TelemetrySample",
+  "intent": "Inspect and refactor TelemetrySample: immutability, framework-free domain, public signatures unchanged, tests green.",
+  "project": "telemetry-ingestion-processing"
+}

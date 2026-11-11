@@ -1,0 +1,13 @@
+{
+  "id": "T0-001",
+  "targetAgent": "agent-container",
+  "stage": 0,
+  "dependsOn": [],
+  "kind": "bootstrap",
+  "layer": "root",
+  "feature": null,
+  "export": "project_scaffold",
+  "project": "telemetry-ingestion-processing",
+  "path": "pom.xml",
+  "intent": "Generate the telemetry-ingestion-processing project root and build scaffold at /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/ using the mcp-server-springboot skill (Maven, Java 17+, Spring Boot 3.x, base package com.pulsestream.telemetry), with dependencies spring-boot-starter-webflux, spring-boot-starter-validation, spring-boot-starter-data-r2dbc, r2dbc-postgresql, flyway-core, flyway-database-postgresql, spring-boot-starter-jdbc, postgresql, r2dbc-h2 (test/embedded), h2 (test/embedded), spring-boot-starter-test, reactor-test. Requirements: (1) a SINGLE composition root - exactly one @SpringBootApplication class, never a second boot class beside the scaffold's; (2) test-run timeout guardrails - maven-surefire-plugin with forkedProcessTimeoutInSeconds and a JUnit 5 junit.jupiter.execution.timeout.default property so a hung test fails fast; (3) a schema MIGRATION RUNNER wired into the build: Flyway (flyway-core + flyway-database-postgresql, spring.flyway.* config, db/migration folder) with embedded in-process H2 (r2dbc-h2 + h2, PostgreSQL compatibility mode) as substitute so the scaffold's own boot test passes without external services. Include ./mvnw wrapper."
+}

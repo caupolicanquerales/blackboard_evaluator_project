@@ -1,0 +1,74 @@
+{
+  "slug": "telemetry-ingestion-processing",
+  "project_root": "projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing",
+  "tech_stack": {
+    "language": "Java 17+",
+    "framework": "Spring Boot 3.x WebFlux (reactive, Mono/Flux, no blocking I/O)",
+    "build": "Maven (./mvnw)",
+    "version_note": "The business description names no explicit versions; baseline is the java-springboot3 skill stack facts (Java 17+, Spring Boot 3.x). Scaffold must not copy versions from tool defaults beyond that.",
+    "dependencies": [
+      "spring-boot-starter-webflux",
+      "spring-boot-starter-validation",
+      "spring-boot-starter-data-r2dbc",
+      "r2dbc-postgresql",
+      "flyway-core",
+      "flyway-database-postgresql",
+      "spring-boot-starter-jdbc",
+      "postgresql",
+      "r2dbc-h2",
+      "h2",
+      "spring-boot-starter-test",
+      "reactor-test"
+    ]
+  },
+  "modules": ["telemetry-ingestion-processing"],
+  "layers": ["domain", "application", "infrastructure", "api", "shared"],
+  "bounded_contexts": [
+    "Telemetry Sample Ingestion",
+    "Backfill Reordering & Windowing",
+    "Telemetry Event Log"
+  ],
+  "module_layout": {
+    "base_package": "com.pulsestream.telemetry",
+    "packages": {
+      "ingestion": "ingestion.{domain,application,infrastructure,api}",
+      "reordering": "reordering.{domain,application,infrastructure}",
+      "eventlog": "eventlog.{domain,application,infrastructure}",
+      "shared": "shared.config"
+    },
+    "integration": [
+      "Ingestion -> Reordering: in-process reactive event stream (Sinks) carrying TelemetrySampleValidated / TelemetrySampleValidationFailed; bounded buffers with backpressure",
+      "Ingestion -> Event Log: same events, conformist, idempotent append keyed by sample identity",
+      "Reordering -> Event Log: TelemetryBackfillReconciled appended as Event Revision",
+      "Reordering -> external: TelemetryWindowEmitted versioned published event (open host service)",
+      "external devices -> Ingestion: anticorruption mapper from device payload to Telemetry Sample at API entry"
+    ]
+  },
+  "build_order": [
+    "project_scaffold",
+    "shared externalized config (metric boundaries, reorder window 60s, buffer capacities)",
+    "Ingestion domain + validation use case + API endpoint",
+    "Event Log domain + append-only repository port",
+    "Reordering domain + window buffer use case",
+    "Persistence adapters + Flyway migrations (database step)",
+    "Cross-context event wiring"
+  ],
+  "risks": [
+    "Handling of samples later than the 60s window is unowned between Reordering and Event Log (open question)",
+    "Unbounded buffers under burst load; capacities and timeouts must be configuration keys",
+    "Blocking I/O must not appear in the ingestion path",
+    "At-least-once delivery requires idempotent append by sample identity",
+    "TelemetryRevisionAppended has no in-slice consumer",
+    "Description lacks explicit versions; downstream must not default them silently"
+  ],
+  "persistence": {
+    "owning_contexts": ["Telemetry Event Log"],
+    "drivers": ["append-only write throughput", "auditability", "time-range reads by device timestamp"],
+    "storage_paradigm": "Relational, time-ordered append-only store (reactive access)",
+    "data_model": "Raw record table keyed by sample identity (device, metric, t_device) with validation status and t_ingress; separate revision table appended for corrections/backfills referencing the original record; no updates or deletes",
+    "queries": ["Append record idempotently", "Append revision", "Read records and revisions by device and t_device range"],
+    "migration_plan": "Expand-only versioned migrations run at startup; embedded in-process substitute for boot tests",
+    "backup_recovery": "Periodic snapshots plus WAL-style point-in-time recovery; append-only nature simplifies replay",
+    "open_questions": ["Retention policy", "Late-arrival (>60s) ownership"]
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "id": "T1-010",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-002",
+    "T1-004",
+    "T1-009"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/reordering/application/ReorderingServiceTest.java",
+  "kind": "test",
+  "layer": "application",
+  "feature": null,
+  "export": "ReorderingServiceTest",
+  "intent": "Backfill Reordering & Windowing use case. With a mocked-free ReorderBuffer fed through the service and a fixed Clock: windows(Flux<TelemetrySample>) emits samples in ascending t_device order once past the window, emits remaining buffered samples ordered on upstream completion, and every sample (incl. VALIDATION_FAILED) is emitted exactly once.",
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.reordering.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ReorderBuffer",
+        "task_id": "T2-009"
+      },
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-002"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "public ReorderingService(ReorderBuffer buffer, java.time.Clock clock)",
+        "returns": ""
+      },
+      {
+        "signature": "public Flux<TelemetrySample> windows(Flux<TelemetrySample> samples)",
+        "returns": "reactor.core.publisher.Flux<TelemetrySample>"
+      }
+    ]
+  }
+}

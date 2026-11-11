@@ -1,0 +1,35 @@
+{
+  "id": "T2-004",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-004"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/application/TelemetryEventBus.java",
+  "kind": "code",
+  "layer": "application",
+  "feature": null,
+  "export": "TelemetryEventBus",
+  "intent": "Outbound port (interface) of the in-process reactive event stream carrying validated/validation-failed samples to Reordering and Event Log. Domain types only; non-blocking.",
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-002"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> publish(TelemetrySample sample)",
+        "returns": "reactor.core.publisher.Mono<Void>"
+      },
+      {
+        "signature": "Flux<TelemetrySample> stream()",
+        "returns": "reactor.core.publisher.Flux<TelemetrySample>"
+      }
+    ]
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "id": "T2-005",
+  "project": "telemetry-ingestion-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ingestion/infrastructure/InMemoryTelemetryEventBus.java",
+  "export": "InMemoryTelemetryEventBus",
+  "kind": "class",
+  "method": "publish",
+  "language": "java",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "signature": "public Mono<Void> publish(TelemetrySample sample)",
+  "returns": "reactor.core.publisher.Mono<Void>",
+  "annotations": [
+    "Component"
+  ],
+  "implements": [
+    "TelemetryEventBus"
+  ],
+  "methodAnnotations": [
+    "Override"
+  ],
+  "members": [
+    "private final Sinks.Many<TelemetrySample> sink;",
+    "public InMemoryTelemetryEventBus(TelemetryProperties properties) { this.sink = Sinks.many().multicast().onBackpressureBuffer(properties.busBufferCapacity()); }",
+    "@Override public Flux<TelemetrySample> stream() { return sink.asFlux(); }"
+  ],
+  "body": "return Mono.defer(() -> {\n    Sinks.EmitResult result;\n    do {\n        result = sink.tryEmitNext(sample);\n    } while (result == Sinks.EmitResult.FAIL_NON_SERIALIZED);\n    if (result.isFailure() && result != Sinks.EmitResult.FAIL_ZERO_SUBSCRIBER) {\n        return Mono.<Void>error(new IllegalStateException(\"Telemetry event bus emit failed: \" + result));\n    }\n    return Mono.<Void>empty();\n});",
+  "imports": [
+    "org.springframework.stereotype.Component",
+    "reactor.core.publisher.Flux",
+    "reactor.core.publisher.Mono",
+    "reactor.core.publisher.Sinks",
+    "com.pulsestream.telemetry.ingestion.application.TelemetryEventBus",
+    "com.pulsestream.telemetry.ingestion.domain.TelemetrySample",
+    "com.pulsestream.telemetry.shared.config.TelemetryProperties"
+  ],
+  "missing": [],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-11T14:07:50.182437+00:00"
+}

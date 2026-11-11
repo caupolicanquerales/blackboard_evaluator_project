@@ -1,0 +1,42 @@
+{
+  "id": "T1-002",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/ingestion/domain/TelemetrySampleTest.java",
+  "kind": "test",
+  "layer": "domain",
+  "feature": null,
+  "export": "TelemetrySampleTest",
+  "intent": "Telemetry Sample Ingestion context. Test the TelemetrySample value record: accessors, constants VALID and VALIDATION_FAILED, isValidationFailed true only for VALIDATION_FAILED, withStatus returns a copy changing only the status (original unchanged), and blank deviceId/metric or null status rejected with IllegalArgumentException.",
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.domain",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "public record TelemetrySample(String deviceId, String metric, long tDeviceEpochMs, double value, long tIngressEpochMs, String validationStatus)",
+        "returns": ""
+      },
+      {
+        "signature": "public static final String VALID",
+        "returns": "String"
+      },
+      {
+        "signature": "public static final String VALIDATION_FAILED",
+        "returns": "String"
+      },
+      {
+        "signature": "public boolean isValidationFailed()",
+        "returns": "boolean"
+      },
+      {
+        "signature": "public TelemetrySample withStatus(String status)",
+        "returns": "TelemetrySample"
+      }
+    ]
+  }
+}

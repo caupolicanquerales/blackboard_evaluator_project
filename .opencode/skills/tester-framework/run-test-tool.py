@@ -19,6 +19,9 @@ Output JSON:
   error as supertype | missing-symbol | other (phrase tables live HERE): the engine's
   cascade-vs-structural and moving-port deferral decisions read this field, and the
   blamed file's declared `supertypes` ride along for supertype entries.
+  bean_demands[simpleTypeName] when a context boot failed demanding a bean that does
+  not exist yet (Spring phrasing parsed HERE only): the engine defers the demanding
+  unit while the bean belongs to a peer's exported product.
   A "passed" status requires evidence of executed tests; a silent exit-0 run is
   reported as "not_run" so the orchestrator never mistakes an unexecuted suite
   for a green gate.
@@ -66,6 +69,9 @@ RE_JAVAC_LOCATION_VARIABLE = re.compile(
 RE_TSC_PROPERTY = re.compile(r"Property ['\"]([\w]+)['\"] does not exist on type ['\"]([\w.\[\]<>]+)['\"]")
 RE_PY_ATTRIBUTE = re.compile(r"AttributeError: ['\"](\w+)['\"] object has no attribute ['\"](\w+)['\"]")
 RE_GO_FIELD = re.compile(r"([\w]+) undefined \(type ([\w.\-]+) has no field or method ([\w]+)\)")
+# Context-boot demands: "No qualifying bean of type 'x.Y' available" (Spring) - the
+# engine needs the SIMPLE TYPE NAME as a normalized field, never this phrasing.
+RE_MISSING_BEAN = re.compile(r"No qualifying bean of type '([\w.$]+)'")
 # Problem kinds per compile-error location, normalized to `problem_kinds`:
 # [{"file": NAME, "line": N, "kind": supertype|missing-symbol|other}]. The engine's
 # cascade-vs-structural and supertype-conflict decisions read this FIELD instead of
@@ -237,6 +243,8 @@ def parse(output, root=None):
     demands = []
     # Normalized problem-kind ledger: see PROBLEM_KIND_PATTERNS above.
     problems = []
+    # Context-boot bean demands, normalized to simple type names (index 7).
+    beans = []
 
     def owner_of(type_name):
         head = type_name.split("<", 1)[0]
@@ -342,6 +350,9 @@ def parse(output, root=None):
         if m:
             demands.append({"member": m.group(3), "owner": owner_of(m.group(2)),
                             "kind": "method"})
+        bean = RE_MISSING_BEAN.search(line)
+        if bean:
+            beans.append(bean.group(1).rsplit(".", 1)[-1])
 
         matched_failure = False
         m = RE_JUNIT_FAIL.match(line)
@@ -365,7 +376,8 @@ def parse(output, root=None):
             failures.append({"test": "", "message": line.strip()[:300]})
 
     return (compile_hit, unique(missing), unique(missing_packages), failures[:MAX_LIST],
-            parse_counts(output), unique_demands(demands), unique_problems(problems))
+            parse_counts(output), unique_demands(demands), unique_problems(problems),
+            unique(beans))
 
 
 def parse_counts(output):
@@ -459,7 +471,7 @@ def main():
         print(json.dumps(result, indent=2))
         return 1
 
-    compile_hit, missing, missing_packages, failures, counts, demands, problems = parse(output, args.cwd)
+    compile_hit, missing, missing_packages, failures, counts, demands, problems, beans = parse(output, args.cwd)
     status = classify(exit_code, compile_hit, missing, failures, counts, output)
     result = {
         "status": status,
@@ -474,6 +486,8 @@ def main():
         result["member_demands"] = demands
     if problems:
         result["problem_kinds"] = problems
+    if beans:
+        result["bean_demands"] = beans
     if status != "passed":
         result["excerpt"] = excerpt(output)
     print(json.dumps(result, indent=2))

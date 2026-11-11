@@ -1,0 +1,43 @@
+{
+  "id": "T2-009",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-009"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/reordering/domain/ReorderBuffer.java",
+  "kind": "code",
+  "layer": "domain",
+  "feature": null,
+  "export": "ReorderBuffer",
+  "intent": "Invariant: order by t_device only; packets delayed up to the configured window are re-indexed chronologically. Internal sorted structure; accept inserts then releases samples older than now - window (window from TelemetryProperties.reorderWindowSeconds, no hardcoded 60). Framework-free, not thread-safe by contract (caller serializes).",
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.reordering.domain",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetryProperties",
+        "task_id": "T2-001"
+      },
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-002"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "public ReorderBuffer(TelemetryProperties properties)",
+        "returns": ""
+      },
+      {
+        "signature": "public java.util.List<TelemetrySample> accept(TelemetrySample sample, long nowEpochMs)",
+        "returns": "java.util.List<TelemetrySample>"
+      },
+      {
+        "signature": "public java.util.List<TelemetrySample> drain()",
+        "returns": "java.util.List<TelemetrySample>"
+      }
+    ]
+  }
+}

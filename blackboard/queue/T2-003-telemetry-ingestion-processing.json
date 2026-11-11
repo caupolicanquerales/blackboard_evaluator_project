@@ -1,0 +1,39 @@
+{
+  "id": "T2-003",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-003"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/domain/SampleValidator.java",
+  "kind": "code",
+  "layer": "domain",
+  "feature": null,
+  "export": "SampleValidator",
+  "intent": "Invariant: every sample is validated against its Sensor Metric Boundary from TelemetryProperties before propagation; violators (or metrics with no configured bounds) are flagged VALIDATION_FAILED via withStatus, never dropped; valid ones flagged VALID. Pure, non-blocking, no hardcoded bounds.",
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.domain",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetryProperties",
+        "task_id": "T2-001"
+      },
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-002"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "public SampleValidator(TelemetryProperties properties)",
+        "returns": ""
+      },
+      {
+        "signature": "public TelemetrySample validate(TelemetrySample sample)",
+        "returns": "TelemetrySample"
+      }
+    ]
+  }
+}

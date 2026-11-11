@@ -1,0 +1,75 @@
+{
+  "task_id": "T1-011",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "EventLogRepository",
+    "constructors": [],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "repository",
+        "method": "appendRecord",
+        "args": [
+          "sample"
+        ],
+        "stubbed_to": "Mono.just(true)"
+      },
+      {
+        "receiver": "repository",
+        "method": "appendRecord",
+        "args": [
+          "sample"
+        ]
+      },
+      {
+        "receiver": "repository",
+        "method": "appendRevision",
+        "args": [
+          "sample"
+        ],
+        "stubbed_to": "Mono.empty()"
+      },
+      {
+        "receiver": "repository",
+        "method": "appendRevision",
+        "args": [
+          "sample"
+        ]
+      },
+      {
+        "receiver": "repository",
+        "method": "findByDeviceAndRange",
+        "args": [
+          "\"dev-1\"",
+          "0L",
+          "5000L"
+        ],
+        "stubbed_to": "Flux.just(sample)"
+      },
+      {
+        "receiver": "repository",
+        "method": "findByDeviceAndRange",
+        "args": [
+          "\"dev-1\"",
+          "0L",
+          "5000L"
+        ]
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class EventLogRepositoryTest {",
+      "private final EventLogRepository repository = mock(EventLogRepository.class);",
+      "when(repository.appendRecord(sample)).thenReturn(Mono.just(true));",
+      "StepVerifier.create(repository.appendRecord(sample)).expectNext(true).verifyComplete();",
+      "when(repository.appendRevision(sample)).thenReturn(Mono.empty());",
+      "StepVerifier.create(repository.appendRevision(sample)).verifyComplete();",
+      "when(repository.findByDeviceAndRange(\"dev-1\", 0L, 5000L)).thenReturn(Flux.just(sample));",
+      "StepVerifier.create(repository.findByDeviceAndRange(\"dev-1\", 0L, 5000L))",
+      "List<String> names = Arrays.stream(EventLogRepository.class.getDeclaredMethods())"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

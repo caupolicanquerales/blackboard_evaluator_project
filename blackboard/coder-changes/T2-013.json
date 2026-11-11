@@ -1,0 +1,34 @@
+{
+  "id": "T2-013",
+  "project": "telemetry-ingestion-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/eventlog/application/EventLogService.java",
+  "export": "EventLogService",
+  "kind": "class",
+  "method": "record",
+  "language": "java",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "signature": "public Mono<Void> record(TelemetrySample sample)",
+  "returns": "reactor.core.publisher.Mono<Void>",
+  "body": "return repository.appendRecord(sample).then();",
+  "annotations": [
+    "Service"
+  ],
+  "members": [
+    "private final EventLogRepository repository;",
+    "public EventLogService(EventLogRepository repository) { this.repository = repository; }",
+    "public Mono<Void> reconcile(TelemetrySample revision) { return repository.appendRevision(revision); }",
+    "public Flux<TelemetrySample> query(String deviceId, long fromEpochMs, long toEpochMs) { return repository.findByDeviceAndRange(deviceId, fromEpochMs, toEpochMs); }"
+  ],
+  "imports": [
+    "org.springframework.stereotype.Service",
+    "reactor.core.publisher.Mono",
+    "reactor.core.publisher.Flux",
+    "com.pulsestream.telemetry.ingestion.domain.TelemetrySample",
+    "com.pulsestream.telemetry.eventlog.domain.EventLogRepository"
+  ],
+  "missing": [],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-11T14:05:20.858993+00:00"
+}

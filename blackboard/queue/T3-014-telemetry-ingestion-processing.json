@@ -1,0 +1,15 @@
+{
+  "id": "T3-014",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-014"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/eventlog/api/EventLogController.java",
+  "kind": "refactor",
+  "layer": "interface",
+  "feature": null,
+  "export": "EventLogController",
+  "intent": "Inspect controller is thin and read-only; signatures unchanged.",
+  "project": "telemetry-ingestion-processing"
+}

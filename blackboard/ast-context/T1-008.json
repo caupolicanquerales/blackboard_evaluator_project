@@ -1,0 +1,18 @@
+{
+  "task_id": "T1-008",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "IngressController",
+    "constructors": [],
+    "static_calls": [],
+    "calls": [],
+    "verified": [],
+    "usage_lines": [
+      "@WebFluxTest(IngressController.class)",
+      "class IngressControllerTest {"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

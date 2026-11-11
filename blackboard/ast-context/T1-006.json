@@ -1,0 +1,41 @@
+{
+  "task_id": "T1-006",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "IngestSamplesUseCase",
+    "constructors": [
+      [
+        "validator",
+        "eventBus"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "useCase",
+        "method": "ingest",
+        "args": [
+          "Flux.just(a, b)"
+        ]
+      },
+      {
+        "receiver": "useCase",
+        "method": "ingest",
+        "args": [
+          "Flux.empty()"
+        ]
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class IngestSamplesUseCaseTest {",
+      "IngestSamplesUseCase useCase = new IngestSamplesUseCase(validator, eventBus);",
+      "StepVerifier.create(useCase.ingest(Flux.just(a, b)))",
+      "IngestSamplesUseCase useCase = new IngestSamplesUseCase(validator, eventBus);",
+      "StepVerifier.create(useCase.ingest(Flux.empty()))"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

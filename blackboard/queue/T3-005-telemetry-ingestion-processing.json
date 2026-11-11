@@ -1,0 +1,15 @@
+{
+  "id": "T3-005",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-005"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/infrastructure/InMemoryTelemetryEventBus.java",
+  "kind": "refactor",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "InMemoryTelemetryEventBus",
+  "intent": "Inspect for thread-safe emission, no blocking, config-driven capacity; signatures unchanged.",
+  "project": "telemetry-ingestion-processing"
+}

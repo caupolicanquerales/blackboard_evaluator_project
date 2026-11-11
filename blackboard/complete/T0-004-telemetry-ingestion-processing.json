@@ -1,0 +1,15 @@
+{
+  "id": "T0-004",
+  "targetAgent": "agent-container",
+  "stage": 0,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "db/migrations/flyway-profile.properties",
+  "kind": "bootstrap",
+  "layer": "root",
+  "feature": null,
+  "export": "flyway-profile",
+  "intent": "Configuration profile: Flyway startup migration settings for the PostgreSQL telemetry_event_log schema, clean disabled, for Telemetry Event Log context.",
+  "project": "telemetry-ingestion-processing"
+}

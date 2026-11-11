@@ -177,6 +177,18 @@ probs_tsc = runner.parse("src/Order.ts(7,3): error TS2420: Class 'Order' incorre
 check("G17 tsc implements phrasing normalizes to the same kind",
       probs_tsc and probs_tsc[0]["kind"] == "supertype", str(probs_tsc))
 
+# bean_demands: Spring context-boot phrasing normalizes HERE (the engine never reads it)
+beans = runner.parse(
+    "[ERROR] Tests run: 3, Failures: 0, Errors: 3 -- in x.R2dbcEventLogRepositoryTest\n"
+    "java.lang.IllegalStateException: Failed to load ApplicationContext\n"
+    "Caused by: org.springframework.beans.factory.UnsatisfiedDependencyException: "
+    "Error creating bean with name 'ingressController': Unsatisfied dependency expressed "
+    "through constructor parameter 0: No qualifying bean of type "
+    "'com.pulsestream.telemetry.ingestion.domain.SampleValidator' available: expected at "
+    "least 1 bean which qualifies as autowire candidate. Dependency annotations: {}\n")[7]
+check("G18 context-boot bean demand normalized to simple name in bean_demands",
+      beans == ["SampleValidator"], str(beans))
+
 # --- 3. Agent-doc contract: profiles/skills must teach the writer's REAL keys ----
 # Root cause of the fresh-run mapping burn (2026-11-11): the §22 profile compression
 # rewrote the payload key list into invented vocabulary ("relationships[{type,...}]",

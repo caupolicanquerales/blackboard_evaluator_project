@@ -1,0 +1,15 @@
+{
+  "id": "T3-011",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-011"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/eventlog/domain/EventLogRepository.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "EventLogRepository",
+  "intent": "Inspect port stays append-only and domain-typed; signatures unchanged.",
+  "project": "telemetry-ingestion-processing"
+}

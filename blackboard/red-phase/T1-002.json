@@ -1,0 +1,288 @@
+{
+  "status": "compile_error",
+  "exit_code": 1,
+  "missing_symbols": [
+    "EventLogService",
+    "TelemetrySample",
+    "EventLogRepository",
+    "EventLogController"
+  ],
+  "missing_packages": [],
+  "failures": [],
+  "counts": {},
+  "classes": {},
+  "member_demands": [
+    {
+      "member": "EventLogService",
+      "owner": "EventLogControllerTest",
+      "kind": "class",
+      "context": "private EventLogService service;"
+    },
+    {
+      "member": "EventLogRepository",
+      "owner": "EventLogServiceTest",
+      "kind": "class",
+      "context": "private EventLogRepository repository;"
+    },
+    {
+      "member": "EventLogService",
+      "owner": "EventLogServiceTest",
+      "kind": "class",
+      "context": "private EventLogService service;"
+    },
+    {
+      "member": "TelemetrySample",
+      "owner": "EventLogServiceTest",
+      "kind": "class",
+      "context": "private final TelemetrySample sample ="
+    },
+    {
+      "member": "EventLogRepository",
+      "owner": "EventLogRepositoryTest",
+      "kind": "class",
+      "context": "private final EventLogRepository repository = mock(EventLogRepository.class);"
+    },
+    {
+      "member": "TelemetrySample",
+      "owner": "EventLogRepositoryTest",
+      "kind": "class",
+      "context": "private final TelemetrySample sample ="
+    },
+    {
+      "member": "TelemetrySample",
+      "owner": "TelemetrySampleTest",
+      "kind": "class",
+      "context": "private TelemetrySample sample(String status) {"
+    },
+    {
+      "member": "EventLogController",
+      "owner": "EventLogControllerTest",
+      "kind": "class",
+      "context": "client = WebTestClient.bindToController(new EventLogController(service)).build();"
+    },
+    {
+      "member": "TelemetrySample",
+      "owner": "EventLogControllerTest",
+      "kind": "class",
+      "context": "TelemetrySample sample = new TelemetrySample(\"dev-1\", \"temp\", 1000L, 21.5, 2000L, TelemetrySample.VALID);"
+    }
+  ],
+  "problem_kinds": [
+    {
+      "file": "EventLogControllerTest.java",
+      "line": 6,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventLogControllerTest.java",
+      "line": 7,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventLogControllerTest.java",
+      "line": 15,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventLogServiceTest.java",
+      "line": 8,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventLogServiceTest.java",
+      "line": 9,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventLogServiceTest.java",
+      "line": 23,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventLogServiceTest.java",
+      "line": 26,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventLogServiceTest.java",
+      "line": 28,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventLogRepositoryTest.java",
+      "line": 7,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventLogRepositoryTest.java",
+      "line": 17,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventLogRepositoryTest.java",
+      "line": 18,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetrySampleTest.java",
+      "line": 12,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventLogControllerTest.java",
+      "line": 20,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventLogControllerTest.java",
+      "line": 21,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventLogControllerTest.java",
+      "line": 26,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventLogServiceTest.java",
+      "line": 29,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventLogServiceTest.java",
+      "line": 49,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventLogRepositoryTest.java",
+      "line": 19,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventLogRepositoryTest.java",
+      "line": 46,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetrySampleTest.java",
+      "line": 13,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetrySampleTest.java",
+      "line": 18,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetrySampleTest.java",
+      "line": 25,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetrySampleTest.java",
+      "line": 30,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetrySampleTest.java",
+      "line": 31,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetrySampleTest.java",
+      "line": 36,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetrySampleTest.java",
+      "line": 41,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetrySampleTest.java",
+      "line": 46,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetrySampleTest.java",
+      "line": 48,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetrySampleTest.java",
+      "line": 50,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetrySampleTest.java",
+      "line": 56,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetrySampleTest.java",
+      "line": 58,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetrySampleTest.java",
+      "line": 60,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetrySampleTest.java",
+      "line": 66,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetrySampleTest.java",
+      "line": 73,
+      "kind": "missing-symbol"
+    }
+  ],
+  "excerpt": [
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/ingestion/domain/TelemetrySampleTest.java:[48,9] cannot find symbol",
+    "[ERROR]   symbol:   class TelemetrySample",
+    "[ERROR]   location: class com.pulsestream.telemetry.ingestion.domain.TelemetrySampleTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/ingestion/domain/TelemetrySampleTest.java:[48,52] cannot find symbol",
+    "[ERROR]   symbol:   variable TelemetrySample",
+    "[ERROR]   location: class com.pulsestream.telemetry.ingestion.domain.TelemetrySampleTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/ingestion/domain/TelemetrySampleTest.java:[50,55] cannot find symbol",
+    "[ERROR]   symbol:   variable TelemetrySample",
+    "[ERROR]   location: class com.pulsestream.telemetry.ingestion.domain.TelemetrySampleTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/ingestion/domain/TelemetrySampleTest.java:[56,9] cannot find symbol",
+    "[ERROR]   symbol:   class TelemetrySample",
+    "[ERROR]   location: class com.pulsestream.telemetry.ingestion.domain.TelemetrySampleTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/ingestion/domain/TelemetrySampleTest.java:[56,43] cannot find symbol",
+    "[ERROR]   symbol:   variable TelemetrySample",
+    "[ERROR]   location: class com.pulsestream.telemetry.ingestion.domain.TelemetrySampleTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/ingestion/domain/TelemetrySampleTest.java:[58,29] cannot find symbol",
+    "[ERROR]   symbol:   variable TelemetrySample",
+    "[ERROR]   location: class com.pulsestream.telemetry.ingestion.domain.TelemetrySampleTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/ingestion/domain/TelemetrySampleTest.java:[60,59] cannot find symbol",
+    "[ERROR]   symbol:   variable TelemetrySample",
+    "[ERROR]   location: class com.pulsestream.telemetry.ingestion.domain.TelemetrySampleTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/ingestion/domain/TelemetrySampleTest.java:[66,38] cannot find symbol",
+    "[ERROR]   symbol:   class TelemetrySample",
+    "[ERROR]   location: class com.pulsestream.telemetry.ingestion.domain.TelemetrySampleTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/ingestion/domain/TelemetrySampleTest.java:[66,82] cannot find symbol",
+    "[ERROR]   symbol:   variable TelemetrySample",
+    "[ERROR]   location: class com.pulsestream.telemetry.ingestion.domain.TelemetrySampleTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/ingestion/domain/TelemetrySampleTest.java:[73,38] cannot find symbol",
+    "[ERROR]   symbol:   class TelemetrySample",
+    "[ERROR]   location: class com.pulsestream.telemetry.ingestion.domain.TelemetrySampleTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/ingestion/domain/TelemetrySampleTest.java:[73,83] cannot find symbol",
+    "[ERROR]   symbol:   variable TelemetrySample",
+    "[ERROR]   location: class com.pulsestream.telemetry.ingestion.domain.TelemetrySampleTest",
+    "[ERROR] -> [Help 1]",
+    "[ERROR] ",
+    "[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.",
+    "[ERROR] Re-run Maven using the -X switch to enable full debug logging.",
+    "[ERROR] ",
+    "[ERROR] For more information about the errors and possible solutions, please read the following articles:",
+    "[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException"
+  ],
+  "command": "./mvnw -Dtest=TelemetrySampleTest test",
+  "task_id": "T1-002",
+  "executed": true,
+  "recorded_at": "2026-11-11T13:57:26.792435+00:00"
+}

@@ -1,0 +1,101 @@
+{
+  "task_id": "T1-012",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "R2dbcEventLogRepository",
+    "constructors": [
+      [
+        "client"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "repository",
+        "method": "appendRecord",
+        "args": [
+          "s"
+        ]
+      },
+      {
+        "receiver": "repository",
+        "method": "appendRecord",
+        "args": [
+          "original"
+        ]
+      },
+      {
+        "receiver": "repository",
+        "method": "appendRevision",
+        "args": [
+          "sample(\"d1\", 1_000L, 9.0)"
+        ]
+      },
+      {
+        "receiver": "repository",
+        "method": "findByDeviceAndRange",
+        "args": [
+          "\"d1\"",
+          "0L",
+          "2_000L"
+        ]
+      },
+      {
+        "receiver": "repository",
+        "method": "appendRecord",
+        "args": [
+          "late"
+        ]
+      },
+      {
+        "receiver": "repository",
+        "method": "appendRecord",
+        "args": [
+          "early"
+        ]
+      },
+      {
+        "receiver": "repository",
+        "method": "appendRecord",
+        "args": [
+          "sample(\"d1\", 9_000L, 9.0)"
+        ]
+      },
+      {
+        "receiver": "repository",
+        "method": "appendRecord",
+        "args": [
+          "sample(\"d2\", 2_000L, 2.0)"
+        ]
+      },
+      {
+        "receiver": "repository",
+        "method": "findByDeviceAndRange",
+        "args": [
+          "\"d1\"",
+          "1_000L",
+          "3_000L"
+        ]
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class R2dbcEventLogRepositoryTest {",
+      "private R2dbcEventLogRepository repository;",
+      "repository = new R2dbcEventLogRepository(client);",
+      "StepVerifier.create(repository.appendRecord(s)).expectNext(true).expectComplete().verify(TIMEOUT);",
+      "StepVerifier.create(repository.appendRecord(s)).expectNext(false).expectComplete().verify(TIMEOUT);",
+      "repository.appendRecord(original).block(TIMEOUT);",
+      "StepVerifier.create(repository.appendRevision(sample(\"d1\", 1_000L, 9.0)))",
+      "StepVerifier.create(repository.findByDeviceAndRange(\"d1\", 0L, 2_000L))",
+      "repository.appendRecord(late).block(TIMEOUT);",
+      "repository.appendRecord(early).block(TIMEOUT);",
+      "repository.appendRecord(sample(\"d1\", 9_000L, 9.0)).block(TIMEOUT);",
+      "repository.appendRecord(sample(\"d2\", 2_000L, 2.0)).block(TIMEOUT);",
+      "StepVerifier.create(repository.findByDeviceAndRange(\"d1\", 1_000L, 3_000L))"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

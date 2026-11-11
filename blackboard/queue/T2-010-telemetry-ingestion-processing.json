@@ -1,0 +1,39 @@
+{
+  "id": "T2-010",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-010"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/reordering/application/ReorderingService.java",
+  "kind": "code",
+  "layer": "application",
+  "feature": null,
+  "export": "ReorderingService",
+  "intent": "@Service consuming the validated sample stream: concatMapIterable over buffer.accept(sample, clock.millis()), then concatWith drain on completion (Flux.defer). Output is the TelemetryWindowEmitted stream of chronologically ordered samples. Non-blocking.",
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.reordering.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ReorderBuffer",
+        "task_id": "T2-009"
+      },
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-002"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "public ReorderingService(ReorderBuffer buffer, java.time.Clock clock)",
+        "returns": ""
+      },
+      {
+        "signature": "public Flux<TelemetrySample> windows(Flux<TelemetrySample> samples)",
+        "returns": "reactor.core.publisher.Flux<TelemetrySample>"
+      }
+    ]
+  }
+}

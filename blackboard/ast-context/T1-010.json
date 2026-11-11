@@ -1,0 +1,49 @@
+{
+  "task_id": "T1-010",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "ReorderingService",
+    "constructors": [
+      [
+        "new ReorderBuffer(properties)",
+        "clock"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "service",
+        "method": "windows",
+        "args": [
+          "input"
+        ],
+        "returns": "List<TelemetrySample>"
+      },
+      {
+        "receiver": "service",
+        "method": "windows",
+        "args": [
+          "Flux.<TelemetrySample>empty()"
+        ],
+        "returns": "List<TelemetrySample>"
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class ReorderingServiceTest {",
+      "private ReorderingService service(long nowEpochMs) {",
+      "return new ReorderingService(new ReorderBuffer(properties), clock);",
+      "ReorderingService service = service(0L);",
+      "List<TelemetrySample> result = service.windows(input).collectList().block();",
+      "ReorderingService service = service(10_000_000L);",
+      "List<TelemetrySample> result = service.windows(input).collectList().block();",
+      "ReorderingService service = service(0L);",
+      "List<TelemetrySample> result = service.windows(input).collectList().block();",
+      "ReorderingService service = service(0L);",
+      "List<TelemetrySample> result = service.windows(Flux.<TelemetrySample>empty()).collectList().block();"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

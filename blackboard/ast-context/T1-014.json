@@ -1,0 +1,22 @@
+{
+  "task_id": "T1-014",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "EventLogController",
+    "constructors": [
+      [
+        "service"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [],
+    "verified": [],
+    "usage_lines": [
+      "class EventLogControllerTest {",
+      "client = WebTestClient.bindToController(new EventLogController(service)).build();"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

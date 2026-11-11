@@ -1,0 +1,15 @@
+{
+  "id": "T3-006",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-006"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/application/IngestSamplesUseCase.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "IngestSamplesUseCase",
+  "intent": "Inspect for reactive correctness and backpressure; signatures unchanged; tests green.",
+  "project": "telemetry-ingestion-processing"
+}

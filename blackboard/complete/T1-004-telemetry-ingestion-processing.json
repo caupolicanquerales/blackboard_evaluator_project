@@ -1,0 +1,36 @@
+{
+  "id": "T1-004",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-002"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/ingestion/application/TelemetryEventBusTest.java",
+  "kind": "test",
+  "layer": "application",
+  "feature": null,
+  "export": "TelemetryEventBusTest",
+  "intent": "Contract test for the TelemetryEventBus port (Ingestion publishes TelemetrySampleValidated / TelemetrySampleValidationFailed as TelemetrySample with status). Only compile-level contract: use Mockito to verify publish returns Mono<Void> and stream returns Flux<TelemetrySample>; no implementation assertions.",
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-002"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> publish(TelemetrySample sample)",
+        "returns": "reactor.core.publisher.Mono<Void>"
+      },
+      {
+        "signature": "Flux<TelemetrySample> stream()",
+        "returns": "reactor.core.publisher.Flux<TelemetrySample>"
+      }
+    ]
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "id": "T1-006",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-002",
+    "T1-003",
+    "T1-004"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/ingestion/application/IngestSamplesUseCaseTest.java",
+  "kind": "test",
+  "layer": "application",
+  "feature": null,
+  "export": "IngestSamplesUseCaseTest",
+  "intent": "Telemetry Sample Ingestion use case. Mock SampleValidator and TelemetryEventBus. Assert each incoming sample is validated then published exactly once (valid and VALIDATION_FAILED alike, none dropped), result Flux emits the validated samples in input order, and ingest completes when all are published.",
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "SampleValidator",
+        "task_id": "T2-003"
+      },
+      {
+        "type": "TelemetryEventBus",
+        "task_id": "T2-004"
+      },
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-002"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "public IngestSamplesUseCase(SampleValidator validator, TelemetryEventBus eventBus)",
+        "returns": ""
+      },
+      {
+        "signature": "public Flux<TelemetrySample> ingest(Flux<TelemetrySample> samples)",
+        "returns": "reactor.core.publisher.Flux<TelemetrySample>"
+      }
+    ]
+  }
+}

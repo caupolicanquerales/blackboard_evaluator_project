@@ -1,0 +1,30 @@
+{
+  "id": "T2-009",
+  "project": "telemetry-ingestion-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/reordering/domain/ReorderBuffer.java",
+  "export": "ReorderBuffer",
+  "method": "accept",
+  "language": "java",
+  "framework": "springboot3",
+  "skill": "java-springboot",
+  "signature": "public java.util.List<TelemetrySample> accept(TelemetrySample sample, long nowEpochMs)",
+  "returns": "java.util.List<TelemetrySample>",
+  "body": "int low = 0;\nint high = buffer.size();\nwhile (low < high) {\n    int mid = (low + high) >>> 1;\n    if (buffer.get(mid).tDeviceEpochMs() <= sample.tDeviceEpochMs()) {\n        low = mid + 1;\n    } else {\n        high = mid;\n    }\n}\nbuffer.add(low, sample);\nlong cutoff = nowEpochMs - windowMs;\nint count = 0;\nwhile (count < buffer.size() && buffer.get(count).tDeviceEpochMs() < cutoff) {\n    count++;\n}\njava.util.List<TelemetrySample> head = buffer.subList(0, count);\njava.util.List<TelemetrySample> released = new java.util.ArrayList<>(head);\nhead.clear();\nreturn released;",
+  "imports": [
+    "java.util.ArrayList",
+    "java.util.List",
+    "com.pulsestream.telemetry.shared.config.TelemetryProperties",
+    "com.pulsestream.telemetry.ingestion.domain.TelemetrySample"
+  ],
+  "missing": [],
+  "kind": "class",
+  "members": [
+    "private final java.util.List<TelemetrySample> buffer = new java.util.ArrayList<>();",
+    "private final long windowMs;",
+    "public ReorderBuffer(TelemetryProperties properties) { this.windowMs = properties.reorderWindowSeconds() * 1000L; }",
+    "public java.util.List<TelemetrySample> drain() { java.util.List<TelemetrySample> all = new java.util.ArrayList<>(buffer); buffer.clear(); return all; }"
+  ],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-11T14:08:49.546488+00:00"
+}

@@ -137,6 +137,28 @@ check("A11 materialized port + own structural defect -> CHARGE, not defer",
       tdd_engine._blocked_by_peers(KINDS, kind_task) is False)
 port_file.unlink()
 
+# A12-A14: context-boot bean demands (the live T2-012 deadlock): while a PENDING peer
+# owns the demanded bean the booting unit defers (zero cost, payload stays woven - a
+# quarantine revert would hole the whole test tree); it is charged only when the bean
+# is its OWN export, or when no pending peer owns it (honest, capped surfacing).
+BEANY = {"status": "assertion_failure", "exit_code": 1, "missing_symbols": [],
+         "member_demands": [], "failures": [{"test": "x.RepoTest.append", "message": "boom"}],
+         "counts": {"run": 3, "failures": 0, "errors": 3},
+         "bean_demands": ["com.x.SampleValidator"]}
+validator_task = task(tid="T2-061", export="com.x.SampleValidator")
+repo_task = task(tid="T2-062", export="com.x.EventLogRepository")
+(ROOT / "blackboard" / "queue" / "T2-061-p.json").write_text(json.dumps(validator_task))
+(ROOT / "blackboard" / "queue" / "T2-062-p.json").write_text(json.dumps(repo_task))
+check("A12 boot demand for a pending peer's bean DEFERS the booting unit (message would lie)",
+      tdd_engine._blocked_by_peers({**BEANY, "status": "assertion_failure"}, repo_task) is True)
+check("A13 boot demand for the unit's OWN exported type CHARGES (make my type a bean)",
+      tdd_engine._blocked_by_peers(BEANY, validator_task) is False)
+(ROOT / "blackboard" / "queue" / "T2-061-p.json").unlink()
+(ROOT / "blackboard" / "complete" / "T2-061-p.json").write_text(json.dumps(validator_task))
+check("A14 boot demand no pending peer owns CHARGES (surfacing, not deadlock)",
+      tdd_engine._blocked_by_peers(BEANY, repo_task) is False)
+(ROOT / "blackboard" / "complete" / "T2-061-p.json").unlink()
+
 # --- B. charge precedence: own frozen test first ------------------------------
 (ROOT / "blackboard" / "queue" / "T1-050-p.json").write_text(
     json.dumps(task(tid="T1-050", export="BoxTest", deps=[], stage=1,

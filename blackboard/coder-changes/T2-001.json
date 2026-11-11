@@ -1,0 +1,34 @@
+{
+  "id": "T2-001",
+  "project": "telemetry-ingestion-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/shared/config/TelemetryProperties.java",
+  "export": "TelemetryProperties",
+  "method": "TelemetryProperties",
+  "language": "java",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "kind": "record",
+  "signature": "public TelemetryProperties(long reorderWindowSeconds, int busBufferCapacity, Map<String, TelemetryProperties.Bounds> metricBounds)",
+  "returns": "void",
+  "body": "",
+  "annotations": [
+    "ConfigurationProperties(\"pulsestream.telemetry\")"
+  ],
+  "imports": [
+    "java.util.Map",
+    "java.util.Optional",
+    "org.springframework.boot.context.properties.ConfigurationProperties"
+  ],
+  "members": [
+    "long reorderWindowSeconds",
+    "int busBufferCapacity",
+    "Map<String, TelemetryProperties.Bounds> metricBounds",
+    "public TelemetryProperties { if (reorderWindowSeconds <= 0) { throw new IllegalArgumentException(\"reorderWindowSeconds must be > 0\"); } if (busBufferCapacity <= 0) { throw new IllegalArgumentException(\"busBufferCapacity must be > 0\"); } metricBounds = metricBounds == null ? Map.of() : Map.copyOf(metricBounds); }",
+    "public Optional<TelemetryProperties.Bounds> boundsFor(String metric) { return Optional.ofNullable(metricBounds.get(metric)); }",
+    "public record Bounds(double min, double max) {}"
+  ],
+  "missing": [],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-11T14:09:39.327545+00:00"
+}

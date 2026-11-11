@@ -1,0 +1,15 @@
+{
+  "id": "T0-005",
+  "targetAgent": "agent-container",
+  "stage": 0,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "db/migrations/backup-recovery.sh",
+  "kind": "bootstrap",
+  "layer": "root",
+  "feature": null,
+  "export": "backup-recovery",
+  "intent": "Backup/recovery: PostgreSQL pg_basebackup snapshot script with WAL point-in-time recovery notes for Telemetry Event Log context.",
+  "project": "telemetry-ingestion-processing"
+}

@@ -1,0 +1,46 @@
+{
+  "id": "T2-001",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-001"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/shared/config/TelemetryProperties.java",
+  "kind": "code",
+  "layer": "shared",
+  "feature": null,
+  "export": "TelemetryProperties",
+  "intent": "Externalized configuration (@ConfigurationProperties prefix pulsestream.telemetry, constructor binding) holding reorder window seconds, bus buffer capacity and per-metric Sensor Metric Bounds (nested record Bounds). Validates window>0 and capacity>0. Also provide application.yml entries (heart rate 30-240, power 0-2500, cadence 0-220, swim pace min 45, window 60, capacity) and enable binding via @ConfigurationPropertiesScan/@EnableConfigurationProperties on a config, WITHOUT adding a second @SpringBootApplication.",
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.shared.config",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "public TelemetryProperties(long reorderWindowSeconds, int busBufferCapacity, java.util.Map<String, TelemetryProperties.Bounds> metricBounds)",
+        "returns": ""
+      },
+      {
+        "signature": "public long reorderWindowSeconds()",
+        "returns": "long"
+      },
+      {
+        "signature": "public int busBufferCapacity()",
+        "returns": "int"
+      },
+      {
+        "signature": "public java.util.Map<String, TelemetryProperties.Bounds> metricBounds()",
+        "returns": "java.util.Map<String, TelemetryProperties.Bounds>"
+      },
+      {
+        "signature": "public java.util.Optional<TelemetryProperties.Bounds> boundsFor(String metric)",
+        "returns": "java.util.Optional<TelemetryProperties.Bounds>"
+      },
+      {
+        "signature": "public record Bounds(double min, double max)",
+        "returns": ""
+      }
+    ]
+  }
+}

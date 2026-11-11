@@ -1,0 +1,15 @@
+{
+  "id": "T3-004",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-004"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/application/TelemetryEventBus.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "TelemetryEventBus",
+  "intent": "Inspect the port for domain-only types and minimal surface; signatures unchanged.",
+  "project": "telemetry-ingestion-processing"
+}

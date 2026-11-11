@@ -1,0 +1,35 @@
+{
+  "id": "T2-007",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-007"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/api/IngressSampleDto.java",
+  "kind": "code",
+  "layer": "interface",
+  "feature": null,
+  "export": "IngressSampleDto",
+  "intent": "REST request shape for one device sample with jakarta validation (@NotBlank deviceId, metric); toDomain maps to TelemetrySample with status VALID and the supplied t_ingress. Device payload shape never leaks into the domain.",
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.api",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-002"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "public record IngressSampleDto(@NotBlank String deviceId, @NotBlank String metric, long tDeviceEpochMs, double value)",
+        "returns": ""
+      },
+      {
+        "signature": "public TelemetrySample toDomain(long tIngressEpochMs)",
+        "returns": "TelemetrySample"
+      }
+    ]
+  }
+}

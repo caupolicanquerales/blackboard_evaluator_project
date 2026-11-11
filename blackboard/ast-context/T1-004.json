@@ -1,0 +1,55 @@
+{
+  "task_id": "T1-004",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "TelemetryEventBus",
+    "constructors": [],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "bus",
+        "method": "publish",
+        "args": [
+          "SAMPLE"
+        ],
+        "stubbed_to": "Mono.empty()"
+      },
+      {
+        "receiver": "bus",
+        "method": "publish",
+        "args": [
+          "SAMPLE"
+        ],
+        "returns": "Mono<Void>"
+      },
+      {
+        "receiver": "bus",
+        "method": "stream",
+        "args": [],
+        "stubbed_to": "Flux.just(SAMPLE)"
+      },
+      {
+        "receiver": "bus",
+        "method": "stream",
+        "args": [],
+        "returns": "Flux<TelemetrySample>"
+      }
+    ],
+    "verified": [
+      "publish"
+    ],
+    "usage_lines": [
+      "class TelemetryEventBusTest {",
+      "TelemetryEventBus bus = mock(TelemetryEventBus.class);",
+      "when(bus.publish(SAMPLE)).thenReturn(Mono.empty());",
+      "Mono<Void> result = bus.publish(SAMPLE);",
+      "verify(bus).publish(SAMPLE);",
+      "TelemetryEventBus bus = mock(TelemetryEventBus.class);",
+      "when(bus.stream()).thenReturn(Flux.just(SAMPLE));",
+      "Flux<TelemetrySample> result = bus.stream();"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

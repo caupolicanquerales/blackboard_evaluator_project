@@ -1,0 +1,170 @@
+{
+  "task_id": "T1-009",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "ReorderBuffer",
+    "constructors": [
+      [
+        "new TelemetryProperties(10L, 16, Map.of())"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "buffer",
+        "method": "accept",
+        "args": [
+          "sample(95_000L, 95_000L)",
+          "100_000L"
+        ],
+        "returns": "List<TelemetrySample>"
+      },
+      {
+        "receiver": "buffer",
+        "method": "accept",
+        "args": [
+          "old",
+          "100_000L"
+        ],
+        "returns": "List<TelemetrySample>"
+      },
+      {
+        "receiver": "buffer",
+        "method": "accept",
+        "args": [
+          "edge",
+          "100_000L"
+        ],
+        "returns": "List<TelemetrySample>"
+      },
+      {
+        "receiver": "buffer",
+        "method": "accept",
+        "args": [
+          "later",
+          "106_000L"
+        ]
+      },
+      {
+        "receiver": "buffer",
+        "method": "accept",
+        "args": [
+          "earlier",
+          "106_000L"
+        ]
+      },
+      {
+        "receiver": "buffer",
+        "method": "accept",
+        "args": [
+          "late",
+          "106_000L"
+        ]
+      },
+      {
+        "receiver": "buffer",
+        "method": "drain",
+        "args": []
+      },
+      {
+        "receiver": "buffer",
+        "method": "accept",
+        "args": [
+          "a",
+          "55_000L"
+        ]
+      },
+      {
+        "receiver": "buffer",
+        "method": "accept",
+        "args": [
+          "b",
+          "55_000L"
+        ]
+      },
+      {
+        "receiver": "buffer",
+        "method": "accept",
+        "args": [
+          "sample(99_000L, 1L)",
+          "200_000L"
+        ],
+        "returns": "List<TelemetrySample>"
+      },
+      {
+        "receiver": "buffer",
+        "method": "accept",
+        "args": [
+          "sample(10_000L, 1L)",
+          "12_000L"
+        ]
+      },
+      {
+        "receiver": "buffer",
+        "method": "accept",
+        "args": [
+          "sample(11_000L, 1L)",
+          "100_000L"
+        ]
+      },
+      {
+        "receiver": "buffer",
+        "method": "accept",
+        "args": [
+          "s1",
+          "104_000L"
+        ]
+      },
+      {
+        "receiver": "buffer",
+        "method": "accept",
+        "args": [
+          "s2",
+          "104_000L"
+        ]
+      },
+      {
+        "receiver": "buffer",
+        "method": "accept",
+        "args": [
+          "s3",
+          "104_000L"
+        ]
+      },
+      {
+        "receiver": "buffer",
+        "method": "drain",
+        "args": [],
+        "returns": "List<TelemetrySample>"
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class ReorderBufferTest {",
+      "private ReorderBuffer buffer;",
+      "buffer = new ReorderBuffer(new TelemetryProperties(10L, 16, Map.of()));",
+      "List<TelemetrySample> released = buffer.accept(sample(95_000L, 95_000L), 100_000L);",
+      "List<TelemetrySample> released = buffer.accept(old, 100_000L);",
+      "List<TelemetrySample> released = buffer.accept(edge, 100_000L);",
+      "buffer.accept(later, 106_000L);",
+      "buffer.accept(earlier, 106_000L);",
+      "buffer.accept(late, 106_000L);",
+      "assertThat(buffer.drain()).containsExactly(earlier, late, later);",
+      "buffer.accept(a, 55_000L);",
+      "buffer.accept(b, 55_000L);",
+      "List<TelemetrySample> released = buffer.accept(sample(99_000L, 1L), 200_000L);",
+      "buffer.accept(sample(10_000L, 1L), 12_000L);",
+      "buffer.accept(sample(11_000L, 1L), 100_000L);",
+      "assertThat(buffer.drain()).isEmpty();",
+      "buffer.accept(s1, 104_000L);",
+      "buffer.accept(s2, 104_000L);",
+      "buffer.accept(s3, 104_000L);",
+      "List<TelemetrySample> drained = buffer.drain();",
+      "assertThat(buffer.drain()).isEmpty();",
+      "assertThat(buffer.drain()).isEmpty();"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

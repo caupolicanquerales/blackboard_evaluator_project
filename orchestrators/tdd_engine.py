@@ -482,6 +482,33 @@ def _own_test_file(task):
     return ""
 
 
+def _pending_bean_demand(result, task):
+    """True when a context-boot failure demands a bean a PENDING PEER must bring.
+
+    `bean_demands` is the runner's normalized 'the application context needs a bean
+    of type X' fact (every toolchain keeps its phrasing inside the tool). A boot-wide
+    frozen test can only pass once the WHOLE bean graph exists: while a demanded bean
+    is a queued/quarantined peer's exported product, no payload here can converge -
+    defer (zero cost: the payload stays woven, the tree keeps compiling, and an
+    auto-grant recharges this unit informed when the world moves). Charged instead
+    when the demanded bean IS this unit's own exported type (making that type a bean
+    is its contract's work) or when NO pending peer owns it (a wiring gap beyond the
+    T2 wave: the capped attempt loop must surface it honestly, not wait forever).
+    """
+    beans = result.get("bean_demands") if isinstance(result, dict) else None
+    if not beans:
+        return False
+    simple = {str(bean).rsplit(".", 1)[-1] for bean in beans}
+    if tasks.exported_product(task) in simple:
+        return False
+    owners = _queued_main_file_owners(task.get("project", ""))
+    pending = set()
+    for name, owner_id in owners.items():
+        if owner_id and owner_id != task["id"]:
+            pending.add(name.rsplit(".", 1)[0] if "." in name else name)
+    return bool(simple & pending)
+
+
 def _blocked_by_peers(result, task):
     """True when a red stage-2 gate is NOT this unit's own fault.
 
@@ -491,7 +518,11 @@ def _blocked_by_peers(result, task):
     (every toolchain prints "file:line: message"); a cascade of foreign symbol misses
     is a peer problem the coder cannot fix, so defer instead of burning the attempts.
     """
-    if not isinstance(result, dict) or result.get("status") not in ("compile_error", "error"):
+    if not isinstance(result, dict):
+        return False
+    if _pending_bean_demand(result, task):
+        return True              # runtime wiring gap: a pending peer's bean is demanded
+    if result.get("status") not in ("compile_error", "error"):
         return False
     if _own_type_member_demand(result, task):
         return False            # additive member demanded on MY exported type: nothing defers it

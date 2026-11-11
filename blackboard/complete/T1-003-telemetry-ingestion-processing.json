@@ -1,0 +1,41 @@
+{
+  "id": "T1-003",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-001",
+    "T1-002"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/ingestion/domain/SampleValidatorTest.java",
+  "kind": "test",
+  "layer": "domain",
+  "feature": null,
+  "export": "SampleValidatorTest",
+  "intent": "Telemetry Sample Ingestion. Build TelemetryProperties with test bounds. Assert: in-range sample (inclusive edges) gets status VALID; out-of-range or unknown-metric sample gets VALIDATION_FAILED; the sample is never dropped and all other fields are preserved; validation is deterministic.",
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.domain",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetryProperties",
+        "task_id": "T2-001"
+      },
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-002"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "public SampleValidator(TelemetryProperties properties)",
+        "returns": ""
+      },
+      {
+        "signature": "public TelemetrySample validate(TelemetrySample sample)",
+        "returns": "TelemetrySample"
+      }
+    ]
+  }
+}

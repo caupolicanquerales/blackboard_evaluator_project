@@ -1,0 +1,31 @@
+{
+  "id": "T2-002",
+  "project": "telemetry-ingestion-processing",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ingestion/domain/TelemetrySample.java",
+  "export": "TelemetrySample",
+  "kind": "record",
+  "method": "withStatus",
+  "language": "java",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "signature": "public TelemetrySample withStatus(String status)",
+  "returns": "TelemetrySample",
+  "members": [
+    "String deviceId",
+    "String metric",
+    "long tDeviceEpochMs",
+    "double value",
+    "long tIngressEpochMs",
+    "String validationStatus",
+    "public static final String VALID = \"VALID\";",
+    "public static final String VALIDATION_FAILED = \"VALIDATION_FAILED\";",
+    "public TelemetrySample { if (deviceId == null || deviceId.isBlank()) { throw new IllegalArgumentException(\"deviceId must not be blank\"); } if (metric == null || metric.isBlank()) { throw new IllegalArgumentException(\"metric must not be blank\"); } if (validationStatus == null) { throw new IllegalArgumentException(\"validationStatus must not be null\"); } }",
+    "public boolean isValidationFailed() { return VALIDATION_FAILED.equals(validationStatus); }"
+  ],
+  "body": "return new TelemetrySample(deviceId, metric, tDeviceEpochMs, value, tIngressEpochMs, status);",
+  "imports": [],
+  "missing": [],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-11T14:07:50.124783+00:00"
+}

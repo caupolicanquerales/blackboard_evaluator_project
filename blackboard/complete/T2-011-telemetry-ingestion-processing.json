@@ -1,0 +1,39 @@
+{
+  "id": "T2-011",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-011"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/eventlog/domain/EventLogRepository.java",
+  "kind": "code",
+  "layer": "domain",
+  "feature": null,
+  "export": "EventLogRepository",
+  "intent": "Append-only repository port of Telemetry Event Log. appendRecord is idempotent by sample identity (deviceId, metric, tDeviceEpochMs): emits true when newly stored, false when duplicate. appendRevision appends a new revision referencing the original; originals never modified. findByDeviceAndRange reads records by device and t_device range [from,to]. Domain types only; no update/delete.",
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.eventlog.domain",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-002"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Boolean> appendRecord(TelemetrySample sample)",
+        "returns": "reactor.core.publisher.Mono<Boolean>"
+      },
+      {
+        "signature": "Mono<Void> appendRevision(TelemetrySample revision)",
+        "returns": "reactor.core.publisher.Mono<Void>"
+      },
+      {
+        "signature": "Flux<TelemetrySample> findByDeviceAndRange(String deviceId, long fromEpochMs, long toEpochMs)",
+        "returns": "reactor.core.publisher.Flux<TelemetrySample>"
+      }
+    ]
+  }
+}

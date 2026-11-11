@@ -1,0 +1,51 @@
+{
+  "id": "T2-015",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-015"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/shared/config/TelemetryPipelineWiring.java",
+  "kind": "code",
+  "layer": "shared",
+  "feature": null,
+  "export": "TelemetryPipelineWiring",
+  "intent": "@Component wiring Ingestion -> Reordering and Event Log: start() (@PostConstruct) subscribes to eventBus.stream() for EventLogService.record with onErrorResume per element, and eventBus.stream() through ReorderingService.windows whose output reconciled samples are passed to EventLogService.reconcile; stop() (@PreDestroy) disposes. No second @SpringBootApplication.",
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.shared.config",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetryEventBus",
+        "task_id": "T2-004"
+      },
+      {
+        "type": "ReorderingService",
+        "task_id": "T2-010"
+      },
+      {
+        "type": "EventLogService",
+        "task_id": "T2-013"
+      },
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-002"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "public TelemetryPipelineWiring(TelemetryEventBus eventBus, ReorderingService reorderingService, EventLogService eventLogService)",
+        "returns": ""
+      },
+      {
+        "signature": "public void start()",
+        "returns": "void"
+      },
+      {
+        "signature": "public void stop()",
+        "returns": "void"
+      }
+    ]
+  }
+}

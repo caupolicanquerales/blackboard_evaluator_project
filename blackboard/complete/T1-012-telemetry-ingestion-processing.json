@@ -1,0 +1,54 @@
+{
+  "id": "T1-012",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T0-002",
+    "T0-003",
+    "T0-004",
+    "T1-002",
+    "T1-011"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/eventlog/infrastructure/R2dbcEventLogRepositoryTest.java",
+  "kind": "test",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "R2dbcEventLogRepositoryTest",
+  "intent": "@SpringBootTest against embedded H2 (PostgreSQL mode) with Flyway migrations V1/V2 applied. Assert: appendRecord twice for same identity emits true then false and stores one row; appendRevision stores a revision linked to an existing record and leaves the original unchanged; findByDeviceAndRange returns only records in range for that device ordered by t_device. Use StepVerifier with timeouts.",
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.eventlog.infrastructure",
+    "implements": [
+      "EventLogRepository"
+    ],
+    "dependencies": [
+      {
+        "type": "EventLogRepository",
+        "task_id": "T2-011"
+      },
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-002"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "public R2dbcEventLogRepository(org.springframework.r2dbc.core.DatabaseClient client)",
+        "returns": ""
+      },
+      {
+        "signature": "public Mono<Boolean> appendRecord(TelemetrySample sample)",
+        "returns": "reactor.core.publisher.Mono<Boolean>"
+      },
+      {
+        "signature": "public Mono<Void> appendRevision(TelemetrySample revision)",
+        "returns": "reactor.core.publisher.Mono<Void>"
+      },
+      {
+        "signature": "public Flux<TelemetrySample> findByDeviceAndRange(String deviceId, long fromEpochMs, long toEpochMs)",
+        "returns": "reactor.core.publisher.Flux<TelemetrySample>"
+      }
+    ]
+  }
+}

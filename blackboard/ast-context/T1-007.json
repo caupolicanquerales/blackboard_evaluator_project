@@ -1,0 +1,56 @@
+{
+  "task_id": "T1-007",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "IngressSampleDto",
+    "constructors": [
+      [
+        "\"dev-1\"",
+        "\"temp\"",
+        "1_000L",
+        "21.5"
+      ],
+      [
+        "blank",
+        "\"temp\"",
+        "1L",
+        "1.0"
+      ],
+      [
+        "\"dev-1\"",
+        "blank",
+        "1L",
+        "1.0"
+      ],
+      [
+        "\"dev-1\"",
+        "\"temp\"",
+        "1L",
+        "1.0"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "dto",
+        "method": "toDomain",
+        "args": [
+          "2_000L"
+        ],
+        "returns": "TelemetrySample"
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class IngressSampleDtoTest {",
+      "IngressSampleDto dto = new IngressSampleDto(\"dev-1\", \"temp\", 1_000L, 21.5);",
+      "TelemetrySample sample = dto.toDomain(2_000L);",
+      "assertThat(validator.validate(new IngressSampleDto(blank, \"temp\", 1L, 1.0))).hasSize(1);",
+      "assertThat(validator.validate(new IngressSampleDto(\"dev-1\", blank, 1L, 1.0))).hasSize(1);",
+      "assertThat(validator.validate(new IngressSampleDto(\"dev-1\", \"temp\", 1L, 1.0))).isEmpty();"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

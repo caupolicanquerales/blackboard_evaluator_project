@@ -1,0 +1,15 @@
+{
+  "id": "T0-003",
+  "targetAgent": "agent-container",
+  "stage": 0,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "db/migrations/V2__create_event_log_tables.sql",
+  "kind": "bootstrap",
+  "layer": "root",
+  "feature": null,
+  "export": "V2__create_event_log_tables",
+  "intent": "Schema migration: expand-only PostgreSQL tables telemetry_records and telemetry_record_revisions with idempotent PK, FK, CHECK and range index via Flyway V2 for Telemetry Event Log context.",
+  "project": "telemetry-ingestion-processing"
+}

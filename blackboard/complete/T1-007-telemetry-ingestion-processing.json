@@ -1,0 +1,36 @@
+{
+  "id": "T1-007",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-002"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/ingestion/api/IngressSampleDtoTest.java",
+  "kind": "test",
+  "layer": "interface",
+  "feature": null,
+  "export": "IngressSampleDtoTest",
+  "intent": "Anticorruption mapper at the API entry. Assert toDomain(long tIngressEpochMs) maps deviceId, metric, tDeviceEpochMs, value into a TelemetrySample with the given t_ingress and status VALID (validation happens later), and Bean Validation rejects blank deviceId/metric.",
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.api",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-002"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "public record IngressSampleDto(@NotBlank String deviceId, @NotBlank String metric, long tDeviceEpochMs, double value)",
+        "returns": ""
+      },
+      {
+        "signature": "public TelemetrySample toDomain(long tIngressEpochMs)",
+        "returns": "TelemetrySample"
+      }
+    ]
+  }
+}

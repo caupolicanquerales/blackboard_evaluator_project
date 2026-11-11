@@ -577,9 +577,10 @@ def _fingerprint(task):
         # its narrower first shape cannot be mistaken for "no demands"). Without it the
         # memo serves stale logs to retrying coders forever, silently defeating the
         # upgrade. v6: problem_kinds joined the verdict schema (kind-driven attribution
-        # must never replay a pre-kind verdict). v3: content fingerprint + wave
-        # verdicts (per-file list, not global max-mtime).
-        "memo_version": 6,
+        # must never replay a pre-kind verdict). v7: bean_demands joined (a context-boot
+        # deferral must not replay a verdict that never carried the demand). v3: content
+        # fingerprint + wave verdicts (per-file list, not global max-mtime).
+        "memo_version": 7,
         "payload": payload.stat().st_mtime_ns if payload.is_file() else 0,
         "tree": _tree_fingerprint(root),
     }, sort_keys=True)
@@ -803,7 +804,8 @@ def _shared_verdict(data, task):
     would have seen in its own (byte-identical) scoped build."""
     shared = {k: data.get(k) for k in ("status", "exit_code", "missing_symbols",
                                        "missing_packages", "failures", "counts",
-                                       "excerpt", "member_demands", "problem_kinds")}
+                                       "excerpt", "member_demands", "problem_kinds",
+                                       "bean_demands")}
     shared = {k: v for k, v in shared.items() if v is not None}
     return f"test gate: {_failure_detail(shared, task)}", shared
 
@@ -859,7 +861,7 @@ def wave_gate_verdict(task, command):
         return None
     root = workspace.project_root_for(task["project"])
     fp = _tree_fingerprint(root)
-    stamp = f"{task['project']}-v6-{fp}"
+    stamp = f"{task['project']}-v7-{fp}"
     cache_file = settings.GATE_CACHE_DIR / f"wave-{stamp}.json"
     data = None
     if cache_file.is_file():
@@ -903,6 +905,11 @@ def wave_gate_verdict(task, command):
     shared = {"status": "assertion_failure", "exit_code": data.get("exit_code", 1),
               "failures": unit_failures or [{"test": key, "message": ""}],
               "counts": data.get("counts") or {}, "missing_symbols": [], "missing_packages": []}
+    # attribution fields ride along when the wave run produced them: the engine's
+    # deferral decisions read ONLY these normalized fields (the tool owns syntax).
+    for field in ("bean_demands", "member_demands", "problem_kinds"):
+        if data.get(field):
+            shared[field] = data[field]
     if excerpt:
         shared["excerpt"] = excerpt
     print(f"[gate ] {task['id']} wave verdict: red ({key})")
@@ -975,7 +982,7 @@ def green_test_result(task):
             # cache so every sibling unit at this fingerprint shares it for free instead
             # of re-deriving byte-identical output with its own full build.
             root = workspace.project_root_for(task["project"])
-            _write_wave(result, f"{task['project']}-v6-{_tree_fingerprint(root)}")
+            _write_wave(result, f"{task['project']}-v7-{_tree_fingerprint(root)}")
         reason = f"test gate: {_failure_detail(result, task)}"
         telemetry.mark_error(current, reason)
         print(f"[test] {task['id']} {reason}")

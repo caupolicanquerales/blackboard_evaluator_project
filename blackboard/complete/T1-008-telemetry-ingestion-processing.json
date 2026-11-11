@@ -1,0 +1,41 @@
+{
+  "id": "T1-008",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-006",
+    "T1-007"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/ingestion/api/IngressControllerTest.java",
+  "kind": "test",
+  "layer": "interface",
+  "feature": null,
+  "export": "IngressControllerTest",
+  "intent": "WebFlux slice test (WebTestClient) of POST /api/v1/telemetry/packets accepting a JSON array of IngressSampleDto: mocks IngestSamplesUseCase, responds 202 with body = number of samples accepted (Long); invalid dto (blank deviceId) gives 400; a VALIDATION_FAILED sample from the use case still counts as accepted.",
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.api",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "IngestSamplesUseCase",
+        "task_id": "T2-006"
+      },
+      {
+        "type": "IngressSampleDto",
+        "task_id": "T2-007"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "public IngressController(IngestSamplesUseCase useCase, java.time.Clock clock)",
+        "returns": ""
+      },
+      {
+        "signature": "public Mono<Long> receivePacket(Flux<@Valid IngressSampleDto> samples)",
+        "returns": "reactor.core.publisher.Mono<Long>"
+      }
+    ]
+  }
+}

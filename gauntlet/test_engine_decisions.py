@@ -287,6 +287,8 @@ payload.write_text('{"id": "T2-900"}')
 n3, ok3, r3, f3, led3 = drive([(False, SAME)], payload_present=True, reset=False)
 check("D4 repeat of a SHOWN failure on an unchanged world closes with ZERO sessions",
       n3 == 0 and "already informed" in r3)
+check("D6 grants count PAID sessions only: D2 billed one, D4's zero-close spent none",
+      int(led3.get("grants") or 0) == 1, str(led3.get("grants")))
 attempt_ledger.clear("T2-900")
 n5, ok5, r5, f5, led5 = drive([(True, "")])
 check("D5 green clears the ledger", led5 == {} and n5 == 1)

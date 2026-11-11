@@ -945,9 +945,11 @@ R7 - queue-0 AUTO-GRANT GAP: the restore-qualifying-quarantines loop only fires 
 the stuck/fatal path (blocked>0). With queue empty + a unit holding budget
 (T2-008: consumed 2/3, grants 0/3, advance-ready), watch idles forever without
 recovering it. Interim: targeted `--retry T2-008 T3-008`. Next seed prep: extend the
-auto-grant scan to idle passes. (Related accounting wart: T2-012 showed `grants 4/3`
-- the grant counter may exceed the cap when a grant is issued, replayed-close, and
-issued again across restarts; audit in attempt_ledger before the next run.)
+auto-grant scan to idle passes. Accounting bug FIXED the same day (next commit):
+the grant counter was incremented at ISSUANCE, so every free replay close-out
+consumed a grant (`grants 9/3` observed with zero billed sessions). Grants are now
+spent only when the attempt actually bills a coder session; a zero-session close
+returns the grant (gauntlet D6 pins both directions).
 Honest terminal (run7, 12:17, ZERO billed sessions - board 45/51, app boots, T4
 green): three real defects, each named with evidence:
 1. T2-003 SampleValidator - ARCHITECT PAIR DEFECT: frozen T1-003 constructs

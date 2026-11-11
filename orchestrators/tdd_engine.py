@@ -247,10 +247,8 @@ def execute_with_tdd(task, invoke, verify):
         _tdd_attempt_state(task) if is_tdd else ({}, "", 0, 0, None))
     granted_informed = False
     if is_tdd and consumed >= attempts:
-        grants = int(ledger.get("grants") or 0)
         print(f"[tdd ] {task['id']} ledger holds {consumed} consumed attempts for an "
               "unchanged contract; granting one informed attempt")
-        attempt_ledger.write(task["id"], grants=grants + 1)
         consumed = attempts - 1
         granted_informed = True
     feedback = None
@@ -296,6 +294,16 @@ def execute_with_tdd(task, invoke, verify):
             fields["reason"] = str(last_reason)[:1500]
             fields["signature"] = sig
         attempt_ledger.write(task["id"], **fields)
+
+    # The grant is SPENT only now, at the moment the attempt actually bills a coder
+    # session. Free replay paths that ran before (green close, already-shown close,
+    # deferral) must NOT consume it: run5-run8 measured grants 8/3 and 9/3 on units
+    # whose grants were all closed at zero sessions - the cap was being eaten by the
+    # very mechanism designed to spend nothing.
+    if granted_informed:
+        attempt_ledger.write(task["id"],
+                             grants=int((attempt_ledger.read(task["id"]).get("grants")
+                                         or 0)) + 1)
 
     while consumed < attempts:
         ok, reason = invoke(feedback)

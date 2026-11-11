@@ -35,5 +35,6 @@
         "returns": "TelemetrySample"
       }
     ]
-  }
+  },
+  "error": "test gate: status=assertion_failure; exit_code=1; tests=3 failures=0 errors=3; failed com.pulsestream.telemetry.ingestion.domain.SampleValidatorTest:  [failure already informed to a coder session] [WOVEN-CLEAN: payload compiles and the suite completes with it in the tree - left woven for peers; only this unit's own tests are red]"
 }

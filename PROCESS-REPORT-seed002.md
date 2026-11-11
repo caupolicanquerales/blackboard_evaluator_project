@@ -930,3 +930,37 @@ architect-level pair defect: frozen T1-003 constructs TelemetrySample(status=nul
 while completed T2-002's ctor requireNonNull's it - operator/plan arbitration, NOT a
 tool bug, exactly the signal §6/§18 said to expect) and boot victims whose re-verify
 grants now proceed automatically.
+
+### 23.4 run6/run7: the engine bit itself, and the honest terminal (R6 + R7)
+R6 - SELF-INFLICTED TREE BREAK by the orchestrator itself (run6 12:10:00): the
+dependency-import path of `test_gate.repair_test_imports` scanned RAW source text for
+used names - a word inside a COMMENT ('// A lone late sample...') resolved to a
+UNIQUE classpath class (checkerframework `units.qual.A`) and the engine INSERTED A
+REAL IMPORT into a main file between gates -> whole-module compile error, all six
+units deferred, zero agents at fault. Fixed: name scanners now read a
+comment/string/text-block-stripped view (`_strip_non_code`); the poisoned line
+removed from the tree; gauntlet R1/R2 pin both directions (never insert from prose;
+still fires for real bare uses). Reroute-of-imports left untouched.
+R7 - queue-0 AUTO-GRANT GAP: the restore-qualifying-quarantines loop only fires at
+the stuck/fatal path (blocked>0). With queue empty + a unit holding budget
+(T2-008: consumed 2/3, grants 0/3, advance-ready), watch idles forever without
+recovering it. Interim: targeted `--retry T2-008 T3-008`. Next seed prep: extend the
+auto-grant scan to idle passes. (Related accounting wart: T2-012 showed `grants 4/3`
+- the grant counter may exceed the cap when a grant is issued, replayed-close, and
+issued again across restarts; audit in attempt_ledger before the next run.)
+Honest terminal (run7, 12:17, ZERO billed sessions - board 45/51, app boots, T4
+green): three real defects, each named with evidence:
+1. T2-003 SampleValidator - ARCHITECT PAIR DEFECT: frozen T1-003 constructs
+   TelemetrySample(status=null); completed T2-002's ctor requireNonNull's it. No
+   unit payload can satisfy the pair; plan-level arbitration needed (ast_hints must
+   pin nullability semantics, or decomposition must schedule the reconciling
+   overload - §19 follow-up).
+2. T2-012 R2dbcEventLogRepository - TEST-RUNTIME SCHEMA GAP: H2 test context has no
+   tables (`bad SQL grammar DELETE FROM telemetry_event_log...`); migrations sit in
+   db/migrations/ and NOTHING owns applying them inside tests (the main runtime
+   runner was gated by §10.5 P0-2; its test-side counterpart is missing).
+3. T2-008 IngressController - ORDINARY CODER DEFECT (blank deviceId -> 500 instead
+   of 400; @Valid-on-Flux gap the last session diagnosed correctly): budget remains;
+   one informed pass pending.
+Everything else converged autonomously this clean run: 45 units, assembly green,
+and every stuck unit WOVEN-CLEAN (their code stays in the tree, peers compile).

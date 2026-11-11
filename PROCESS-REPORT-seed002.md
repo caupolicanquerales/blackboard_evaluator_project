@@ -819,3 +819,46 @@ base package hardcoded (`com.pulsestream.telemetry`); it now reads the value fro
 strategy's module_layout.base_package - agents/skills remain stack-generic (verified:
 no seed identifier survives in .opencode/{agents,skills}). Gauntlet after compression:
 80/80 green (the H5/H8 substrings live in orchestrators/prompts.py, untouched).
+
+## 23. Day-3: the validation drain + two compression regressions caught by the drain itself (2026-11-11)
+Executed the §19 restart protocol: state was clean-committed (tag
+`board-pre-validation-2026-11-10` + tar in /tmp/opencode/archive), wiped ONLY
+blackboard/ + projects/, relaunched seed 002 --watch. Launch tip: use `python3 -u` -
+stdout through `tee` block-buffers and blinds live monitoring (same pain §18 fixed
+for the log content; the flag fixes its delivery). Copilot CLI 1.0.109 still defaults
+to claude-sonnet-5.5: no billing surprise from the update. First-session forensics:
+turn-1 cacheWrite 9-12K vs yesterday's ~30K fixed floor - §22 compression is working.
+
+R1 - the mapping stage burned its FULL 10-call budget and produced NOTHING on the
+first restart: every writer-file call was rejected. Root cause was a §22 compression
+REGRESSION, not agent capability: the mapping profile+skill payload contract was
+rewritten into invented vocabulary (`relationships[{type,...,rationale,risk}]`,
+`shared_languages[]`, top-level `source_report`) while the actual writer schema is
+`context_map: [{upstream, downstream, relationship, direction, exchanged_information,
+boundary_protection}]` + `cross_boundary_flows: [{business_process, contexts_involved,
+consistency_expectation}]` + metadata.source_report = a DIRECTORY. Agents obey docs;
+docs lied; §22's own invariant (functional identifiers preserved verbatim) was violated
+here. Every restart would have re-paid the same ~150K for zero artifacts.
+R2 - same pass, second drift: relationship enum APPROXIMATIONS ("Published language",
+"Anti-corruption layer") vs the writer's canonical vocabulary ("Open host service /
+published language", "Anticorruption layer") - the pre-compression table had them exact.
+Found without an agent session by replaying the fixed contract against the real writer.
+
+Fixed (commits 131869d, 22c9199):
+1. Both mirrors of the mapping profile + the domain-context-mapping skill now carry the
+   writer-true key lists, the exact RELATIONSHIPS enum, and the "writer exit 1 => run
+   --emit-template, never guess" rule (discovery pair verified already correct).
+2. Generic guard: writer-file now appends `hint: rerun with --emit-template <kind>` to
+   EVERY schema rejection - a mis-documented shape costs the agent ONE extra call, not
+   ten blind iterations (the tool tells the truth about itself).
+3. Gauntlet K1-K4 (test_skill_scripts.py): the writer module's constants are now
+   DIFFED against the prose of every mapping/discovery profile and skill - docs and
+   schema cannot drift silently again; the emitted skeleton must feed back through the
+   writer; 39+53 green.
+4. Audit of every doc->script CLI call (--flags vs real argparse): all invocations
+   match; the corruption was confined to prose key lists.
+
+Resume evidence (run2): `[skip] discovery files already valid` (zero re-billing),
+mapping GREEN in 4 calls ("writer accepted it" on the first try), strategy/db sessions
+normal (9-15 calls; architect 15/12 WARN noted - session completed, hard kill never
+fired). Drain continues toward the first clean per-stage measurement.

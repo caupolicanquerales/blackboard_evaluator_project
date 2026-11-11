@@ -916,7 +916,7 @@ Even with bean_demands deferral, run4 deadlocked 19 units on one boot demand:
 by the locked T2-003). Deferral was waiting for something waiting could never deliver:
 the missing piece is a REGISTRATION, the plan's wiring unit (T2-015, the only task
 whose ast_hints/intent owns bean wiring) can write in its own file - the §18 A10/A11
-materialized-port doctrine applied to the runtime graph. New rule (commit 5f?? ->
+materialized-port doctrine applied to the runtime graph. New rule (commit 781d768,
 "materialized-bean rule", gauntlet A18/A18b): once the demanded class exists on the
 tree, CHARGE the demanding units (bounded by same-signature break + fed marker +
 grant cap), never defer; class absent -> defer stays.

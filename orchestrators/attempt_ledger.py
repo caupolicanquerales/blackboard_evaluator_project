@@ -59,7 +59,8 @@ def contract_hash(task):
     """Identity of the unit's INPUTS: its task contract and the stage-1 records the
     coder must satisfy. When this moves, every past failure stopped being predictive."""
     digest = hashlib.sha1()
-    digest.update(json.dumps({key: task.get(key) for key in sorted(settings.PROMPT_KEYS)},
+    digest.update(json.dumps({key: task.get(key) for key in sorted(settings.PROMPT_KEYS)
+                              if task.get(key) is not None},
                              sort_keys=True, default=str).encode("utf-8", "ignore"))
     tester_id = next((dep for dep in (task.get("dependsOn") or [])
                       if str(dep).startswith("T1-")), None)

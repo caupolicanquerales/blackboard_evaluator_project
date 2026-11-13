@@ -3,16 +3,20 @@ name: java-springboot
 description: Assembly rules for Spring Boot (java). Booting the application context: reading dependency-failure chains, bean registration, port adapters, driver configuration.
 ---
 # What the smoke proves
-`contextLoads` (@SpringBootTest) boots the ENTIRE context: component scan + every injection site. Red here = the app cannot start, regardless of unit green.
+`contextLoads` (@SpringBootTest) boots the ENTIRE context: component scan + every injection site. Red here = the app cannot start, regardless of unit green. Green here proves NOTHING unless the composition root can SEE the application: an entry point outside the domain packages boots an EMPTY context and passes 1/1 over a dead service (seed-002 rerun F3). The assembly gate now refuses that shape structurally: the entry package must contain every main-source package, or the entry must declare scan coverage (`scanBasePackages` / `basePackages` / `@ComponentScan`).
 # Failure map
 - `UnsatisfiedDependencyException ... parameter N ... No qualifying bean of type 'X'` => X must be supplied at that site.
 - `expected at least one bean which qualifies as autowire candidate` => class exists, not registered.
 - `NoSuchBeanDefinitionException` on an interface => port has no adapter.
 - `Failed to load ApplicationContext` + driver/Flyway errors => missing/wrong config in resources.
+- `Unable to find a @SpringBootConfiguration by searching packages upwards from the test` => the composition root is NOT an ancestor package of that slice test: declare-scan markers NEVER fix this (the search ignores them) - move the entry class up.
+- Boot GREEN + endpoints 404 / collaborators never constructed => the entry point cannot see the code (F3) or injected types have no provider (F4): declare scan coverage, then supply every injected collaborator.
 # Fix menu (smallest first)
+0. FIRST, before anything else: prove the context contains the application. Two halves, one strict preference: component visibility is fixed by the entry package being the ancestor of every main package OR a declared scan directive (`scanBasePackages`/`basePackages`/`@ComponentScan`); @SpringBootTest/@DataR2dbcTest-style SLICE discovery is fixed ONLY by the ancestor placement - a directive never waives the upwards package search (seed-002 rerun 13:45: a marker-declared entry booted the smoke test green while two slice units were unweavable-red forever). Therefore the COMPLETE default fix is: move the composition root class to the shared root package of the code and the tests, and every provider duty lands with it. Additionally EVERY collaborator type the plan injects has exactly one named provider: the class's own stereotype or a `@Bean` factory here - "the class exists" is not registration (F4).
 1. Register an existing class with its layer stereotype: @Service (application), @Component (domain collaborator), @Repository/@Configuration.
 2. Unimplemented port: ONE thin adapter in the context's `infrastructure` package delegating to an existing unit; no logic inside.
 3. Unannotatable types (Clock, Duration, sizes): @Bean factories in a `*WiringConfiguration` under `src/main/java/.../infrastructure/`.
 4. Driver config ONLY in `src/main/resources/application.yml` (r2dbc/jdbc url, Flyway). Never pom.xml.
+5. A rolled-back quarantined unit can leave THIS layer's files importing a vanished class: the gate recompiles the FINAL tree for exactly that reason - rewire or restore, never trust an earlier cached verdict (seed-002 rerun F1).
 # Constraints
-Java 17+, `jakarta.*` only; never change constructor signatures, exported types, or method bodies (green unit tests are the contract). Ambiguous beans: @Primary on YOUR configuration only. Iteration cap and placeholders: disclose every stub. Editable roots: `src/main/java/**`, `src/main/resources/**`.
+Java at the strategy-pinned version (21 default), `jakarta.*` only; never change constructor signatures, exported types, or method bodies (green unit tests are the contract). Ambiguous beans: @Primary on YOUR configuration only. Iteration cap and placeholders: disclose every stub. Editable roots: `src/main/java/**`, `src/main/resources/**`. Never report assembly complete from a previous pass's boot verdict: the command runs on the delivered bytes, and stale `target/` output can hide a deletion no test in the queue will re-discover.

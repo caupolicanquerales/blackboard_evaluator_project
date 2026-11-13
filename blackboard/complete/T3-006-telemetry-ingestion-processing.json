@@ -5,11 +5,11 @@
   "dependsOn": [
     "T2-006"
   ],
-  "path": "src/main/java/com/pulsestream/telemetry/ingestion/application/IngestSamplesUseCase.java",
+  "path": "src/main/java/com/blackboard/telemetry/eventstore/application/TelemetryEventStore.java",
   "kind": "refactor",
   "layer": "application",
   "feature": null,
-  "export": "IngestSamplesUseCase",
-  "intent": "Inspect for reactive correctness and backpressure; signatures unchanged; tests green.",
+  "export": "TelemetryEventStore",
+  "intent": "Inspect TelemetryEventStore port: append-only, domain types only; tidy without changing the surface.",
   "project": "telemetry-ingestion-processing"
 }

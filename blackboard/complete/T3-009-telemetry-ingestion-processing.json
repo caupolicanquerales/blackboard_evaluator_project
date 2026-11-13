@@ -5,11 +5,11 @@
   "dependsOn": [
     "T2-009"
   ],
-  "path": "src/main/java/com/pulsestream/telemetry/reordering/domain/ReorderBuffer.java",
+  "path": "src/main/java/com/blackboard/telemetry/eventstore/infrastructure/R2dbcTelemetryEventStore.java",
   "kind": "refactor",
-  "layer": "domain",
+  "layer": "infrastructure",
   "feature": null,
-  "export": "ReorderBuffer",
-  "intent": "Inspect ordering correctness, tie-breaking and complexity; signatures unchanged.",
+  "export": "R2dbcTelemetryEventStore",
+  "intent": "Inspect R2dbcTelemetryEventStore: append-only SQL, bound parameters, non-blocking; tidy without changing the surface.",
   "project": "telemetry-ingestion-processing"
 }

@@ -5,11 +5,11 @@
   "dependsOn": [
     "T2-001"
   ],
-  "path": "src/main/java/com/pulsestream/telemetry/shared/config/TelemetryProperties.java",
+  "path": "src/main/resources/application.yml",
   "kind": "refactor",
-  "layer": "shared",
+  "layer": "root",
   "feature": null,
-  "export": "TelemetryProperties",
-  "intent": "Inspect and refactor TelemetryProperties: keep it immutable, defensively copy the bounds map, no hardcoded operational values in code, public signatures unchanged, tests stay green.",
+  "export": "application.yml",
+  "intent": "Inspect application.yml for telemetry-ingestion-processing: keep literal values (window 60s, buffer 1024, ECS file log with 10MB/7 rolling, test profile H2 NON_KEYWORDS=VALUE, flyway disabled in test), remove duplication and misplaced keys without changing values.",
   "project": "telemetry-ingestion-processing"
 }

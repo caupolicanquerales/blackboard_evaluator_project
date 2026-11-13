@@ -2,71 +2,73 @@
   "schema_version": "1.0",
   "report_type": "context-map",
   "metadata": {
-    "generated_at": "2026-11-11T10:51:00-03:00",
+    "generated_at": "2026-11-13T13:07:00-03:00",
     "agent": "domain-context-mapping",
     "source_report": "blackboard/domain"
   },
   "context_map": [
     {
-      "upstream": "Telemetry Sample Ingestion",
-      "downstream": "Backfill Reordering & Windowing",
+      "upstream": "external",
+      "downstream": "Telemetry Ingestion & Validation",
+      "relationship": "Anticorruption layer",
+      "direction": "external -> Telemetry Ingestion & Validation",
+      "exchanged_information": "Ingress Packets with 1Hz telemetry samples from edge devices, bike computers and wearables",
+      "boundary_protection": "Device payloads are translated into Telemetry Samples at the entry point; device-specific formats never leak inward; no blocking I/O, backpressure applied"
+    },
+    {
+      "upstream": "Telemetry Ingestion & Validation",
+      "downstream": "Telemetry Stream Reconciliation",
+      "relationship": "Open host service / published language",
+      "direction": "Telemetry Ingestion & Validation -> Telemetry Stream Reconciliation",
+      "exchanged_information": "TelemetrySampleValidated and TelemetrySampleValidationFailed events carrying Telemetry Samples with validation status and t_device",
+      "boundary_protection": "Only versioned validation events cross; Sensor Metric Boundary definitions stay internal; failed samples are tagged, never dropped"
+    },
+    {
+      "upstream": "Telemetry Ingestion & Validation",
+      "downstream": "Telemetry Event Store",
+      "relationship": "Open host service / published language",
+      "direction": "Telemetry Ingestion & Validation -> Telemetry Event Store",
+      "exchanged_information": "TelemetrySampleValidated and TelemetrySampleValidationFailed events with raw samples and validation status",
+      "boundary_protection": "Consumes the published validation events only; store never re-validates; records appended as-is"
+    },
+    {
+      "upstream": "Telemetry Stream Reconciliation",
+      "downstream": "Telemetry Event Store",
       "relationship": "Customer-supplier",
-      "direction": "upstream->downstream",
-      "exchanged_information": "Events TelemetrySampleValidated and TelemetrySampleValidationFailed carrying a Telemetry Sample, t_device and validation status; initiated by Ingestion; eventual consistency.",
-      "boundary_protection": "Only the two published events cross; Sensor Metric Boundary definitions, backpressure mechanics and t_ingress ordering never leak. Reordering must not re-validate or use t_ingress."
+      "direction": "Telemetry Stream Reconciliation -> Telemetry Event Store",
+      "exchanged_information": "TelemetryBackfillReordered events identifying late samples to append as Event Revisions",
+      "boundary_protection": "Reorder window internals stay private; store appends new revisions, never mutates existing records"
     },
     {
-      "upstream": "Telemetry Sample Ingestion",
-      "downstream": "Telemetry Event Log",
-      "relationship": "Conformist",
-      "direction": "upstream->downstream",
-      "exchanged_information": "Events TelemetrySampleValidated and TelemetrySampleValidationFailed; Event Log appends raw records including VALIDATION_FAILED ones, so nothing is dropped; eventual consistency.",
-      "boundary_protection": "Event Log adopts the published sample/status model unchanged and appends it; validation rules stay with Ingestion. Idempotent append keyed by sample identity."
-    },
-    {
-      "upstream": "Backfill Reordering & Windowing",
-      "downstream": "Telemetry Event Log",
-      "relationship": "Customer-supplier",
-      "direction": "upstream->downstream",
-      "exchanged_information": "Event TelemetryBackfillReconciled describing a backfilled or corrected frame, appended as an Event Revision; eventual consistency.",
-      "boundary_protection": "Original records are never modified; only append-revision semantics are exposed. Window buffers and ordering internals never leak."
-    },
-    {
-      "upstream": "Backfill Reordering & Windowing",
+      "upstream": "Telemetry Stream Reconciliation",
       "downstream": "external",
       "relationship": "Open host service / published language",
-      "direction": "upstream->downstream",
-      "exchanged_information": "TelemetryWindowEmitted broadcast of chronologically ordered windows to downstream streaming analytics consumers.",
-      "boundary_protection": "Stable versioned event contract; consumers cannot reach buffer internals."
-    },
-    {
-      "upstream": "external",
-      "downstream": "Telemetry Sample Ingestion",
-      "relationship": "Anticorruption layer",
-      "direction": "upstream->downstream",
-      "exchanged_information": "Raw Ingress Packets from IoT edge devices, bike computers and wearables.",
-      "boundary_protection": "Device payloads are translated into Telemetry Samples at the entry point; device-specific formats do not enter the domain model."
+      "direction": "Telemetry Stream Reconciliation -> external",
+      "exchanged_information": "TelemetryWindowEmitted ordered windows for streaming analytics consumers",
+      "boundary_protection": "Backpressure-aware broadcast of ordered windows only; ingress timestamps and buffers not exposed"
     }
   ],
   "cross_boundary_flows": [
     {
-      "business_process": "Ingest, validate and order 1Hz telemetry",
+      "business_process": "Ingest and validate telemetry",
       "contexts_involved": [
-        "Telemetry Sample Ingestion",
-        "Backfill Reordering & Windowing"
+        "external",
+        "Telemetry Ingestion & Validation",
+        "Telemetry Stream Reconciliation",
+        "Telemetry Event Store"
       ],
       "consistency_expectation": "eventual",
-      "notes": "Failure posture: backpressure at entry, at-least-once delivery with idempotent consumption by sample identity. Coupling is one-directional; no cycles."
+      "notes": "Validation precedes any downstream propagation; consumers must be idempotent; backpressure signals flow upstream."
     },
     {
-      "business_process": "Append-only audit of samples and revisions",
+      "business_process": "Reorder late packets within 60s backfill window",
       "contexts_involved": [
-        "Telemetry Sample Ingestion",
-        "Backfill Reordering & Windowing",
-        "Telemetry Event Log"
+        "Telemetry Stream Reconciliation",
+        "Telemetry Event Store",
+        "external"
       ],
       "consistency_expectation": "eventual",
-      "notes": "Flagged: TelemetryRevisionAppended is published but has no consumer in this slice (external auditors/analytics assumed). Flagged for discovery: handling of samples later than the 60s window is unowned between Reordering and Event Log. Invariants each have exactly one owner."
+      "notes": "Ordering by t_device; corrections appended as revisions. Flagged ambiguity: handling of packets later than 60s is unspecified (assumed revision appended by store); TelemetryRevisionAppended has no consumer in this slice."
     }
   ]
 }

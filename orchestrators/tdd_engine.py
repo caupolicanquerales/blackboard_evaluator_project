@@ -124,17 +124,29 @@ def _queued_main_file_owners(project):
 
 
 def _sibling_payloads_pending(task):
-    """Ids of queued stage-2 tasks of this domain that still have no coder payload.
+    """Ids of same-domain stage-2 tasks still without a woven payload.
 
     Surefire compiles every test source of the module, so a gate run while a sibling unit is
-    still un-implemented can only fail on that sibling's symbols. Weaving is cheap and the gate
-    is not: the orchestrator defers the gate until every payload of the domain exists, then one
-    wave of gates decides the units. Without this, a pass costs one full build per unit and the
-    domain never converges, because each unit's failure belongs to a peer that was never run.
-    The scan itself is memoized per pass in dispatchers (one O(N) walk per domain, not per task).
+    still un-implemented can only fail on that sibling's symbols. Weaving is cheap and the
+    gate is not: the orchestrator defers the gate until every payload of the domain exists,
+    then one wave of gates decides the units. Without this, a pass costs one full build per
+    unit and the domain never converges, because each unit's failure belongs to a peer that
+    was never run.
+
+    A QUARANTINED sibling with its payload DISCARDED counts too: its class is absent from
+    the tree exactly like an unwoven one, and the restore loop gives it a re-emit attempt -
+    charging peers for the hole in the meantime is the storm the ledger then feeds (measured
+    live 2026-11-12: three mutually-referencing units cycled restore -> 3 blind charges ->
+    discard -> repeat, while every bystander's gate ran against the partial tree).
     """
     project = task.get("project", "")
-    return [pid for pid in dispatchers.payloadless_t2_ids(project) if pid != task["id"]]
+    pending = [pid for pid in dispatchers.payloadless_t2_ids(project) if pid != task["id"]]
+    for f in settings.ERROR_DIR.glob(f"T2-*-{project}.json"):
+        pid = f.name.split("-")[0] + "-" + f.name.split("-")[1]
+        if pid != task["id"] and not (settings.ROOT / "blackboard" / "coder-changes"
+                                      / f"{pid}.json").is_file():
+            pending.append(pid)
+    return pending
 
 
 def _testless_peers(task):
@@ -219,6 +231,25 @@ def _tdd_attempt_state(task):
     if ledger and ledger.get("contract") != contract:
         consumed, rejections, last_sig = 0, 0, None
     return ledger, contract, consumed, rejections, last_sig
+
+
+def _missing_artifact_problem(task, ok):
+    """The 'session wrote its file' guard, as a decision a test can reach.
+    Only stages whose CONTRACT is "write this recorded file" are judged by it:
+    tester, evaluator, scaffold. Stage 2 coders weave through the AST tool (the
+    tree moves per payload, not per session), and stage 4 assembly is judged by
+    its deterministic BOOT GATE alone - the mandated composition-root repair may
+    MOVE the entry class to the shared ancestor package, retiring the path
+    recorded at emit time (seed-002 rerun 13:51: the correct move was quarantined
+    as 'was not created' and only self-healed because the per-pass reschedule
+    re-emitted the task with the FRESH detected path).
+    Returns a reason string or None."""
+    if not ok or task.get("stage") in (settings.TDD_STAGE, settings.ASSEMBLY_STAGE):
+        return None
+    expected = workspace.project_root_for(task["project"]) / str(task.get("path", ""))
+    if expected.exists():
+        return None
+    return f"agent finished but {task['path']} was not created"
 
 
 def execute_with_tdd(task, invoke, verify):
@@ -348,6 +379,136 @@ def execute_with_tdd(task, invoke, verify):
     if attempts > 1:
         reason = f"TDD failed after {attempts} attempts: {reason}"
     return False, reason
+
+
+def _t3_foreign_symbols(task, reason):
+    """CamelCase symbols the evaluator's module build misses while a LIVE sibling T2
+    unit still owns them (queued OR quarantined).
+
+    The evaluator gate compiles the WHOLE module: while the owner of CorrelationContext
+    was being re-attempted, thirteen evaluators died - and were CHARGED - on that peer's
+    absence (seed-002 rerun 15:30: collateral storm with zero information value). The
+    reason string is a hint here, not grammar: intersection with real pending exports is
+    what defers, and deferral bills nothing.
+    """
+    toks = {t for t in _identifier_tokens(str(reason or ""))
+            if t[:1].isupper() and tasks.is_type_shape(t)}
+    return toks & _pending_symbols_of(task.get("project", ""), task.get("id", ""))
+
+
+def _reopen_contract_regression(result, task):
+    """Contract-regression reopen (17:04 live shape): the module-wide compile error
+    sits in the MAIN file of a COMPLETED unit - it wove green against an older binding
+    and a later weave moved that binding under it. That file is the root defect, but a
+    completed task is invisible to every deferral rule, so live peers wait on it
+    forever and the drain can only stall. Hand it back to its owner's attempt budget
+    (board state only - payload and ledger stay; the engine re-adjudicates honestly).
+    Returns True when at least one unit was reopened."""
+    if not isinstance(result, dict) or result.get("status") not in ("compile_error", "error"):
+        return False
+    blamed = {name for name, _ in test_gate.error_locations(result)}
+    if not blamed:
+        return False
+    completed = {}
+    for f in settings.COMPLETE_DIR.glob("T2-*.json"):
+        try:
+            rec = json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(rec, dict) or rec.get("project") != task.get("project"):
+            continue
+        path = str(rec.get("path", "")).replace("\\", "/")
+        if path:
+            completed[path.split("/")[-1]] = str(rec.get("id", ""))
+    hits = sorted({completed[name] for name in blamed if name in completed} - {task["id"]})
+    reopened = False
+    for tid in hits[:2]:                      # bounded board churn per verdict
+        if task_queue.reopen_completed(tid):
+            reopened = True
+    return reopened
+
+
+def _dangling_main_consumers(task):
+    """Main-source files that still reference the product of a unit whose payload is
+    being rolled back (seed-002 rerun F1: quarantine deleted DefaultIngestTelemetryUseCase.java
+    and left TelemetryWiringConfiguration.java - a COMPLETED unit's file - importing a type
+    that no longer exists; nothing re-adjudicates after the last verdict, so the DELIVERED
+    tree stopped compiling while the board still reported 89/96 + boot green).
+
+    Text-level and stack-neutral: word-boundary reference to the exported product name in
+    any non-test source of the domain other than the unit's own file. The consumers are
+    usually innocent and their owners did nothing wrong - the rollback is the defect -
+    so they are NOT reopened (that would bill a healthy unit for its peer's quarantine);
+    they are NAMED: in the log, and appended to the quarantine record the operator reads.
+    """
+    name = tasks.exported_product(task)
+    if not name or not tasks.is_type_shape(name):
+        return []
+    pattern = re.compile(r"\b" + re.escape(name) + r"\b")
+    own = str(task.get("path", "")).split("/")[-1]
+    hits = set()
+    for f in test_gate.source_files(workspace.project_root_for(task.get("project", ""))):
+        parts = {p.lower() for p in f.parts}
+        if parts & {"test", "tests"} or f.name == own:
+            continue
+        try:
+            text = f.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            continue
+        if pattern.search(text):
+            hits.add(str(f.relative_to(workspace.project_root_for(task.get("project", "")))))
+    return sorted(hits)
+
+
+def _surface_rollback_hole(task):
+    """Act on a destructive revert: consumers OWNED by a completed unit go back to their
+    owner (the module-wide gate will defer them at zero bill while the symbol's owner
+    stays quarantined, and the queue stops lying about being empty); consumers NOBODY
+    owns (assembly-era files) can only be NAMED: log + appended to the quarantine record.
+    Returns the notice text ("" when the revert left no hole)."""
+    dangling = _dangling_main_consumers(task)
+    if not dangling:
+        return ""
+    owners = {}
+    for rec_file in sorted(settings.COMPLETE_DIR.glob("T*-*.json")):
+        if not rec_file.name.startswith(("T2-", "T3-", "T4-")):
+            continue
+        try:
+            rec = json.loads(rec_file.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(rec, dict) or rec.get("project") != task.get("project"):
+            continue
+        owners.setdefault(str(rec.get("path", "")).replace("\\", "/").split("/")[-1],
+                          str(rec.get("id", "")))
+    reopened, orphaned = [], []
+    for rel in dangling:
+        owner = owners.get(rel.split("/")[-1])
+        if owner and owner != task["id"] and task_queue.reopen_completed(owner):
+            reopened.append(f"{rel} -> {owner} reopened")
+        else:
+            orphaned.append(rel)
+    tail = ("" if not orphaned else
+            " - UNOWNED production files import a rolled-back artifact: the delivered "
+            "tree does not compile; restore this unit with --retry or rewire the named "
+            "files before delivery")
+    return (" [DANGLING-CONSUMERS: " + "; ".join(reopened + orphaned)[:400] +
+            f" still reference {tasks.exported_product(task)} after this rollback{tail}]")
+
+
+def _note_on_quarantine(task_id, notice):
+    """Append a post-revert fact to the record already sent to error/: the quarantine
+    reason is the operator's first read - a rolled-back artifact that holes the MAIN tree
+    must live there, not only in the pass log."""
+    file = next(iter(settings.ERROR_DIR.glob(f"{task_id}-*.json")), None)
+    if file is None:
+        return
+    try:
+        payload = json.loads(file.read_text(encoding="utf-8"))
+        payload["error"] = str(payload.get("error", "")) + notice
+        file.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    except (OSError, json.JSONDecodeError):
+        return
 
 
 def _peers_outstanding(task):
@@ -490,6 +651,19 @@ def _own_test_file(task):
     return ""
 
 
+def _warn_unrevertable_poison(task):
+    """A quarantined unit whose payload WAS spliced but has no weave baseline cannot be
+    reverted - the tree keeps its code and every peer gate pays a full build to rediscover
+    the same mystery error (seed-002 rerun 13:42: four WOVEN-UNVERIFIED dependents of a
+    failed metrics unit stayed poisoned in silence). Log the state and the remedy loudly."""
+    payload = settings.ROOT / "blackboard" / "coder-changes" / f"{task['id']}.json"
+    weave_result = settings.BLACKBOARD / "weave-results" / f"{task['id']}.json"
+    if payload.is_file() and weave_result.is_file():
+        print(f"[warn ] {task['id']}: payload was woven but NO baseline exists to revert to - "
+              f"{task.get('path', '?')} stays in the tree; peers pay a full build per gate "
+              "until --retry re-weaves this unit green or the operator restores the file")
+
+
 def _payload_proven_harmless(task):
     """True when a quarantine-time payload is PROVEN not to poison the shared tree.
 
@@ -562,21 +736,18 @@ def _blocked_by_peers(result, task):
         return True              # runtime wiring gap: a pending peer's bean is demanded
     if result.get("status") not in ("compile_error", "error"):
         return False
-    if _own_type_member_demand(result, task):
-        return False            # additive member demanded on MY exported type: nothing defers it
-    if result.get("status") == "compile_error":
-        missing_tokens = _identifier_tokens(" ".join(str(item) for item in (result.get("missing_symbols") or [])))
-        if missing_tokens & _pending_symbols_of(task["project"], task["id"]):
-            return True          # a queued peer will resolve this symbol; do not burn attempts
     owners = _queued_main_file_owners(task.get("project", ""))
     own = str(task.get("path", "")).split("/")[-1]
     locations = test_gate.error_locations(result)
     main_names = {name for name, _ in locations if name in owners}
     if own in main_names:
-        # Own file blamed: only a STRUCTURAL error there is this unit's fault. A
-        # "cannot find symbol" in the own file is a cascade from a foreign broken
-        # definition, which no payload of this unit can repair - defer while the root
-        # owner retries instead.
+        # OWN FILE FIRST: a structural error in this unit's own file is always fixable
+        # by its payload, no matter which peer symbols are missing - deferring on the
+        # pending-peers rule while the own file is structurally broken forms a
+        # two-node deferral CYCLE (wiring unit waits for the class, class owner waits
+        # for the wiring file - observed live 14:58, both sides provably idle).
+        # A "cannot find symbol" in the own file is still a cascade from a foreign
+        # broken definition, which no payload of this unit can repair - defer.
         own_structural = _own_structural(result, own, locations)
         if own_structural and _peer_supertype_conflict(task, result) \
                 and not _peer_supertype_materialized(task, result):
@@ -586,8 +757,24 @@ def _blocked_by_peers(result, task):
         if not own_structural and any(owners.get(name) != task["id"] for name in main_names):
             return True
         return False                       # the own file is structurally broken: real retry
+    if _own_type_member_demand(result, task):
+        # A demand on MY exported type usually means MY payload must add the member.
+        # But when EVERY blamed main file belongs to another still-live queued unit
+        # and my own file is not blamed at all, the "missing member" is proven only
+        # through THEIR (unadjudicated, possibly malformed) call sites - charging the
+        # demand owner burned 3 attempts on T2-017 for the wiring unit's syntax while
+        # the wiring file itself stayed the true defect (seed-002 rerun 14:03).
+        # Let the peers' own-file attempts resolve their call sites first; if the gap
+        # is genuinely mine, my frozen test will charge me afterwards.
+        if main_names and all(owners.get(name) != task["id"] for name in main_names):
+            return True
+        return False             # additive member demanded on MY exported type: nothing defers it
+    if result.get("status") == "compile_error":
+        missing_tokens = _identifier_tokens(" ".join(str(item) for item in (result.get("missing_symbols") or [])))
+        if missing_tokens & _pending_symbols_of(task["project"], task["id"]):
+            return True          # a queued peer will resolve this symbol; do not burn attempts
     if main_names and all(owners.get(name) != task["id"] for name in main_names):
-        return True                        # every blamed production file belongs to other queued units
+        return True              # every blamed production file belongs to other queued units
     if locations and not main_names:
         # 1) A compile error in a frozen test is FIRST the contract duty of that test's
         #    OWN implementer (the stage-2 unit whose T1 record points at this test file):
@@ -749,15 +936,21 @@ def quarantine_dependents(failed_id, tasks, files, dependents, remaining):
                 continue
             file = files[dependent_id]
             reason = f"dependsOn {source} not resolvable in queue or complete"
-            if dependent_task["stage"] == settings.TDD_STAGE and \
-                    (settings.ROOT / "blackboard" / "coder-changes" / f"{dependent_id}.json").is_file():
+            has_payload = (settings.ROOT / "blackboard" / "coder-changes" / f"{dependent_id}.json").is_file()
+            if dependent_task["stage"] == settings.TDD_STAGE and has_payload:
                 reason += (" [WOVEN-UNVERIFIED: this unit's payload is already spliced into the "
                            "source tree but its gate never ran; if OTHER units hang or fail to "
                            "compile, suspect this file]")
             task_queue.send_to_error(file, reason, dependent_task)
             print(f"[error] {file.name}: {reason}")
-            if dependent_task.get("stage") == settings.TDD_STAGE:
-                dispatchers.revert_weave(dependent_task, discard_payload=False)
+            if dependent_task["stage"] == settings.TDD_STAGE and has_payload:
+                if dispatchers.revert_weave(dependent_task, discard_payload=False):
+                    hole = _surface_rollback_hole(dependent_task)
+                    if hole:
+                        print(f"[hole  ] {dependent_task['id']}:{hole}")
+                        _note_on_quarantine(dependent_task["id"], hole)
+                else:
+                    _warn_unrevertable_poison(dependent_task)
             remaining.discard(dependent_id)
             pending.append(dependent_id)
 
@@ -968,12 +1161,25 @@ def drain_queue(args, invoke_for_task):
                         return True, ""
                     print(f"[batch ] {task['id']} batch wrote no payload"
                           f"{'' if ok_batch else ' (' + reason_batch[:120] + ')'}; falling back to per-task")
+            if task["stage"] == settings.EVALUATOR_STAGE:
+                # Session-shape storm (15:30): thirteen evaluators were BILLED to
+                # re-verify a module that could not compile because a peer T2's class
+                # was missing while its owner re-attempted. Defer before paying the
+                # session: the same free evidence check the verify gate uses.
+                ok_b, reason_b = verification.verify_project(
+                    workspace.project_root_for(task["project"]), args.verify, args.verify_timeout)
+                if not ok_b:
+                    foreign = _t3_foreign_symbols(task, reason_b)
+                    if foreign:
+                        raise DeferredTask(
+                            f"module build misses {', '.join(sorted(foreign)[:3])}: owned by "
+                            "live sibling units - evaluator session not billed")
             pre_edit_snapshot = (refactor_audit.snapshot_sources(task)
                                  if task["stage"] == settings.EVALUATOR_STAGE else None)
             ok, reason = invoke_for_task(task, feedback)
-            expected = workspace.project_root_for(task["project"]) / task["path"]
-            if ok and task["stage"] != settings.TDD_STAGE and not expected.exists():
-                return False, f"agent finished but {task['path']} was not created"
+            problem = _missing_artifact_problem(task, ok)
+            if problem:
+                return False, problem
             if ok and task["stage"] == settings.TESTER_STAGE:
                 return _tester_close_out(task)
             if ok and task["stage"] == settings.EVALUATOR_STAGE:
@@ -1011,13 +1217,23 @@ def drain_queue(args, invoke_for_task):
                             "This is a scheduling hole, not a code defect; deferring would "
                             "livelock the domain. Close it with: "
                             "python3 orchestrators/closure.py --project-root <root> --emit")
+                    if _reopen_contract_regression(result, task):
+                        raise DeferredTask(str(problem) +
+                                           " [contract-regression owner reopened to queue]")
                     if _blocked_by_peers(result, task):
                         raise DeferredTask(problem)
                     return False, problem
                 return True, ""      # the green gate supersedes the build gate
             if task["stage"] == settings.EVALUATOR_STAGE:
-                return verification.verify_project(
+                ok_build, reason_build = verification.verify_project(
                     project_root, args.verify, args.verify_timeout)
+                if not ok_build:
+                    foreign = _t3_foreign_symbols(task, reason_build)
+                    if foreign:
+                        raise DeferredTask(
+                            f"module build misses {', '.join(sorted(foreign)[:3])}: owned by "
+                            "live sibling units - evaluator deferred, not charged")
+                return ok_build, reason_build
             if task["stage"] == settings.ASSEMBLY_STAGE:
                 # The gate IS the verification: the container boots or it does not.
                 # No agent artifact is trusted - the engine runs the smoke test itself.
@@ -1060,8 +1276,25 @@ def drain_queue(args, invoke_for_task):
                 detail = detail + " [WOVEN-CLEAN: payload compiles and the suite completes with it in the tree - left woven for peers; only this unit's own tests are red]"
             task_queue.send_to_error(file, detail, task)
             print(f"[fail] {task['id']}: {detail}")
+            if stage == 0 and task.get("kind") == "bootstrap" and not task.get("dependsOn"):
+                # The domain ROOT is broken: cascading ~90 dependents one by one into
+                # error/ turned recoverable waits into a 91-file graveyard and a watch
+                # loop that spun silently on an empty queue (seed-002 rerun, 2026-11-12).
+                # Dependents STAY in the queue; the next launch's ScaffoldUnresolved (or
+                # --retry after the fix) resumes the domain. One fatal line, no scatter.
+                raise FatalPipeline(
+                    f"stage-0 scaffold {task['id']} of '{task.get('project', '?')}' failed: "
+                    f"{str(detail)[:300]} - the domain cannot build while its root is broken; "
+                    f"its {len(dependents.get(task_id, []))} dependent(s) stayed in the queue. "
+                    "Fix the container stage (MCP image/skill/environment) and relaunch with --retry.")
             if stage == settings.TDD_STAGE and not proven_harmless:
-                dispatchers.revert_weave(task, discard_payload=True)
+                if dispatchers.revert_weave(task, discard_payload=True):
+                    notice = _surface_rollback_hole(task)
+                    if notice:
+                        print(f"[hole  ] {task['id']}:{notice}")
+                        _note_on_quarantine(task["id"], notice)
+                else:
+                    _warn_unrevertable_poison(task)
             elif proven_harmless:
                 print(f"[keep ] {task['id']}: payload stays woven - reverting would hole every "
                       "file that imports this unit's types (the T2-003 domain freeze)")

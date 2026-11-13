@@ -3,33 +3,43 @@
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
-    "T0-001",
-    "T1-002"
+    "T0-001"
   ],
-  "path": "src/test/java/com/pulsestream/telemetry/ingestion/application/TelemetryEventBusTest.java",
+  "path": "src/test/java/com/blackboard/telemetry/shared/observability/AuditEntryTest.java",
   "kind": "test",
-  "layer": "application",
+  "layer": "shared",
   "feature": null,
-  "export": "TelemetryEventBusTest",
-  "intent": "Contract test for the TelemetryEventBus port (Ingestion publishes TelemetrySampleValidated / TelemetrySampleValidationFailed as TelemetrySample with status). Only compile-level contract: use Mockito to verify publish returns Mono<Void> and stream returns Flux<TelemetrySample>; no implementation assertions.",
+  "export": "AuditEntryTest",
+  "intent": "Shared audit surface for telemetry-ingestion-processing. AuditEntry is an immutable record of actor, action, outcome, timestamp and correlationId (the requestId). Assert accessors and value equality only.",
   "project": "telemetry-ingestion-processing",
   "ast_hints": {
-    "package": "com.pulsestream.telemetry.ingestion.application",
+    "package": "com.blackboard.telemetry.shared.observability",
     "implements": [],
-    "dependencies": [
-      {
-        "type": "TelemetrySample",
-        "task_id": "T2-002"
-      }
-    ],
+    "dependencies": [],
     "methods": [
       {
-        "signature": "Mono<Void> publish(TelemetrySample sample)",
-        "returns": "reactor.core.publisher.Mono<Void>"
+        "signature": "public record AuditEntry(String actor, String action, String outcome, Instant timestamp, String correlationId)",
+        "returns": ""
       },
       {
-        "signature": "Flux<TelemetrySample> stream()",
-        "returns": "reactor.core.publisher.Flux<TelemetrySample>"
+        "signature": "String actor()",
+        "returns": "String"
+      },
+      {
+        "signature": "String action()",
+        "returns": "String"
+      },
+      {
+        "signature": "String outcome()",
+        "returns": "String"
+      },
+      {
+        "signature": "Instant timestamp()",
+        "returns": "Instant"
+      },
+      {
+        "signature": "String correlationId()",
+        "returns": "String"
       }
     ]
   }

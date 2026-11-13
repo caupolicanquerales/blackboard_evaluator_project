@@ -379,11 +379,22 @@ SOURCE_SUFFIXES = {".java", ".kt", ".kts", ".scala", ".groovy", ".ts", ".tsx", "
                    ".mjs", ".cjs", ".go", ".py", ".rs", ".rb", ".php", ".c", ".h", ".cc",
                    ".cpp", ".hpp", ".cs", ".m", ".swift", ".vue", ".svelte"}
 
+# Verdict identity must cover EVERY file a build reads, not only compilable sources:
+# a re-woven application.yml/.sql/.properties moves no java/py/ts byte, so a memo
+# fingerprinted on sources alone replays the PREVIOUS red for the fixed config file
+# forever (caught live 2026-11-12: T2-002's two-document yml re-weave was "verified"
+# by a cached verdict in 0.2s and re-quarantined without ever running the suite).
+FINGERPRINT_SUFFIXES = SOURCE_SUFFIXES | {".yml", ".yaml", ".properties", ".xml", ".sql",
+                                          ".ini", ".toml", ".cfg", ".conf", ".env"}
+
 
 def error_locations(result, limit=8):
-    """[(file basename, message tail)] for every source-file location in the excerpt."""
+    """[(file basename, message tail)] for every source-file location in the excerpt.
+
+    Attribution reads the FULL tree evidence (`excerpt_all`) when the wave gate carried
+    one; the filtered `excerpt` is the coder-facing digest and must not blind deferral."""
     found = []
-    for line in (result.get("excerpt") or []):
+    for line in (result.get("excerpt_all") or result.get("excerpt") or []):
         if len(found) >= limit:
             break
         text = str(line)
@@ -419,6 +430,22 @@ def source_files(folder):
         dirnames[:] = [d for d in dirnames if d not in _SKIP_DIRS]
         for fn in filenames:
             if pathlib.Path(fn).suffix in SOURCE_SUFFIXES:
+                out.append(pathlib.Path(dirpath, fn))
+    return sorted(out)
+
+
+def fingerprint_files(folder):
+    """source_files() plus config/resource artifacts - the full input set of a build
+    and therefore of a verdict (see FINGERPRINT_SUFFIXES)."""
+    import os
+    root = pathlib.Path(folder)
+    if not root.is_dir():
+        return []
+    out = []
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [d for d in dirnames if d not in _SKIP_DIRS]
+        for fn in filenames:
+            if pathlib.Path(fn).suffix in FINGERPRINT_SUFFIXES:
                 out.append(pathlib.Path(dirpath, fn))
     return sorted(out)
 
@@ -599,8 +626,12 @@ def _fingerprint(task):
         # upgrade. v6: problem_kinds joined the verdict schema (kind-driven attribution
         # must never replay a pre-kind verdict). v7: bean_demands joined (a context-boot
         # deferral must not replay a verdict that never carried the demand). v3: content
-        # fingerprint + wave verdicts (per-file list, not global max-mtime).
-        "memo_version": 8,
+        # fingerprint + wave verdicts (per-file list, not global max-mtime). v9:
+        # excerpt_all joined (attribution must see the FULL blame evidence; a verdict
+        # cached before the field exists would keep the filtered digest's blind charge).
+        # v10: parse_counts aggregates per-class surefire lines - the first-match form
+        # hid a failing class's errors behind an innocent class's zero-count line.
+        "memo_version": 10,
         "payload": payload.stat().st_mtime_ns if payload.is_file() else 0,
         "tree": _tree_fingerprint(root),
     }, sort_keys=True)
@@ -676,7 +707,7 @@ def _tree_fingerprint(project_root):
     """
     import hashlib
     root = pathlib.Path(project_root)
-    files = sorted(source_files(root), key=lambda p: str(p))
+    files = sorted(fingerprint_files(root), key=lambda p: str(p))
     sig = []
     for f in files:
         try:
@@ -892,7 +923,7 @@ def wave_gate_verdict(task, command):
         return None
     root = workspace.project_root_for(task["project"])
     fp = _tree_fingerprint(root)
-    stamp = f"{task['project']}-v8-{fp}"
+    stamp = f"{task['project']}-v9-{fp}"
     cache_file = settings.GATE_CACHE_DIR / f"wave-{stamp}.json"
     data = None
     if cache_file.is_file():
@@ -936,6 +967,12 @@ def wave_gate_verdict(task, command):
     shared = {"status": "assertion_failure", "exit_code": data.get("exit_code", 1),
               "failures": unit_failures or [{"test": key, "message": ""}],
               "counts": data.get("counts") or {}, "missing_symbols": [], "missing_packages": []}
+    # Attribution reads the FULL tree evidence; the selector-filtered excerpt is only the
+    # coder-facing digest. Dropping main-file blame lines here used to blind
+    # _blocked_by_peers into charging a demand-owner for a peer file's compile error
+    # (seed-002 rerun 14:03: T2-017 billed 3 attempts for the wiring unit's call site).
+    if data.get("excerpt"):
+        shared["excerpt_all"] = data["excerpt"]
     # attribution fields ride along when the wave run produced them: the engine's
     # deferral decisions read ONLY these normalized fields (the tool owns syntax).
     for field in ("bean_demands", "member_demands", "problem_kinds"):
@@ -1013,7 +1050,7 @@ def green_test_result(task):
             # cache so every sibling unit at this fingerprint shares it for free instead
             # of re-deriving byte-identical output with its own full build.
             root = workspace.project_root_for(task["project"])
-            _write_wave(result, f"{task['project']}-v8-{_tree_fingerprint(root)}")
+            _write_wave(result, f"{task['project']}-v9-{_tree_fingerprint(root)}")
         reason = f"test gate: {_failure_detail(result, task)}"
         telemetry.mark_error(current, reason)
         print(f"[test] {task['id']} {reason}")

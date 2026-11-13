@@ -1,0 +1,39 @@
+{
+  "id": "T2-012",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-012"
+  ],
+  "path": "src/main/java/com/blackboard/telemetry/ingestion/interface_/TelemetryIngestController.java",
+  "kind": "code",
+  "layer": "interface",
+  "feature": null,
+  "export": "TelemetryIngestController",
+  "intent": "Ingress entry point (@RestController, POST /api/v1/telemetry/ingress, consumes application/x-ndjson, produces application/json). ingest(@RequestBody Flux<TelemetrySample> samples, @RequestHeader(value=\"X-Request-Id\", required=false) String requestId) delegates to IngestTelemetryUseCase.ingest with the header value, or a generated UUID string when absent or blank, and returns the Mono<Long> count. No business logic.",
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.ingestion.interface_",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "IngestTelemetryUseCase",
+        "task_id": "T2-008"
+      },
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-002"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "public TelemetryIngestController(IngestTelemetryUseCase useCase)",
+        "returns": ""
+      },
+      {
+        "signature": "public Mono<Long> ingest(Flux<TelemetrySample> samples, String requestId)",
+        "returns": "Mono<Long>"
+      }
+    ]
+  }
+}

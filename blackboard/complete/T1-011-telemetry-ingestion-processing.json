@@ -3,37 +3,33 @@
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
-    "T0-001",
-    "T1-002"
+    "T0-001"
   ],
-  "path": "src/test/java/com/pulsestream/telemetry/eventlog/domain/EventLogRepositoryTest.java",
+  "path": "src/test/java/com/blackboard/telemetry/shared/observability/CorrelationIdWebFilterTest.java",
   "kind": "test",
-  "layer": "domain",
+  "layer": "shared",
   "feature": null,
-  "export": "EventLogRepositoryTest",
-  "intent": "Contract test of the Telemetry Event Log append-only port via Mockito: appendRecord returns Mono<Boolean>, appendRevision returns Mono<Void>, findByDeviceAndRange returns Flux<TelemetrySample>. The port exposes no update or delete operations.",
+  "export": "CorrelationIdWebFilterTest",
+  "intent": "Correlation middleware. Using MockServerWebExchange: when header X-Request-Id is present the same value is adopted; otherwise a non-blank UUID is generated; the value is echoed in the response header X-Request-Id and the chain is invoked exactly once with Reactor context key 'requestId' holding the value (assert from within a stub chain via Mono.deferContextual). Public constants HEADER='X-Request-Id' and CONTEXT_KEY='requestId'.",
   "project": "telemetry-ingestion-processing",
   "ast_hints": {
-    "package": "com.pulsestream.telemetry.eventlog.domain",
-    "implements": [],
-    "dependencies": [
-      {
-        "type": "TelemetrySample",
-        "task_id": "T2-002"
-      }
+    "package": "com.blackboard.telemetry.shared.observability",
+    "implements": [
+      "WebFilter"
     ],
+    "dependencies": [],
     "methods": [
       {
-        "signature": "Mono<Boolean> appendRecord(TelemetrySample sample)",
-        "returns": "reactor.core.publisher.Mono<Boolean>"
+        "signature": "public static final String HEADER",
+        "returns": "String"
       },
       {
-        "signature": "Mono<Void> appendRevision(TelemetrySample revision)",
-        "returns": "reactor.core.publisher.Mono<Void>"
+        "signature": "public static final String CONTEXT_KEY",
+        "returns": "String"
       },
       {
-        "signature": "Flux<TelemetrySample> findByDeviceAndRange(String deviceId, long fromEpochMs, long toEpochMs)",
-        "returns": "reactor.core.publisher.Flux<TelemetrySample>"
+        "signature": "public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain)",
+        "returns": "Mono<Void>"
       }
     ]
   }

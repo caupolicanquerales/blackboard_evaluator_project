@@ -5,34 +5,40 @@
   "dependsOn": [
     "T1-010"
   ],
-  "path": "src/main/java/com/pulsestream/telemetry/reordering/application/ReorderingService.java",
+  "path": "src/main/java/com/blackboard/telemetry/shared/observability/R2dbcAuditTrail.java",
   "kind": "code",
-  "layer": "application",
+  "layer": "infrastructure",
   "feature": null,
-  "export": "ReorderingService",
-  "intent": "@Service consuming the validated sample stream: concatMapIterable over buffer.accept(sample, clock.millis()), then concatWith drain on completion (Flux.defer). Output is the TelemetryWindowEmitted stream of chronologically ordered samples. Non-blocking.",
+  "export": "R2dbcAuditTrail",
+  "intent": "Append-only AuditTrail adapter (@Repository) using DatabaseClient: record inserts one row into audit_trail (exact column names from migration V2) with all five entry fields bound as parameters, returning Mono<Void>. Never updates or deletes.",
   "project": "telemetry-ingestion-processing",
   "ast_hints": {
-    "package": "com.pulsestream.telemetry.reordering.application",
-    "implements": [],
+    "package": "com.blackboard.telemetry.shared.observability",
+    "implements": [
+      "AuditTrail"
+    ],
     "dependencies": [
       {
-        "type": "ReorderBuffer",
-        "task_id": "T2-009"
+        "type": "DatabaseClient",
+        "task_id": "T0-001"
       },
       {
-        "type": "TelemetrySample",
-        "task_id": "T2-002"
+        "type": "AuditEntry",
+        "task_id": "T2-004"
+      },
+      {
+        "type": "AuditTrail",
+        "task_id": "T2-005"
       }
     ],
     "methods": [
       {
-        "signature": "public ReorderingService(ReorderBuffer buffer, java.time.Clock clock)",
+        "signature": "public R2dbcAuditTrail(DatabaseClient databaseClient)",
         "returns": ""
       },
       {
-        "signature": "public Flux<TelemetrySample> windows(Flux<TelemetrySample> samples)",
-        "returns": "reactor.core.publisher.Flux<TelemetrySample>"
+        "signature": "public Mono<Void> record(AuditEntry entry)",
+        "returns": "Mono<Void>"
       }
     ]
   }

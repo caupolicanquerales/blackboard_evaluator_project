@@ -5,11 +5,11 @@
   "dependsOn": [
     "T0-001"
   ],
-  "path": "db/migrations/flyway-profile.properties",
+  "path": "db/migrations/flyway-config.yml",
   "kind": "bootstrap",
   "layer": "root",
   "feature": null,
-  "export": "flyway-profile",
-  "intent": "Configuration profile: Flyway startup migration settings for the PostgreSQL telemetry_event_log schema, clean disabled, for Telemetry Event Log context.",
+  "export": "flyway-config",
+  "intent": "Configuration profile: PostgreSQL Flyway runner and R2DBC datasource keys in the Spring namespace (spring.flyway, spring.r2dbc), plus a test profile on H2 with NON_KEYWORDS=VALUE and flyway disabled; context telemetry-ingestion-processing; the shared config unit merges these keys into the application's own config document.",
   "project": "telemetry-ingestion-processing"
 }

@@ -5,44 +5,26 @@
   "dependsOn": [
     "T1-005"
   ],
-  "path": "src/main/java/com/pulsestream/telemetry/ingestion/infrastructure/InMemoryTelemetryEventBus.java",
+  "path": "src/main/java/com/blackboard/telemetry/shared/observability/AuditTrail.java",
   "kind": "code",
-  "layer": "infrastructure",
+  "layer": "shared",
   "feature": null,
-  "export": "InMemoryTelemetryEventBus",
-  "intent": "@Component adapter of TelemetryEventBus using Reactor Sinks.many().multicast().onBackpressureBuffer with capacity from TelemetryProperties.busBufferCapacity(); no blocking calls; publish emits non-blockingly and returns Mono<Void>; stream exposes sink.asFlux().",
+  "export": "AuditTrail",
+  "intent": "Append-only audit port. Interface with a single method record(AuditEntry) returning Mono<Void>; no update/delete. Implemented by the R2DBC adapter; business units record contractual facts only through this port.",
   "project": "telemetry-ingestion-processing",
   "ast_hints": {
-    "package": "com.pulsestream.telemetry.ingestion.infrastructure",
-    "implements": [
-      "TelemetryEventBus"
-    ],
+    "package": "com.blackboard.telemetry.shared.observability",
+    "implements": [],
     "dependencies": [
       {
-        "type": "TelemetryProperties",
-        "task_id": "T2-001"
-      },
-      {
-        "type": "TelemetrySample",
-        "task_id": "T2-002"
-      },
-      {
-        "type": "TelemetryEventBus",
+        "type": "AuditEntry",
         "task_id": "T2-004"
       }
     ],
     "methods": [
       {
-        "signature": "public InMemoryTelemetryEventBus(TelemetryProperties properties)",
-        "returns": ""
-      },
-      {
-        "signature": "public Mono<Void> publish(TelemetrySample sample)",
-        "returns": "reactor.core.publisher.Mono<Void>"
-      },
-      {
-        "signature": "public Flux<TelemetrySample> stream()",
-        "returns": "reactor.core.publisher.Flux<TelemetrySample>"
+        "signature": "Mono<Void> record(AuditEntry entry)",
+        "returns": "Mono<Void>"
       }
     ]
   }

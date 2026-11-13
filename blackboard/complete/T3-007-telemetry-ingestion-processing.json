@@ -5,11 +5,11 @@
   "dependsOn": [
     "T2-007"
   ],
-  "path": "src/main/java/com/pulsestream/telemetry/ingestion/api/IngressSampleDto.java",
+  "path": "src/main/java/com/blackboard/telemetry/reconciliation/domain/BackfillReorderer.java",
   "kind": "refactor",
-  "layer": "interface",
+  "layer": "domain",
   "feature": null,
-  "export": "IngressSampleDto",
-  "intent": "Inspect DTO mapping and validation annotations; signatures unchanged.",
+  "export": "BackfillReorderer",
+  "intent": "Inspect BackfillReorderer: ordering by tDevice only, stable, non-mutating; tidy without changing the surface.",
   "project": "telemetry-ingestion-processing"
 }

@@ -1,8 +1,11 @@
 package com.capo.ast_weaver_java.services.weave;
 
 import com.capo.ast_weaver_java.records.CoderChangesPayload;
+import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.NodeList;
+import com.github.javaparser.ast.body.CallableDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.ConstructorDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.body.TypeDeclaration;
@@ -24,8 +27,7 @@ public final class MethodWeaver {
     /** The method the payload's body belongs to: matched, or created from the signature. */
     public static MethodDeclaration selectOrCreate(TypeDeclaration<?> owner, CoderChangesPayload payload) {
         List<MethodDeclaration> candidates = owner.getMethodsByName(payload.method());
-        Optional<List<Parameter>> expectedParams = PayloadParser.signatureParameters(payload.signature());
-        if (!candidates.isEmpty() && expectedParams.isEmpty() && candidates.size() == 1) {
+        Optional<List<Parameter>> expectedParams = PayloadParser.signatureParameters(payload.signature());        if (!candidates.isEmpty() && expectedParams.isEmpty() && candidates.size() == 1) {
             return candidates.get(0);
         }
         if (!candidates.isEmpty() && expectedParams.isPresent()) {
@@ -41,6 +43,48 @@ public final class MethodWeaver {
                 .formatted(payload.method()));
         }
         return createMethod(owner, payload);
+    }
+
+    /**
+     * True when the payload's METHOD name equals its class name: that payload declares a
+     * CONSTRUCTOR. Splicing it as a MethodDeclaration would produce `public Foo Foo(...)`
+     * - a method that can never assign final fields - so a CORRECT constructor payload
+     * would be un-weavable forever and every attempt would charge the coder for the
+     * weaver's own shape (observed live: the ReorderWindow storm, 2026-11-12).
+     */
+    public static boolean declaresConstructor(String methodName, TypeDeclaration<?> owner) {
+        return owner instanceof ClassOrInterfaceDeclaration cls
+            && !cls.isInterface()
+            && methodName != null
+            && methodName.equals(cls.getNameAsString());
+    }
+
+    /** Select the constructor with matching parameters, or create it (public, bare body). */
+    public static CallableDeclaration<?> selectOrCreateConstructor(TypeDeclaration<?> owner,
+            CoderChangesPayload payload) {
+        ClassOrInterfaceDeclaration cls = (ClassOrInterfaceDeclaration) owner;
+        List<Parameter> expectedParams = PayloadParser.signatureParameters(payload.signature())
+            .orElseThrow(() -> new IllegalStateException(
+                "Cannot create constructor '%s': payload signature is missing or malformed"
+                    .formatted(payload.method())));
+        for (ConstructorDeclaration ctor : cls.getConstructors()) {
+            if (parametersMatch(ctor.getParameters(), expectedParams)) {
+                return ctor;
+            }
+        }
+        String signature = payload.signature() == null ? "" : payload.signature().trim();
+        int paren = signature.indexOf('(');
+        String head = paren >= 0 ? signature.substring(paren) : signature;
+        String rendered = "public " + cls.getNameAsString() + head + " {}";
+        ConstructorDeclaration created;
+        try {
+            created = (ConstructorDeclaration) StaticJavaParser.parseBodyDeclaration(rendered);
+        } catch (RuntimeException ex) {
+            throw new IllegalArgumentException("Payload signature does not parse as a constructor: "
+                + ParseErrors.firstLineOf(ex.getMessage()), ex);
+        }
+        cls.addMember(created);
+        return created;
     }
 
     /**
@@ -166,8 +210,14 @@ public final class MethodWeaver {
         try {
             MethodDeclaration parsed = PayloadParser.methodDeclaration(
                 signature.endsWith(";") ? signature : signature + ";");
-            return parsed.getNameAsString().equals(bare)
-                ? java.util.Optional.of(parsed) : java.util.Optional.empty();
+            if (parsed.getNameAsString().equals(bare)) {
+                // The table spells bindings without visibility ("String headerName()") and
+                // coders copy them verbatim into `signature`: default them PUBLIC like every
+                // other path - package-private is never a table's intent for an API member.
+                PayloadParser.defaultPublicVisibility(java.util.List.of(parsed));
+                return java.util.Optional.of(parsed);
+            }
+            return java.util.Optional.empty();
         } catch (RuntimeException ex) {
             return java.util.Optional.empty();
         }
@@ -244,7 +294,10 @@ public final class MethodWeaver {
     }
 
     private static boolean parametersMatch(MethodDeclaration method, List<Parameter> expectedParams) {
-        List<Parameter> actualParams = method.getParameters();
+        return parametersMatch(method.getParameters(), expectedParams);
+    }
+
+    private static boolean parametersMatch(NodeList<Parameter> actualParams, List<Parameter> expectedParams) {
         if (actualParams.size() != expectedParams.size()) {
             return false;
         }

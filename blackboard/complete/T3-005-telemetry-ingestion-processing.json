@@ -5,11 +5,11 @@
   "dependsOn": [
     "T2-005"
   ],
-  "path": "src/main/java/com/pulsestream/telemetry/ingestion/infrastructure/InMemoryTelemetryEventBus.java",
+  "path": "src/main/java/com/blackboard/telemetry/shared/observability/AuditTrail.java",
   "kind": "refactor",
-  "layer": "infrastructure",
+  "layer": "shared",
   "feature": null,
-  "export": "InMemoryTelemetryEventBus",
-  "intent": "Inspect for thread-safe emission, no blocking, config-driven capacity; signatures unchanged.",
+  "export": "AuditTrail",
+  "intent": "Inspect AuditTrail port: single append-only method, domain types only; tidy without changing the surface.",
   "project": "telemetry-ingestion-processing"
 }

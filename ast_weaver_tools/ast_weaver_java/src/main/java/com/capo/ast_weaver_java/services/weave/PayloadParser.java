@@ -3,11 +3,14 @@ package com.capo.ast_weaver_java.services.weave;
 import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.body.BodyDeclaration;
+import com.github.javaparser.ast.body.ConstructorDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.expr.AnnotationExpr;
+import com.github.javaparser.ast.nodeTypes.NodeWithModifiers;
 import com.github.javaparser.ast.stmt.BlockStmt;
 
 import java.io.IOException;
@@ -68,6 +71,9 @@ public final class PayloadParser {
         List<BodyDeclaration<?>> parsed = attempt(errors, "member",
             () -> List.of(StaticJavaParser.parseBodyDeclaration(text)));
         if (parsed != null) {
+            if (!"interface".equals(ladderKind)) {
+                defaultPublicVisibility(parsed);   // interface members stay implicitly public
+            }
             return parsed;
         }
         if (mayNeedTerminator(text)) {
@@ -101,6 +107,32 @@ public final class PayloadParser {
     }
 
     // --- single-node grammar entry points used by the merging stages ---
+
+    /**
+     * Blackboard convention: a members[] method/constructor the payload spells WITHOUT a
+     * visibility modifier is a PUBLIC API member - frozen tests consume table bindings
+     * across packages, and Java's package-private default turns a table-faithful member
+     * string into a cross-package compile error the blamed CONSUMER (a completed unit)
+     * can never fix (live 2026-11-12: "String headerName() {...}" members entry landed
+     * package-private and the use case unit died on 'is not public'). Explicit modifiers
+     * are always honored; fields are untouched.
+     */
+    @SuppressWarnings("rawtypes")
+    static void defaultPublicVisibility(List<BodyDeclaration<?>> members) {
+        for (BodyDeclaration<?> member : members) {
+            if (!(member instanceof MethodDeclaration) && !(member instanceof ConstructorDeclaration)) {
+                continue;
+            }
+            NodeWithModifiers raw = (NodeWithModifiers) member;
+            boolean hasVisibility = ((java.util.List<Modifier>) raw.getModifiers()).stream()
+                .map(Modifier::getKeyword)
+                .anyMatch(k -> k == Modifier.Keyword.PUBLIC
+                    || k == Modifier.Keyword.PROTECTED || k == Modifier.Keyword.PRIVATE);
+            if (!hasVisibility) {
+                raw.addModifier(Modifier.Keyword.PUBLIC);
+            }
+        }
+    }
 
     public static Parameter parameter(String declaration) {
         return StaticJavaParser.parseParameter(declaration);

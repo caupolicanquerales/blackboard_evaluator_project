@@ -35,6 +35,104 @@ OPTIONAL_KEYS = ("kind", "members", "annotations", "methodAnnotations",
 ALLOWED_KEYS = frozenset(REQUIRED_STR) | frozenset(REQUIRED_LIST) | frozenset(OPTIONAL_KEYS)
 
 
+def _decl_head(text):
+    """(tokens_before_paren, paren_index) of a signature/member, ignoring parens
+    nested inside generic angle brackets (e.g. "Function<A, B> apply(...)")."""
+    depth_angle = 0
+    for i, ch in enumerate(text):
+        if ch == "<":
+            depth_angle += 1
+        elif ch == ">" and depth_angle:
+            depth_angle -= 1
+        elif ch == "(" and depth_angle == 0:
+            return text[:i].replace(",", " ").split(), i
+    return text.replace(",", " ").split(), -1
+
+
+def _binding_is_static(head_tokens, is_constructor):
+    """True when a declaration's pre-paren tokens carry the 'static' modifier.
+    An ENUM's implicit valueOf is never emitted as a member, so no special case:
+    the TABLE is the only binding truth (instance unless it spells 'static')."""
+    return "static" in head_tokens
+
+
+def load_task_contract(root, task_id):
+    """The task record's ast_hints table from queue/complete/error, or None.
+
+    Absent record or absent table (legacy board) disables the drift check - the
+    guard must refuse drift it can prove, never guess bindings it cannot see.
+    """
+    for folder in ("queue", "complete", "error"):
+        base = os.path.join(root, "blackboard", folder)
+        if not os.path.isdir(base):
+            continue
+        for name in sorted(os.listdir(base)):
+            if not name.startswith(task_id + "-") or not name.endswith(".json"):
+                continue
+            try:
+                with open(os.path.join(base, name), encoding="utf-8") as fh:
+                    task = json.load(fh)
+            except (OSError, json.JSONDecodeError):
+                return None
+            hints = task.get("ast_hints") if isinstance(task, dict) else None
+            return hints if isinstance(hints, dict) else None
+    return None
+
+
+def table_drift_errors(payload, hints):
+    """Refuse payload declarations whose 'static' modifier differs from the pinned
+    table entry for the same member name.
+
+    Live defect 2026-11-12: the table pins `String headerName()` (instance) and the
+    coder shipped `public static String headerName()`. Instance-reference syntax
+    (`context.headerName()`) COMPILES against statics, so the unit's own frozen test
+    went green - while a sibling frozen test that STUBS the member on a mock can
+    never pass for any payload. The impersonation is invisible per-unit and fatal
+    cross-unit; the writer is where both sides are visible at once, in-session,
+    free to fix."""
+    errors = []
+    if not isinstance(hints, dict):
+        return errors
+    entries = {}
+    for method in hints.get("methods") or []:
+        if not isinstance(method, dict):
+            continue
+        sig = str(method.get("signature") or "")
+        head, _ = _decl_head(sig)
+        if not head:
+            continue
+        name = head[-1]
+        entries[name] = (sig, _binding_is_static(head, False))
+    for name, (table_sig, table_static) in entries.items():
+        # primary triple
+        if str(payload.get("method") or "").strip() == name:
+            p_head, p_paren = _decl_head(str(payload.get("signature") or ""))
+            p_static = _binding_is_static(p_head, False)
+            if p_static != table_static:
+                errors.append(
+                    "signature drift: payload spells '%s' as %s but the pinned ast_hints "
+                    "table entry is '%s' (%s) - emit the signature EXACTLY as the table "
+                    "binds it: a member the table spells without 'static' must NOT become "
+                    "static (instance-reference syntax hides the drift from this unit's "
+                    "own test while sibling tests that stub it on a mock fail forever)"
+                    % (name, "static" if p_static else "INSTANCE",
+                       table_sig, "static" if table_static else "instance binding"))
+        # members array (declaration strings)
+        for member in payload.get("members") or []:
+            if not isinstance(member, str) or "(" not in member:
+                continue
+            m_head, _ = _decl_head(member)
+            if not m_head or m_head[-1] != name:
+                continue
+            if _binding_is_static(m_head, False) != table_static:
+                errors.append(
+                    "members[] drift: '%s' is spelled %s but the table binds it %s ('%s') "
+                    "- reproduce the table's binding exactly"
+                    % (member.strip()[:80], "static" if _binding_is_static(m_head, False)
+                       else "instance", "static" if table_static else "instance", table_sig))
+    return errors
+
+
 def validate(payload, task_id):
     """Return a list of human-readable schema errors. Empty list means valid."""
     errors = []
@@ -117,6 +215,10 @@ def main():
         return 1
 
     errors = validate(payload, args.task_id)
+    if not errors:
+        # Table-drift guard: the pinned ast_hints is the single API truth - refuse
+        # bindings that differ from it while the session can still fix them for free.
+        errors = table_drift_errors(payload, load_task_contract(args.root, args.task_id))
     if errors:
         print(json.dumps({"written": None, "error": "schema violation", "details": errors}))
         return 1

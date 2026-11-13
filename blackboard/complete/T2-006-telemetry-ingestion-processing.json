@@ -5,38 +5,30 @@
   "dependsOn": [
     "T1-006"
   ],
-  "path": "src/main/java/com/pulsestream/telemetry/ingestion/application/IngestSamplesUseCase.java",
+  "path": "src/main/java/com/blackboard/telemetry/eventstore/application/TelemetryEventStore.java",
   "kind": "code",
   "layer": "application",
   "feature": null,
-  "export": "IngestSamplesUseCase",
-  "intent": "@Service. For each sample: validate via SampleValidator, publish via TelemetryEventBus (concatMap preserving demand/backpressure), emit the validated sample. Invalid samples are flagged, never dropped. Zero blocking I/O.",
+  "export": "TelemetryEventStore",
+  "intent": "Context Telemetry Event Store. Append-only port interface with append(TelemetryRecord) and findLatestInRange(deviceId, metric, from, to): latest revision per sample identity within the inclusive t_device range, ordered by tDevice ascending. Domain types only; no update/delete.",
   "project": "telemetry-ingestion-processing",
   "ast_hints": {
-    "package": "com.pulsestream.telemetry.ingestion.application",
+    "package": "com.blackboard.telemetry.eventstore.application",
     "implements": [],
     "dependencies": [
       {
-        "type": "SampleValidator",
+        "type": "TelemetryRecord",
         "task_id": "T2-003"
-      },
-      {
-        "type": "TelemetryEventBus",
-        "task_id": "T2-004"
-      },
-      {
-        "type": "TelemetrySample",
-        "task_id": "T2-002"
       }
     ],
     "methods": [
       {
-        "signature": "public IngestSamplesUseCase(SampleValidator validator, TelemetryEventBus eventBus)",
-        "returns": ""
+        "signature": "Mono<TelemetryRecord> append(TelemetryRecord record)",
+        "returns": "Mono<TelemetryRecord>"
       },
       {
-        "signature": "public Flux<TelemetrySample> ingest(Flux<TelemetrySample> samples)",
-        "returns": "reactor.core.publisher.Flux<TelemetrySample>"
+        "signature": "Flux<TelemetryRecord> findLatestInRange(String deviceId, String metric, Instant from, Instant to)",
+        "returns": "Flux<TelemetryRecord>"
       }
     ]
   }

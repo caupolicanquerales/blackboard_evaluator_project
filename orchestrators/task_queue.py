@@ -114,6 +114,38 @@ def stage_task_summary(stage):
     return "\n".join(lines) or "- none"
 
 
+def reopen_completed(task_id):
+    """Put a COMPLETED task back into the queue (same record bytes, same file name).
+
+    Used by contract-regression detection: when a later weave moves a binding a
+    completed file consumes, the compile error lands in that completed unit's own
+    file - invisible to deferral (it is neither queued nor quarantined) while every
+    live peer waits on it forever. Reopening hands the defect to its true owner's
+    attempt budget; the T3 mirror that depends on it requeues too (validation would
+    otherwise quarantine it as dangling). Returns True when the record moved.
+    """
+    src = next(iter(settings.COMPLETE_DIR.glob(f"{task_id}-*.json")), None)
+    if src is None:
+        return False
+    try:
+        task = json.loads(src.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    project = str(task.get("project", ""))
+    src.replace(settings.QUEUE_DIR / src.name)
+    for mirror in list(settings.COMPLETE_DIR.glob("T3-*.json")):
+        try:
+            dep = json.loads(mirror.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if task_id in (dep.get("dependsOn") or []):
+            mirror.replace(settings.QUEUE_DIR / mirror.name)
+    (settings.GATE_CACHE_DIR / f"{task_id}.json").unlink(missing_ok=True)
+    print(f"[reopen] {task_id}: completed file no longer compiles under the moved contract "
+          f"- unit '{project}' back in the queue for re-adjudication")
+    return True
+
+
 def send_to_error(file, reason, task):
     if task is None:
         try:
@@ -164,6 +196,96 @@ def retry_error_tasks(patterns=()):
         restored.append(task["id"])
         print(f"[retry] {task['id']} -> queue/{destination.name}")
     return restored
+
+
+def _claim_norm(text) -> str:
+    return " ".join(str(text or "").strip().lower().rstrip(".").split())
+
+
+OBSERVABILITY_SURFACES = ("correlation_key", "step_logs", "audit_trail", "metrics", "export")
+
+
+def _steplog_claim_errors(staged, index):
+    """STRATEGY OBSERVABILITY FLOOR + STEP-LOG CLAIM COVERAGE (2026-11-13, two layers of
+    the same live failure). The execution strategy promised 5 step logs, phase 2 claimed
+    none, the delivered code logged nothing - and every gate stayed green, because all
+    validators check consistency and none checked completeness. Layer 1 (the FLOOR):
+    every executable context's strategy MUST carry the complete observability surface -
+    correlation key, step logs, audit records, named metrics, export - UNCONDITIONALLY,
+    whether or not the business description asked for auditing or visibility; a strategy
+    without the floor is refused before claims are even read (the old version SKIPPED
+    silent strategies, which was the loophole one layer deeper). Layer 2 (the CLAIMS):
+    every step_logs entry must be claimed VERBATIM (normalized exact text) by exactly ONE
+    stage-2 task; unowned entries, double claims and off-plan claims are refused naming
+    the string. Boards whose project has NO strategy file (legacy, unknown stacks) still
+    skip - coverage cannot be demanded of a plan that never went through phase 1."""
+    errors = []
+    projects = {str(t.get("project", "")) for t in staged if t.get("project")}
+    for slug in sorted(projects):
+        file = settings.COMPLETE_DIR / f"execution-strategy-{slug}.json"
+        if not file.is_file():
+            continue
+        try:
+            strategy = json.loads(file.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        obs = strategy.get("observability")
+        if not isinstance(obs, dict) or not obs:
+            errors.append(
+                f"{slug}: the execution strategy carries NO `observability` object - the "
+                "audit + step-log floor is UNCONDITIONAL for every executable context: "
+                "correlation key, step logs, audit-trail records, named metrics and the "
+                "export surface are planned whether or not the business description asked "
+                "for them; a service nobody can audit or observe at runtime is a "
+                "compliance hole no later gate can see - write the strategy first")
+            continue
+        missing = [surface for surface in OBSERVABILITY_SURFACES if not obs.get(surface)]
+        if missing:
+            errors.append(
+                f"{slug}: the strategy's observability object is missing the mandatory floor "
+                f"surfaces {missing} - all five (correlation_key, step_logs, audit_trail, "
+                "metrics, export) are required: an incomplete promise becomes incomplete "
+                "code (2026-11-13: 5 step logs planned, 0 owned, 0 logged, all gates green)")
+            continue
+        entries = obs.get("step_logs") or []
+        wanted = {}
+        for entry in entries if isinstance(entries, list) else []:
+            key = _claim_norm(entry)
+            if key:
+                wanted.setdefault(key, str(entry).strip())
+        if not wanted:
+            continue
+        claims = {}
+        by_id = {}
+        for record in list(index.values()) + list(staged):
+            if isinstance(record, dict) and record.get("id"):
+                by_id[str(record["id"])] = record
+        for record in by_id.values():
+            if (str(record.get("project", "")) != slug
+                    or int(record.get("stage") or 0) != settings.TDD_STAGE):
+                continue
+            for entry in ((record.get("observability") or {}).get("step_logs") or []):
+                key = _claim_norm(entry)
+                if key:
+                    claims.setdefault(key, []).append(str(record.get("id", "?")))
+        for key, entry in wanted.items():
+            owners = claims.get(key) or []
+            if not owners:
+                errors.append(
+                    f"{slug}: step log '{entry}' is promised by the execution strategy but "
+                    "claimed by NO stage-2 unit - an unowned step log is a log line that "
+                    "will never exist: add it VERBATIM to exactly one unit's "
+                    "`observability.step_logs` (its coder logs it, its tester asserts it)")
+            elif len(owners) > 1:
+                errors.append(
+                    f"{slug}: step log '{entry}' claimed by {sorted(set(owners))} - exactly "
+                    "one owner: the class that crosses that boundary")
+        for key, owners in claims.items():
+            if key not in wanted:
+                errors.append(
+                    f"{slug}: unit(s) {sorted(set(owners))} claim step log '{key}' the "
+                    "execution strategy never planned - fix the plan or the claim")
+    return errors
 
 
 def emit_tasks(paths):
@@ -230,6 +352,10 @@ def emit_tasks(paths):
                     f"{producer_id}: pinned as a collaborator by "
                     f"{sorted(consumers)[:3]} but its ast_hints.methods is empty - "
                     "spell the surface (accessors included) every consumer touches")
+        # Plan validity across units (seed-002 D1..D3): unowned file duties, config-less
+        # runtime plans and request-encoding contradictions die here, at zero sessions.
+        errors.extend(tasks.plan_consistency(staged, index))
+        errors.extend(_steplog_claim_errors(staged, index))
         if errors:
             reason = "\n".join(errors + [
                 "Fix EVERY error above with one rewrite of the draft file, then re-emit once."])
@@ -237,6 +363,19 @@ def emit_tasks(paths):
             return reason
         for task in staged:
             destination = settings.QUEUE_DIR / tasks.task_file_name(task)
+            # One id, one record across the whole board. A QUARANTINED sibling of the same
+            # id is a zombie: producers keyed with include_error=True would resolve types
+            # to a task that is live in the queue, so its payload would be treated as
+            # pending-absent and every consumer would defer forever (seed-002 rerun 13:51
+            # left error/T4-001 beside the re-emitted queue record; a relaunch would hang
+            # the boot contract behind its own zombie). Re-issuing an id supersedes its old
+            # quarantine - the fresh record carries the CURRENT tree truth.
+            zombie = next(iter(settings.ERROR_DIR.glob(
+                f"{task['id']}-*.json")), None)
+            if zombie is not None:
+                zombie.unlink()
+                print(f"[emit  ] {task['id']}: superseded stale quarantine record "
+                      f"error/{zombie.name}")
             with telemetry.span("blackboard.queue", {"file": destination.name,
                                                      **telemetry.task_attributes(task)}):
                 destination.write_text(json.dumps(task, indent=2) + "\n", encoding="utf-8")

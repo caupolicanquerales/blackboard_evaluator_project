@@ -5,11 +5,11 @@
   "dependsOn": [
     "T2-004"
   ],
-  "path": "src/main/java/com/pulsestream/telemetry/ingestion/application/TelemetryEventBus.java",
+  "path": "src/main/java/com/blackboard/telemetry/shared/observability/AuditEntry.java",
   "kind": "refactor",
-  "layer": "application",
+  "layer": "shared",
   "feature": null,
-  "export": "TelemetryEventBus",
-  "intent": "Inspect the port for domain-only types and minimal surface; signatures unchanged.",
+  "export": "AuditEntry",
+  "intent": "Inspect AuditEntry record and tidy without changing its public surface.",
   "project": "telemetry-ingestion-processing"
 }

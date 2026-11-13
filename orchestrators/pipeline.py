@@ -5,6 +5,7 @@ The same flow runs over any backend module that exposes ``run_discovery``,
 """
 import argparse
 import builtins
+import json
 import sys
 import time
 
@@ -131,6 +132,48 @@ def _stuck_report(blocked):
                  "--retry [ids], queue missing producers with python3 orchestrators/closure.py --emit, "
                  "or fix the blamed source; then relaunch to continue")
     return " | ".join(parts)
+
+
+def _terminal_tree_report(gate=None):
+    """A DETERMINISTIC verdict on the delivered bytes at every terminal exit (seed-002
+    supervision gap: the run exited reporting board counts plus a CACHED 16:17 boot
+    verdict while the final quarantine rollback had left dangling imports in production
+    code). Board-driven by design (2026-11-13 rerun finding): a domain whose stage-4
+    assembly NEVER ran is reported as `NEVER BOOTED`, not silently skipped - the old
+    report scanned completed T4 records only and inherited the scheduling hole it was
+    meant to expose. Zero agent sessions: the gate command is the deterministic boot;
+    no stale build output can mask it because the command recompiles. Reporting only -
+    this never raises and never requeues."""
+    gate = gate or assembly.gate
+    index = task_queue.load_index(include_error=True)
+    slugs = sorted({str(t.get("project", "")) for t in index.values()
+                    if isinstance(t, dict) and t.get("stage") == settings.TDD_STAGE
+                    and t.get("project")})
+    lines = []
+    for slug in slugs:
+        record = None
+        for file in sorted(settings.COMPLETE_DIR.glob("T4-*.json")):
+            try:
+                rec = json.loads(file.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            if isinstance(rec, dict) and rec.get("project") == slug:
+                record = rec
+                break
+        if record is None:
+            lines.append(f"[tree   ] {slug}: RED - NEVER BOOTED: no completed stage-4 assembly "
+                         "task exists for this domain - the boot gate never ran, so NOTHING "
+                         "proves the application starts (relaunch the drain; assembly is "
+                         "queued automatically once the scaffold exists)")
+            continue
+        try:
+            ok, reason = gate(record)
+        except Exception as exc:                       # reporting must not crash the exit
+            ok, reason = False, f"terminal gate could not run: {exc}"
+        lines.append(f"[tree   ] {slug}: "
+                     + ("GREEN - the delivered tree compiles and boots" if ok
+                        else f"RED - the DELIVERED TREE IS BROKEN: {str(reason)[:500]}"))
+    return lines
 
 
 def run(args, backend):
@@ -267,8 +310,16 @@ def run(args, backend):
         if args.watch:
             idle_passes = 0
             stuck_passes = 0
+            exhausted_passes = 0
             while True:
                 pass_started = time.monotonic()
+                # Re-scheduled EVERY pass, not once at launch: on a fresh run the services/
+                # folder does not exist until the stage-0 scaffold completes DURING the drain,
+                # and an ensure_tasks() that only sees the pre-drain emptiness never queues
+                # the boot gate - the run then drains to "done" having never booted anything
+                # (observed live 2026-11-13 13:33: queue 0, 35 complete, zero T4 records).
+                # ensure_tasks() is idempotent and reads directories only: zero sessions.
+                assembly.ensure_tasks()
                 processed, blocked = backend.run_pass(args)
                 _pass_summary(pass_started, processed, blocked)
                 if processed == 0:
@@ -281,7 +332,34 @@ def run(args, backend):
                     # quarantine reverted the domain's classes. Back off geometrically
                     # for BOTH shapes and stop loudly when a blocked drain repeats.
                     time.sleep(min(max(args.interval, 1) * 2 ** min(idle_passes, 4), 60))
-                    stuck_passes = stuck_passes + 1 if blocked else 0
+                    if blocked:
+                        stuck_passes += 1
+                    elif (not any(settings.QUEUE_DIR.glob("*.json"))
+                            and any(settings.ERROR_DIR.glob("*.json"))):
+                        # BOARD EXHAUSTED (seed-002 rerun shape): the queue is empty ONLY
+                        # because quarantines drained it - blocked is empty by definition,
+                        # so the stuck breaker above could never see this. Silence here cost
+                        # an operator afternoon: zero progress, zero bills, zero guidance.
+                        exhausted_passes += 1
+                        if exhausted_passes >= settings.STUCK_PASSES_FATAL:
+                            restored = tdd_engine.autogrant_progressing()
+                            if restored:
+                                print(f"[grant ] auto-restored {len(restored)} advancing "
+                                      f"quarantined unit(s): {', '.join(restored[:8])}")
+                                exhausted_passes = 0
+                                idle_passes = 0
+                                continue
+                            n_err = len(list(settings.ERROR_DIR.glob("*.json")))
+                            for line in _terminal_tree_report():
+                                print(line)
+                            print(f"[exhausted] queue empty with {n_err} quarantined task(s): "
+                                  "the drain cannot advance without the operator. Inspect with "
+                                  "`python3 orchestrators/status.py`, fix the root failure, then "
+                                  "relaunch with --retry.")
+                            return 1
+                    else:
+                        stuck_passes = 0
+                        exhausted_passes = 0
                     if stuck_passes >= settings.STUCK_PASSES_FATAL:
                         # Before declaring the block operator-only, auto-grant the
                         # quarantined units that are PROVABLY advancing (their last
@@ -300,6 +378,15 @@ def run(args, backend):
                     stuck_passes = 0
                     time.sleep(args.interval)
         processed, blocked = backend.run_pass(args)
+        # Same root cause as the watch-loop reschedule: on a single-pass run the services/
+        # folder appears DURING the pass, so the one pre-drain ensure_tasks() could not have
+        # seen it. Schedule now (idempotent, zero sessions) and, if the boot gate is fresh
+        # work, drain it - a run that "finished" without ever booting the app is a lie.
+        before = set(settings.QUEUE_DIR.glob("T4-*.json"))
+        assembly.ensure_tasks()
+        if set(settings.QUEUE_DIR.glob("T4-*.json")) - before:
+            extra, blocked = backend.run_pass(args)
+            processed += extra
     except KeyboardInterrupt:
         return 130
     except tdd_engine.FatalPipeline as fatal:

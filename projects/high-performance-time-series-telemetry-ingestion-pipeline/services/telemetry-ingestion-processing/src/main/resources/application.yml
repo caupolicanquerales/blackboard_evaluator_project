@@ -1,0 +1,16 @@
+spring.application.name: telemetry-ingestion-processing
+spring.flyway.locations: classpath:db/migration
+spring.r2dbc.url: ${R2DBC_URL:r2dbc:h2:mem:///telemetrydb;DB_CLOSE_DELAY=-1;NON_KEYWORDS=VALUE}
+spring.r2dbc.username: ${R2DBC_USERNAME:telemetry}
+spring.r2dbc.password: ${R2DBC_PASSWORD:telemetry}
+telemetry.backfill.window-seconds: 60
+telemetry.buffer.capacity: 1024
+management.endpoints.web.exposure.include: health,metrics
+logging.file.name: logs/telemetry-ingestion-processing.log
+logging.structured.format.file: ecs
+logging.logback.rollingpolicy.max-file-size: 10MB
+logging.logback.rollingpolicy.max-history: 7
+---
+spring.config.activate.on-profile: test
+spring.r2dbc.url: r2dbc:h2:mem:///telemetrydb;DB_CLOSE_DELAY=-1;NON_KEYWORDS=VALUE
+spring.flyway.enabled: false

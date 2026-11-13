@@ -21,6 +21,7 @@ completion is the green boot itself, evaluated by the orchestrator, never report
 by the agent.
 """
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -49,7 +50,39 @@ STACKS = {
         "schema_globs": ("pom.xml", "build.gradle", "build.gradle.kts",
                          "src/main/resources/*"),
         "schema_markers": ("flyway", "liquibase", "sql.init"),
+        # seed-002 D3/L3: the marker check alone is marker-deep. A runner that exists
+        # but reads an EMPTY locations folder boots green over a schema-less runtime.
+        # The alignment rule below asserts the configured locations actually contain
+        # the db/migrations scripts. `locations_keys` are the runtime property names
+        # (framework namespace REQUIRED: spring.flyway.locations, never bare
+        # flyway.locations in a file no runtime reads); `classpath_roots` is where a
+        # classpath: location physically resolves to.
+        "locations_keys": ("spring.flyway.locations", "flyway.locations", "locations"),
+        "locations_props_globs": ("src/main/resources/application*.yml",
+                                  "src/main/resources/application*.yaml",
+                                  "src/main/resources/application*.properties"),
+        "classpath_roots": ("src/main/resources",),
         "schema_hint": "add a migration runner (flyway/liquibase) or spring.sql.init.schema-locations",
+        # seed-002 rerun F3: the VACUOUS boot. A composition root that cannot see the
+        # domain packages boots a context with NONE of the application, and the smoke
+        # test (which lives beside the entry) goes 1/1 green over a dead service. The
+        # probe is grammar-deep but stack-neutral: the entry file's package must be an
+        # ancestor-or-self of every other main-source package, UNLESS the entry spells
+        # one of the row's coverage markers (scan/config directives). Stacks without
+        # a package_regex row key (explicit module graphs) skip the rule.
+        "package_regex": r"^\s*package\s+([\w.]+)\s*;",
+        "coverage_markers": ("scanBasePackages", "basePackages", "ComponentScan"),
+        # seed-002 rerun, 13:45 live shape: @SpringBootTest/@DataR2dbcTest-style tests
+        # find the configuration by searching packages UPWARDS from the test class -
+        # a search that IGNORES scan directives. The assembly agent declared
+        # scanBasePackages, the smoke test went green, and two slice tests stayed
+        # red forever ("Unable to find a @SpringBootConfiguration by searching
+        # packages upwards") with NO payload able to fix them: the entry point must
+        # be an ANCESTOR PACKAGE of every context-discovering test, marker or not.
+        "test_globs": ("src/test/java/**/*.java",),
+        "slice_markers": ("@SpringBootTest", "@DataR2dbcTest", "@DataJpaTest",
+                          "@WebFluxTest", "@WebMvcTest", "@JsonTest", "@JdbcTest"),
+        "slice_exempt_regex": r"classes\s*=|@ContextConfiguration",
     },
     "typescript-nestjs": {
         "skill": SKILL_FAMILY + "/typescript-nestjs/SKILL.md",
@@ -60,6 +93,9 @@ STACKS = {
         "entry_excludes": (".spec.ts", ".test.ts"),
         "schema_globs": ("package.json", "src/**/*.ts"),
         "schema_markers": ("typeorm", "mikro-orm", "knex", "prisma", "migration"),
+        "locations_keys": (),
+        "locations_props_globs": ("src/**/*.ts", "ormconfig.json", ".env"),
+        "classpath_roots": ("src", "."),
         "schema_hint": "wire the ORM migration tooling (TypeORM/Prisma/knex migrations)",
     },
     "python-fastapi": {
@@ -71,6 +107,9 @@ STACKS = {
         "entry_excludes": (),
         "schema_globs": ("pyproject.toml", "requirements.txt"),
         "schema_markers": ("alembic",),
+        "locations_keys": ("script_location", "version_locations"),
+        "locations_props_globs": ("alembic.ini", "*.ini", "src/**/settings.py", "app/**/settings.py"),
+        "classpath_roots": (".", "src", "app"),
         "schema_hint": "add alembic (or an in-tree migrations package) to apply the schema",
     },
 }
@@ -118,6 +157,82 @@ def _entry_problems(service_root: Path, stack: str) -> list:
     return problems
 
 
+def _coverage_problems(service_root: Path, stack: str) -> list:
+    """Hollow-boot guard (seed-002 rerun F3): the smoke test boots beside the entry, so
+    the booted context can only contain what the entry can SEE. A plan that pins one
+    code root while the scaffolded entry lands in the generator's default package
+    (Initializr's groupId is not a decision) boots green over a context with NONE of
+    the application: no controller, no wiring, dead service, 1/1 gate. Rules read the
+    STACKS row only; stacks without package grammar skip it.
+
+    Two halves, one exemption each:
+      (1) MAIN sources under packages the entry cannot see - waivable by declaring scan
+          coverage (the directive genuinely fixes component scanning);
+      (2) context-DISCOVERING tests (@SpringBootTest/@DataR2dbcTest slices) whose package
+          does not contain the entry - NOT waivable by any marker, because the upward
+          package search that locates @SpringBootConfiguration never reads scan
+          directives. The only fix is moving the composition root to the shared root
+          package of code and tests."""
+    row = STACKS.get(stack) or {}
+    pkg_re, markers = row.get("package_regex"), row.get("coverage_markers", ())
+    if not pkg_re or not row.get("entry_globs") or not row.get("entry_marker"):
+        return []
+    candidates = [f for f in _matched(service_root, row["entry_globs"],
+                                      row.get("entry_excludes", ()))
+                  if row["entry_marker"] in _read(f)]
+    if not candidates:
+        return []
+    entry_texts = [(f, _read(f)) for f in candidates]
+    roots = set()
+    for _, text in entry_texts:
+        for match in re.finditer(pkg_re, text, re.M):
+            roots.add(match.group(1))
+    if not roots:
+        return []
+    declared = any(marker in text for _, text in entry_texts for marker in markers)
+    problems = []
+    if not declared:                      # (1) component scan: the marker waives it
+        seen = {f for f, _ in entry_texts}
+        invisible = set()
+        for f in _matched(service_root, row["entry_globs"], row.get("entry_excludes", ())):
+            if f in seen:
+                continue
+            match = re.search(pkg_re, _read(f), re.M)
+            if not match:
+                continue
+            pkg = match.group(1)
+            if not any(pkg == root or pkg.startswith(root + ".") for root in roots):
+                invisible.add(pkg)
+        if invisible:
+            problems.append(
+                f"composition root {sorted(roots)} cannot see main sources under other "
+                f"package roots [{', '.join(sorted(invisible)[:3])}]: the boot smoke test "
+                "loads a context with NONE of the application and stays green over a dead "
+                f"service (seed-002 F3) - move the entry above the code root or declare "
+                f"scan coverage ({', '.join(markers)})")
+    discovering = set()                   # (2) slice discovery: NO marker waives it
+    for f in _matched(service_root, row.get("test_globs", ())):
+        text = _read(f)
+        if not any(marker in text for marker in row.get("slice_markers", ())):
+            continue
+        if row.get("slice_exempt_regex") and re.search(row["slice_exempt_regex"], text):
+            continue                      # explicit classes=/@ContextConfiguration: no search
+        match = re.search(pkg_re, text, re.M)
+        if not match:
+            continue
+        pkg = match.group(1)
+        if not any(pkg == root or pkg.startswith(root + ".") for root in roots):
+            discovering.add(pkg)
+    if discovering:
+        problems.append(
+            f"context-discovering test(s) under [{', '.join(sorted(discovering)[:3])}] search "
+            f"UPWARDS for the configuration and cannot reach the entry {sorted(roots)} - "
+            "scan directives do NOT fix this search: move the composition root to the shared "
+            "root package of the code and the tests (seed-002 rerun 13:45: two slice units "
+            "unweavable-red forever behind a green smoke test)")
+    return problems
+
+
 def _schema_problems(service_root: Path, stack: str) -> list:
     """db/migrations SQL must be APPLIED by something, or the schema is fiction (P0-2).
 
@@ -132,14 +247,90 @@ def _schema_problems(service_root: Path, stack: str) -> list:
     blob = " ".join(_read(f) for f in _matched(service_root, row.get("schema_globs", ())))
     blob = blob.lower()
     if any(marker in blob for marker in row.get("schema_markers", ())):
-        return []
+        return _migration_alignment_problems(service_root, stack)
     if any((service_root / d).is_dir() for d in
            ("alembic", "migrations", "src/migrations", "src/alembic",
             "app/migrations", "backend/migrations", "db/migrations/versions")):
-        return []
+        return _migration_alignment_problems(service_root, stack)
     hint = row.get("schema_hint", "register the stack in assembly.STACKS with its runner markers")
     return [f"db/migrations/*.sql exist but nothing applies them - {hint}: "
             "the app boots and dies on its first real query"]
+
+
+def _configured_location_tokens(service_root: Path, stack: str) -> list:
+    """Locations the RUNTIME is told to read, from the framework's own property
+    namespace (spring.flyway.locations / alembic script_location / ...). Keys outside
+    the runtime namespace are inert and only match inside files the probe reads."""
+    row = STACKS.get(stack) or {}
+    keys = row.get("locations_keys") or ()
+    tokens = []
+    if not keys:
+        return tokens
+    for f in _matched(service_root, row.get("locations_props_globs", ())):
+        text = _read(f)
+        for key in keys:
+            for match in re.finditer(re.escape(key) + r"\s*[=:]\s*[\"']?([^\"'\n;,]+)", text):
+                tokens.extend(tok.strip() for tok in match.group(1).split(",") if tok.strip())
+    return tokens
+
+
+def _resolve_location(service_root: Path, token: str, stack: str) -> list:
+    """Concrete folders one location token addresses (classpath:X resolves under the
+    stack's resource roots; filesystem: and plain paths under the service root)."""
+    row = STACKS.get(stack) or {}
+    roots = row.get("classpath_roots") or (".",)
+    raw = token.strip()
+    for prefix in ("classpath:", "filesystem:", "file:"):
+        if raw.startswith(prefix):
+            raw = raw[len(prefix):]
+            if prefix == "classpath:":
+                return [service_root / r / raw for r in roots]
+            break
+    return [service_root / raw]
+
+
+def _migration_alignment_problems(service_root: Path, stack: str) -> list:
+    """seed-002 D3 step 4 (§10.5 upgrade): marker-deep became ALIGNMENT-deep.
+
+    When db/migrations/*.sql exist and a runner is wired, every migration filename
+    must be discoverable under the locations the runtime actually reads. Boot-green
+    over an empty locations folder is a schema-less runtime, not a green gate.
+    """
+    wanted = {f.name for f in (service_root / "db" / "migrations").glob("*.sql")}
+    tokens = _configured_location_tokens(service_root, stack)
+    if tokens:
+        dirs = [d for token in tokens for d in _resolve_location(service_root, token, stack)]
+        seen = {str(d) for d in dirs}
+        if not any(d.is_dir() for d in dirs):
+            return [f"configured schema locations {sorted(seen)} resolve to no existing folder "
+                    f"- the {len(wanted)} db/migrations scripts would never run"]
+        visible = set()
+        for d in dirs:
+            if d.is_dir():
+                visible |= {f.name for f in d.rglob("*") if f.is_file()}
+        missing = sorted(wanted - visible)
+        if missing:
+            return [f"db/migrations/*.sql exist but the configured locations "
+                    f"({', '.join(sorted(seen))}) carry none of them ({missing[:3]}...) - "
+                    "copy the scripts under the locations folder or point the runner at "
+                    "db/migrations; boot-green over an empty locations folder is a "
+                    "schema-less runtime (seed-002 D3/L3)"]
+        return []
+    # No location key configured anywhere: the migrations must at least live under a
+    # conventional runner folder the marker implies (in-tree package = its own location).
+    script_suffixes = {".sql", ".py", ".ts", ".js", ".mjs", ".cjs"}
+    candidates = [f for f in _matched(service_root, ("src/main/resources/db/migration/*",
+                                                     "src/main/resources/migrations/*",
+                                                     "db/migrations/versions/*",
+                                                     "migrations/*", "src/migrations/*",
+                                                     "alembic/versions/*", "app/migrations/*"))
+                  if f.suffix in script_suffixes and f.name != "__init__.py"]
+    if wanted and candidates:
+        return []
+    return [f"db/migrations has {len(wanted)} scripts and the wired runner names no locations "
+            "folder that contains them - configure the locations in the runtime property "
+            "namespace (e.g. spring.flyway.locations) pointing at a folder holding these "
+            "files (seed-002 D3: flyway.locations in an unread profile file is inert)"]
 
 
 def _detect_java(service_root: Path):
@@ -228,6 +419,7 @@ def detect(service_root: Path):
             return found
         found["skill"] = row["skill"]
         found["problems"] = found["problems"] + _entry_problems(service_root, found["stack"]) \
+            + _coverage_problems(service_root, found["stack"]) \
             + _schema_problems(service_root, found["stack"])
         return found
     return None

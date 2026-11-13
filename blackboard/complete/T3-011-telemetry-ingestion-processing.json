@@ -5,11 +5,11 @@
   "dependsOn": [
     "T2-011"
   ],
-  "path": "src/main/java/com/pulsestream/telemetry/eventlog/domain/EventLogRepository.java",
+  "path": "src/main/java/com/blackboard/telemetry/shared/observability/CorrelationIdWebFilter.java",
   "kind": "refactor",
-  "layer": "domain",
+  "layer": "shared",
   "feature": null,
-  "export": "EventLogRepository",
-  "intent": "Inspect port stays append-only and domain-typed; signatures unchanged.",
+  "export": "CorrelationIdWebFilter",
+  "intent": "Inspect CorrelationIdWebFilter: non-blocking, correlation key semantics preserved; tidy without changing the surface.",
   "project": "telemetry-ingestion-processing"
 }

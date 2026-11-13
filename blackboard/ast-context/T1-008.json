@@ -3,14 +3,94 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "IngressController",
-    "constructors": [],
+    "type": "IngestTelemetryUseCase",
+    "constructors": [
+      [
+        "store",
+        "auditTrail",
+        "registry"
+      ]
+    ],
     "static_calls": [],
-    "calls": [],
+    "calls": [
+      {
+        "receiver": "useCase",
+        "method": "ingest",
+        "args": [
+          "samples",
+          "\"corr-1\""
+        ]
+      },
+      {
+        "receiver": "useCase",
+        "method": "ingest",
+        "args": [
+          "Flux.just(new TelemetrySample(\" \", \"temp\", T, T, 1.0))",
+          "\"c\""
+        ]
+      },
+      {
+        "receiver": "useCase",
+        "method": "ingest",
+        "args": [
+          "Flux.just(new TelemetrySample(\"dev-1\", \"\", T, T, 1.0))",
+          "\"c\""
+        ]
+      },
+      {
+        "receiver": "useCase",
+        "method": "ingest",
+        "args": [
+          "Flux.just(new TelemetrySample(\"dev-1\", \"temp\", null, T, 1.0))",
+          "\"c\""
+        ]
+      },
+      {
+        "receiver": "useCase",
+        "method": "ingest",
+        "args": [
+          "Flux.just(new TelemetrySample(\"dev-1\", \"temp\", T, T, Double.POSITIVE_INFINITY))",
+          "\"c\""
+        ]
+      },
+      {
+        "receiver": "useCase",
+        "method": "ingest",
+        "args": [
+          "samples",
+          "\"c\""
+        ]
+      },
+      {
+        "receiver": "useCase",
+        "method": "ingest",
+        "args": [
+          "samples",
+          "\"corr-7\""
+        ]
+      },
+      {
+        "receiver": "useCase",
+        "method": "ingest",
+        "args": [
+          "Flux.empty()",
+          "\"corr-0\""
+        ]
+      }
+    ],
     "verified": [],
     "usage_lines": [
-      "@WebFluxTest(IngressController.class)",
-      "class IngressControllerTest {"
+      "class IngestTelemetryUseCaseTest {",
+      "private IngestTelemetryUseCase useCase;",
+      "useCase = new IngestTelemetryUseCase(store, auditTrail, registry);",
+      "StepVerifier.create(useCase.ingest(samples, \"corr-1\")).expectNext(2L).verifyComplete();",
+      "StepVerifier.create(useCase.ingest(Flux.just(new TelemetrySample(\" \", \"temp\", T, T, 1.0)), \"c\"))",
+      "StepVerifier.create(useCase.ingest(Flux.just(new TelemetrySample(\"dev-1\", \"\", T, T, 1.0)), \"c\"))",
+      "StepVerifier.create(useCase.ingest(Flux.just(new TelemetrySample(\"dev-1\", \"temp\", null, T, 1.0)), \"c\"))",
+      "StepVerifier.create(useCase.ingest(",
+      "useCase.ingest(samples, \"c\").block();",
+      "useCase.ingest(samples, \"corr-7\").block();",
+      "StepVerifier.create(useCase.ingest(Flux.empty(), \"corr-0\")).expectNext(0L).verifyComplete();"
     ]
   },
   "stderr": "",

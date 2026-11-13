@@ -5,11 +5,11 @@
   "dependsOn": [
     "T2-002"
   ],
-  "path": "src/main/java/com/pulsestream/telemetry/ingestion/domain/TelemetrySample.java",
+  "path": "src/main/java/com/blackboard/telemetry/ingestion/domain/TelemetrySample.java",
   "kind": "refactor",
   "layer": "domain",
   "feature": null,
   "export": "TelemetrySample",
-  "intent": "Inspect and refactor TelemetrySample: immutability, framework-free domain, public signatures unchanged, tests green.",
+  "intent": "Inspect TelemetrySample record (immutable, no validation, no framework imports) and tidy without changing its public surface.",
   "project": "telemetry-ingestion-processing"
 }

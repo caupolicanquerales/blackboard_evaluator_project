@@ -3,37 +3,15 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "IngestSamplesUseCase",
-    "constructors": [
-      [
-        "validator",
-        "eventBus"
-      ]
-    ],
+    "type": "TelemetryEventStore",
+    "constructors": [],
     "static_calls": [],
-    "calls": [
-      {
-        "receiver": "useCase",
-        "method": "ingest",
-        "args": [
-          "Flux.just(a, b)"
-        ]
-      },
-      {
-        "receiver": "useCase",
-        "method": "ingest",
-        "args": [
-          "Flux.empty()"
-        ]
-      }
-    ],
+    "calls": [],
     "verified": [],
     "usage_lines": [
-      "class IngestSamplesUseCaseTest {",
-      "IngestSamplesUseCase useCase = new IngestSamplesUseCase(validator, eventBus);",
-      "StepVerifier.create(useCase.ingest(Flux.just(a, b)))",
-      "IngestSamplesUseCase useCase = new IngestSamplesUseCase(validator, eventBus);",
-      "StepVerifier.create(useCase.ingest(Flux.empty()))"
+      "class TelemetryEventStoreTest {",
+      "private static class InMemoryStore implements TelemetryEventStore {",
+      "List<String> names = java.util.Arrays.stream(TelemetryEventStore.class.getDeclaredMethods())"
     ]
   },
   "stderr": "",

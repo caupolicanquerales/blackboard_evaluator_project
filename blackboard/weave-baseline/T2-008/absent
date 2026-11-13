@@ -1,1 +1,1 @@
-src/main/java/com/pulsestream/telemetry/ingestion/api/IngressController.java
+src/main/java/com/blackboard/telemetry/ingestion/application/IngestTelemetryUseCase.java

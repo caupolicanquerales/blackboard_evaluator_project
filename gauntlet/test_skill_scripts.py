@@ -82,6 +82,47 @@ exists = subprocess.run([sys.executable, str(REPO / ".opencode/skills/read-write
                         capture_output=True, text=True)
 check("W10 existing payload without --retry exits 2 (no silent overwrite)", exists.returncode == 2, exists.stdout)
 
+# W11-W14: table-drift guard (live 2026-11-12: `String headerName()` pinned as
+# instance, coder shipped a STATIC impostor - this unit's own test compiled, the
+# sibling frozen test that STUBS the member failed for every payload, forever).
+def writer_run(task_id, payload, retry=False):
+    pf = root / f"{task_id}-in.json"
+    pf.write_text(json.dumps(payload))
+    cmd = [sys.executable, str(REPO / ".opencode/skills/read-write-file-ddd/writer-coder-changes/write-coder-changes.py"),
+           "--root", str(root), "--task-id", task_id, "--input", str(pf)]
+    if retry:
+        cmd.append("--retry")
+    return subprocess.run(cmd, capture_output=True, text=True)
+
+def with_table(sig):
+    (root / "blackboard" / "queue").mkdir(parents=True, exist_ok=True)
+    (root / "blackboard" / "queue" / f"{DRIFT_ID}-p.json").write_text(json.dumps(
+        {"id": DRIFT_ID, "stage": 2, "project": "p", "path": "src/main/java/x/Box.java",
+         "export": "Box", "targetAgent": "agent-coder", "dependsOn": [], "kind": "code",
+         "layer": "domain", "feature": None, "intent": "x",
+         "ast_hints": {"package": "x", "implements": [], "dependencies": [],
+                       "methods": [{"signature": sig, "returns": "Box<T>"}]}}))
+
+DRIFT_ID = "T2-902"
+drift_payload = {**VALID, "id": DRIFT_ID}
+with_table("open(String s)")
+static_drift = writer_run(DRIFT_ID, {**drift_payload, "signature": "static Box<T> open(String s)"})
+check("W11 STATIC impostor against an instance table entry refused in-session",
+      static_drift.returncode == 1 and "signature drift" in static_drift.stdout, static_drift.stdout[:150])
+instance_ok = writer_run(DRIFT_ID, drift_payload)
+check("W12 table-matching instance payload accepted", instance_ok.returncode == 0, instance_ok.stdout[:150])
+with_table("static Box<T> open(String s)")
+static_ok = writer_run(DRIFT_ID, {**drift_payload, "signature": "static Box<T> open(String s)"}, retry=True)
+check("W13 static payload accepted when the table pins static (no over-block)",
+      static_ok.returncode == 0, static_ok.stdout[:150])
+members_drift = writer_run(DRIFT_ID, {**drift_payload, "signature": "static Box<T> open(String s)",
+                                      "members": ["Box<T> open(String s) { return null; }"]}, retry=True)
+check("W14 members[] entry drifting from a static table binding refused",
+      members_drift.returncode == 1 and "drift" in members_drift.stdout, members_drift.stdout[:150])
+no_table = writer_run("T2-903", {**VALID, "id": "T2-903"})
+check("W15 legacy board (no task record) unaffected: guard inert, payload lands",
+      no_table.returncode == 0, no_table.stdout[:150])
+
 # --- 2. Runner grammar: every toolchain phrasing -> one normalized field -----
 
 def demands_of(output):
@@ -253,6 +294,28 @@ if skeleton_ok:
     skeleton_ok = fed.returncode == 0
 check("K4 context-map skeleton is schema-valid through the writer itself",
       skeleton_ok, "emit or self-feed rejected")
+
+# --- K5: the text writer accepts MULTI-document YAML (seed-002 rerun T2-001) ---
+# safe_load refused the profiled config the plan and the frozen test require;
+# the write gate must validate the exact surface Spring/SnakeYAML parse: loadAll.
+text_exec = REPO / ".opencode/skills/code-weaver-dispatcher/builders/_text_write_exec.py"
+wroot = Path(tempfile.mkdtemp())
+def weave(body):
+    p = wroot / "changes.json"
+    p.write_text(json.dumps({"body": body, "targetFile": "src/main/resources/application.yml"}),
+                 encoding="utf-8")
+    r = subprocess.run([sys.executable, str(text_exec), str(p), str(wroot)],
+                       capture_output=True, text=True)
+    return r.returncode, r.stdout
+ok_multi, out_multi = weave("spring.application.name: x\n---\nspring:\n  config:\n"
+                            "    activate:\n      on-profile: test\n  flyway:\n"
+                            "    enabled: false\n")
+check("K5 multi-document YAML payload WEAVES (profiled config was 'not parseable', "
+      "making a correct plan unweavable, T2-001)", out_multi.find('"status": "ok"') >= 0
+      and ok_multi == 0, out_multi.strip()[:200])
+ok_broken, out_broken = weave("a: [1, 2\n")
+check("K6 broken YAML is still refused", ok_broken == 1 and "not parseable" in out_broken,
+      out_broken.strip()[:120])
 
 # --- summary -----------------------------------------------------------------
 bad_names = [n for n, c in CHECKS if not c]

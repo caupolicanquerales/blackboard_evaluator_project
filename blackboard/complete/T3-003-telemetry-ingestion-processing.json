@@ -1,0 +1,15 @@
+{
+  "id": "T3-003",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-003"
+  ],
+  "path": "src/main/java/com/blackboard/telemetry/eventstore/domain/TelemetryRecord.java",
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "export": "TelemetryRecord",
+  "intent": "Inspect TelemetryRecord record (immutable append-only revision) and tidy without changing its public surface.",
+  "project": "telemetry-ingestion-processing"
+}

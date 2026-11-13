@@ -3,51 +3,76 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "TelemetryEventBus",
-    "constructors": [],
+    "type": "AuditEntry",
+    "constructors": [
+      [
+        "\"actor-1\"",
+        "\"INGEST\"",
+        "\"SUCCESS\"",
+        "TS",
+        "\"req-1\""
+      ],
+      [
+        "\"actor-1\"",
+        "\"INGEST\"",
+        "\"SUCCESS\"",
+        "TS",
+        "\"req-2\""
+      ],
+      [
+        "\"actor-1\"",
+        "\"INGEST\"",
+        "\"FAILURE\"",
+        "TS",
+        "\"req-1\""
+      ]
+    ],
     "static_calls": [],
     "calls": [
       {
-        "receiver": "bus",
-        "method": "publish",
-        "args": [
-          "SAMPLE"
-        ],
-        "stubbed_to": "Mono.empty()"
+        "receiver": "entry",
+        "method": "actor",
+        "args": []
       },
       {
-        "receiver": "bus",
-        "method": "publish",
-        "args": [
-          "SAMPLE"
-        ],
-        "returns": "Mono<Void>"
+        "receiver": "entry",
+        "method": "action",
+        "args": []
       },
       {
-        "receiver": "bus",
-        "method": "stream",
-        "args": [],
-        "stubbed_to": "Flux.just(SAMPLE)"
+        "receiver": "entry",
+        "method": "outcome",
+        "args": []
       },
       {
-        "receiver": "bus",
-        "method": "stream",
-        "args": [],
-        "returns": "Flux<TelemetrySample>"
+        "receiver": "entry",
+        "method": "timestamp",
+        "args": []
+      },
+      {
+        "receiver": "entry",
+        "method": "correlationId",
+        "args": []
       }
     ],
-    "verified": [
-      "publish"
-    ],
+    "verified": [],
     "usage_lines": [
-      "class TelemetryEventBusTest {",
-      "TelemetryEventBus bus = mock(TelemetryEventBus.class);",
-      "when(bus.publish(SAMPLE)).thenReturn(Mono.empty());",
-      "Mono<Void> result = bus.publish(SAMPLE);",
-      "verify(bus).publish(SAMPLE);",
-      "TelemetryEventBus bus = mock(TelemetryEventBus.class);",
-      "when(bus.stream()).thenReturn(Flux.just(SAMPLE));",
-      "Flux<TelemetrySample> result = bus.stream();"
+      "class AuditEntryTest {",
+      "AuditEntry entry = new AuditEntry(\"actor-1\", \"INGEST\", \"SUCCESS\", TS, \"req-1\");",
+      "assertThat(entry.actor()).isEqualTo(\"actor-1\");",
+      "assertThat(entry.action()).isEqualTo(\"INGEST\");",
+      "assertThat(entry.outcome()).isEqualTo(\"SUCCESS\");",
+      "assertThat(entry.timestamp()).isEqualTo(TS);",
+      "assertThat(entry.correlationId()).isEqualTo(\"req-1\");",
+      "AuditEntry a = new AuditEntry(\"actor-1\", \"INGEST\", \"SUCCESS\", TS, \"req-1\");",
+      "AuditEntry b = new AuditEntry(\"actor-1\", \"INGEST\", \"SUCCESS\", TS, \"req-1\");",
+      "assertThat(a).isEqualTo(b).hasSameHashCodeAs(b);",
+      "AuditEntry a = new AuditEntry(\"actor-1\", \"INGEST\", \"SUCCESS\", TS, \"req-1\");",
+      "AuditEntry b = new AuditEntry(\"actor-1\", \"INGEST\", \"SUCCESS\", TS, \"req-2\");",
+      "assertThat(a).isNotEqualTo(b);",
+      "AuditEntry a = new AuditEntry(\"actor-1\", \"INGEST\", \"SUCCESS\", TS, \"req-1\");",
+      "AuditEntry b = new AuditEntry(\"actor-1\", \"INGEST\", \"FAILURE\", TS, \"req-1\");",
+      "assertThat(a).isNotEqualTo(b);"
     ]
   },
   "stderr": "",

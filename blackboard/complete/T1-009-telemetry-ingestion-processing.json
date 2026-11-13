@@ -4,41 +4,46 @@
   "stage": 1,
   "dependsOn": [
     "T0-001",
-    "T1-001",
-    "T1-002"
+    "T0-002"
   ],
-  "path": "src/test/java/com/pulsestream/telemetry/reordering/domain/ReorderBufferTest.java",
+  "path": "src/test/java/com/blackboard/telemetry/eventstore/infrastructure/R2dbcTelemetryEventStoreTest.java",
   "kind": "test",
-  "layer": "domain",
+  "layer": "infrastructure",
   "feature": null,
-  "export": "ReorderBufferTest",
-  "intent": "Backfill Reordering & Windowing. With window from TelemetryProperties: accept(sample, nowEpochMs) returns the samples whose tDeviceEpochMs <= now - window, ordered ascending by tDeviceEpochMs (never t_ingress); a late sample arriving within the window is placed in correct chronological position; samples inside the window are retained; drain() returns all remaining sorted by t_device and empties the buffer.",
+  "export": "R2dbcTelemetryEventStoreTest",
+  "intent": "Context Telemetry Event Store. @DataR2dbcTest-style or @SpringBootTest with profile test (embedded H2, NON_KEYWORDS=VALUE) with the V1 schema applied by the test setup. Assert append inserts a row in telemetry_records and emits the record; appending a higher revision for the same identity keeps the old row (append-only); findLatestInRange returns only the highest revision per (deviceId, metric, tDevice) in the range ordered by tDevice. Use StepVerifier.",
   "project": "telemetry-ingestion-processing",
   "ast_hints": {
-    "package": "com.pulsestream.telemetry.reordering.domain",
-    "implements": [],
+    "package": "com.blackboard.telemetry.eventstore.infrastructure",
+    "implements": [
+      "TelemetryEventStore"
+    ],
     "dependencies": [
       {
-        "type": "TelemetryProperties",
-        "task_id": "T2-001"
+        "type": "DatabaseClient",
+        "task_id": "T0-001"
       },
       {
-        "type": "TelemetrySample",
-        "task_id": "T2-002"
+        "type": "TelemetryRecord",
+        "task_id": "T2-003"
+      },
+      {
+        "type": "TelemetryEventStore",
+        "task_id": "T2-006"
       }
     ],
     "methods": [
       {
-        "signature": "public ReorderBuffer(TelemetryProperties properties)",
+        "signature": "public R2dbcTelemetryEventStore(DatabaseClient databaseClient)",
         "returns": ""
       },
       {
-        "signature": "public java.util.List<TelemetrySample> accept(TelemetrySample sample, long nowEpochMs)",
-        "returns": "java.util.List<TelemetrySample>"
+        "signature": "public Mono<TelemetryRecord> append(TelemetryRecord record)",
+        "returns": "Mono<TelemetryRecord>"
       },
       {
-        "signature": "public java.util.List<TelemetrySample> drain()",
-        "returns": "java.util.List<TelemetrySample>"
+        "signature": "public Flux<TelemetryRecord> findLatestInRange(String deviceId, String metric, Instant from, Instant to)",
+        "returns": "Flux<TelemetryRecord>"
       }
     ]
   }

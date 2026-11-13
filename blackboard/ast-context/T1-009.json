@@ -3,166 +3,89 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "ReorderBuffer",
+    "type": "R2dbcTelemetryEventStore",
     "constructors": [
       [
-        "new TelemetryProperties(10L, 16, Map.of())"
+        "databaseClient"
       ]
     ],
     "static_calls": [],
     "calls": [
       {
-        "receiver": "buffer",
-        "method": "accept",
+        "receiver": "store",
+        "method": "append",
         "args": [
-          "sample(95_000L, 95_000L)",
-          "100_000L"
-        ],
-        "returns": "List<TelemetrySample>"
-      },
-      {
-        "receiver": "buffer",
-        "method": "accept",
-        "args": [
-          "old",
-          "100_000L"
-        ],
-        "returns": "List<TelemetrySample>"
-      },
-      {
-        "receiver": "buffer",
-        "method": "accept",
-        "args": [
-          "edge",
-          "100_000L"
-        ],
-        "returns": "List<TelemetrySample>"
-      },
-      {
-        "receiver": "buffer",
-        "method": "accept",
-        "args": [
-          "later",
-          "106_000L"
+          "record"
         ]
       },
       {
-        "receiver": "buffer",
-        "method": "accept",
+        "receiver": "store",
+        "method": "append",
         "args": [
-          "earlier",
-          "106_000L"
+          "rec(T1, 1)"
         ]
       },
       {
-        "receiver": "buffer",
-        "method": "accept",
+        "receiver": "store",
+        "method": "append",
         "args": [
-          "late",
-          "106_000L"
+          "rec(T1, 2)"
         ]
       },
       {
-        "receiver": "buffer",
-        "method": "drain",
-        "args": []
-      },
-      {
-        "receiver": "buffer",
-        "method": "accept",
+        "receiver": "store",
+        "method": "findLatestInRange",
         "args": [
-          "a",
-          "55_000L"
+          "\"dev-1\"",
+          "\"temp\"",
+          "T1",
+          "T3"
         ]
       },
       {
-        "receiver": "buffer",
-        "method": "accept",
+        "receiver": "store",
+        "method": "append",
         "args": [
-          "b",
-          "55_000L"
+          "rec(T3, 1)"
         ]
       },
       {
-        "receiver": "buffer",
-        "method": "accept",
+        "receiver": "store",
+        "method": "append",
         "args": [
-          "sample(99_000L, 1L)",
-          "200_000L"
-        ],
-        "returns": "List<TelemetrySample>"
-      },
-      {
-        "receiver": "buffer",
-        "method": "accept",
-        "args": [
-          "sample(10_000L, 1L)",
-          "12_000L"
+          "rec(T2, 1)"
         ]
       },
       {
-        "receiver": "buffer",
-        "method": "accept",
+        "receiver": "store",
+        "method": "findLatestInRange",
         "args": [
-          "sample(11_000L, 1L)",
-          "100_000L"
+          "\"dev-1\"",
+          "\"temp\"",
+          "T2",
+          "T3"
         ]
-      },
-      {
-        "receiver": "buffer",
-        "method": "accept",
-        "args": [
-          "s1",
-          "104_000L"
-        ]
-      },
-      {
-        "receiver": "buffer",
-        "method": "accept",
-        "args": [
-          "s2",
-          "104_000L"
-        ]
-      },
-      {
-        "receiver": "buffer",
-        "method": "accept",
-        "args": [
-          "s3",
-          "104_000L"
-        ]
-      },
-      {
-        "receiver": "buffer",
-        "method": "drain",
-        "args": [],
-        "returns": "List<TelemetrySample>"
       }
     ],
     "verified": [],
     "usage_lines": [
-      "class ReorderBufferTest {",
-      "private ReorderBuffer buffer;",
-      "buffer = new ReorderBuffer(new TelemetryProperties(10L, 16, Map.of()));",
-      "List<TelemetrySample> released = buffer.accept(sample(95_000L, 95_000L), 100_000L);",
-      "List<TelemetrySample> released = buffer.accept(old, 100_000L);",
-      "List<TelemetrySample> released = buffer.accept(edge, 100_000L);",
-      "buffer.accept(later, 106_000L);",
-      "buffer.accept(earlier, 106_000L);",
-      "buffer.accept(late, 106_000L);",
-      "assertThat(buffer.drain()).containsExactly(earlier, late, later);",
-      "buffer.accept(a, 55_000L);",
-      "buffer.accept(b, 55_000L);",
-      "List<TelemetrySample> released = buffer.accept(sample(99_000L, 1L), 200_000L);",
-      "buffer.accept(sample(10_000L, 1L), 12_000L);",
-      "buffer.accept(sample(11_000L, 1L), 100_000L);",
-      "assertThat(buffer.drain()).isEmpty();",
-      "buffer.accept(s1, 104_000L);",
-      "buffer.accept(s2, 104_000L);",
-      "buffer.accept(s3, 104_000L);",
-      "List<TelemetrySample> drained = buffer.drain();",
-      "assertThat(buffer.drain()).isEmpty();",
-      "assertThat(buffer.drain()).isEmpty();"
+      "class R2dbcTelemetryEventStoreTest {",
+      "private R2dbcTelemetryEventStore store;",
+      "store = new R2dbcTelemetryEventStore(databaseClient);",
+      "StepVerifier.create(store.append(record)).expectNext(record).verifyComplete();",
+      "store.append(rec(T1, 1)).block();",
+      "StepVerifier.create(store.append(rec(T1, 2))).expectNext(rec(T1, 2)).verifyComplete();",
+      "store.append(rec(T1, 1)).block();",
+      "store.append(rec(T1, 2)).block();",
+      "StepVerifier.create(store.findLatestInRange(\"dev-1\", \"temp\", T1, T3))",
+      "store.append(rec(T3, 1)).block();",
+      "store.append(rec(T1, 1)).block();",
+      "store.append(rec(T2, 1)).block();",
+      "StepVerifier.create(store.findLatestInRange(\"dev-1\", \"temp\", T1, T3).map(TelemetryRecord::tDevice))",
+      "store.append(rec(T1, 1)).block();",
+      "store.append(rec(T2, 1)).block();",
+      "store.append(rec(T3, 1)).block();",
+      "StepVerifier.create(store.findLatestInRange(\"dev-1\", \"temp\", T2, T3).map(TelemetryRecord::tDevice))"
     ]
   },
   "stderr": "",

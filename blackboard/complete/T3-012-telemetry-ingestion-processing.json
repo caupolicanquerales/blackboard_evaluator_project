@@ -1,0 +1,15 @@
+{
+  "id": "T3-012",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-012"
+  ],
+  "path": "src/main/java/com/blackboard/telemetry/ingestion/interface_/TelemetryIngestController.java",
+  "kind": "refactor",
+  "layer": "interface",
+  "feature": null,
+  "export": "TelemetryIngestController",
+  "intent": "Inspect TelemetryIngestController: thin delegation, NDJSON streamed body, correlation id fallback; tidy without changing the surface.",
+  "project": "telemetry-ingestion-processing"
+}

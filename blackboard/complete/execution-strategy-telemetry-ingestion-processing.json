@@ -2,73 +2,110 @@
   "slug": "telemetry-ingestion-processing",
   "project_root": "projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing",
   "tech_stack": {
-    "language": "Java 17+",
-    "framework": "Spring Boot 3.x WebFlux (reactive, Mono/Flux, no blocking I/O)",
-    "build": "Maven (./mvnw)",
-    "version_note": "The business description names no explicit versions; baseline is the java-springboot3 skill stack facts (Java 17+, Spring Boot 3.x). Scaffold must not copy versions from tool defaults beyond that.",
-    "dependencies": [
-      "spring-boot-starter-webflux",
-      "spring-boot-starter-validation",
-      "spring-boot-starter-data-r2dbc",
-      "r2dbc-postgresql",
-      "flyway-core",
-      "flyway-database-postgresql",
-      "spring-boot-starter-jdbc",
-      "postgresql",
-      "r2dbc-h2",
-      "h2",
-      "spring-boot-starter-test",
-      "reactor-test"
-    ]
+    "language": "Java 21",
+    "framework": "Spring Boot 3",
+    "web": "Spring WebFlux (reactive, Mono/Flux, no blocking I/O)",
+    "persistence": "Spring Data R2DBC + Flyway migrations (embedded H2 only for boot/test)",
+    "build": "Maven wrapper (./mvnw)",
+    "test": "JUnit 5, spring-boot-starter-test, reactor-test, Mockito"
   },
   "modules": ["telemetry-ingestion-processing"],
-  "layers": ["domain", "application", "infrastructure", "api", "shared"],
+  "layers": ["domain", "application", "infrastructure", "interface", "shared"],
+  "build_order": [
+    "scaffold",
+    "shared-config",
+    "domain-ingestion-validation",
+    "domain-stream-reconciliation",
+    "domain-event-store",
+    "database-migrations",
+    "application-use-cases",
+    "infrastructure-adapters",
+    "interface-api-and-correlation-filter",
+    "observability-config-and-wiring"
+  ],
   "bounded_contexts": [
-    "Telemetry Sample Ingestion",
-    "Backfill Reordering & Windowing",
-    "Telemetry Event Log"
+    "Telemetry Ingestion & Validation",
+    "Telemetry Stream Reconciliation",
+    "Telemetry Event Store"
   ],
   "module_layout": {
-    "base_package": "com.pulsestream.telemetry",
+    "base_package": "com.blackboard.telemetry",
     "packages": {
-      "ingestion": "ingestion.{domain,application,infrastructure,api}",
-      "reordering": "reordering.{domain,application,infrastructure}",
-      "eventlog": "eventlog.{domain,application,infrastructure}",
-      "shared": "shared.config"
+      "ingestion": ["domain", "application", "infrastructure", "interface"],
+      "reconciliation": ["domain", "application", "infrastructure", "interface"],
+      "eventstore": ["domain", "application", "infrastructure", "interface"],
+      "shared": ["config", "observability"]
     },
-    "integration": [
-      "Ingestion -> Reordering: in-process reactive event stream (Sinks) carrying TelemetrySampleValidated / TelemetrySampleValidationFailed; bounded buffers with backpressure",
-      "Ingestion -> Event Log: same events, conformist, idempotent append keyed by sample identity",
-      "Reordering -> Event Log: TelemetryBackfillReconciled appended as Event Revision",
-      "Reordering -> external: TelemetryWindowEmitted versioned published event (open host service)",
-      "external devices -> Ingestion: anticorruption mapper from device payload to Telemetry Sample at API entry"
-    ]
+    "integration": {
+      "Telemetry Ingestion & Validation -> Telemetry Stream Reconciliation": "in-process reactive stream (Flux) of TelemetrySampleValidated/ValidationFailed events via a published port; bounded buffers with backpressure",
+      "Telemetry Ingestion & Validation -> Telemetry Event Store": "same published validation events consumed through a port; store appends as-is",
+      "Telemetry Stream Reconciliation -> Telemetry Event Store": "TelemetryBackfillReordered consumed to append Event Revisions",
+      "Telemetry Stream Reconciliation -> external": "TelemetryWindowEmitted published on a backpressure-aware stream port; the out-of-process consumer boundary (downstream analytics streams) is external and declared here",
+      "external -> Telemetry Ingestion & Validation": "anticorruption layer translating device Ingress Packets into Telemetry Samples at the WebFlux entry point"
+    }
   },
-  "build_order": [
-    "project_scaffold",
-    "shared externalized config (metric boundaries, reorder window 60s, buffer capacities)",
-    "Ingestion domain + validation use case + API endpoint",
-    "Event Log domain + append-only repository port",
-    "Reordering domain + window buffer use case",
-    "Persistence adapters + Flyway migrations (database step)",
-    "Cross-context event wiring"
-  ],
   "risks": [
-    "Handling of samples later than the 60s window is unowned between Reordering and Event Log (open question)",
-    "Unbounded buffers under burst load; capacities and timeouts must be configuration keys",
-    "Blocking I/O must not appear in the ingestion path",
-    "At-least-once delivery requires idempotent append by sample identity",
-    "TelemetryRevisionAppended has no in-slice consumer",
-    "Description lacks explicit versions; downstream must not default them silently"
+    "Packets later than the 60s backfill window are unspecified; assumed appended as Event Revisions by the store",
+    "Unbounded buffers under burst load; all buffers and windows must be bounded and configured via externalized keys",
+    "Ordering must use t_device, never t_ingress; clock skew on devices is not handled",
+    "Consumers must be idempotent (eventual consistency, redelivery possible)",
+    "TelemetryRevisionAppended has no consumer in this slice",
+    "H2 reserves 'value'; embedded test schema must use NON_KEYWORDS=VALUE or quoted columns",
+    "Storage technology unspecified; reactive relational store assumed, append-only enforced at port and schema level",
+    "Throughput targets are unspecified; thresholds (boundaries, window size, buffer capacity) must be configuration, not magic numbers"
   ],
   "persistence": {
-    "owning_contexts": ["Telemetry Event Log"],
-    "drivers": ["append-only write throughput", "auditability", "time-range reads by device timestamp"],
-    "storage_paradigm": "Relational, time-ordered append-only store (reactive access)",
-    "data_model": "Raw record table keyed by sample identity (device, metric, t_device) with validation status and t_ingress; separate revision table appended for corrections/backfills referencing the original record; no updates or deletes",
-    "queries": ["Append record idempotently", "Append revision", "Read records and revisions by device and t_device range"],
-    "migration_plan": "Expand-only versioned migrations run at startup; embedded in-process substitute for boot tests",
-    "backup_recovery": "Periodic snapshots plus WAL-style point-in-time recovery; append-only nature simplifies replay",
-    "open_questions": ["Retention policy", "Late-arrival (>60s) ownership"]
+    "drivers": ["Telemetry Event Store owns durable raw time-series records; other contexts hold only in-memory windowed state"],
+    "storage_paradigm": "Append-only relational time-series log (no updates or deletes) with revision records",
+    "data_model": {
+      "aggregates": ["TelemetryRecord (immutable raw sample with validation status, t_device, t_ingress, revision number)"],
+      "identity": "sample identity (device, metric, t_device) plus monotonically increasing revision",
+      "append_only_rule": "corrections and backfills append a new revision; existing rows are never mutated"
+    },
+    "queries": [
+      "Latest revision per sample by device and metric within a t_device range",
+      "Full revision history of a sample (audit)",
+      "Range scan ordered by t_device"
+    ],
+    "migration_plan": "Expand-only versioned migrations; indexes on (device, metric, t_device, revision); append-only audit_trail table; embedded in-process substitute for boot tests",
+    "backup_recovery": "Platform-level periodic snapshots plus log-based recovery; immutability makes replay safe",
+    "open_questions": [
+      "Retention period and partitioning of raw history",
+      "Production storage technology selection"
+    ]
+  },
+  "observability": {
+    "correlation_key": "requestId (adopted from inbound header or generated per ingress packet); carried explicitly in audit entries and reactive context",
+    "step_logs": [
+      "ingress packet accepted (count of samples, outcome)",
+      "sample validated or VALIDATION_FAILED (metric, outcome)",
+      "backfill reorder performed (late sample count)",
+      "window emitted",
+      "revision appended"
+    ],
+    "audit_trail": {
+      "record_fields": ["actor", "action", "outcome", "timestamp", "correlationId"],
+      "port": "AuditTrail.record(AuditEntry) in application layer; append-only infrastructure adapter; migration owned by database step",
+      "semantics": "all fields non-null; actor is the device/source or system component; best-effort async unless the append joins the same reactive chain"
+    },
+    "metrics": [
+      {"name": "telemetry.ingress.packets", "type": "counter", "tags": ["outcome"]},
+      {"name": "telemetry.samples.validated", "type": "counter", "tags": ["metric", "status"]},
+      {"name": "telemetry.backfill.reordered", "type": "counter", "tags": []},
+      {"name": "telemetry.windows.emitted", "type": "counter", "tags": []},
+      {"name": "telemetry.revisions.appended", "type": "counter", "tags": ["reason"]},
+      {"name": "telemetry.ingest.latency", "type": "timer", "tags": ["outcome"]}
+    ],
+    "tag_policy": "bounded enumerations only; never deviceId or sample ids",
+    "export": {
+      "logs": {
+        "schema": "ecs",
+        "sink": "local append-only rolling JSON-lines file (logs/telemetry-ingestion-processing.log) shipped by platform agent (Filebeat/Elastic Agent)",
+        "rolling": "size and history bounded via config keys"
+      },
+      "metrics": "Micrometer via actuator; no scrape endpoint or push unless later named",
+      "dependency_rule": "no runtime dependency on the external tool; boot test passes with it absent"
+    },
+    "config_literals": "levels, formats, sampling and sink destination/rolling live in the configuration unit"
   }
 }

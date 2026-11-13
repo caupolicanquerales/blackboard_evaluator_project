@@ -3,18 +3,17 @@
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
-    "T0-001",
-    "T1-002"
+    "T0-001"
   ],
-  "path": "src/test/java/com/pulsestream/telemetry/ingestion/api/IngressSampleDtoTest.java",
+  "path": "src/test/java/com/blackboard/telemetry/reconciliation/domain/BackfillReordererTest.java",
   "kind": "test",
-  "layer": "interface",
+  "layer": "domain",
   "feature": null,
-  "export": "IngressSampleDtoTest",
-  "intent": "Anticorruption mapper at the API entry. Assert toDomain(long tIngressEpochMs) maps deviceId, metric, tDeviceEpochMs, value into a TelemetrySample with the given t_ingress and status VALID (validation happens later), and Bean Validation rejects blank deviceId/metric.",
+  "export": "BackfillReordererTest",
+  "intent": "Context Telemetry Stream Reconciliation. BackfillReorderer.reorder returns a NEW list of the samples sorted ascending by tDevice (never tIngress), stable for equal tDevice; empty input yields an empty list; input list is not mutated. Construct with the no-arg constructor.",
   "project": "telemetry-ingestion-processing",
   "ast_hints": {
-    "package": "com.pulsestream.telemetry.ingestion.api",
+    "package": "com.blackboard.telemetry.reconciliation.domain",
     "implements": [],
     "dependencies": [
       {
@@ -24,12 +23,12 @@
     ],
     "methods": [
       {
-        "signature": "public record IngressSampleDto(@NotBlank String deviceId, @NotBlank String metric, long tDeviceEpochMs, double value)",
+        "signature": "public BackfillReorderer()",
         "returns": ""
       },
       {
-        "signature": "public TelemetrySample toDomain(long tIngressEpochMs)",
-        "returns": "TelemetrySample"
+        "signature": "public List<TelemetrySample> reorder(List<TelemetrySample> samples)",
+        "returns": "List<TelemetrySample>"
       }
     ]
   }

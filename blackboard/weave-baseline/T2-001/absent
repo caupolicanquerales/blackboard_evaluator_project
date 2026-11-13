@@ -1,1 +1,1 @@
-src/main/java/com/pulsestream/telemetry/shared/config/TelemetryProperties.java
+src/main/resources/application.yml

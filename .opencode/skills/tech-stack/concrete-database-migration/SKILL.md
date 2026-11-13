@@ -9,6 +9,6 @@ snake_case physical names, plural tables from aggregates/entities; PK = strategy
 # Access paths -> indexes
 Keyset: composite (sort, id); equality/range: B-tree; JSON containment: GIN (or partial for fixed predicates); write-heavy tables indexed ONLY for declared query_performance paths; covering index for hot reads; no speculative indexes.
 # Handoff (one infra task per context)
-Payload: name, technology+version, migration dir+ordering scheme, seed/reference data (if strategy names any), rollback posture (expand-only => forward-fix + backup restore), verification step (boot test / smoke), owner context, open risks. Naming/tooling per tech-stack skill.
+Payload: name, technology+version, migration dir+ordering scheme, seed/reference data (if strategy names any), rollback posture (expand-only => forward-fix + backup restore), verification step (boot test / smoke), owner context, open risks. Naming/tooling per tech-stack skill. Profile fragments (runner configuration) go ONLY into the runtime property namespace the tech-stack skill names, in files the application actually loads, and must name the consuming config unit; if no scheduled unit reads them, do not write them - an inert fragment is worse than none.
 # Checks
 Every script expands, never destroys; every constraint maps to a named invariant; every index maps to a declared query; version columns present; non-primary stores carry only their own definitions.

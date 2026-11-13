@@ -1,1 +1,1 @@
-src/main/java/com/pulsestream/telemetry/ingestion/domain/SampleValidator.java
+src/main/java/com/blackboard/telemetry/eventstore/domain/TelemetryRecord.java

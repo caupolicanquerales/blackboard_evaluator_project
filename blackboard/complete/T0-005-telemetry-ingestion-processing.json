@@ -5,11 +5,11 @@
   "dependsOn": [
     "T0-001"
   ],
-  "path": "db/migrations/backup-recovery.sh",
+  "path": "db/migrations/backup-recovery.md",
   "kind": "bootstrap",
   "layer": "root",
   "feature": null,
   "export": "backup-recovery",
-  "intent": "Backup/recovery: PostgreSQL pg_basebackup snapshot script with WAL point-in-time recovery notes for Telemetry Event Log context.",
+  "intent": "Backup/recovery: PostgreSQL snapshots plus log-based recovery for context telemetry-ingestion-processing; expand-only so rollback is forward-fix or restore; recovery runbook script.",
   "project": "telemetry-ingestion-processing"
 }

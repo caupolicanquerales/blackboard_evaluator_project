@@ -5,38 +5,44 @@
   "dependsOn": [
     "T1-009"
   ],
-  "path": "src/main/java/com/pulsestream/telemetry/reordering/domain/ReorderBuffer.java",
+  "path": "src/main/java/com/blackboard/telemetry/eventstore/infrastructure/R2dbcTelemetryEventStore.java",
   "kind": "code",
-  "layer": "domain",
+  "layer": "infrastructure",
   "feature": null,
-  "export": "ReorderBuffer",
-  "intent": "Invariant: order by t_device only; packets delayed up to the configured window are re-indexed chronologically. Internal sorted structure; accept inserts then releases samples older than now - window (window from TelemetryProperties.reorderWindowSeconds, no hardcoded 60). Framework-free, not thread-safe by contract (caller serializes).",
+  "export": "R2dbcTelemetryEventStore",
+  "intent": "Context Telemetry Event Store adapter (@Repository) over DatabaseClient against the telemetry_records table created by migration V1 (use the exact column names of that script; quote the value column). append inserts only (never update/delete) and emits the record; findLatestInRange selects the highest revision per (device_id, metric, t_device) with t_device between from and to, ordered by t_device ascending. Bind parameters, no string concatenation of values.",
   "project": "telemetry-ingestion-processing",
   "ast_hints": {
-    "package": "com.pulsestream.telemetry.reordering.domain",
-    "implements": [],
+    "package": "com.blackboard.telemetry.eventstore.infrastructure",
+    "implements": [
+      "TelemetryEventStore"
+    ],
     "dependencies": [
       {
-        "type": "TelemetryProperties",
-        "task_id": "T2-001"
+        "type": "DatabaseClient",
+        "task_id": "T0-001"
       },
       {
-        "type": "TelemetrySample",
-        "task_id": "T2-002"
+        "type": "TelemetryRecord",
+        "task_id": "T2-003"
+      },
+      {
+        "type": "TelemetryEventStore",
+        "task_id": "T2-006"
       }
     ],
     "methods": [
       {
-        "signature": "public ReorderBuffer(TelemetryProperties properties)",
+        "signature": "public R2dbcTelemetryEventStore(DatabaseClient databaseClient)",
         "returns": ""
       },
       {
-        "signature": "public java.util.List<TelemetrySample> accept(TelemetrySample sample, long nowEpochMs)",
-        "returns": "java.util.List<TelemetrySample>"
+        "signature": "public Mono<TelemetryRecord> append(TelemetryRecord record)",
+        "returns": "Mono<TelemetryRecord>"
       },
       {
-        "signature": "public java.util.List<TelemetrySample> drain()",
-        "returns": "java.util.List<TelemetrySample>"
+        "signature": "public Flux<TelemetryRecord> findLatestInRange(String deviceId, String metric, Instant from, Instant to)",
+        "returns": "Flux<TelemetryRecord>"
       }
     ]
   }

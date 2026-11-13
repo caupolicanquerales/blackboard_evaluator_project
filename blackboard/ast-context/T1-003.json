@@ -3,55 +3,87 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "SampleValidator",
+    "type": "TelemetryRecord",
     "constructors": [
       [
-        "properties"
+        "\"dev-1\"",
+        "\"temp\"",
+        "T_DEVICE",
+        "T_INGRESS",
+        "21.5",
+        "\"VALIDATED\"",
+        "revision"
+      ],
+      [
+        "\"dev-1\"",
+        "\"temp\"",
+        "T_DEVICE",
+        "T_INGRESS",
+        "Double.NaN",
+        "\"VALIDATION_FAILED\"",
+        "1L"
       ]
     ],
     "static_calls": [],
     "calls": [
       {
-        "receiver": "validator",
-        "method": "validate",
-        "args": [
-          "sample(\"temp\", value)"
-        ],
-        "returns": "TelemetrySample"
+        "receiver": "failed",
+        "method": "status",
+        "args": []
       },
       {
-        "receiver": "validator",
-        "method": "validate",
-        "args": [
-          "sample(\"humidity\", 10.0)"
-        ],
-        "returns": "TelemetrySample"
+        "receiver": "record",
+        "method": "deviceId",
+        "args": []
       },
       {
-        "receiver": "validator",
-        "method": "validate",
-        "args": [
-          "input"
-        ],
-        "returns": "TelemetrySample"
+        "receiver": "record",
+        "method": "metric",
+        "args": []
       },
       {
-        "receiver": "validator",
-        "method": "validate",
-        "args": [
-          "input"
-        ]
+        "receiver": "record",
+        "method": "tDevice",
+        "args": []
+      },
+      {
+        "receiver": "record",
+        "method": "tIngress",
+        "args": []
+      },
+      {
+        "receiver": "record",
+        "method": "value",
+        "args": []
+      },
+      {
+        "receiver": "record",
+        "method": "status",
+        "args": []
+      },
+      {
+        "receiver": "record",
+        "method": "revision",
+        "args": []
       }
     ],
     "verified": [],
     "usage_lines": [
-      "class SampleValidatorTest {",
-      "private final SampleValidator validator = new SampleValidator(properties);",
-      "TelemetrySample result = validator.validate(sample(\"temp\", value));",
-      "TelemetrySample result = validator.validate(sample(\"temp\", value));",
-      "TelemetrySample result = validator.validate(sample(\"humidity\", 10.0));",
-      "TelemetrySample result = validator.validate(input);",
-      "assertThat(validator.validate(input)).isEqualTo(validator.validate(input));"
+      "class TelemetryRecordTest {",
+      "private TelemetryRecord record(long revision) {",
+      "return new TelemetryRecord(\"dev-1\", \"temp\", T_DEVICE, T_INGRESS, 21.5, \"VALIDATED\", revision);",
+      "TelemetryRecord record = record(1L);",
+      "assertThat(record.deviceId()).isEqualTo(\"dev-1\");",
+      "assertThat(record.metric()).isEqualTo(\"temp\");",
+      "assertThat(record.tDevice()).isEqualTo(T_DEVICE);",
+      "assertThat(record.tIngress()).isEqualTo(T_INGRESS);",
+      "assertThat(record.value()).isEqualTo(21.5);",
+      "assertThat(record.status()).isEqualTo(\"VALIDATED\");",
+      "assertThat(record.revision()).isEqualTo(1L);",
+      "assertThat(record(1L)).isEqualTo(record(1L)).hasSameHashCodeAs(record(1L));",
+      "assertThat(record(1L)).isNotEqualTo(record(2L));",
+      "TelemetryRecord failed = new TelemetryRecord(\"dev-1\", \"temp\", T_DEVICE, T_INGRESS, Double.NaN,",
+      "assertThat(failed.status()).isEqualTo(\"VALIDATION_FAILED\");"
     ]
   },
   "stderr": "",

@@ -5,15 +5,15 @@
   "dependsOn": [
     "T1-007"
   ],
-  "path": "src/main/java/com/pulsestream/telemetry/ingestion/api/IngressSampleDto.java",
+  "path": "src/main/java/com/blackboard/telemetry/reconciliation/domain/BackfillReorderer.java",
   "kind": "code",
-  "layer": "interface",
+  "layer": "domain",
   "feature": null,
-  "export": "IngressSampleDto",
-  "intent": "REST request shape for one device sample with jakarta validation (@NotBlank deviceId, metric); toDomain maps to TelemetrySample with status VALID and the supplied t_ingress. Device payload shape never leaks into the domain.",
+  "export": "BackfillReorderer",
+  "intent": "Context Telemetry Stream Reconciliation. Pure domain service (public no-arg constructor, instance method): reorder(List<TelemetrySample>) returns a new, stable list sorted ascending by tDevice, never by tIngress; the input is not mutated. No framework imports.",
   "project": "telemetry-ingestion-processing",
   "ast_hints": {
-    "package": "com.pulsestream.telemetry.ingestion.api",
+    "package": "com.blackboard.telemetry.reconciliation.domain",
     "implements": [],
     "dependencies": [
       {
@@ -23,12 +23,12 @@
     ],
     "methods": [
       {
-        "signature": "public record IngressSampleDto(@NotBlank String deviceId, @NotBlank String metric, long tDeviceEpochMs, double value)",
+        "signature": "public BackfillReorderer()",
         "returns": ""
       },
       {
-        "signature": "public TelemetrySample toDomain(long tIngressEpochMs)",
-        "returns": "TelemetrySample"
+        "signature": "public List<TelemetrySample> reorder(List<TelemetrySample> samples)",
+        "returns": "List<TelemetrySample>"
       }
     ]
   }

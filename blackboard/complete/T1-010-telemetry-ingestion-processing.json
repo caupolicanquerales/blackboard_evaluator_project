@@ -4,38 +4,42 @@
   "stage": 1,
   "dependsOn": [
     "T0-001",
-    "T1-002",
-    "T1-004",
-    "T1-009"
+    "T0-003"
   ],
-  "path": "src/test/java/com/pulsestream/telemetry/reordering/application/ReorderingServiceTest.java",
+  "path": "src/test/java/com/blackboard/telemetry/shared/observability/R2dbcAuditTrailTest.java",
   "kind": "test",
-  "layer": "application",
+  "layer": "infrastructure",
   "feature": null,
-  "export": "ReorderingServiceTest",
-  "intent": "Backfill Reordering & Windowing use case. With a mocked-free ReorderBuffer fed through the service and a fixed Clock: windows(Flux<TelemetrySample>) emits samples in ascending t_device order once past the window, emits remaining buffered samples ordered on upstream completion, and every sample (incl. VALIDATION_FAILED) is emitted exactly once.",
+  "export": "R2dbcAuditTrailTest",
+  "intent": "Audit adapter. With the test profile (embedded H2, NON_KEYWORDS=VALUE) and the V2 audit_trail schema applied by the test setup, record(entry) inserts exactly one row carrying actor, action, outcome, timestamp and correlation id and completes empty; recording twice yields two rows (append-only). Use StepVerifier.",
   "project": "telemetry-ingestion-processing",
   "ast_hints": {
-    "package": "com.pulsestream.telemetry.reordering.application",
-    "implements": [],
+    "package": "com.blackboard.telemetry.shared.observability",
+    "implements": [
+      "AuditTrail"
+    ],
     "dependencies": [
       {
-        "type": "ReorderBuffer",
-        "task_id": "T2-009"
+        "type": "DatabaseClient",
+        "task_id": "T0-001"
       },
       {
-        "type": "TelemetrySample",
-        "task_id": "T2-002"
+        "type": "AuditEntry",
+        "task_id": "T2-004"
+      },
+      {
+        "type": "AuditTrail",
+        "task_id": "T2-005"
       }
     ],
     "methods": [
       {
-        "signature": "public ReorderingService(ReorderBuffer buffer, java.time.Clock clock)",
+        "signature": "public R2dbcAuditTrail(DatabaseClient databaseClient)",
         "returns": ""
       },
       {
-        "signature": "public Flux<TelemetrySample> windows(Flux<TelemetrySample> samples)",
-        "returns": "reactor.core.publisher.Flux<TelemetrySample>"
+        "signature": "public Mono<Void> record(AuditEntry entry)",
+        "returns": "Mono<Void>"
       }
     ]
   }

@@ -8,112 +8,82 @@
       [
         "\"dev-1\"",
         "\"temp\"",
-        "1000L",
-        "21.5",
-        "2000L",
-        "status"
-      ],
-      [
-        "blank",
-        "\"temp\"",
-        "1L",
-        "1.0",
-        "2L",
-        "TelemetrySample.VALID"
+        "T_DEVICE",
+        "T_INGRESS",
+        "21.5"
       ],
       [
         "\"dev-1\"",
-        "blank",
-        "1L",
-        "1.0",
-        "2L",
-        "TelemetrySample.VALID"
+        "\"temp\"",
+        "T_DEVICE",
+        "T_INGRESS",
+        "22.0"
+      ],
+      [
+        "null",
+        "\"\"",
+        "null",
+        "null",
+        "-1.0"
       ]
     ],
     "static_calls": [],
     "calls": [
       {
-        "receiver": "copy",
-        "method": "validationStatus",
+        "receiver": "a",
+        "method": "hashCode",
         "args": []
       },
       {
-        "receiver": "original",
-        "method": "withStatus",
-        "args": [
-          "TelemetrySample.VALIDATION_FAILED"
-        ],
-        "returns": "TelemetrySample"
-      },
-      {
-        "receiver": "original",
-        "method": "withStatus",
-        "args": [
-          "TelemetrySample.VALIDATION_FAILED"
-        ]
-      },
-      {
-        "receiver": "original",
-        "method": "validationStatus",
+        "receiver": "b",
+        "method": "hashCode",
         "args": []
       },
       {
-        "receiver": "s",
+        "receiver": "sample",
         "method": "deviceId",
         "args": []
       },
       {
-        "receiver": "s",
+        "receiver": "sample",
         "method": "metric",
         "args": []
       },
       {
-        "receiver": "s",
-        "method": "tDeviceEpochMs",
+        "receiver": "sample",
+        "method": "tDevice",
         "args": []
       },
       {
-        "receiver": "s",
+        "receiver": "sample",
+        "method": "tIngress",
+        "args": []
+      },
+      {
+        "receiver": "sample",
         "method": "value",
-        "args": []
-      },
-      {
-        "receiver": "s",
-        "method": "tIngressEpochMs",
-        "args": []
-      },
-      {
-        "receiver": "s",
-        "method": "validationStatus",
         "args": []
       }
     ],
     "verified": [],
     "usage_lines": [
       "class TelemetrySampleTest {",
-      "private TelemetrySample sample(String status) {",
-      "return new TelemetrySample(\"dev-1\", \"temp\", 1000L, 21.5, 2000L, status);",
-      "TelemetrySample s = sample(TelemetrySample.VALID);",
-      "assertThat(s.deviceId()).isEqualTo(\"dev-1\");",
-      "assertThat(s.metric()).isEqualTo(\"temp\");",
-      "assertThat(s.tDeviceEpochMs()).isEqualTo(1000L);",
-      "assertThat(s.value()).isEqualTo(21.5);",
-      "assertThat(s.tIngressEpochMs()).isEqualTo(2000L);",
-      "assertThat(s.validationStatus()).isEqualTo(TelemetrySample.VALID);",
-      "assertThat(TelemetrySample.VALID).isNotBlank();",
-      "assertThat(TelemetrySample.VALIDATION_FAILED).isNotBlank().isNotEqualTo(TelemetrySample.VALID);",
-      "assertThat(sample(TelemetrySample.VALIDATION_FAILED).isValidationFailed()).isTrue();",
-      "assertThat(sample(TelemetrySample.VALID).isValidationFailed()).isFalse();",
-      "TelemetrySample original = sample(TelemetrySample.VALID);",
-      "TelemetrySample copy = original.withStatus(TelemetrySample.VALIDATION_FAILED);",
-      "assertThat(copy.validationStatus()).isEqualTo(TelemetrySample.VALIDATION_FAILED);",
-      "assertThat(copy).usingRecursiveComparison().ignoringFields(\"validationStatus\").isEqualTo(original);",
-      "TelemetrySample original = sample(TelemetrySample.VALID);",
-      "original.withStatus(TelemetrySample.VALIDATION_FAILED);",
-      "assertThat(original.validationStatus()).isEqualTo(TelemetrySample.VALID);",
-      "assertThatThrownBy(() -> new TelemetrySample(blank, \"temp\", 1L, 1.0, 2L, TelemetrySample.VALID))",
-      "assertThatThrownBy(() -> new TelemetrySample(\"dev-1\", blank, 1L, 1.0, 2L, TelemetrySample.VALID))",
-      "assertThatThrownBy(() -> sample(null)).isInstanceOf(IllegalArgumentException.class);"
+      "TelemetrySample sample = new TelemetrySample(\"dev-1\", \"temp\", T_DEVICE, T_INGRESS, 21.5);",
+      "assertThat(sample.deviceId()).isEqualTo(\"dev-1\");",
+      "assertThat(sample.metric()).isEqualTo(\"temp\");",
+      "assertThat(sample.tDevice()).isEqualTo(T_DEVICE);",
+      "assertThat(sample.tIngress()).isEqualTo(T_INGRESS);",
+      "assertThat(sample.value()).isEqualTo(21.5);",
+      "TelemetrySample a = new TelemetrySample(\"dev-1\", \"temp\", T_DEVICE, T_INGRESS, 21.5);",
+      "TelemetrySample b = new TelemetrySample(\"dev-1\", \"temp\", T_DEVICE, T_INGRESS, 21.5);",
+      "assertThat(a).isEqualTo(b);",
+      "assertThat(a.hashCode()).isEqualTo(b.hashCode());",
+      "TelemetrySample a = new TelemetrySample(\"dev-1\", \"temp\", T_DEVICE, T_INGRESS, 21.5);",
+      "TelemetrySample b = new TelemetrySample(\"dev-1\", \"temp\", T_DEVICE, T_INGRESS, 22.0);",
+      "assertThat(a).isNotEqualTo(b);",
+      "TelemetrySample sample = new TelemetrySample(null, \"\", null, null, -1.0);",
+      "assertThat(sample.deviceId()).isNull();",
+      "assertThat(sample.value()).isEqualTo(-1.0);"
     ]
   },
   "stderr": "",

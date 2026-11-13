@@ -110,10 +110,14 @@ REQUIRED_KEYS = (
 # stages (see validate): package, implements, dependencies pinned to producer task ids,
 # and the boundary methods with their exact parameter/return spellings. Testers write
 # assertions ONLY against this table; boards recorded before it existed remain readable.
-OPTIONAL_KEYS = ("ast_hints",)
+OPTIONAL_KEYS = ("ast_hints", "observability")
 AST_HINT_KEYS = ("package", "implements", "dependencies", "methods")
+# The step-log CLAIM surface (2026-11-13): a task record that owns planned observability
+# step logs declares them verbatim here; emit refuses strategies whose entries have no
+# owner. Optional on the schema: legacy boards carry neither key nor claim, and the
+# attempt-ledger digest ignores absent fields (continuity preserved).
 PROMPT_KEYS = ("id", "path", "kind", "layer", "feature", "export", "intent", "dependsOn",
-               "project", "ast_hints")
+               "project", "ast_hints", "observability")
 PROJECTS_SUBDIR = "services"
 LAYERS = ("root", "domain", "application", "infrastructure", "interface", "shared", "features")
 ID_PATTERN = re.compile(r"^T([0-4])-(\d{3})$")

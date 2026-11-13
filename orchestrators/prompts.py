@@ -89,7 +89,10 @@ def _coder_contract(task_ids):
         "concrete shape): the shell the weaver creates carries them and `members`/`body` may use "
         "them. Supertype clauses the frozen tests demand (IS-A a port/base): "
         "`extends` one name and/or `implements` a list land on the created type header once; "
-        "list those supertypes in `imports` too. A method `signature` may be written TWO ways: "
+        "list those supertypes in `imports` too. `export` is the BARE type name (or the "
+        "file's base name for config units) - never a modifier (`final`, `public`), never "
+        "spaced: the weaver derives the created type from it, and a malformed export is a "
+        "re-emit-field fix the writer message names. A method `signature` may be written TWO ways: "
         "the bare contract spelling (`from(Cart cart)` - keeps the located method's declared "
         "shape) or the COMPLETE declaration (`public static Order from(Cart cart)` - the method "
         "is then REDECLARED from that text: modifiers, type parameters and return type all "
@@ -136,6 +139,37 @@ def _collaborator_tables(task):
     return "\n" + "\n".join(lines) + "\n"
 
 
+def _tester_tool_paths():
+    """The EXACT commands the tester must run, spelled by the engine (the same principle as
+    _collaborator_tables and _coder_contract: the message carries every fact the session
+    needs, so searching the tooling costs zero calls instead of blowing the budget).
+    Measured 2026-11-12: batch testers burned 20+ calls guessing these paths while SCOPE
+    forbade listing the skill folders that contain them."""
+    run_tool = settings.RUN_TEST_TOOL
+    writer = settings.RED_PHASE_WRITER
+    keys = sorted(p.name for p in settings.SKILLS_DIR.joinpath("tester-framework").iterdir()
+                  if p.is_dir() and (p / "SKILL.md").is_file())
+    return (
+        "\nTOOL PATHS (use these EXACT paths; do not search for scripts or list skill folders):\n"
+        f"  run-test-tool: python3 {run_tool} --cwd <project root> --cmd \"<argv test command>\"\n"
+        f"  red writer:    python3 {writer} --root {settings.ROOT} --task-id <id> "
+        "--cmd \"<same argv>\"  (pipe the run-test-tool JSON into its stdin)\n"
+        f"  tester skill:  {settings.SKILLS_DIR}/tester-framework/<key>/SKILL.md - available keys: "
+        f"{', '.join(keys) if keys else 'NONE'}; pick the one matching this unit's language and "
+        "test framework (a Java/JUnit unit uses java-junit5); no key fits => report and stop.\n")
+
+
+def _evaluator_tool_paths():
+    """Stage-3 exact tool commands (same no-search principle as _tester_tool_paths)."""
+    return (
+        "\nTOOL PATHS (use these EXACT paths; do not search):\n"
+        f"  run-test-tool: python3 {settings.RUN_TEST_TOOL} --cwd <project root> "
+        "--cmd \"<argv test command from the unit's red-phase record>\"\n"
+        f"  evaluate writer: python3 {settings.SKILLS_DIR}/read-write-file-ddd/"
+        f"writer-evaluate-results/write-evaluate-results.py --root {settings.ROOT} "
+        "--task-id <id> --input <draft.json>\n")
+
+
 def build_task_message(task, feedback=None):
     """Agent-facing task prompt: instruction line plus the task JSON payload.
 
@@ -151,7 +185,10 @@ def build_task_message(task, feedback=None):
     )
     message += json.dumps({key: task.get(key) for key in settings.PROMPT_KEYS}, indent=2)
     if task["stage"] == settings.TESTER_STAGE:
+        message += _tester_tool_paths()
         message += _collaborator_tables(task)
+    if task["stage"] == settings.EVALUATOR_STAGE:
+        message += _evaluator_tool_paths()
     if task["stage"] == settings.TDD_STAGE:
         t1 = next((d for d in task.get("dependsOn", []) if str(d).startswith("T1-")), None)
         if t1:
@@ -223,6 +260,8 @@ def build_batch_message(tasks, feedback=None):
         f"{instruction}\n"
         f"{duty}\n\n"
     )
+    if stage == settings.TESTER_STAGE:
+        message += _tester_tool_paths()
     for task in tasks:
         t1 = next((d for d in task.get("dependsOn", []) if str(d).startswith("T1-")), None)
         block = json.dumps({key: task.get(key) for key in settings.PROMPT_KEYS}, indent=2)
@@ -286,12 +325,26 @@ For every slice `{domain_dir}/domain-boundary-<slug>.json`, read it together wit
 
 Once per domain:
 1. Write the execution strategy to {strategy_dir}/execution-strategy-<slug>.json with the edit tool.
-   Include the bounded contexts, module/package layout, build order, risks, and a `persistence`
-   object when the context owns data. Use only the slice and its own context map.
+   Include the bounded contexts, module/package layout, build order, risks, a `persistence`
+   object when the context owns data, and an `observability` object ALWAYS - for every
+   executable context, UNCONDITIONALLY, whether or not the business description mentions
+   auditing, logging or visibility (it is the operational floor, not a feature request; a
+   strategy without the floor is refused when its tasks emit): step logs with their
+   correlation key, the audit-trail records (actor, action, outcome, timestamp), named metrics with bounded
+   tags, AND an `export` entry declaring how those events leave the process in machine-readable
+   form for EXTERNAL tools (log management such as Elasticsearch: structured schema + local
+   append-only sink; metrics: a scrape endpoint or push only when named). The app writes the
+   contract, the platform ships it - no hard runtime dependency on the external tool, and the
+   boot test must pass with the tool absent. Keep observability abstract - the tech-stack skill
+   supplies the concrete properties.
+   Use only the slice and its own context map.
    The `tech stack` / `language` fields MUST repeat the versions the business description names
    VERBATIM (a seed saying "Java 21 / Spring Boot 3 WebFlux" yields language "Java 21", never a
-   defaulted or normalized version). Never copy versions from an existing scaffold or tool
-   default: the description is the source of truth, and downstream stages pin the build from it.
+   defaulted or normalized version). When the description names NO version, the tech-stack skill's
+   DEFAULT applies (Java: 21 LTS). A skill floor ("Java 17+") is a compatibility minimum, never an
+   emitted value: every version field carries ONE exact number. Never copy versions from an
+   existing scaffold or tool default (Spring Initializr's default is a trap, not a decision):
+   the description is the source of truth, and downstream stages pin the build from it.
 
 2. Emit exactly one separate project scaffold task for THIS domain. Each domain is its own project,
    rooted at {project_root}/services/<slug>/. Fields:
@@ -299,10 +352,18 @@ Once per domain:
    kind "bootstrap", layer "root", feature null, export "project_scaffold",
    project "<slug>", path "<build marker>" relative to the domain root ("pom.xml" or "package.json"
    chosen from the stack), intent "Generate the <slug> project root and build scaffold using the matching
-   mcp-server-alternatives skill, with dependencies <the exact starter artifactIds from your strategy's tech stack>".
-   The intent MUST list the build dependencies the strategy names (for Java: e.g. "spring-boot-starter-webflux,
-   spring-boot-starter-data-r2dbc, reactor-test" plus every test artifact). agent-container cannot guess them,
-   and a scaffold whose classpath lacks a package makes every later green gate impossible.
+   mcp-server-alternatives skill, with language version <the ONE exact number from your strategy>,
+   framework version <the exact pinned name and major from your strategy's tech stack, e.g. Spring Boot 3>,
+   and build dependencies <the GENERATOR-NATIVE dependency ids of the stack's scaffold tool - for Spring
+   Initializr the short ids like webflux, data-r2dbc, flyway, actuator, test, reactor-test, never the
+   spring-boot-starter-* artifactIds - covering EVERY starter AND EVERY test artifact the tech stack names>".
+   The intent MUST list the build dependencies AND the exact language AND framework versions the strategy
+   names (a Boot-3 plan scaffolded on Boot 4 is off-plan; an omitted test artifact is a classpath hole that
+   makes every later green gate impossible). agent-container cannot guess them: for Spring Initializr the
+   list MUST include `test` and, when the plan tests reactive code, `reactor-test`, spelled as generator ids.
+   A generator that retired the pinned major does NOT relax the plan: the stage-0 skill's machine-verified
+   re-pin fallback keeps the tree equal to the pin. Never write a version RANGE ("3.x") where the plan
+   demands a pin, and never cite "generator availability" in a strategy - availability is stage 0's problem.
     The intent MUST also require, for the chosen stack: a SINGLE composition root (never a second boot
     class beside the scaffold's), test-run timeout guardrails (a hung test must fail fast, never freeze
     the suite), and when the strategy's persistence object owns SQL, a schema MIGRATION RUNNER wired
@@ -359,7 +420,8 @@ Follow these steps exactly, once per domain:
      table): {"package": the unit's namespace as its language spells it; "implements":
      supertype names the unit must satisfy; "dependencies": [{"type", "task_id"}] one per
      collaborator, pinned to the task that produces it; "methods": [{"signature",
-     "returns"}] every boundary method the unit must provide, with parameter and return
+     "returns"} - or {"signature", "returns", "semantics"} where rule (d) below
+     requires the note -] every boundary method the unit must provide, with parameter and return
      types spelled exactly as the language's own declaration for that unit - including
      the methods of every implemented supertype; "returns" is "" when there is none.
      Pure value objects may leave "methods" empty - UNLESS another task pins that unit
@@ -379,10 +441,36 @@ Follow these steps exactly, once per domain:
      `dependsOn` it; never leave the shape implicit and hope the testers converge.
    - Config-driven operational values (timeouts, windows, capacities) bind through the
      externalized-config unit; task intents must not hardcode fallback durations a test can
-     contradict.
+     contradict. When any intent assigns such values, a CONFIG UNIT whose `path` is the
+     stack's runtime configuration artifact (application.yml / config.ts / settings.py per
+     the tech-stack skill) MUST be scheduled carrying the seed's literal values - without
+     it every runtime default is fiction (emit refuses).
+   - Duty ownership: a file artifact named in an intent (config, migration, manifest...)
+     must be that unit's own `path` or another task's `path`. "Also provide <other file>"
+     inside an intent is prose, not a plan - the engine cannot weave two files from one unit.
+   - Request-encoding alignment: a pinned request-parameter type and the body shape the
+     paired test intent mandates must agree - a streamed collection type binds with
+     streamed-document bodies, an array/collection type with one-array bodies. A decoder
+     can never satisfy both; the pair is refused at emit.
+   - Nullability semantics: when an intent rejects null on mandatory fields, EVERY entry of
+     that unit's ast_hints.methods must carry `semantics` naming the initial-state encoding
+     (a shipped constant such as UNVALIDATED, or the nullable alternative). A null-intolerant
+     value with no legal way to represent its pre-use state freezes tester and coder on
+     contradictory contracts nobody can edit.
    - Prose may never be the only place a signature exists: every method an intent describes
      must also appear in that unit's ast_hints.methods, spelled identically, so prose and
      table can never disagree.
+   - Observability obligations from the strategy's `observability` object decompose into THEIR
+     OWN units, like domain logic, and every `step_logs` entry is ALSO claimed VERBATIM in
+     exactly one implementation unit's `observability.step_logs` field - the emit gate refuses
+     strategies without the floor and plans with unowned, double-owned or off-plan claims: an audit trail is a tabled port (+ adapter, + migration when
+     queryable); correlation keys get one middleware unit; every metric name and audit record
+     field lives in some unit's ast_hints so the tester can assert the captured surface. "Log it
+     properly" as scattered prose or raw logger calls in business units is forbidden - levels and
+     formats belong to the config unit, facts belong to planned ports. The strategy's `export`
+     (structured schema + sink an external tool like Elasticsearch can consume) is config-unit
+     literal keys and at most one sink-wiring unit: the app never talks to the external tool
+     directly unless the description names it, and even then the boot gate must pass without it.
 
    Do not emit stage 0 tasks; the scaffold and database tasks are already queued. Units that use a store
    list the matching database ids from the list above in `dependsOn`.
@@ -407,6 +495,11 @@ Run your workflow for the bounded context slug `{slug}` only. Its project root i
 2. Select the storage technology from the tech-stack skill. Write the migration and configuration
    scripts yourself, only under {project_root}/services/{slug}/db/migrations/ (absolute path). You own
    the database files of this domain: setup, schema migration, configuration, and backup.
+   Runner/configuration fragments carry weight ONLY in the property namespace the runtime actually
+   reads (the tech-stack skill names it) and only in files the application loads: use the framework
+   namespace (not the bare tool's), name the consuming config unit, and make the configured locations
+   align with where the migration scripts physically live. A fragment nothing reads is schema fiction -
+   prefer the app's own config file over a standalone profile when a config unit exists.
 3. Queue one stage 0 bootstrap task per database concern (store setup, schema migration, configuration
    profile, backup/recovery). Write ONE array file /tmp/tasks/{slug}-db-tasks.json holding every task
    object, with exactly the keys of your output contract (every `export` a non-empty file base name,
@@ -443,10 +536,12 @@ BUDGET_SHAPES = {
 SCOPE_RULES = (
     "SCOPE: skills live only in `.opencode/skills/` and the SKILL.md named by your role is read once; "
     "do not list or search skill folders. Never read or grep `orchestrators/`, `ast_tools/`, "
-    "`ast_weaver_tools/`, `.opencode/skills/read-write-file-ddd/**` sources, other tasks' "
-    "`blackboard/queue|complete|error` records, or any agent scratch/session folder; never run `git`. "
-    "The facts of this unit are in the message above: read a source file only to copy an exact signature, "
-    "and then with a line-bounded `grep -n`, never a whole-file `cat`."
+    "`ast_weaver_tools/`, other tasks' `blackboard/queue|complete|error` records, or any agent "
+    "scratch/session folder; never run `git`. The writer scripts under "
+    "`read-write-file-ddd/**` are RUN via the exact commands given in this message - that is "
+    "REQUIRED; the ban covers reading their SOURCE CODE only. "
+    "The facts of this unit are in the message above: read a source file only to copy an exact "
+    "signature, and then with a line-bounded `grep -n`, never a whole-file `cat`."
 )
 
 

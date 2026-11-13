@@ -3,29 +3,22 @@
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
-    "T0-001",
-    "T0-002",
-    "T0-003",
-    "T0-004",
-    "T1-002",
-    "T1-011"
+    "T0-001"
   ],
-  "path": "src/test/java/com/pulsestream/telemetry/eventlog/infrastructure/R2dbcEventLogRepositoryTest.java",
+  "path": "src/test/java/com/blackboard/telemetry/ingestion/interface_/TelemetryIngestControllerTest.java",
   "kind": "test",
-  "layer": "infrastructure",
+  "layer": "interface",
   "feature": null,
-  "export": "R2dbcEventLogRepositoryTest",
-  "intent": "@SpringBootTest against embedded H2 (PostgreSQL mode) with Flyway migrations V1/V2 applied. Assert: appendRecord twice for same identity emits true then false and stores one row; appendRevision stores a revision linked to an existing record and leaves the original unchanged; findByDeviceAndRange returns only records in range for that device ordered by t_device. Use StepVerifier with timeouts.",
+  "export": "TelemetryIngestControllerTest",
+  "intent": "Context Telemetry Ingestion & Validation entry point. Use WebTestClient bound to the controller with a mocked IngestTelemetryUseCase. POST /api/v1/telemetry/ingress with Content-Type application/x-ndjson and a body of one JSON sample document per line (streamed Flux<TelemetrySample> = streamed documents, not one array) responds 200 with the use case count as JSON number; the X-Request-Id header value is passed as correlationId, and a generated non-blank UUID is passed when absent.",
   "project": "telemetry-ingestion-processing",
   "ast_hints": {
-    "package": "com.pulsestream.telemetry.eventlog.infrastructure",
-    "implements": [
-      "EventLogRepository"
-    ],
+    "package": "com.blackboard.telemetry.ingestion.interface_",
+    "implements": [],
     "dependencies": [
       {
-        "type": "EventLogRepository",
-        "task_id": "T2-011"
+        "type": "IngestTelemetryUseCase",
+        "task_id": "T2-008"
       },
       {
         "type": "TelemetrySample",
@@ -34,20 +27,12 @@
     ],
     "methods": [
       {
-        "signature": "public R2dbcEventLogRepository(org.springframework.r2dbc.core.DatabaseClient client)",
+        "signature": "public TelemetryIngestController(IngestTelemetryUseCase useCase)",
         "returns": ""
       },
       {
-        "signature": "public Mono<Boolean> appendRecord(TelemetrySample sample)",
-        "returns": "reactor.core.publisher.Mono<Boolean>"
-      },
-      {
-        "signature": "public Mono<Void> appendRevision(TelemetrySample revision)",
-        "returns": "reactor.core.publisher.Mono<Void>"
-      },
-      {
-        "signature": "public Flux<TelemetrySample> findByDeviceAndRange(String deviceId, long fromEpochMs, long toEpochMs)",
-        "returns": "reactor.core.publisher.Flux<TelemetrySample>"
+        "signature": "public Mono<Long> ingest(Flux<TelemetrySample> samples, String requestId)",
+        "returns": "Mono<Long>"
       }
     ]
   }

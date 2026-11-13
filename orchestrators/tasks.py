@@ -8,6 +8,69 @@ import workspace
 
 CAMEL_TYPE_RE = re.compile(r"\b[A-Z][A-Za-z0-9]{2,}\b")
 
+# Plan validity (FINAL-EVALUATION-seed002 §5.1, D1/D2/D3 roots): duties without an
+# owning artifact, config-less runtime plans and request-encoding contradictions are
+# dead on arrival at the frozen-test gate, so the EMIT refuses them - zero agent
+# sessions spent. The tables are STACK-NEUTRAL: they match artifact tails and generic
+# type shapes, never a framework name; framework vocabulary lives in the skills.
+FILE_ARTIFACT_RE = re.compile(
+    r"\b[\w./-]*\w\.(?:ya?ml|properties|sql|json|xml|conf|ini|toml|env)\b", re.I)
+CONFIG_ARTIFACT_TAILS = ("application.yml", "application.yaml", "application.properties",
+                         "settings.py", "config.py", "config.ts", "config.js",
+                         "config.json", "config.yaml", ".env")
+CONFIG_TRIGGER_RE = re.compile(
+    r"@ConfigurationProperties|application\.(?:ya?ml|properties)|externalized[- ]config", re.I)
+NULL_REJECT_RE = re.compile(
+    r"rejects?[^.;]*\bnull\b|null[- ]?(?:reject|intoler)|\bnon-null\b", re.I)
+STREAM_REQUEST_TYPES = ("Flux<", "Observable<", "ReadableStream", "AsyncGenerator",
+                        "AsyncIterable", "stream of")
+ARRAY_REQUEST_TYPES = ("List<", "Set<", "Collection<", "Iterable<")
+ARRAY_BODY_RE = re.compile(r"JSON array|array of\b|single array|array body|array document", re.I)
+STREAM_BODY_RE = re.compile(r"streamed (?:JSON )?documents|line[- ]delimited|ndjson|"
+                            r"newline[- ]delimited|sequence of (?:JSON )?documents|stream body", re.I)
+
+# Prose-vs-table shape (seed-002 rerun F2: the T2-014 pair that froze T2-020 and the
+# whole deferred cluster behind it). Two deterministic contradiction classes are emit-
+# refused because NO payload can ever satisfy both sides of the pair:
+#   (1) an intent asserting an UNCONSTRUCTIBLE shape (private constructor / utility
+#       class / non-instantiable) while its own table binds INSTANCE members;
+#   (2) an intent calling a pinned producer's member in STATIC form (`Type.member(`)
+#       while that producer's table binds it as an instance member.
+# Both are pure text comparisons of the task records - stack-neutral by construction;
+# yesterday's rules made the table win at WRITE time, this refuses the contradiction at
+# PLAN time so the two frozen tests of one type can never be written in two shapes again.
+UNCONSTRUCTIBLE_RE = re.compile(
+    r"private\s+(?:final\s+)?constructor|utility\s+class|non[-\s]instantiable", re.I)
+STATIC_CALL_RE = re.compile(r"\b([A-Z][A-Za-z0-9]{2,})\.([a-z][A-Za-z0-9]*)\(")
+
+
+def _table_signatures(hints):
+    for method in (hints or {}).get("methods") or []:
+        yield str(method.get("signature", "")) if isinstance(method, dict) else str(method)
+
+
+def _member_name(signature):
+    """The called name of a table signature: 'String headerName()' -> 'headerName';
+    'Foo(Bar b)' -> 'Foo' (constructor shape). Grammar-free: split before '(', last token."""
+    head = signature.split("(")[0].strip()
+    return head.rsplit(" ", 1)[-1] if head else ""
+
+
+def _is_static(signature):
+    return "static" in signature.split("(")[0].split()
+
+
+def _instance_members(hints, product):
+    """Non-constructor, non-static members the table binds as instance."""
+    names = []
+    for signature in _table_signatures(hints):
+        if "(" not in signature:
+            continue
+        name = _member_name(signature)
+        if name and name != product and not _is_static(signature):
+            names.append(name)
+    return names
+
 
 def is_type_shape(name):
     """A Java type is CamelCase; an ALL-CAPS token in an intent is a constant or a unit (BPM, RPM)."""
@@ -87,12 +150,16 @@ def validate_ast_hints(hints):
                 and isinstance(dep["task_id"], str) and dep["task_id"].strip()):
             return "each ast_hints.dependencies entry must be {type, task_id}, both non-empty strings"
     if not isinstance(hints["methods"], list):
-        return "ast_hints.methods must be a list of {signature, returns} objects"
+        return "ast_hints.methods must be a list of {signature, returns[, semantics]} objects"
     for method in hints["methods"]:
-        if not (isinstance(method, dict) and set(method) == {"signature", "returns"}
+        if not (isinstance(method, dict)
+                and {"signature", "returns"} <= set(method) <= {"signature", "returns", "semantics"}
                 and isinstance(method["signature"], str) and method["signature"].strip()
-                and isinstance(method["returns"], str)):
-            return "each ast_hints.methods entry must be {signature, returns} (returns '' for none)"
+                and isinstance(method["returns"], str)
+                and all(isinstance(v, str) and v.strip()
+                        for k, v in method.items() if k == "semantics")):
+            return ("each ast_hints.methods entry must be {signature, returns} plus optional "
+                    "non-empty `semantics` (returns '' for none)")
     return None
 
 
@@ -172,9 +239,142 @@ def validate(task, index, planning=False):
         if hints["implements"] and not hints["methods"]:
             return ("ast_hints.methods must spell the surface of every implemented "
                     "supertype (implements is non-empty but methods is empty)")
+    if "observability" in task:
+        obs = task["observability"]
+        if (not isinstance(obs, dict) or set(obs) != {"step_logs"}
+                or not isinstance(obs["step_logs"], list) or not obs["step_logs"]
+                or not all(isinstance(s, str) and s.strip() for s in obs["step_logs"])):
+            return ('observability must be exactly {"step_logs": [non-empty strings]}: the '
+                    "verbatim execution-strategy entries this unit owns and its stage-1 "
+                    "test must assert (the claim is the machine surface, never prose)")
     if planning and stage in (1, 2):
         if "ast_hints" not in task:
             return ("stage 1-2 tasks carry ast_hints: the API contract table "
                     "(package, implements, dependencies, methods) the tester and coder "
                     "must not improvise")
+        if NULL_REJECT_RE.search(str(task["intent"])):
+            methods = (task["ast_hints"] or {}).get("methods") or []
+            unmarked = [m for m in methods if not str(m.get("semantics") or "").strip()]
+            if unmarked:
+                return ("intent pins a null-rejecting surface but "
+                        f"{len(unmarked)}/{len(methods)} ast_hints.methods entries carry no "
+                        "`semantics` note: state the initial-state encoding (a named constant "
+                        "the producing unit ships, or the nullable alternative) - a mandatory "
+                        "field that rejects null with no legal way to represent its pre-use "
+                        "state froze two contradictory contracts (seed-002 D1)")
+        if (task["ast_hints"] or {}).get("methods") and \
+                UNCONSTRUCTIBLE_RE.search(str(task["intent"])) and \
+                _instance_members(task["ast_hints"], exported_product(task) or ""):
+            return ("intent asserts an UNCONSTRUCTIBLE shape (private constructor / utility "
+                    "class / non-instantiable) while ast_hints.methods binds INSTANCE members: "
+                    "no caller can ever reach them and no payload satisfies both - bind the "
+                    "members `static` in the table, or drop the constructor claim and let the "
+                    "unit be instantiated/injected (seed-002 rerun F2 froze the whole domain "
+                    "behind exactly this pair)")
     return None
+
+
+def _path_is_config_artifact(path):
+    p = str(path or "").replace("\\", "/").lower()
+    return any(p.endswith(tail) for tail in CONFIG_ARTIFACT_TAILS)
+
+
+def _signature_parameters(hints):
+    """The parameter text of every pinned signature - request bindings live there."""
+    for method in (hints or {}).get("methods", []) or []:
+        signature = str(method.get("signature", "")) if isinstance(method, dict) else str(method)
+        if "(" in signature:
+            yield signature[signature.index("("):]
+
+
+def plan_consistency(staged, index):
+    """Cross-unit emit checks (FINAL-EVALUATION-seed002 §6 items 1a/1b/1c).
+
+    Returns [error line]s; every rule is grounded in task records only - file
+    artifacts, config duties, and the pinned request-parameter shape versus the
+    body encoding the paired test intent mandates. Stack-neutral by construction.
+    """
+    errors = []
+    by_project = {}
+    for record in index.values():
+        if isinstance(record, dict):
+            by_project.setdefault(str(record.get("project", "")), []).append(record)
+    touched = {str(t.get("project", "")) for t in staged}
+    for project in sorted(touched):
+        units = by_project.get(project, [])
+        owned_paths = [str(u.get("path", "")).replace("\\", "/").lower()
+                       for u in units if isinstance(u.get("path"), str)]
+        for task in staged:
+            if str(task.get("project", "")) != project:
+                continue
+            own = str(task.get("path", "")).replace("\\", "/").lower()
+            # (a) every duty an intent assigns must be executable through an OWNED
+            #     artifact: a named file that no task's path carries is unschedulable
+            #     prose (seed-002 D3: "Also provide application.yml entries" inside a
+            #     one-java-file unit).
+            for match in FILE_ARTIFACT_RE.finditer(str(task.get("intent", ""))):
+                token = match.group(0).lstrip("./")
+                if any(token == own or token in p or p.endswith(token) for p in owned_paths):
+                    continue
+                errors.append(
+                    f"{task['id']}: intent assigns the file artifact '{match.group(0)}' but no "
+                    "task path owns it - move the duty to the unit that writes that file or "
+                    "schedule a unit for it (duty without an owner is prose, not a plan)")
+        # (b) a plan that speaks of externalized configuration must SCHEDULE the
+        #     config unit (seed-002 L1-L3: operational values with nothing to bind).
+        if any(CONFIG_TRIGGER_RE.search(str(u.get("intent", ""))) for u in units):
+            if not any(_path_is_config_artifact(u.get("path")) for u in units):
+                errors.append(
+                    f"project {project or '?'}: an intent assigns operational configuration "
+                    "(@ConfigurationProperties / runtime config file / externalized-config) but "
+                    "no unit targets a runtime configuration artifact (application.yml, "
+                    "config.ts, settings.py per stack): schedule the config unit carrying the "
+                    "seed's literal values")
+    # (c) request-encoding alignment on each test+impl pair (seed-002 D2: a pinned
+    #     Flux<Dto> request can never receive the "JSON array" its test mandates).
+    by_id = {str(u.get("id")): u for u in index.values() if isinstance(u, dict)}
+    for task in staged:
+        if task.get("stage") != settings.TDD_STAGE:
+            continue
+        tester = next((by_id.get(str(dep)) for dep in task.get("dependsOn", [])
+                       if str(dep).startswith("T1-")), None)
+        if not isinstance(tester, dict):
+            continue
+        params = " ".join(_signature_parameters(task.get("ast_hints")))
+        test_intent = str(tester.get("intent", ""))
+        if any(t in params for t in STREAM_REQUEST_TYPES) and ARRAY_BODY_RE.search(test_intent):
+            errors.append(
+                f"{task['id']}/{tester['id']}: pinned request parameter is a streamed "
+                "collection while the test intent mandates an array body - pair Flux/stream "
+                "types with streamed-document wording, or pin a List/array type (a decoder "
+                "can never satisfy both)")
+        elif any(t in params for t in ARRAY_REQUEST_TYPES) and STREAM_BODY_RE.search(test_intent):
+            errors.append(
+                f"{task['id']}/{tester['id']}: pinned request parameter is an array/collection "
+                "while the test intent mandates streamed documents - swap the parameter type or "
+                "the body encoding; they contradict at the decoder")
+    # (d) prose-vs-table CALL-SHAPE contradiction across the pair (seed-002 rerun F2,
+    #     second half): a unit's intent pins `Provider.member(` in static form while the
+    #     producer task's OWN table binds that member as an instance one. Each side's
+    #     tester writes what the text it reads says; the frozen pair then hangs the domain
+    #     on a type no payload can satisfy in both shapes. Refused at emit: zero sessions.
+    by_product = {}
+    for record in list(index.values()) + list(staged):
+        if isinstance(record, dict) and (product := exported_product(record)):
+            by_product.setdefault((str(record.get("project", "")), product), record)
+    for task in staged:
+        if task.get("stage") not in (1, 2):
+            continue
+        project = str(task.get("project", ""))
+        for receiver, member in STATIC_CALL_RE.findall(str(task.get("intent", ""))):
+            producer = by_product.get((project, receiver))
+            if producer is None or str(producer.get("id", "")) == str(task.get("id", "")):
+                continue
+            if member in _instance_members(producer.get("ast_hints"), receiver):
+                errors.append(
+                    f"{task['id']}: intent calls '{receiver}.{member}()' in STATIC form while "
+                    f"{producer.get('id')}'s own table binds it as an INSTANCE member - one "
+                    "shape must win at plan time: rewrite the prose against the injected "
+                    f"collaborator, or bind `static` in {producer.get('id')}'s table; two "
+                    "frozen tests written from the two shapes can never both pass (F2)")
+    return errors

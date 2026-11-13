@@ -3,42 +3,16 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "InMemoryTelemetryEventBus",
-    "constructors": [
-      [
-        "properties"
-      ]
-    ],
+    "type": "AuditTrail",
+    "constructors": [],
     "static_calls": [],
-    "calls": [
-      {
-        "receiver": "bus",
-        "method": "stream",
-        "args": []
-      },
-      {
-        "receiver": "bus",
-        "method": "publish",
-        "args": [
-          "SAMPLE"
-        ]
-      }
-    ],
+    "calls": [],
     "verified": [],
     "usage_lines": [
-      "class InMemoryTelemetryEventBusTest {",
-      "InMemoryTelemetryEventBus bus = new InMemoryTelemetryEventBus(properties);",
-      "StepVerifier.create(bus.stream().take(1))",
-      ".then(() -> bus.publish(SAMPLE).block(Duration.ofSeconds(1)))",
-      "InMemoryTelemetryEventBus bus = new InMemoryTelemetryEventBus(properties);",
-      "var first = StepVerifier.create(bus.stream().take(1)).expectNext(SAMPLE).expectComplete().verifyLater();",
-      "var second = StepVerifier.create(bus.stream().take(1)).expectNext(SAMPLE).expectComplete().verifyLater();",
-      "bus.publish(SAMPLE).block(Duration.ofSeconds(1));",
-      "InMemoryTelemetryEventBus bus = new InMemoryTelemetryEventBus(properties);",
-      "StepVerifier.create(bus.publish(SAMPLE)).verifyComplete();",
-      "InMemoryTelemetryEventBus bus = new InMemoryTelemetryEventBus(properties);",
-      "var verifier = StepVerifier.create(bus.stream().take(properties.busBufferCapacity()))",
-      "assertThat(bus.publish(SAMPLE).block(Duration.ofSeconds(1))).isNull();"
+      "class AuditTrailTest {",
+      "private static final class RecordingTrail implements AuditTrail {",
+      "Method[] methods = AuditTrail.class.getDeclaredMethods();",
+      "Method[] methods = AuditTrail.class.getDeclaredMethods();"
     ]
   },
   "stderr": "",

@@ -3,38 +3,52 @@
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
-    "T0-001",
-    "T1-006",
-    "T1-007"
+    "T0-001"
   ],
-  "path": "src/test/java/com/pulsestream/telemetry/ingestion/api/IngressControllerTest.java",
+  "path": "src/test/java/com/blackboard/telemetry/ingestion/application/IngestTelemetryUseCaseTest.java",
   "kind": "test",
-  "layer": "interface",
+  "layer": "application",
   "feature": null,
-  "export": "IngressControllerTest",
-  "intent": "WebFlux slice test (WebTestClient) of POST /api/v1/telemetry/packets accepting a JSON array of IngressSampleDto: mocks IngestSamplesUseCase, responds 202 with body = number of samples accepted (Long); invalid dto (blank deviceId) gives 400; a VALIDATION_FAILED sample from the use case still counts as accepted.",
+  "export": "IngestTelemetryUseCaseTest",
+  "intent": "Context Telemetry Ingestion & Validation. Use Mockito doubles for TelemetryEventStore and AuditTrail and SimpleMeterRegistry. ingest(samples, correlationId) appends one TelemetryRecord with revision 1 per sample and emits the number appended. Status is VALIDATED when deviceId and metric are not blank, tDevice is present and value is finite; otherwise VALIDATION_FAILED (still appended, never dropped). Counters: telemetry.ingress.packets (tag outcome=accepted), telemetry.samples.validated (tags metric, status), timer telemetry.ingest.latency (tag outcome). Exactly one audit record per call: actor = deviceId of the first sample or 'system' when empty, action 'INGEST', outcome 'ACCEPTED', timestamp set, correlationId as passed. Use StepVerifier.",
   "project": "telemetry-ingestion-processing",
   "ast_hints": {
-    "package": "com.pulsestream.telemetry.ingestion.api",
+    "package": "com.blackboard.telemetry.ingestion.application",
     "implements": [],
     "dependencies": [
       {
-        "type": "IngestSamplesUseCase",
+        "type": "TelemetryEventStore",
         "task_id": "T2-006"
       },
       {
-        "type": "IngressSampleDto",
-        "task_id": "T2-007"
+        "type": "AuditTrail",
+        "task_id": "T2-005"
+      },
+      {
+        "type": "MeterRegistry",
+        "task_id": "T0-001"
+      },
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-002"
+      },
+      {
+        "type": "TelemetryRecord",
+        "task_id": "T2-003"
+      },
+      {
+        "type": "AuditEntry",
+        "task_id": "T2-004"
       }
     ],
     "methods": [
       {
-        "signature": "public IngressController(IngestSamplesUseCase useCase, java.time.Clock clock)",
+        "signature": "public IngestTelemetryUseCase(TelemetryEventStore store, AuditTrail auditTrail, MeterRegistry meterRegistry)",
         "returns": ""
       },
       {
-        "signature": "public Mono<Long> receivePacket(Flux<@Valid IngressSampleDto> samples)",
-        "returns": "reactor.core.publisher.Mono<Long>"
+        "signature": "public Mono<Long> ingest(Flux<TelemetrySample> samples, String correlationId)",
+        "returns": "Mono<Long>"
       }
     ]
   }

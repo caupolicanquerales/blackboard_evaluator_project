@@ -3,39 +3,16 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "TelemetryProperties",
-    "constructors": [
-      [
-        "7L",
-        "32",
-        "Map.of(\"temperature\", TEMP)"
-      ],
-      [
-        "window",
-        "32",
-        "Map.of()"
-      ],
-      [
-        "7L",
-        "capacity",
-        "Map.of()"
-      ]
-    ],
+    "type": "yml",
+    "constructors": [],
     "static_calls": [],
     "calls": [],
     "verified": [],
     "usage_lines": [
-      "class TelemetryPropertiesTest {",
-      "private static final TelemetryProperties.Bounds TEMP = new TelemetryProperties.Bounds(-10.5, 90.25);",
-      "private TelemetryProperties build() {",
-      "return new TelemetryProperties(7L, 32, Map.of(\"temperature\", TEMP));",
-      "assertThat(build().reorderWindowSeconds()).isEqualTo(7L);",
-      "assertThat(build().busBufferCapacity()).isEqualTo(32);",
-      "assertThat(build().metricBounds()).containsExactly(Map.entry(\"temperature\", TEMP));",
-      "assertThat(build().boundsFor(\"temperature\")).isPresent().contains(TEMP);",
-      "assertThat(build().boundsFor(\"unknown\")).isEmpty();",
-      "assertThatThrownBy(() -> new TelemetryProperties(window, 32, Map.of()))",
-      "assertThatThrownBy(() -> new TelemetryProperties(7L, capacity, Map.of()))"
+      "try (InputStream in = ApplicationConfigTest.class.getResourceAsStream(\"/application.yml\")) {",
+      "assertThat(in).as(\"application.yml on classpath\").isNotNull();",
+      ".filter(d -> !d.containsKey(\"spring.config.activate.on-profile\"))",
+      ".filter(d -> \"test\".equals(d.get(\"spring.config.activate.on-profile\")))"
     ]
   },
   "stderr": "",

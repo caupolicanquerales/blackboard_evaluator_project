@@ -1,0 +1,2 @@
+FROM caupolicanquerales/springboot_mcp_server:fallback-17
+COPY target/McpServerApplication-0.0.1-SNAPSHOT.jar /app/app.jar

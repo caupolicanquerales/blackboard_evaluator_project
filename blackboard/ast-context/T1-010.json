@@ -3,45 +3,38 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "ReorderingService",
+    "type": "R2dbcAuditTrail",
     "constructors": [
       [
-        "new ReorderBuffer(properties)",
-        "clock"
+        "databaseClient"
       ]
     ],
     "static_calls": [],
     "calls": [
       {
-        "receiver": "service",
-        "method": "windows",
+        "receiver": "trail",
+        "method": "record",
         "args": [
-          "input"
-        ],
-        "returns": "List<TelemetrySample>"
+          "entry"
+        ]
       },
       {
-        "receiver": "service",
-        "method": "windows",
+        "receiver": "trail",
+        "method": "record",
         "args": [
-          "Flux.<TelemetrySample>empty()"
-        ],
-        "returns": "List<TelemetrySample>"
+          "new AuditEntry(\"actor-1\", \"INGEST\", \"SUCCESS\", TS, \"req-1\")"
+        ]
       }
     ],
     "verified": [],
     "usage_lines": [
-      "class ReorderingServiceTest {",
-      "private ReorderingService service(long nowEpochMs) {",
-      "return new ReorderingService(new ReorderBuffer(properties), clock);",
-      "ReorderingService service = service(0L);",
-      "List<TelemetrySample> result = service.windows(input).collectList().block();",
-      "ReorderingService service = service(10_000_000L);",
-      "List<TelemetrySample> result = service.windows(input).collectList().block();",
-      "ReorderingService service = service(0L);",
-      "List<TelemetrySample> result = service.windows(input).collectList().block();",
-      "ReorderingService service = service(0L);",
-      "List<TelemetrySample> result = service.windows(Flux.<TelemetrySample>empty()).collectList().block();"
+      "class R2dbcAuditTrailTest {",
+      "private R2dbcAuditTrail trail;",
+      "trail = new R2dbcAuditTrail(databaseClient);",
+      "StepVerifier.create(trail.record(entry)).verifyComplete();",
+      "trail.record(new AuditEntry(\"actor-1\", \"INGEST\", \"SUCCESS\", TS, \"req-1\")).block();",
+      "trail.record(entry).block();",
+      "trail.record(entry).block();"
     ]
   },
   "stderr": "",

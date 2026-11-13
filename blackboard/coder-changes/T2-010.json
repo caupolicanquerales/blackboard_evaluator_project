@@ -1,32 +1,37 @@
 {
   "id": "T2-010",
   "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/reordering/application/ReorderingService.java",
-  "export": "ReorderingService",
+  "targetFile": "src/main/java/com/blackboard/telemetry/shared/observability/R2dbcAuditTrail.java",
+  "export": "R2dbcAuditTrail",
   "kind": "class",
-  "method": "windows",
+  "method": "record",
   "language": "java",
   "framework": "springboot",
   "skill": "java-springboot",
-  "signature": "public Flux<TelemetrySample> windows(Flux<TelemetrySample> samples)",
-  "returns": "reactor.core.publisher.Flux<TelemetrySample>",
-  "annotations": [
-    "Service"
-  ],
-  "members": [
-    "private final ReorderBuffer buffer;",
-    "private final java.time.Clock clock;",
-    "public ReorderingService(ReorderBuffer buffer, java.time.Clock clock) { this.buffer = buffer; this.clock = clock; }"
-  ],
-  "body": "return samples\n        .concatMapIterable(sample -> buffer.accept(sample, clock.millis()))\n        .concatWith(Flux.defer(() -> Flux.fromIterable(buffer.drain())));",
+  "signature": "public Mono<Void> record(AuditEntry entry)",
+  "returns": "Mono<Void>",
+  "body": "return databaseClient\n        .sql(\"INSERT INTO audit_trail (actor, action, outcome, occurred_at, correlation_id) VALUES (:actor, :action, :outcome, :occurredAt, :correlationId)\")\n        .bind(\"actor\", entry.actor())\n        .bind(\"action\", entry.action())\n        .bind(\"outcome\", entry.outcome())\n        .bind(\"occurredAt\", entry.timestamp().atOffset(ZoneOffset.UTC))\n        .bind(\"correlationId\", entry.correlationId())\n        .fetch()\n        .rowsUpdated()\n        .then();",
   "imports": [
-    "org.springframework.stereotype.Service",
-    "reactor.core.publisher.Flux",
-    "com.pulsestream.telemetry.ingestion.domain.TelemetrySample",
-    "com.pulsestream.telemetry.reordering.domain.ReorderBuffer"
+    "java.time.ZoneOffset",
+    "org.springframework.r2dbc.core.DatabaseClient",
+    "org.springframework.stereotype.Repository",
+    "reactor.core.publisher.Mono"
   ],
   "missing": [],
+  "annotations": [
+    "Repository"
+  ],
+  "implements": [
+    "AuditTrail"
+  ],
+  "members": [
+    "private final DatabaseClient databaseClient",
+    "public R2dbcAuditTrail(DatabaseClient databaseClient) { this.databaseClient = databaseClient; }"
+  ],
+  "methodAnnotations": [
+    "Override"
+  ],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-11T14:07:50.239095+00:00"
+  "recorded_at": "2026-11-13T16:21:49.735182+00:00"
 }

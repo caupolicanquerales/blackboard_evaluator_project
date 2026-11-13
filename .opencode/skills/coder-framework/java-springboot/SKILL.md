@@ -1,9 +1,9 @@
 ---
 name: java-springboot
-description: Coder rules for Java 17+ with Spring Boot 3. Method body generation, imports, idioms, anti-patterns.
+description: Coder rules for Java (default 21; the strategy pin is exact) with Spring Boot 3. Method body generation, imports, idioms, anti-patterns.
 ---
 # Syntax
-Java 17+, `jakarta.*` only. `body` = pure body. Framework annotations via fields, never in signature: `annotations` (type level: RestController, Service, Configuration...), `methodAnnotations` (GetMapping("/x"), RequestBody...) - no `@`, classes into imports. Parameter annotations (@Valid, @RequestBody, @PathVariable) stay inside `signature`.
+Java at the strategy-pinned version (21 default; modern language features allowed at the pin, never assume 17-only), `jakarta.*` only. `body` = pure body. A table binding spelled WITHOUT a visibility modifier is a PUBLIC API member (frozen tests consume it across packages; the weaver lands the default) - never ship a package-private accessor the table did not spell. Framework annotations via fields, never in signature: `annotations` (type level: RestController, Service, Configuration...), `methodAnnotations` (GetMapping("/x"), RequestBody...) - no `@`, classes into imports. Parameter annotations (@Valid, @RequestBody, @PathVariable) stay inside `signature`. Observability units implement ONLY what the task tables: audit adapter persists the port's record shape, meters use the exact tabled names with bounded tags, a logger field is added only when the intent names the step - never invent ad-hoc log lines in other units' bodies.
 # Payload shaping
 - Missing class in red: `kind` + `members`: class: fields+ctor; interface: abstract sigs+empty body; enum: constants; record: one entry per component, never a joined line (bare components route to the header).
 - Generic: `export` = `Box<T>` / `Table<K, V extends Comparable<V>>`; the shell carries parameters, members use them; ctors/methods never repeat `<T>`.

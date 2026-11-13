@@ -33,7 +33,15 @@ def main() -> int:
             return 1
     try:
         import yaml  # noqa: F401
-        yaml.safe_load(body)
+        # Materialize with safe_load_all, NOT safe_load: a Spring Boot runtime config is
+        # legitimately a MULTI-DOCUMENT YAML stream (base document + each
+        # `spring.config.activate.on-profile` document separated by `---`). SnakeYAML and
+        # Spring's own loader read every document (the config unit's frozen test asserts on
+        # `Yaml().loadAll(...)`), so the write gate must validate the SAME surface - not a
+        # single document. With safe_load a compliant multi-doc payload was refused "not
+        # parseable", the coder fell back to a single doc, and the profiled test could never
+        # go green (seed-002 rerun T2-001: the tool made a correct plan unweavable).
+        list(yaml.safe_load_all(body))
     except ImportError:
         pass
     except Exception as exc:  # noqa: BLE001

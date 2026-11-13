@@ -1,27 +1,39 @@
 {
   "id": "T2-011",
   "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/eventlog/domain/EventLogRepository.java",
-  "export": "EventLogRepository",
-  "kind": "interface",
-  "method": "appendRecord",
+  "targetFile": "src/main/java/com/blackboard/telemetry/shared/observability/CorrelationIdWebFilter.java",
+  "export": "CorrelationIdWebFilter",
+  "kind": "class",
+  "method": "filter",
   "language": "java",
   "framework": "springboot",
   "skill": "java-springboot",
-  "signature": "Mono<Boolean> appendRecord(TelemetrySample sample)",
-  "returns": "reactor.core.publisher.Mono<Boolean>",
-  "body": "",
-  "members": [
-    "Mono<Void> appendRevision(TelemetrySample revision);",
-    "Flux<TelemetrySample> findByDeviceAndRange(String deviceId, long fromEpochMs, long toEpochMs);"
-  ],
+  "signature": "public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain)",
+  "returns": "Mono<Void>",
+  "body": "String inbound = exchange.getRequest().getHeaders().getFirst(HEADER);\nString requestId = inbound == null || inbound.isBlank() ? UUID.randomUUID().toString() : inbound;\nexchange.getResponse().getHeaders().set(HEADER, requestId);\nreturn chain.filter(exchange).contextWrite(ctx -> ctx.put(CONTEXT_KEY, requestId));",
   "imports": [
-    "reactor.core.publisher.Mono",
-    "reactor.core.publisher.Flux",
-    "com.pulsestream.telemetry.ingestion.domain.TelemetrySample"
+    "java.util.UUID",
+    "org.springframework.stereotype.Component",
+    "org.springframework.web.server.ServerWebExchange",
+    "org.springframework.web.server.WebFilter",
+    "org.springframework.web.server.WebFilterChain",
+    "reactor.core.publisher.Mono"
   ],
   "missing": [],
+  "annotations": [
+    "Component"
+  ],
+  "implements": [
+    "WebFilter"
+  ],
+  "members": [
+    "public static final String HEADER = \"X-Request-Id\"",
+    "public static final String CONTEXT_KEY = \"requestId\""
+  ],
+  "methodAnnotations": [
+    "Override"
+  ],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-11T14:05:56.033144+00:00"
+  "recorded_at": "2026-11-13T16:20:12.239835+00:00"
 }

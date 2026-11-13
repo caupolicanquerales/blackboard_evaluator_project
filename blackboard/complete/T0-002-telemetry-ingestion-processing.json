@@ -5,11 +5,11 @@
   "dependsOn": [
     "T0-001"
   ],
-  "path": "db/migrations/V1__create_event_log_store.sql",
+  "path": "db/migrations/V1__create_telemetry_records.sql",
   "kind": "bootstrap",
   "layer": "root",
   "feature": null,
-  "export": "V1__create_event_log_store",
-  "intent": "Store setup: PostgreSQL schema telemetry_event_log for the Telemetry Event Log context (Flyway versioned script V1, technology version unspecified by tech-stack).",
+  "export": "V1__create_telemetry_records",
+  "intent": "Store setup: PostgreSQL (Flyway, expand-only) append-only telemetry_records table for context telemetry-ingestion-processing; PK (device_id, metric, t_device, revision), index for latest-revision and range queries, version column, quoted value column; script V1 create telemetry records.",
   "project": "telemetry-ingestion-processing"
 }

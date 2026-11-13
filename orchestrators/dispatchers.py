@@ -374,7 +374,12 @@ WEAVE_BASELINE_DIR = settings.BLACKBOARD / "weave-baseline"
 # Reasons the WEAVER TOOL produced from the payload itself. The unit's code never ran;
 # burning a TDD attempt on a tool rejection wastes a session and a full module build, so
 # the reason is prefixed and execute_with_tdd bounces it back without counting the attempt.
-_PAYLOAD_REJECT_MARKERS = ("does not parse", "no builder matched", "payload", "unsupported")
+# "not parseable" (yaml builder) and "cannot derive" (java type-name extraction from a
+# malformed export) are the same class: the TOOL refused the payload shape, the unit's
+# code never compiled at all - live 2026-11-12: "export: final CorrelationContext" was
+# charged as three unit failures while it was a re-emit-field fix.
+_PAYLOAD_REJECT_MARKERS = ("does not parse", "no builder matched", "payload", "unsupported",
+                           "not parseable", "cannot derive")
 
 
 def _reset_stale_weave(task, project_root):

@@ -33,14 +33,17 @@ public class InitializrMcpTool {
     private final Path projectsDir;
     private final long buildTimeoutMinutes;
     private final String defaultBootVersion;
+    private final String defaultJavaVersion;
 
     public InitializrMcpTool(
             @Value("${mcp.projects.dir:/workspace/projects}") String projectsDir,
             @Value("${mcp.projects.build-timeout-minutes:10}") long buildTimeoutMinutes,
-            @Value("${mcp.initializr.default-boot-version:4.1.2}") String defaultBootVersion) {
+            @Value("${mcp.initializr.default-boot-version:4.1.2}") String defaultBootVersion,
+            @Value("${mcp.initializr.default-java-version:21}") String defaultJavaVersion) {
         this.projectsDir = Path.of(projectsDir).toAbsolutePath().normalize();
         this.buildTimeoutMinutes = buildTimeoutMinutes;
         this.defaultBootVersion = defaultBootVersion;
+        this.defaultJavaVersion = defaultJavaVersion;
     }
 
     @Tool(description = "Generates a Spring Boot Maven project from Spring Initializr, extracts it into the projects folder, "
@@ -49,15 +52,20 @@ public class InitializrMcpTool {
             @ToolParam(description = "Comma-separated Spring Initializr dependency IDs, e.g. web,data-jpa,postgresql") String dependencies,
             @ToolParam(description = "Spring Boot version, e.g. 3.5.6. Optional", required = false) String bootVersion,
             @ToolParam(description = "Maven groupId, e.g. com.example. Optional", required = false) String groupId,
-            @ToolParam(description = "Maven artifactId and project folder name (letters, digits, '-', '_', '.'). Optional, default demo", required = false) String artifactId) {
+            @ToolParam(description = "Maven artifactId and project folder name (letters, digits, '-', '_', '.'). Optional, default demo", required = false) String artifactId,
+            @ToolParam(description = "Java version for the build, e.g. 21. Optional, default 21 - pass the strategy pin EXACTLY; never rely on Initializr's own default.", required = false) String javaVersion) {
 
         String group = orDefault(groupId, "com.example");
         String artifact = orDefault(artifactId, "demo");
         String boot = orDefault(bootVersion, defaultBootVersion);
+        String java = orDefault(javaVersion, defaultJavaVersion);
         String deps = dependencies == null ? "" : dependencies.replaceAll("\\s+", "");
 
         if (!SAFE_NAME.matcher(group).matches() || !SAFE_NAME.matcher(artifact).matches()) {
             return "ERROR: invalid groupId or artifactId";
+        }
+        if (!java.matches("\\d+(\\.\\d+)?")) {
+            return "ERROR: javaVersion must be a plain version number, e.g. 21";
         }
         if (deps.isEmpty() || !SAFE_DEPENDENCIES.matcher(deps).matches()) {
             return "ERROR: dependencies must be comma-separated Spring Initializr IDs, e.g. web,data-jpa";
@@ -71,6 +79,7 @@ public class InitializrMcpTool {
                             .queryParam("type", "maven-project")
                             .queryParam("language", "java")
                             .queryParam("bootVersion", boot)
+                            .queryParam("javaVersion", java)
                             .queryParam("groupId", group)
                             .queryParam("artifactId", artifact)
                             .queryParam("dependencies", deps)

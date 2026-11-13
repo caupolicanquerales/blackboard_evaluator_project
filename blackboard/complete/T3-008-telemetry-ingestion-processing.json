@@ -1,0 +1,15 @@
+{
+  "id": "T3-008",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-008"
+  ],
+  "path": "src/main/java/com/blackboard/telemetry/ingestion/application/IngestTelemetryUseCase.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "IngestTelemetryUseCase",
+  "intent": "Inspect IngestTelemetryUseCase: non-blocking chain, no raw logger calls, metric names and audit fields as specified; tidy without changing the surface.",
+  "project": "telemetry-ingestion-processing"
+}

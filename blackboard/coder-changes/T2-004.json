@@ -1,26 +1,28 @@
 {
   "id": "T2-004",
   "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/ingestion/application/TelemetryEventBus.java",
-  "export": "TelemetryEventBus",
-  "kind": "interface",
-  "method": "publish",
+  "targetFile": "src/main/java/com/blackboard/telemetry/shared/observability/AuditEntry.java",
+  "export": "AuditEntry",
+  "kind": "record",
+  "method": "AuditEntry",
   "language": "java",
-  "framework": "springboot",
-  "skill": "java-springboot",
-  "signature": "Mono<Void> publish(TelemetrySample sample)",
-  "returns": "reactor.core.publisher.Mono<Void>",
+  "framework": "springboot3",
+  "skill": "java-standard-best-practices",
+  "signature": "public record AuditEntry(String actor, String action, String outcome, Instant timestamp, String correlationId)",
+  "returns": "void",
   "body": "",
-  "members": [
-    "Flux<TelemetrySample> stream();"
-  ],
   "imports": [
-    "reactor.core.publisher.Flux",
-    "reactor.core.publisher.Mono",
-    "com.pulsestream.telemetry.ingestion.domain.TelemetrySample"
+    "java.time.Instant"
   ],
   "missing": [],
+  "members": [
+    "String actor",
+    "String action",
+    "String outcome",
+    "Instant timestamp",
+    "String correlationId"
+  ],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-11T14:06:44.616225+00:00"
+  "recorded_at": "2026-11-13T16:19:19.308242+00:00"
 }

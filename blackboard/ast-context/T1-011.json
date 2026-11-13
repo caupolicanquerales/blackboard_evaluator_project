@@ -3,71 +3,57 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "EventLogRepository",
-    "constructors": [],
+    "type": "CorrelationIdWebFilter",
+    "constructors": [
+      []
+    ],
     "static_calls": [],
     "calls": [
       {
-        "receiver": "repository",
-        "method": "appendRecord",
+        "receiver": "filter",
+        "method": "filter",
         "args": [
-          "sample"
-        ],
-        "stubbed_to": "Mono.just(true)"
-      },
-      {
-        "receiver": "repository",
-        "method": "appendRecord",
-        "args": [
-          "sample"
+          "exchange(\"abc-123\")",
+          "probe"
         ]
       },
       {
-        "receiver": "repository",
-        "method": "appendRevision",
+        "receiver": "filter",
+        "method": "filter",
         "args": [
-          "sample"
-        ],
-        "stubbed_to": "Mono.empty()"
-      },
-      {
-        "receiver": "repository",
-        "method": "appendRevision",
-        "args": [
-          "sample"
+          "exchange",
+          "new Probe()"
         ]
       },
       {
-        "receiver": "repository",
-        "method": "findByDeviceAndRange",
+        "receiver": "filter",
+        "method": "filter",
         "args": [
-          "\"dev-1\"",
-          "0L",
-          "5000L"
-        ],
-        "stubbed_to": "Flux.just(sample)"
+          "exchange",
+          "probe"
+        ]
       },
       {
-        "receiver": "repository",
-        "method": "findByDeviceAndRange",
+        "receiver": "filter",
+        "method": "filter",
         "args": [
-          "\"dev-1\"",
-          "0L",
-          "5000L"
+          "exchange(null)",
+          "probe"
         ]
       }
     ],
     "verified": [],
     "usage_lines": [
-      "class EventLogRepositoryTest {",
-      "private final EventLogRepository repository = mock(EventLogRepository.class);",
-      "when(repository.appendRecord(sample)).thenReturn(Mono.just(true));",
-      "StepVerifier.create(repository.appendRecord(sample)).expectNext(true).verifyComplete();",
-      "when(repository.appendRevision(sample)).thenReturn(Mono.empty());",
-      "StepVerifier.create(repository.appendRevision(sample)).verifyComplete();",
-      "when(repository.findByDeviceAndRange(\"dev-1\", 0L, 5000L)).thenReturn(Flux.just(sample));",
-      "StepVerifier.create(repository.findByDeviceAndRange(\"dev-1\", 0L, 5000L))",
-      "List<String> names = Arrays.stream(EventLogRepository.class.getDeclaredMethods())"
+      "class CorrelationIdWebFilterTest {",
+      "private final CorrelationIdWebFilter filter = new CorrelationIdWebFilter();",
+      "public Mono<Void> filter(ServerWebExchange exchange) {",
+      "contextValue.set(ctx.getOrDefault(CorrelationIdWebFilter.CONTEXT_KEY, null));",
+      "assertThat(CorrelationIdWebFilter.HEADER).isEqualTo(\"X-Request-Id\");",
+      "assertThat(CorrelationIdWebFilter.CONTEXT_KEY).isEqualTo(\"requestId\");",
+      "StepVerifier.create(filter.filter(exchange(\"abc-123\"), probe)).verifyComplete();",
+      "filter.filter(exchange, new Probe()).block();",
+      "filter.filter(exchange, probe).block();",
+      "filter.filter(exchange(null), probe).block();"
     ]
   },
   "stderr": "",

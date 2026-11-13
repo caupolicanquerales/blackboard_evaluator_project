@@ -3,38 +3,51 @@
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
-    "T0-001",
-    "T1-001",
-    "T1-002"
+    "T0-001"
   ],
-  "path": "src/test/java/com/pulsestream/telemetry/ingestion/domain/SampleValidatorTest.java",
+  "path": "src/test/java/com/blackboard/telemetry/eventstore/domain/TelemetryRecordTest.java",
   "kind": "test",
   "layer": "domain",
   "feature": null,
-  "export": "SampleValidatorTest",
-  "intent": "Telemetry Sample Ingestion. Build TelemetryProperties with test bounds. Assert: in-range sample (inclusive edges) gets status VALID; out-of-range or unknown-metric sample gets VALIDATION_FAILED; the sample is never dropped and all other fields are preserved; validation is deterministic.",
+  "export": "TelemetryRecordTest",
+  "intent": "Context Telemetry Event Store. TelemetryRecord is an immutable append-only record of a stored sample revision: sample identity (deviceId, metric, tDevice) plus tIngress, value, status (VALIDATED or VALIDATION_FAILED) and revision (starting at 1). Assert accessors and value equality only; no validation or mutation.",
   "project": "telemetry-ingestion-processing",
   "ast_hints": {
-    "package": "com.pulsestream.telemetry.ingestion.domain",
+    "package": "com.blackboard.telemetry.eventstore.domain",
     "implements": [],
-    "dependencies": [
-      {
-        "type": "TelemetryProperties",
-        "task_id": "T2-001"
-      },
-      {
-        "type": "TelemetrySample",
-        "task_id": "T2-002"
-      }
-    ],
+    "dependencies": [],
     "methods": [
       {
-        "signature": "public SampleValidator(TelemetryProperties properties)",
+        "signature": "public record TelemetryRecord(String deviceId, String metric, Instant tDevice, Instant tIngress, double value, String status, long revision)",
         "returns": ""
       },
       {
-        "signature": "public TelemetrySample validate(TelemetrySample sample)",
-        "returns": "TelemetrySample"
+        "signature": "String deviceId()",
+        "returns": "String"
+      },
+      {
+        "signature": "String metric()",
+        "returns": "String"
+      },
+      {
+        "signature": "Instant tDevice()",
+        "returns": "Instant"
+      },
+      {
+        "signature": "Instant tIngress()",
+        "returns": "Instant"
+      },
+      {
+        "signature": "double value()",
+        "returns": "double"
+      },
+      {
+        "signature": "String status()",
+        "returns": "String"
+      },
+      {
+        "signature": "long revision()",
+        "returns": "long"
       }
     ]
   }

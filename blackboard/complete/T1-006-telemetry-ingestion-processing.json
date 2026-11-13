@@ -3,43 +3,32 @@
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
-    "T0-001",
-    "T1-002",
-    "T1-003",
-    "T1-004"
+    "T0-001"
   ],
-  "path": "src/test/java/com/pulsestream/telemetry/ingestion/application/IngestSamplesUseCaseTest.java",
+  "path": "src/test/java/com/blackboard/telemetry/eventstore/application/TelemetryEventStoreTest.java",
   "kind": "test",
   "layer": "application",
   "feature": null,
-  "export": "IngestSamplesUseCaseTest",
-  "intent": "Telemetry Sample Ingestion use case. Mock SampleValidator and TelemetryEventBus. Assert each incoming sample is validated then published exactly once (valid and VALIDATION_FAILED alike, none dropped), result Flux emits the validated samples in input order, and ingest completes when all are published.",
+  "export": "TelemetryEventStoreTest",
+  "intent": "Context Telemetry Event Store. TelemetryEventStore is the append-only port. Test its contract with an in-memory stub: append(TelemetryRecord) emits the stored record; findLatestInRange returns, per (deviceId, metric, tDevice), only the highest revision with tDevice in [from, to], ordered by tDevice ascending. Assert that the interface declares only append and findLatestInRange (no update/delete).",
   "project": "telemetry-ingestion-processing",
   "ast_hints": {
-    "package": "com.pulsestream.telemetry.ingestion.application",
+    "package": "com.blackboard.telemetry.eventstore.application",
     "implements": [],
     "dependencies": [
       {
-        "type": "SampleValidator",
+        "type": "TelemetryRecord",
         "task_id": "T2-003"
-      },
-      {
-        "type": "TelemetryEventBus",
-        "task_id": "T2-004"
-      },
-      {
-        "type": "TelemetrySample",
-        "task_id": "T2-002"
       }
     ],
     "methods": [
       {
-        "signature": "public IngestSamplesUseCase(SampleValidator validator, TelemetryEventBus eventBus)",
-        "returns": ""
+        "signature": "Mono<TelemetryRecord> append(TelemetryRecord record)",
+        "returns": "Mono<TelemetryRecord>"
       },
       {
-        "signature": "public Flux<TelemetrySample> ingest(Flux<TelemetrySample> samples)",
-        "returns": "reactor.core.publisher.Flux<TelemetrySample>"
+        "signature": "Flux<TelemetryRecord> findLatestInRange(String deviceId, String metric, Instant from, Instant to)",
+        "returns": "Flux<TelemetryRecord>"
       }
     ]
   }

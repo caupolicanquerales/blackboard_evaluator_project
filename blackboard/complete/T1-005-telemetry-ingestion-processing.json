@@ -3,49 +3,28 @@
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
-    "T0-001",
-    "T1-001",
-    "T1-002",
-    "T1-004"
+    "T0-001"
   ],
-  "path": "src/test/java/com/pulsestream/telemetry/ingestion/infrastructure/InMemoryTelemetryEventBusTest.java",
+  "path": "src/test/java/com/blackboard/telemetry/shared/observability/AuditTrailTest.java",
   "kind": "test",
-  "layer": "infrastructure",
+  "layer": "shared",
   "feature": null,
-  "export": "InMemoryTelemetryEventBusTest",
-  "intent": "Using StepVerifier: a published sample is delivered to a subscriber of stream(); multiple subscribers each receive it (multicast); with buffer capacity from TelemetryProperties, publishing does not block and publish returns Mono<Void> completing. Use bounded capacity from properties, no real sleeping.",
+  "export": "AuditTrailTest",
+  "intent": "AuditTrail is an append-only port of the audit_trail store. Test the contract with a Mockito mock or in-memory stub: record(AuditEntry) returns a Mono<Void> that completes empty; the interface exposes no update or delete method (assert via reflection that its only declared method is record).",
   "project": "telemetry-ingestion-processing",
   "ast_hints": {
-    "package": "com.pulsestream.telemetry.ingestion.infrastructure",
-    "implements": [
-      "TelemetryEventBus"
-    ],
+    "package": "com.blackboard.telemetry.shared.observability",
+    "implements": [],
     "dependencies": [
       {
-        "type": "TelemetryProperties",
-        "task_id": "T2-001"
-      },
-      {
-        "type": "TelemetrySample",
-        "task_id": "T2-002"
-      },
-      {
-        "type": "TelemetryEventBus",
+        "type": "AuditEntry",
         "task_id": "T2-004"
       }
     ],
     "methods": [
       {
-        "signature": "public InMemoryTelemetryEventBus(TelemetryProperties properties)",
-        "returns": ""
-      },
-      {
-        "signature": "public Mono<Void> publish(TelemetrySample sample)",
-        "returns": "reactor.core.publisher.Mono<Void>"
-      },
-      {
-        "signature": "public Flux<TelemetrySample> stream()",
-        "returns": "reactor.core.publisher.Flux<TelemetrySample>"
+        "signature": "Mono<Void> record(AuditEntry entry)",
+        "returns": "Mono<Void>"
       }
     ]
   }

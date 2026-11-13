@@ -13,6 +13,7 @@ import com.capo.ast_weaver_java.services.weave.SuperTypeWeaver;
 import com.capo.ast_weaver_java.services.weave.TypeDeclarations;
 import com.capo.ast_weaver_java.services.weave.TypeSkeletons;
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.body.ConstructorDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.RecordDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
@@ -84,17 +85,29 @@ public final class JavaASTWeaver {
             AnnotationWeaver.applyAll(owner, payload.annotations());
 
             if (!"interface".equals(kind) && !payload.body().isBlank()) {
-                // Full-declaration signatures replace the method wholesale; the bare
-                // contract spelling keeps the create/select + reconcile path.
-                MethodDeclaration target = MethodWeaver.fullDeclaration(payload)
-                    .map(declaration -> MethodWeaver.replaceInPlace(owner, declaration))
-                    .orElseGet(() -> {
-                        MethodDeclaration selected = MethodWeaver.selectOrCreate(owner, payload);
-                        MethodWeaver.reconcileFromSignature(selected, payload);
-                        return selected;
-                    });
+                // A payload whose method name IS the class name declares a constructor:
+                // it must splice into a ConstructorDeclaration - a MethodDeclaration
+                // named like the class can never assign final fields (T2-017 storm).
+                com.github.javaparser.ast.body.CallableDeclaration<?> target;
+                if (MethodWeaver.declaresConstructor(payload.method(), owner)) {
+                    target = MethodWeaver.selectOrCreateConstructor(owner, payload);
+                } else {
+                    // Full-declaration signatures replace the method wholesale; the bare
+                    // contract spelling keeps the create/select + reconcile path.
+                    target = MethodWeaver.fullDeclaration(payload)
+                        .map(declaration -> MethodWeaver.replaceInPlace(owner, declaration))
+                        .orElseGet(() -> {
+                            MethodDeclaration selected = MethodWeaver.selectOrCreate(owner, payload);
+                            MethodWeaver.reconcileFromSignature(selected, payload);
+                            return selected;
+                        });
+                }
                 AnnotationWeaver.applyAll(target, payload.methodAnnotations());
-                target.setBody(PayloadParser.body(payload.body()));
+                if (target instanceof MethodDeclaration asMethod) {
+                    asMethod.setBody(PayloadParser.body(payload.body()));
+                } else if (target instanceof ConstructorDeclaration asCtor) {
+                    asCtor.setBody(PayloadParser.body(payload.body()));
+                }
             } else if ("interface".equals(kind)) {
                 MethodWeaver.addAbstractIfAbsent(owner, payload)
                     .ifPresent(method -> AnnotationWeaver.applyAll(method, payload.methodAnnotations()));

@@ -1,20 +1,20 @@
 {
   "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/reordering/application/ReorderingService.java",
-  "stack": "java-springboot3",
+  "targetFile": "src/main/java/com/blackboard/telemetry/shared/observability/R2dbcAuditTrail.java",
+  "stack": "java-springboot3-webflux-r2dbc",
   "skill": "java-springboot3",
-  "summary": "Audit only: no behavior-preserving change possible without altering constructor/signatures. CLEAN.",
-  "findings": [
-    "ReorderingService holds a single injected ReorderBuffer shared by every subscription of windows(); concurrent or repeated subscriptions share mutable buffer state. Fixing needs a per-subscription buffer factory (constructor signature change) - out of scope.",
-    "Clock is read per element inside concatMapIterable and the drain is deferred, so no state is captured at assembly time; pipeline itself is cold and stateless."
+  "summary": "Audit found insert-only, fully bound parameters, non-blocking reactive chain. Tidied: extracted SQL constant and split the one-line chain.",
+  "findings": [],
+  "changes": [
+    "Extracted INSERT_SQL constant",
+    "Formatted fluent bind chain over multiple lines"
   ],
-  "changes": [],
   "reverts": [],
   "final_test": {
-    "command": "./mvnw -Dtest=ReorderingServiceTest test",
     "status": "passed",
+    "command": "./mvnw -Dtest=R2dbcAuditTrailTest test",
     "counts": {
-      "run": 4,
+      "run": 3,
       "failures": 0,
       "errors": 0
     }
@@ -22,7 +22,15 @@
   "task_id": "T3-010",
   "stage": 3,
   "executed": true,
-  "recorded_at": "2026-11-11T14:58:06.104858+00:00",
-  "engine_diff": [],
-  "engine_diff_files": 0
+  "recorded_at": "2026-11-13T16:55:59.678452+00:00",
+  "engine_diff": [
+    {
+      "file": "src/main/java/com/blackboard/telemetry/shared/observability/R2dbcAuditTrail.java",
+      "added": 13,
+      "removed": 1,
+      "capped": false,
+      "patch": "--- a/src/main/java/com/blackboard/telemetry/shared/observability/R2dbcAuditTrail.java\n+++ b/src/main/java/com/blackboard/telemetry/shared/observability/R2dbcAuditTrail.java\n@@ -8,6 +8,10 @@\n @Repository\n public class R2dbcAuditTrail implements AuditTrail {\n \n+    private static final String INSERT_SQL = \"INSERT INTO audit_trail \"\n+            + \"(actor, action, outcome, occurred_at, correlation_id) \"\n+            + \"VALUES (:actor, :action, :outcome, :occurredAt, :correlationId)\";\n+\n     private final DatabaseClient databaseClient;\n \n     public R2dbcAuditTrail(DatabaseClient databaseClient) {\n@@ -16,6 +20,14 @@\n \n     @Override\n     public Mono<Void> record(AuditEntry entry) {\n-        return databaseClient.sql(\"INSERT INTO audit_trail (actor, action, outcome, occurred_at, correlation_id) VALUES (:actor, :action, :outcome, :occurredAt, :correlationId)\").bind(\"actor\", entry.actor()).bind(\"action\", entry.action()).bind(\"outcome\", entry.outcome()).bind(\"occurredAt\", entry.timestamp().atOffset(ZoneOffset.UTC)).bind(\"correlationId\", entry.correlationId()).fetch().rowsUpdated().then();\n+        return databaseClient.sql(INSERT_SQL)\n+                .bind(\"actor\", entry.actor())\n+                .bind(\"action\", entry.action())\n+                .bind(\"outcome\", entry.outcome())\n+                .bind(\"occurredAt\", entry.timestamp().atOffset(ZoneOffset.UTC))\n+                .bind(\"correlationId\", entry.correlationId())\n+                .fetch()\n+                .rowsUpdated()\n+                .then();\n     }\n }"
+    }
+  ],
+  "engine_diff_files": 1
 }

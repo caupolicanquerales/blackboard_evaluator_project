@@ -1,0 +1,55 @@
+{
+  "id": "T2-008",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-008"
+  ],
+  "path": "src/main/java/com/blackboard/telemetry/ingestion/application/IngestTelemetryUseCase.java",
+  "kind": "code",
+  "layer": "application",
+  "feature": null,
+  "export": "IngestTelemetryUseCase",
+  "intent": "Context Telemetry Ingestion & Validation (@Service, reactive, non-blocking). ingest(samples, correlationId) maps each sample to a TelemetryRecord with revision 1 and status VALIDATED (deviceId and metric not blank, tDevice present, value finite) or VALIDATION_FAILED, appends each via the store (nothing is dropped), and emits the appended count. Counters telemetry.ingress.packets (outcome=accepted), telemetry.samples.validated (tags metric, status), timer telemetry.ingest.latency (tag outcome). One AuditEntry per call: actor first sample deviceId or 'system', action 'INGEST', outcome 'ACCEPTED', timestamp now, correlationId as passed.",
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.ingestion.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetryEventStore",
+        "task_id": "T2-006"
+      },
+      {
+        "type": "AuditTrail",
+        "task_id": "T2-005"
+      },
+      {
+        "type": "MeterRegistry",
+        "task_id": "T0-001"
+      },
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-002"
+      },
+      {
+        "type": "TelemetryRecord",
+        "task_id": "T2-003"
+      },
+      {
+        "type": "AuditEntry",
+        "task_id": "T2-004"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "public IngestTelemetryUseCase(TelemetryEventStore store, AuditTrail auditTrail, MeterRegistry meterRegistry)",
+        "returns": ""
+      },
+      {
+        "signature": "public Mono<Long> ingest(Flux<TelemetrySample> samples, String correlationId)",
+        "returns": "Mono<Long>"
+      }
+    ]
+  }
+}

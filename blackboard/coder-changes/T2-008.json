@@ -1,46 +1,41 @@
 {
   "id": "T2-008",
   "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/ingestion/api/IngressController.java",
-  "export": "IngressController",
+  "targetFile": "src/main/java/com/blackboard/telemetry/ingestion/application/IngestTelemetryUseCase.java",
+  "export": "IngestTelemetryUseCase",
   "kind": "class",
-  "method": "receivePacket",
+  "method": "ingest",
   "language": "java",
   "framework": "springboot",
   "skill": "java-springboot",
-  "signature": "public Mono<Long> receivePacket(@RequestBody Flux<@Valid IngressSampleDto> samples)",
-  "returns": "reactor.core.publisher.Mono<Long>",
-  "body": "return useCase.ingest(samples.map(dto -> {\n if (!VALIDATOR.validate(dto).isEmpty()) {\n throw new ServerWebInputException(\"Invalid telemetry sample\");\n }\n return dto.toDomain(clock.millis());\n })).count();",
-  "members": [
-    "private static final Validator VALIDATOR = Validation.buildDefaultValidatorFactory().getValidator();",
-    "private final IngestSamplesUseCase useCase;",
-    "private final Clock clock;",
-    "public IngressController(IngestSamplesUseCase useCase, Clock clock) { this.useCase = useCase; this.clock = clock; }"
-  ],
-  "annotations": [
-    "RestController"
-  ],
-  "methodAnnotations": [
-    "PostMapping(\"/api/v1/telemetry/packets\")",
-    "ResponseStatus(HttpStatus.ACCEPTED)"
-  ],
+  "signature": "public Mono<Long> ingest(Flux<TelemetrySample> samples, String correlationId)",
+  "returns": "Mono<Long>",
+  "body": "return Mono.defer(() -> {\n    Timer.Sample timerSample = Timer.start(meterRegistry);\n    return samples.collectList().flatMap(list -> {\n        List<TelemetryRecord> records = list.stream().map(sample -> {\n            boolean valid = sample.deviceId() != null && !sample.deviceId().isBlank()\n                    && sample.metric() != null && !sample.metric().isBlank()\n                    && sample.tDevice() != null && Double.isFinite(sample.value());\n            String status = valid ? \"VALIDATED\" : \"VALIDATION_FAILED\";\n            String metricTag = sample.metric() == null ? \"unknown\" : sample.metric();\n            meterRegistry.counter(\"telemetry.samples.validated\", \"metric\", metricTag, \"status\", status).increment();\n            return new TelemetryRecord(sample.deviceId(), sample.metric(), sample.tDevice(),\n                    sample.tIngress(), sample.value(), status, 1L);\n        }).toList();\n        String actor = list.isEmpty() || list.get(0).deviceId() == null ? \"system\" : list.get(0).deviceId();\n        AuditEntry entry = new AuditEntry(actor, \"INGEST\", \"ACCEPTED\", Instant.now(), correlationId);\n        return Flux.fromIterable(records)\n                .concatMap(store::append)\n                .count()\n                .flatMap(count -> auditTrail.record(entry).thenReturn(count));\n    }).doOnSuccess(count -> {\n        meterRegistry.counter(\"telemetry.ingress.packets\", \"outcome\", \"accepted\").increment();\n        timerSample.stop(meterRegistry.timer(\"telemetry.ingest.latency\", \"outcome\", \"accepted\"));\n    });\n});",
   "imports": [
-    "java.time.Clock",
-    "jakarta.validation.Valid",
-    "org.springframework.http.HttpStatus",
-    "org.springframework.web.bind.annotation.PostMapping",
-    "org.springframework.web.bind.annotation.ResponseStatus",
-    "org.springframework.web.bind.annotation.RestController",
+    "java.time.Instant",
+    "java.util.List",
+    "io.micrometer.core.instrument.MeterRegistry",
+    "io.micrometer.core.instrument.Timer",
     "reactor.core.publisher.Flux",
     "reactor.core.publisher.Mono",
-    "com.pulsestream.telemetry.ingestion.application.IngestSamplesUseCase",
-    "org.springframework.web.bind.annotation.RequestBody",
-    "jakarta.validation.Validation",
-    "jakarta.validation.Validator",
-    "org.springframework.web.server.ServerWebInputException"
+    "org.springframework.stereotype.Service",
+    "com.blackboard.telemetry.eventstore.application.TelemetryEventStore",
+    "com.blackboard.telemetry.eventstore.domain.TelemetryRecord",
+    "com.blackboard.telemetry.ingestion.domain.TelemetrySample",
+    "com.blackboard.telemetry.shared.observability.AuditEntry",
+    "com.blackboard.telemetry.shared.observability.AuditTrail"
   ],
   "missing": [],
+  "annotations": [
+    "Service"
+  ],
+  "members": [
+    "private final TelemetryEventStore store",
+    "private final AuditTrail auditTrail",
+    "private final MeterRegistry meterRegistry",
+    "public IngestTelemetryUseCase(TelemetryEventStore store, AuditTrail auditTrail, MeterRegistry meterRegistry) { this.store = store; this.auditTrail = auditTrail; this.meterRegistry = meterRegistry; }"
+  ],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-11T14:51:06.663271+00:00"
+  "recorded_at": "2026-11-13T16:18:17.455466+00:00"
 }

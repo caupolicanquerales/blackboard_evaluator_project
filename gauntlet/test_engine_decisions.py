@@ -8,6 +8,9 @@ Coverage:
   C. wave gate sharing: tree-wide decisive verdicts cost ONE build per state
   D. attempt ledger + grants: informed-attempt semantics, zero-session closeouts
   E. auto-grant: self-healing selection, storm guards intact
+  G. plan validity at emit: the API table gate + seed-002 D1..D3 refusal classes
+     (unowned file duties, config-less runtime plans, request-encoding
+     contradictions, null-rejection without semantics)
 """
 import json
 import shutil
@@ -193,6 +196,98 @@ check("A18 materialized bean class + pending peer owner -> CHARGE (no domain dea
 (ROOT / "proj" / "src" / "main" / "java" / "x" / "SampleValidator.java").unlink()
 check("A18b same demand, class NOT materialized -> defer stays (waiting can resolve it)",
       tdd_engine._blocked_by_peers(BEANY, repo_task) is True)
+
+# A19: attribution must read the FULL blame evidence. The wave digest's selector-filtered
+# excerpt hid the peer-owned wiring file, and the demand-owner unit was billed 3 attempts
+# for a call site it does not own (seed-002 rerun 14:03, T2-017).
+wiring = task(tid="T2-077", export="TelemetryWiringConfiguration")
+(ROOT / "blackboard" / "queue" / "T2-077-p.json").write_text(json.dumps(wiring))
+PEER_OWNED = {"status": "compile_error", "exit_code": 1,
+              "missing_symbols": ["ReorderWindow(com.pulse.properties)"],
+              "member_demands": [{"member": "ReorderWindow(properties)", "owner": "ReorderWindow",
+                                  "kind": "constructor"}],
+              "failures": [], "counts": {}, "excerpt": [],
+              "excerpt_all": [f"{ROOT}/proj/src/main/java/w/TelemetryWiringConfiguration.java:"
+                              "32,32 ] constructor ReorderWindow cannot be applied to given types"]}
+demanded = task(tid="T2-076", export="com.x.ReorderWindow", deps=("T1-076",))
+check("A19 every blamed MAIN file belongs to a queued peer -> demand owner DEFERS",
+      tdd_engine._blocked_by_peers(PEER_OWNED, demanded) is True)
+(ROOT / "blackboard" / "queue" / "T2-077-p.json").unlink()
+
+# A20: the partial-tree storm (2026-11-12 14:2x). A quarantined sibling whose payload
+# was DISCARDED leaves its class absent from the tree - every bystander gate would pay
+# 3 blind charges against that hole. It now holds the wave gate like an unwoven peer.
+(ROOT / "blackboard" / "error" / "T2-620-p.json").write_text(
+    json.dumps(task(tid="T2-620", export="Ghost")))
+check("A20 dead sibling with discarded payload holds the wave gate",
+      "T2-620" in tdd_engine._sibling_payloads_pending(kind_task))
+(ROOT / "blackboard" / "error" / "T2-621-p.json").write_text(json.dumps(task(tid="T2-621", export="Kept")))
+(ROOT / "blackboard" / "coder-changes" / "T2-621.json").write_text('{"id": "T2-621"}')
+check("A21 dead sibling whose payload SURVIVES does not hold the wave (class is woven)",
+      "T2-621" not in tdd_engine._sibling_payloads_pending(kind_task))
+(ROOT / "blackboard" / "coder-changes" / "T2-621.json").unlink()
+check("A22 the same sibling holds the wave once its payload is gone",
+      "T2-621" in tdd_engine._sibling_payloads_pending(kind_task))
+(ROOT / "blackboard" / "error" / "T2-620-p.json").unlink()
+(ROOT / "blackboard" / "error" / "T2-621-p.json").unlink()
+
+# A23: the deferral CYCLE (14:58 live). The wiring unit's OWN file structurally broken
+# ("constructor ... cannot be applied") while a peer class it must call is still pending:
+# deferring on the pending symbol while the class owner defers on the wiring file parks
+# BOTH forever. Own structural blame always charges - nothing defers it.
+(ROOT / "blackboard" / "queue" / "T2-623-p.json").write_text(json.dumps(task(
+    tid="T2-623", export="TelemetryWiringConfiguration",
+    path="src/main/java/com/pulsestream/telemetry/shared/config/TelemetryWiringConfiguration.java")))
+(ROOT / "blackboard" / "queue" / "T2-624-p.json").write_text(json.dumps(
+    task(tid="T2-624", export="ReorderWindow")))
+CYCLE = {"status": "compile_error", "exit_code": 1, "missing_symbols": ["ReorderWindow"],
+         "member_demands": [], "failures": [], "counts": {},
+         "excerpt": [f"{ROOT}/proj/src/main/java/com/pulsestream/telemetry/shared/config/"
+                     "TelemetryWiringConfiguration.java:32,32 ] constructor ReorderWindow "
+                     "cannot be applied to given types"]}
+wiring_task = task(tid="T2-623", export="TelemetryWiringConfiguration",
+                   path="src/main/java/com/pulsestream/telemetry/shared/config/TelemetryWiringConfiguration.java")
+check("A23 own-file STRUCTURAL blame charges even while a peer symbol is pending (cycle breaker)",
+      tdd_engine._blocked_by_peers(CYCLE, wiring_task) is False)
+for f in ("T2-623-p.json", "T2-624-p.json"):
+    (ROOT / "blackboard" / "queue" / f).unlink()
+
+# A24: a WEAVER TOOL rejection (malformed export, unparseable YAML payload) must surface
+# as weave-reject - bounced back to the coder WITHOUT charging an attempt. Live defect:
+# "Cannot derive a Java type name from export: final CorrelationContext" was charged as
+# 3 unit failures although the unit's code never compiled at all.
+import dispatchers
+(ROOT / "blackboard" / "coder-changes" / "T2-630.json").write_text(
+    json.dumps({"id": "T2-630", "targetFile": "src/main/java/x/CorrelationContext.java"}))
+_dispatch_real = dispatchers._dispatch
+dispatchers._dispatch = lambda *a, **k: (
+    1, "ERROR: Cannot derive a Java type name from export: final CorrelationContext",
+    "code-weaver failed: ERROR: Cannot derive a Java type name from export: final CorrelationContext")
+reason_24 = dispatchers.run_code_weaver_dispatcher(
+    task(tid="T2-630", export="CorrelationContext"))
+dispatchers._dispatch = _dispatch_real
+(ROOT / "blackboard" / "coder-changes" / "T2-630.json").unlink()
+check("A24 weaver shape-rejection returns 'weave-reject:' (bounce class, attempt-free)",
+      bool(reason_24) and reason_24.startswith("weave-reject:"), str(reason_24))
+
+# A25/A26: contract-regression reopen (live 17:04). A completed unit's OWN main file
+# stopped compiling when a later weave moved a binding it consumes: the file is the
+# root defect, but completed tasks are invisible to every deferral rule - live peers
+# wait forever and the drain can only stall. The owner goes back to the queue.
+(ROOT / "blackboard" / "complete" / "T2-660-p.json").write_text(json.dumps(
+    task(tid="T2-660", export="OldThing", path="src/main/java/x/OldThing.java")))
+REGRESSION = {"status": "compile_error", "exit_code": 1, "missing_symbols": [],
+              "member_demands": [], "failures": [], "counts": {},
+              "excerpt": [f"{ROOT}/proj/src/main/java/x/OldThing.java:[9,20] non-static "
+                          "method contextKey() cannot be referenced from a static context"]}
+live_661 = task(tid="T2-661", export="Consumer61")
+check("A25 completed-owner compile blame reopens it to queue (stall breaker)",
+      tdd_engine._reopen_contract_regression(REGRESSION, live_661) is True
+      and (ROOT / "blackboard" / "queue" / "T2-660-p.json").is_file()
+      and not (ROOT / "blackboard" / "complete" / "T2-660-p.json").is_file())
+check("A26 same state reopens nothing once the owner is live (no churn)",
+      tdd_engine._reopen_contract_regression(REGRESSION, live_661) is False)
+(ROOT / "blackboard" / "queue" / "T2-660-p.json").unlink()
 
 # --- B. charge precedence: own frozen test first ------------------------------
 (ROOT / "blackboard" / "queue" / "T1-050-p.json").write_text(
@@ -400,6 +495,90 @@ rc_d = task_queue.emit_tasks([str(draft)])
 check("G10 dangling collaborator pin refused at emit",
       bool(rc_d) and "T2-899" in str(rc_d), str(rc_d))
 
+# --- G.11..G17 plan validity emit-refusals (FINAL-EVALUATION-seed002 §6 items 1+3) ---
+def gtask(tid, export, stage, deps=(), intent="pin the surface", project="p", path=None,
+          hints=None):
+    t = {"id": tid, "targetAgent": settings.STAGE_AGENTS[stage], "stage": stage,
+         "dependsOn": list(deps), "path": path or f"src/main/java/x/{export}.java",
+         "kind": settings.STAGE_KINDS[stage][0], "layer": "domain", "feature": None,
+         "export": export, "intent": intent, "project": project}
+    if hints is not None:
+        t["ast_hints"] = hints
+    return t
+
+
+def encoding_pair(pid, param_type, test_intent):
+    hints = {"package": "com.demo.ing", "implements": [], "dependencies": [],
+             "methods": [{"signature": f"receive({param_type} body)", "returns": "void"}]}
+    t1 = gtask(f"T1-{pid}", "ReceiverTest", 1,
+               path=f"src/test/java/ing/ReceiverTest.java", intent=test_intent,
+               project=pid, hints=hints)
+    t2 = gtask(f"T2-{pid}", "Receiver", 2, deps=(f"T1-{pid}",), project=pid, hints=hints)
+    return [t1, t2]
+
+
+def emit(batch):
+    draft.write_text(json.dumps(batch))
+    return task_queue.emit_tasks([str(draft)])
+
+
+rc = emit(encoding_pair("740", "Flux<EventDto>", "POSTs a JSON array of DTOs, expects 202"))
+check("G11 Flux request parameter vs 'JSON array' test intent REJECTED at emit (D2)",
+      bool(rc) and "streamed" in str(rc), str(rc))
+rc = emit(encoding_pair("741", "Flux<EventDto>", "sends streamed JSON documents, one per line"))
+check("G12 aligned pair accepted: Flux + streamed-document wording",
+      rc is None and (settings.QUEUE_DIR / f"T2-741-741.json").is_file(), str(rc))
+rc = emit(encoding_pair("742", "List<EventDto>", "POSTs a single JSON array of DTOs"))
+check("G13 aligned pair accepted: List + array wording",
+      rc is None, str(rc))
+rc = emit(encoding_pair("743", "List<EventDto>", "POSTs streamed JSON documents"))
+check("G14 List request parameter vs streamed-documents intent REJECTED",
+      bool(rc) and "streamed documents" in str(rc), str(rc))
+
+HINT_NO_METHODS = {"package": "com.demo.cfg", "implements": [], "dependencies": [],
+                   "methods": [{"signature": "reorderWindow()", "returns": "Duration"}]}
+cfg_only = gtask("T2-744", "IngestService", 2, project="cfgp", hints=HINT_NO_METHODS,
+                 intent="bind operational values through @ConfigurationProperties")
+rc = emit([cfg_only])
+check("G15 config-duty without a config unit REJECTED (D3/L1-L3)",
+      bool(rc) and "runtime configuration artifact" in str(rc), str(rc))
+cfg_ok = [dict(cfg_only),
+          gtask("T2-745", "application", 2, project="cfgp", hints=HINT_NO_METHODS,
+                path="src/main/resources/application.yml",
+                intent="runtime configuration: reorder-window=60s and metric bounds exactly as "
+                       "the seed states them (literal values live here, nowhere else)")]
+draft2 = ROOT / "blackboard" / "draft-g15.json"
+draft2.write_text(json.dumps(cfg_ok))
+rc = task_queue.emit_tasks([str(draft2)])
+check("G16 same plan accepted once the config unit is scheduled with the literals",
+      rc is None and (settings.QUEUE_DIR / "T2-745-cfgp.json").is_file(), str(rc))
+
+orphan_file = gtask("T2-746", "Writer", 2, project="ownp", hints=HINT_NO_METHODS,
+                    intent="store events; Also provide application.yml entries for retention")
+rc = emit([orphan_file])
+check("G17 intent naming an UNOWNED file artifact REJECTED ('also provide' root pattern)",
+      bool(rc) and "no task path owns" in str(rc), str(rc))
+
+sample_hints = {"package": "com.demo.dom", "implements": [], "dependencies": [],
+                "methods": [{"signature": "TelemetrySample(String deviceId, String status)",
+                             "returns": ""}]}
+null_plain = gtask("T2-747", "TelemetrySample", 2, project="nullp", hints=sample_hints,
+                   intent="value object; compact constructor rejects blank deviceId and null status")
+rc = tasks_mod.validate(null_plain, {}, planning=True)
+check("G18 null-rejecting intent without semantics notes REJECTED (D1)",
+      bool(rc) and "semantics" in str(rc), str(rc))
+null_marked = dict(null_plain)
+null_marked["ast_hints"] = {**sample_hints, "methods": [
+    {**sample_hints["methods"][0],
+     "semantics": "status is never null: pre-validation state is TelemetryStatus.UNVALIDATED, "
+                  "the constant this unit ships"}]}
+check("G19 same contract accepted once semantics name the initial state",
+      tasks_mod.validate(null_marked, {}, planning=True) is None,
+      str(tasks_mod.validate(null_marked, {}, planning=True)))
+check("G20 methods entries stay shape-checked: unknown keys refused",
+      "signature" in str(tasks_mod.validate_ast_hints(
+          {**sample_hints, "methods": [{"signature": "go()", "returns": "void", "note": "x"}]})))
+
 import builtins
 import contextlib
 import io
@@ -541,6 +720,252 @@ check("R1 comment/string words never trigger import insertion (run6 tree-break p
       and "com.ext" not in holder.read_text(), holder.read_text()[:220])
 check("R2 repair still fires for a real bare use in code (no over-correction)",
       "import com.ext.Zeta;" in user.read_text(), user.read_text()[:220])
+
+# --- P. prose-vs-table SHAPE refusal (inspection 2026-11-13 F2: the T2-014 pair) ----
+UTILITY_TABLE = {"package": "com.demo.obs", "implements": [], "dependencies": [],
+                 "methods": [{"signature": "String contextKey()", "returns": "String"},
+                             {"signature": "String headerName()", "returns": "String"}]}
+utility = dict(task(tid="T2-760", export="CorrelationContext", deps=(),
+                    intent="Final utility class holding the correlation key contract. "
+                           "Private constructor."),
+               ast_hints=UTILITY_TABLE)
+rc_p = tasks_mod.validate(utility, {}, planning=True)
+check("G21 prose pins a private constructor while the table binds instance members "
+      "REJECTED at planning (seed-002 F2 impossible pair)", bool(rc_p) and "UNCONSTRUCTIBLE" in rc_p,
+      str(rc_p))
+utility_static = dict(utility)
+utility_static["ast_hints"] = {**UTILITY_TABLE, "methods": [
+    {"signature": "static String contextKey()", "returns": "String"},
+    {"signature": "static String headerName()", "returns": "String"}]}
+check("G22 the same utility prose accepted once the table binds statics (coherent shape)",
+      tasks_mod.validate(utility_static, {}, planning=True) is None,
+      str(tasks_mod.validate(utility_static, {}, planning=True)))
+# cross-unit half: consumer prose in static form vs producer's instance table
+draft_p = ROOT / "blackboard" / "draft-p.json"
+cons_bad = gtask("T2-763", "Reader", 2, project="p", deps=("T2-704",),
+                 intent="reads the value via Cfg.window() at boot",
+                 hints={"package": "com.demo.read", "implements": [],
+                        "dependencies": [{"type": "Cfg", "task_id": "T2-704"}],
+                        "methods": [{"signature": "read()", "returns": "int"}]})
+draft_p.write_text(json.dumps([cons_bad]))
+rc_p2 = task_queue.emit_tasks([str(draft_p)])
+check("G23 consumer prose calling a pinned producer's INSTANCE member in static form "
+      "REJECTED at emit (the F2 call-shape drift)",
+      bool(rc_p2) and "STATIC form" in str(rc_p2), str(rc_p2))
+cons_ok = gtask("T2-764", "Reader2", 2, project="p", deps=("T2-704",),
+                intent="reads the value from the injected cfg's window() at boot",
+                hints={"package": "com.demo.read", "implements": [],
+                       "dependencies": [{"type": "Cfg", "task_id": "T2-704"}],
+                       "methods": [{"signature": "read()", "returns": "int"}]})
+draft_p.write_text(json.dumps([cons_ok]))
+check("G24 same pair accepted when the prose names the injected instance call",
+      task_queue.emit_tasks([str(draft_p)]) is None, str(rc_p2))
+
+# --- Q. quarantine rollback must not hole MAIN sources (inspection 2026-11-13 F1) ---
+(ROOT / "proj" / "src" / "main" / "java" / "x").mkdir(parents=True, exist_ok=True)
+holder_m = ROOT / "proj" / "src" / "main" / "java" / "x" / "WiredHolder.java"
+holder_m.write_text("package x;\nimport x.VanishedArtifact;\n"
+                    "public class WiredHolder { VanishedArtifact a; }\n")
+completed_rec = task(tid="T2-770", export="WiredHolder", deps=())
+completed_rec["path"] = "src/main/java/x/WiredHolder.java"
+(ROOT / "blackboard" / "complete" / "T2-770-p.json").write_text(json.dumps(completed_rec))
+rolled = task(tid="T2-771", export="VanishedArtifact", deps=())
+rolled["path"] = "src/main/java/x/VanishedArtifact.java"
+check("A27 rolled-back artifact NAMES the main file still importing it",
+      tdd_engine._dangling_main_consumers(rolled)
+      == ["src/main/java/x/WiredHolder.java"],
+      str(tdd_engine._dangling_main_consumers(rolled)))
+notice_q = tdd_engine._surface_rollback_hole(rolled)
+check("A28 the rollback REOPENS the completed consumer's owner (hole becomes adjudicated)",
+      "T2-770" in notice_q and (ROOT / "blackboard" / "queue" / "T2-770-p.json").is_file(),
+      notice_q)
+holder_m.unlink()
+(ROOT / "blackboard" / "queue" / "T2-770-p.json").unlink(missing_ok=True)
+
+# --- S. the hollow-boot guard: composition root must SEE the code (F3) -------------
+import assembly as assembly_mod
+svc = ROOT / "svc" / "hollow-demo"
+(svc / "src" / "main" / "java" / "com" / "a").mkdir(parents=True)
+(svc / "src" / "main" / "java" / "com" / "z").mkdir(parents=True)
+(svc / "src" / "test" / "java" / "com" / "a").mkdir(parents=True)
+(svc / "pom.xml").write_text("<project><artifactId>hollow-demo</artifactId></project>")
+(svc / "src" / "test" / "java" / "com" / "a" / "AppTests.java").write_text(
+    "package com.a;\n@SpringBootTest\nclass AppTests {}\n")
+app = svc / "src" / "main" / "java" / "com" / "a" / "App.java"
+app.write_text("package com.a;\n@SpringBootApplication\npublic class App {\n"
+               "  public static void main(String[] a) {}\n}\n")
+(svc / "src" / "main" / "java" / "com" / "z" / "Svc.java").write_text(
+    "package com.z;\npublic class Svc {}\n")
+
+
+def hollow_problems():
+    contract = assembly_mod.detect(svc)
+    return [p for p in (contract or {}).get("problems", []) if "cannot see" in p]
+
+
+def hollow_problems_all():
+    contract = assembly_mod.detect(svc)
+    return list((contract or {}).get("problems", []))
+
+
+check("S1 assembly gate refuses a composition root that cannot see the code packages "
+      "(green boot over an empty context is not boot, seed-002 F3)",
+      bool(hollow_problems()), str(assembly_mod.detect(svc)["problems"]))
+app.write_text('package com.a;\n@SpringBootApplication(scanBasePackages = "com")\n'
+               "public class App {\n  public static void main(String[] a) {}\n}\n")
+check("S2 the same tree accepted once the entry DECLARES scan coverage",
+      not hollow_problems(), str(hollow_problems()))
+app.write_text("package com.a;\n@SpringBootApplication\npublic class App {\n"
+               "  public static void main(String[] a) {}\n}\n")
+(svc / "src" / "main" / "java" / "com" / "z" / "Svc.java").write_text(
+    "package com.a.deep;\npublic class Svc {}\n")
+check("S3 same tree accepted when every package sits under the entry root",
+      not hollow_problems(), str(hollow_problems()))
+# S4/S5 pin the 13:45 live class: scanBasePackages fixed the MAIN visibility but two
+# slice units stayed red forever - package-upwards discovery ignores the marker.
+(svc / "src" / "test" / "java" / "com" / "other").mkdir(parents=True)
+(svc / "src" / "test" / "java" / "com" / "other" / "SliceCheckTest.java").write_text(
+    "package com.other;\n@SpringBootTest\nclass SliceCheckTest {}\n")
+app.write_text('package com.a;\n@SpringBootApplication(scanBasePackages = "com")\n'
+               "public class App {\n  public static void main(String[] a) {}\n}\n")
+check("S4 a declared scan marker does NOT waive @SpringBootTest package-upwards discovery "
+      "(the exact 13:45 hollow-fix the gate accepted)",
+      any("UPWARDS" in p for p in hollow_problems_all()), str(hollow_problems_all()))
+app.write_text("package com;\n@SpringBootApplication\npublic class App {\n"
+               "  public static void main(String[] a) {}\n}\n")
+check("S5 moving the composition root to the shared package ancestor waives both halves",
+      not hollow_problems_all(), str(hollow_problems_all()))
+
+# --- T. assembly must be scheduled even though the scaffold lands DURING the
+#    drain, and a domain that never booted must be reported, not skipped.
+#    (2026-11-13 rerun 13:33 live shape: queue 0, 35 complete, zero T4 records -
+#    the run ended having never run a boot gate.)
+import pipeline as pipeline_mod
+sched = ROOT / "sched"
+tree = sched / "services" / "demo2"
+(tree / "src" / "main" / "java" / "com" / "a").mkdir(parents=True)
+(tree / "src" / "test" / "java" / "com" / "a").mkdir(parents=True)
+(tree / "pom.xml").write_text("<project/>")
+(tree / "src" / "test" / "java" / "com" / "a" / "AppTests.java").write_text(
+    "package com.a;\n@SpringBootTest\nclass AppTests {}\n")
+(tree / "src" / "main" / "java" / "com" / "a" / "App.java").write_text(
+    "package com.a;\n@SpringBootApplication\npublic class App {\n"
+    "  public static void main(String[] a) {}\n}\n")
+_orig_root = workspace.get_project_root
+workspace.get_project_root = lambda: sched
+try:
+    lines_asm = []
+    assembly_mod.ensure_tasks(report=lines_asm.append)
+    queued4 = sorted(f.name for f in settings.QUEUE_DIR.glob("T4-*.json"))
+    check("T1 assembly is queued once the scaffold EXISTS (late-schedule, not launch-time)",
+          len(queued4) == 1 and "demo2" in queued4[0], str(queued4) + " " + str(lines_asm))
+    assembly_mod.ensure_tasks(report=lines_asm.append)
+    check("T2 re-scheduling stays idempotent (no duplicate boot tasks)",
+          len(list(settings.QUEUE_DIR.glob("T4-*.json"))) == 1)
+    (settings.QUEUE_DIR / queued4[0]).unlink()  # leave no assembly task on this board
+finally:
+    workspace.get_project_root = _orig_root
+# terminal tree report, board-driven:
+st2 = dict(task(tid="T2-780", export="SvcX", deps=()))
+(ROOT / "blackboard" / "complete" / "T2-780-p.json").write_text(json.dumps(st2))
+report = pipeline_mod._terminal_tree_report(gate=lambda rec: (True, ""))
+check("T3 a domain with no completed boot is reported NEVER BOOTED (silent-exit shape died)",
+      any(line.startswith("[tree   ] p:") and "NEVER BOOTED" in line for line in report),
+      str(report))
+(ROOT / "blackboard" / "complete" / "T4-781-p.json").write_text(
+    json.dumps(dict(task(tid="T4-781", export="App", deps=(), stage=4,
+                        targetAgent="agent-assembly", path="src/main/java/x/App.java"))))
+report = pipeline_mod._terminal_tree_report(gate=lambda rec: (False, "dangling import"))
+check("T4 completed-but-red boot surfaces as RED DELIVERED TREE via the real gate",
+      any("DELIVERED TREE IS BROKEN" in line for line in report), str(report))
+report = pipeline_mod._terminal_tree_report(gate=lambda rec: (True, ""))
+check("T5 green boot gate yields the GREEN tree line",
+      any(line.startswith("[tree   ] p:") and "GREEN - the delivered tree" in line
+          for line in report), str(report))
+
+# --- U. the 13:51 double-defect: path-guard over assembly moves + zombie records ---
+moved = dict(task(tid="T4-785", export="App", deps=(), stage=4, targetAgent="agent-assembly",
+                  kind="assembly", layer="root",
+                  path="src/main/java/com/x/gone/TelemetryApp.java"))
+check("U1 assembly is judged ONLY by its boot gate: a legitimate composition-root move "
+      "no longer quarantines as 'was not created' (13:51 false-positive)",
+      tdd_engine._missing_artifact_problem(moved, True) is None,
+      str(tdd_engine._missing_artifact_problem(moved, True)))
+late_tester = dict(task(tid="T1-786", export="GhostTest", deps=(), stage=1,
+                       targetAgent="agent-tester", path="src/test/java/x/AbsentTest.java"))
+check("U2 the same guard still refuses a tester that never wrote its file",
+      "not created" in str(tdd_engine._missing_artifact_problem(late_tester, True)),
+      str(tdd_engine._missing_artifact_problem(late_tester, True)))
+zombie = ROOT / "blackboard" / "error" / "T4-787-p.json"
+zombie.write_text(json.dumps(dict(moved, id="T4-787")))
+draft_u = ROOT / "blackboard" / "draft-u.json"
+draft_u.write_text(json.dumps([dict(moved, id="T4-787")]))
+check("U3 re-emitting an id SUPERSEDES its zombie quarantine record (one id, one record)",
+      task_queue.emit_tasks([str(draft_u)]) is None and not zombie.exists()
+      and (settings.QUEUE_DIR / "T4-787-p.json").is_file(),
+      f"zombie={zombie.exists()}")
+
+# --- V. strategy step-log CLAIM coverage (2026-11-13: 5 planned, 0 owned, 0 logged,
+#    every gate green - vocabulary overlap proves nothing, a claim field can) ---------
+(ROOT / "blackboard" / "complete" / "execution-strategy-sl.json").write_text(json.dumps(
+    {"slug": "sl", "observability": {
+        "correlation_key": "requestId",
+        "step_logs": ["order accepted (outcome)", "stock reserved"],
+        "audit_trail": {"record_fields": ["actor", "action", "outcome", "timestamp",
+                                          "correlationId"],
+                        "port": "AuditTrail.record(AuditEntry)"},
+        "metrics": [{"name": "orders.accepted", "type": "counter", "tags": ["outcome"]}],
+        "export": {"logs": "structured ecs file sink", "metrics": "scrape endpoint",
+                   "dependency_rule": "boot passes with the collector absent"}}}))
+sl_hints = {"package": "com.demo.sl", "implements": [], "dependencies": [],
+            "methods": [{"signature": "go()", "returns": "void"}]}
+sl_task = gtask("T2-790", "Orders", 2, project="sl", hints=sl_hints)
+rc_v = emit([sl_task])
+check("V1 a strategy promising step logs with ZERO claiming units is REJECTED at emit",
+      bool(rc_v) and "claimed by NO stage-2 unit" in str(rc_v), str(rc_v))
+own_a = dict(gtask("T2-791", "Orders2", 2, project="sl", hints=sl_hints))
+own_a["observability"] = {"step_logs": ["Order Accepted (outcome)"]}   # normalized match
+own_b = dict(gtask("T2-792", "Stock2", 2, project="sl", hints=sl_hints))
+own_b["observability"] = {"step_logs": ["stock reserved"]}
+rc_v = emit([own_a, own_b])
+check("V2 full verbatim coverage (case/space-normalized) ACCEPTS the batch",
+      rc_v is None and (settings.QUEUE_DIR / "T2-791-sl.json").is_file(), str(rc_v))
+own_c = dict(gtask("T2-793", "Ghost2", 2, project="sl", hints=sl_hints,
+                   deps=("T2-791",)))
+own_c["observability"] = {"step_logs": ["ghost logged"]}
+rc_v = emit([own_c])
+check("V3 claiming a step log the strategy never planned is REJECTED",
+      bool(rc_v) and "never planned" in str(rc_v), str(rc_v))
+dup_a = dict(gtask("T2-794", "DupA", 2, project="sl", hints=sl_hints))
+dup_a["observability"] = {"step_logs": ["order accepted (outcome)"]}
+dup_b = dict(gtask("T2-795", "DupB", 2, project="sl", hints=sl_hints))
+dup_b["observability"] = {"step_logs": ["order accepted (outcome)"]}
+rc_v = emit([dup_a, dup_b])
+check("V4 a double-claimed step log names both rivals and is REJECTED",
+      bool(rc_v) and "exactly" in str(rc_v) and "one owner" in str(rc_v), str(rc_v))
+no_obs = gtask("T2-796", "Plain", 2, project="legacy", hints=sl_hints)
+check("V5 projects WITHOUT a promised step-log surface skip the rule (legacy-safe)",
+      emit([no_obs]) is None)
+(ROOT / "blackboard" / "complete" / "execution-strategy-bare.json").write_text(
+    json.dumps({"slug": "bare", "bounded_contexts": ["x"]}))
+rc_v = emit([gtask("T2-798", "Bare1", 2, project="bare", hints=sl_hints)])
+check("V7 THE FLOOR IS UNCONDITIONAL: a strategy with no observability object at all is "
+      "REJECTED at task emit - the old skip was the loophole one layer deeper",
+      bool(rc_v) and "NO `observability` object" in str(rc_v), str(rc_v))
+(ROOT / "blackboard" / "complete" / "execution-strategy-half.json").write_text(json.dumps(
+    {"slug": "half", "observability": {"correlation_key": "cid",
+                                       "step_logs": ["x done"],
+                                       "audit_trail": {"port": "Audit.record(A)"}}}))
+rc_v = emit([gtask("T2-799", "Half1", 2, project="half", hints=sl_hints)])
+check("V8 a half floor is rejected naming the missing surfaces - all five are mandatory",
+      bool(rc_v) and "floor surfaces" in str(rc_v) and "metrics" in str(rc_v), str(rc_v))
+base_h = task(tid="T2-797", export="Hashing", deps=())
+h0 = attempt_ledger.contract_hash(base_h)
+h1 = attempt_ledger.contract_hash({**base_h, "observability": None})
+h2 = attempt_ledger.contract_hash({**base_h, "observability": {"step_logs": ["x"]}})
+check("U4 attempt-ledger continuity: an absent claim hashes IDENTICALLY to the pre-field "
+      "contract (no budget reset on resumed boards); a real claim moves the contract",
+      h0 == h1 and h2 != h0, f"{h0[:8]} {h1[:8]} {h2[:8]}")
 
 bad_names = [n for n, c in CHECKS if not c]
 print(f"\nENGINE-DECISIONS SUITE: {len(CHECKS) - len(bad_names)}/{len(CHECKS)}")

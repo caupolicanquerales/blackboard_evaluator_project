@@ -392,6 +392,17 @@ def parse(output, root=None):
 
 
 def parse_counts(output):
+    # Surefire prints one "Tests run:" line PER CLASS plus a summary, and the first
+    # match is whichever innocent class ran first - taking it HID the failing class's
+    # errors from every verdict that went through the wave path (live 2026-11-12:
+    # coder feedback said "failures=0 errors=0" for a class with 4 <<< ERROR! blocks).
+    # Aggregate the per-class lines when they exist; the bare summary is the fallback.
+    per_class = RE_MVN_CLASS.findall(output)
+    if per_class:
+        run = sum(int(r) for r, _f, _e, _s, _c in per_class)
+        failures = sum(int(f) for _r, f, _e, _s, _c in per_class)
+        errors = sum(int(e) for _r, _f, e, _s, _c in per_class)
+        return {"run": run, "failures": failures, "errors": errors}
     m = RE_COUNTS.search(output)
     if m:
         return {"run": int(m.group(1)), "failures": int(m.group(2)), "errors": int(m.group(3))}

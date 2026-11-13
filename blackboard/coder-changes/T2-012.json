@@ -1,44 +1,40 @@
 {
   "id": "T2-012",
   "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/eventlog/infrastructure/R2dbcEventLogRepository.java",
-  "export": "R2dbcEventLogRepository",
-  "method": "appendRecord",
-  "language": "java",
-  "framework": "springboot",
-  "skill": "java-springboot3",
+  "targetFile": "src/main/java/com/blackboard/telemetry/ingestion/interface_/TelemetryIngestController.java",
+  "export": "TelemetryIngestController",
   "kind": "class",
-  "signature": "public Mono<Boolean> appendRecord(TelemetrySample sample)",
-  "returns": "Mono<Boolean>",
-  "body": "return client.sql(\"INSERT INTO telemetry_event_log.telemetry_records (device_id, metric, t_device, value, validation_status, t_ingress) VALUES (:deviceId, :metric, :tDevice, :value, :status, :tIngress) ON CONFLICT (device_id, metric, t_device) DO NOTHING\")\n        .bind(\"deviceId\", sample.deviceId())\n        .bind(\"metric\", sample.metric())\n        .bind(\"tDevice\", toOffset(sample.tDeviceEpochMs()))\n        .bind(\"value\", sample.value())\n        .bind(\"status\", toDbStatus(sample.validationStatus()))\n        .bind(\"tIngress\", toOffset(sample.tIngressEpochMs()))\n        .fetch()\n        .rowsUpdated()\n        .map(updated -> updated > 0);",
+  "method": "ingest",
+  "language": "java",
+  "framework": "springboot3",
+  "skill": "java-standard-best-practices",
+  "signature": "public Mono<Long> ingest(@RequestBody Flux<TelemetrySample> samples, @RequestHeader(value = \"X-Request-Id\", required = false) String requestId)",
+  "returns": "Mono<Long>",
+  "body": "String correlationId = (requestId == null || requestId.isBlank()) ? UUID.randomUUID().toString() : requestId;\nreturn useCase.ingest(samples, correlationId);",
   "imports": [
-    "com.pulsestream.telemetry.ingestion.domain.TelemetrySample",
-    "com.pulsestream.telemetry.eventlog.domain.EventLogRepository",
-    "java.time.Instant",
-    "java.time.OffsetDateTime",
-    "java.time.ZoneOffset",
-    "org.springframework.r2dbc.core.DatabaseClient",
-    "org.springframework.stereotype.Repository",
+    "java.util.UUID",
     "reactor.core.publisher.Flux",
-    "reactor.core.publisher.Mono"
+    "reactor.core.publisher.Mono",
+    "org.springframework.web.bind.annotation.RestController",
+    "org.springframework.web.bind.annotation.PostMapping",
+    "org.springframework.web.bind.annotation.RequestBody",
+    "org.springframework.web.bind.annotation.RequestHeader",
+    "org.springframework.web.bind.annotation.RequestMapping",
+    "com.blackboard.telemetry.ingestion.application.IngestTelemetryUseCase",
+    "com.blackboard.telemetry.ingestion.domain.TelemetrySample"
   ],
   "missing": [],
-  "implements": [
-    "EventLogRepository"
-  ],
   "annotations": [
-    "Repository"
+    "RestController"
+  ],
+  "methodAnnotations": [
+    "PostMapping(value = \"/api/v1/telemetry/ingress\", consumes = \"application/x-ndjson\", produces = \"application/json\")"
   ],
   "members": [
-    "private final DatabaseClient client;",
-    "public R2dbcEventLogRepository(DatabaseClient client) { this.client = client; }",
-    "public Mono<Void> appendRevision(TelemetrySample revision) { return client.sql(\"INSERT INTO telemetry_event_log.telemetry_record_revisions (device_id, metric, t_device, value, reason, t_revised) VALUES (:deviceId, :metric, :tDevice, :value, :reason, :tRevised)\").bind(\"deviceId\", revision.deviceId()).bind(\"metric\", revision.metric()).bind(\"tDevice\", toOffset(revision.tDeviceEpochMs())).bind(\"value\", revision.value()).bind(\"reason\", \"LATE_ARRIVAL\").bind(\"tRevised\", toOffset(revision.tIngressEpochMs())).fetch().rowsUpdated().then(); }",
-    "public Flux<TelemetrySample> findByDeviceAndRange(String deviceId, long fromEpochMs, long toEpochMs) { return client.sql(\"SELECT device_id, metric, t_device, value, validation_status, t_ingress FROM telemetry_event_log.telemetry_records WHERE device_id = :deviceId AND t_device >= :from AND t_device <= :to ORDER BY t_device ASC\").bind(\"deviceId\", deviceId).bind(\"from\", toOffset(fromEpochMs)).bind(\"to\", toOffset(toEpochMs)).map(row -> new TelemetrySample(row.get(\"device_id\", String.class), row.get(\"metric\", String.class), row.get(\"t_device\", OffsetDateTime.class).toInstant().toEpochMilli(), row.get(\"value\", Double.class), row.get(\"t_ingress\", OffsetDateTime.class).toInstant().toEpochMilli(), fromDbStatus(row.get(\"validation_status\", String.class)))).all(); }",
-    "private static OffsetDateTime toOffset(long epochMs) { return OffsetDateTime.ofInstant(Instant.ofEpochMilli(epochMs), ZoneOffset.UTC); }",
-    "private static String toDbStatus(String status) { return TelemetrySample.VALIDATION_FAILED.equals(status) ? \"INVALID\" : status; }",
-    "private static String fromDbStatus(String status) { return \"INVALID\".equals(status) ? TelemetrySample.VALIDATION_FAILED : status; }"
+    "private final IngestTelemetryUseCase useCase",
+    "public TelemetryIngestController(IngestTelemetryUseCase useCase) { this.useCase = useCase; }"
   ],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-11T14:31:05.135150+00:00"
+  "recorded_at": "2026-11-13T16:19:19.126494+00:00"
 }

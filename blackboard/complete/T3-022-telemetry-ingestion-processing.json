@@ -1,0 +1,15 @@
+{
+  "id": "T3-022",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-022"
+  ],
+  "path": "src/main/java/com/blackboard/telemetry/ingestion/infrastructure/InMemoryValidatedSampleStream.java",
+  "kind": "refactor",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "InMemoryValidatedSampleStream",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Inspect and refactor InMemoryValidatedSampleStream without changing the ast_hints surface or the tests' behavior (never seal or finalize a type another unit stubs; no magic numbers, no blocking calls, no raw logger calls beyond the claimed step logs). Unit contract: Infrastructure adapter implementing ValidatedSampleStream with Sinks.many().multicast().onBackpressureBuffer(properties.validatedStreamCapacity(), false) (autoCancel false so a subscriber disconnect never terminates ingestion). publish emits with emitNext and Sinks.EmitFailureHandler.busyLooping(properties.emitRetryTimeout()); on FAIL_OVERFLOW or FAIL_TERMINATED it returns Mono.error(IllegalStateException). No unbounded buffer, no blocking. Registered ONLY by the wiring unit TelemetryConfiguration."
+}

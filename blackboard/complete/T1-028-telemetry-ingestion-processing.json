@@ -1,0 +1,88 @@
+{
+  "id": "T1-028",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-005",
+    "T1-003",
+    "T1-001",
+    "T1-004"
+  ],
+  "path": "src/test/java/com/blackboard/telemetry/ingestion/api/IngressPacketRequestTest.java",
+  "kind": "test",
+  "layer": "interface",
+  "feature": null,
+  "export": "IngressPacketRequest",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Write JUnit 5 + AssertJ tests (reactor-test StepVerifier for Mono/Flux, Mockito for collaborators, no external services, no Thread.sleep) for IngressPacketRequest. Assert ONLY against the ast_hints method table; at least one given/when/then case per table method and per branch. Unit contract: Context Telemetry Ingestion & Validation interface-layer DTO: ONE JSON document describing one Ingress Packet {deviceId, sourceKind, samples:[{metric, tDeviceEpochMillis, value}]} (a single object, not an array and not a stream). Declares Jakarta Validation constraints (@NotBlank, @NotEmpty, @NotNull, @Valid on nested elements); the constraints are ACTIVATED by @Valid on the request parameter of IngestionController. Application ports never see this type. Cover constraint violations with a jakarta Validator (blank deviceId, empty samples, null value) and the toDomain mapping including unknown metric/source rejection.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.ingestion.api",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "IngressPacket",
+        "task_id": "T2-005"
+      },
+      {
+        "type": "SourceKind",
+        "task_id": "T2-003"
+      },
+      {
+        "type": "MetricKind",
+        "task_id": "T2-001"
+      },
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-004"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "IngressPacketRequest(String deviceId, String sourceKind, List<SampleRequest> samples)",
+        "returns": "",
+        "semantics": "Plain transport record; constraints declared as Jakarta Validation annotations."
+      },
+      {
+        "signature": "String deviceId()",
+        "returns": "String",
+        "semantics": "@NotBlank"
+      },
+      {
+        "signature": "String sourceKind()",
+        "returns": "String",
+        "semantics": "@NotBlank; must name a SourceKind constant"
+      },
+      {
+        "signature": "List<SampleRequest> samples()",
+        "returns": "List<SampleRequest>",
+        "semantics": "@NotEmpty @Valid"
+      },
+      {
+        "signature": "IngressPacket toDomain(Instant tIngress)",
+        "returns": "IngressPacket",
+        "semantics": "Maps to the domain: every sample gets ValidationStatus.UNVALIDATED and the given tIngress; an unknown sourceKind or metric name throws IllegalArgumentException; tDevice = Instant.ofEpochMilli(tDeviceEpochMillis)."
+      },
+      {
+        "signature": "SampleRequest(String metric, Long tDeviceEpochMillis, Double value)",
+        "returns": "",
+        "semantics": "Nested record IngressPacketRequest.SampleRequest; @NotBlank metric, @NotNull tDeviceEpochMillis, @NotNull value"
+      },
+      {
+        "signature": "String SampleRequest.metric()",
+        "returns": "String",
+        "semantics": "@NotBlank; must name a MetricKind constant"
+      },
+      {
+        "signature": "Long SampleRequest.tDeviceEpochMillis()",
+        "returns": "Long",
+        "semantics": "@NotNull device epoch milliseconds"
+      },
+      {
+        "signature": "Double SampleRequest.value()",
+        "returns": "Double",
+        "semantics": "@NotNull"
+      }
+    ]
+  }
+}

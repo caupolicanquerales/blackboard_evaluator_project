@@ -3,32 +3,40 @@
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
-    "T0-001"
+    "T0-001",
+    "T1-004"
   ],
-  "path": "src/test/java/com/blackboard/telemetry/reconciliation/domain/BackfillReordererTest.java",
+  "path": "src/test/java/com/blackboard/telemetry/ingestion/domain/ValidatedSampleEventTest.java",
   "kind": "test",
   "layer": "domain",
   "feature": null,
-  "export": "BackfillReordererTest",
-  "intent": "Context Telemetry Stream Reconciliation. BackfillReorderer.reorder returns a NEW list of the samples sorted ascending by tDevice (never tIngress), stable for equal tDevice; empty input yields an empty list; input list is not mutated. Construct with the no-arg constructor.",
+  "export": "ValidatedSampleEvent",
   "project": "telemetry-ingestion-processing",
+  "intent": "Write JUnit 5 + AssertJ tests (reactor-test StepVerifier for Mono/Flux, Mockito for collaborators, no external services, no Thread.sleep) for ValidatedSampleEvent. Assert ONLY against the ast_hints method table; at least one given/when/then case per table method and per branch. Unit contract: Context Telemetry Ingestion & Validation. Published-language record carrying both TelemetrySampleValidated (status VALID) and TelemetrySampleValidationFailed (status VALIDATION_FAILED): one type, discriminated by the sample status. Never carries an UNVALIDATED sample.",
   "ast_hints": {
-    "package": "com.blackboard.telemetry.reconciliation.domain",
+    "package": "com.blackboard.telemetry.ingestion.domain",
     "implements": [],
     "dependencies": [
       {
         "type": "TelemetrySample",
-        "task_id": "T2-002"
+        "task_id": "T2-004"
       }
     ],
     "methods": [
       {
-        "signature": "public BackfillReorderer()",
-        "returns": ""
+        "signature": "ValidatedSampleEvent(TelemetrySample sample, String correlationId)",
+        "returns": "",
+        "semantics": "Null rejected (NullPointerException); sample.status() must be VALID or VALIDATION_FAILED (IllegalArgumentException for UNVALIDATED); correlationId non-blank."
       },
       {
-        "signature": "public List<TelemetrySample> reorder(List<TelemetrySample> samples)",
-        "returns": "List<TelemetrySample>"
+        "signature": "TelemetrySample sample()",
+        "returns": "TelemetrySample",
+        "semantics": "Never null; status is VALID or VALIDATION_FAILED."
+      },
+      {
+        "signature": "String correlationId()",
+        "returns": "String",
+        "semantics": "The requestId of the originating request; never blank."
       }
     ]
   }

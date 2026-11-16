@@ -3,43 +3,70 @@
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
-    "T0-001"
+    "T0-001",
+    "T1-001",
+    "T1-002"
   ],
-  "path": "src/test/java/com/blackboard/telemetry/shared/observability/AuditEntryTest.java",
+  "path": "src/test/java/com/blackboard/telemetry/ingestion/domain/TelemetrySampleTest.java",
   "kind": "test",
-  "layer": "shared",
+  "layer": "domain",
   "feature": null,
-  "export": "AuditEntryTest",
-  "intent": "Shared audit surface for telemetry-ingestion-processing. AuditEntry is an immutable record of actor, action, outcome, timestamp and correlationId (the requestId). Assert accessors and value equality only.",
+  "export": "TelemetrySample",
   "project": "telemetry-ingestion-processing",
+  "intent": "Write JUnit 5 + AssertJ tests (reactor-test StepVerifier for Mono/Flux, Mockito for collaborators, no external services, no Thread.sleep) for TelemetrySample. Assert ONLY against the ast_hints method table; at least one given/when/then case per table method and per branch. Unit contract: Context Telemetry Ingestion & Validation. Immutable record Telemetry Sample (one 1Hz data point): deviceId, metric, tDevice, tIngress, value, status. Invariants: all reference components non-null and deviceId non-blank (violations throw NullPointerException / IllegalArgumentException); the value is never altered or dropped, validation only replaces the status through withStatus. Record equality is by components.",
   "ast_hints": {
-    "package": "com.blackboard.telemetry.shared.observability",
+    "package": "com.blackboard.telemetry.ingestion.domain",
     "implements": [],
-    "dependencies": [],
+    "dependencies": [
+      {
+        "type": "MetricKind",
+        "task_id": "T2-001"
+      },
+      {
+        "type": "ValidationStatus",
+        "task_id": "T2-002"
+      }
+    ],
     "methods": [
       {
-        "signature": "public record AuditEntry(String actor, String action, String outcome, Instant timestamp, String correlationId)",
-        "returns": ""
+        "signature": "TelemetrySample(String deviceId, MetricKind metric, Instant tDevice, Instant tIngress, double value, ValidationStatus status)",
+        "returns": "",
+        "semantics": "Null rejected (NullPointerException); deviceId must be non-blank; a sample that has not been validated yet is built with ValidationStatus.UNVALIDATED (never null)."
       },
       {
-        "signature": "String actor()",
-        "returns": "String"
+        "signature": "String deviceId()",
+        "returns": "String",
+        "semantics": "Null rejected (NullPointerException); never blank."
       },
       {
-        "signature": "String action()",
-        "returns": "String"
+        "signature": "MetricKind metric()",
+        "returns": "MetricKind",
+        "semantics": "Never null."
       },
       {
-        "signature": "String outcome()",
-        "returns": "String"
+        "signature": "Instant tDevice()",
+        "returns": "Instant",
+        "semantics": "Device Timestamp, the only chronological ordering key; never null."
       },
       {
-        "signature": "Instant timestamp()",
-        "returns": "Instant"
+        "signature": "Instant tIngress()",
+        "returns": "Instant",
+        "semantics": "Arrival time at the engine, stored but never used for ordering; never null."
       },
       {
-        "signature": "String correlationId()",
-        "returns": "String"
+        "signature": "double value()",
+        "returns": "double",
+        "semantics": "Raw payload value, kept verbatim even when invalid."
+      },
+      {
+        "signature": "ValidationStatus status()",
+        "returns": "ValidationStatus",
+        "semantics": "Never null; UNVALIDATED is the pre-validation encoding."
+      },
+      {
+        "signature": "TelemetrySample withStatus(ValidationStatus status)",
+        "returns": "TelemetrySample",
+        "semantics": "Returns a copy with only the status replaced; null status rejected."
       }
     ]
   }

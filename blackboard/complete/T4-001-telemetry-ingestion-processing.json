@@ -3,11 +3,11 @@
   "targetAgent": "agent-assembly",
   "stage": 4,
   "dependsOn": [],
-  "path": "src/main/java/com/blackboard/telemetry/TelemetryIngestionProcessingApplication.java",
+  "path": "src/main/java/com/blackboard/telemetry/telemetry_ingestion_processing/TelemetryIngestionProcessingApplication.java",
   "kind": "assembly",
   "layer": "root",
   "feature": null,
   "export": "TelemetryIngestionProcessingApplication",
-  "intent": "Bounded context telemetry-ingestion-processing: boot the generated application. The scaffold smoke test TelemetryIngestionProcessingApplicationTests proves the full application wiring resolves: every collaborator the framework must construct at startup (services, adapters for ports, drivers, configuration) exists. Detect the stack and load your assembly skill (assembly-framework/java-springboot/SKILL.md); its fix menu and editable roots govern everything you change. Assembly gate command (argv-only, run it through run-test-tool, never invent another): ./mvnw -Dtest=TelemetryIngestionProcessingApplicationTests test. Edit production sources only; never touch tests, build manifests, migrations, or another domain.",
+  "intent": "Bounded context telemetry-ingestion-processing: boot the generated application. The scaffold smoke test TelemetryConfigurationTest proves the full application wiring resolves: every collaborator the framework must construct at startup (services, adapters for ports, drivers, configuration) exists. Detect the stack and load your assembly skill (assembly-framework/java-springboot/SKILL.md); its fix menu and editable roots govern everything you change. Assembly gate command (argv-only, run it through run-test-tool, never invent another): ./mvnw -Dtest=TelemetryConfigurationTest test. Edit production sources only; never touch tests, build manifests, migrations, or another domain.",
   "project": "telemetry-ingestion-processing"
 }

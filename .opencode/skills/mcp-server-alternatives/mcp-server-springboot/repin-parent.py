@@ -17,7 +17,8 @@ never inherit an unproven tree. This scripted transformation is the one sanction
 edit in the container stage - deterministic, minimal, reversible, machine-verified.
 
 Usage:
-  python3 repin-parent.py --project-root <dir> --major 3 [--require test,reactor-test]
+  python3 repin-parent.py --project-root <dir> --major 3 [--require test,reactor-test] \
+      [--surefire-timeout 300]
                           [--timeout 600]
 Output: one JSON line {status, from, to, changed[], verified, reason?}.
 Exit 0 = repinned and verified (or already conforming); 1 = nothing written / verification failed.
@@ -77,7 +78,8 @@ def _has(text: str, artifact: str) -> bool:
     return re.search(rf"<artifactId>\s*{re.escape(artifact)}\s*</artifactId>", text) is not None
 
 
-def transform(text: str, target_version: str, requires: list) -> tuple:
+def transform(text: str, target_version: str, requires: list,
+              surefire_timeout: int = 0) -> tuple:
     """Returns (new_text, changed[]) - pure, testable, no I/O."""
     changed = []
     cross_4_to_3 = False
@@ -128,7 +130,41 @@ def transform(text: str, target_version: str, requires: list) -> tuple:
                                    "\t\t\t<artifactId>" + target_artifact + "</artifactId>\n\t\t</dependency>",
                                    text, count=1)
                 changed.append(f"4.x-only {artifact} -> {group}:{target_artifact}")
+    if surefire_timeout and int(surefire_timeout) > 0:
+        # The scaffold-intent test-run guardrail (a hung test must fail fast, never
+        # freeze the suite). The generator emits no surefire block and hand-editing is
+        # forbidden - without THIS scripted addition the requirement had no sanctioned
+        # route and stage 0 deadlocked (live 2026-11-16 14:01: the container agent
+        # generated a green project, could not add the guardrail, refused to deliver,
+        # and the run died fatal on 'pom.xml was not created').
+        updated = _add_surefire_timeout(text, int(surefire_timeout))
+        if updated != text:
+            text = updated
+            changed.append(f"surefire forkedProcessTimeoutInSeconds={int(surefire_timeout)}")
     return text, changed
+
+
+def _add_surefire_timeout(text: str, timeout: int) -> str:
+    if "<forkedProcessTimeoutInSeconds>" in text:
+        return text
+    plugin = ("<plugin>\n"
+              "\t\t\t\t<groupId>org.apache.maven.plugins</groupId>\n"
+              "\t\t\t\t<artifactId>maven-surefire-plugin</artifactId>\n"
+              "\t\t\t\t<configuration>\n"
+              f"\t\t\t\t\t<forkedProcessTimeoutInSeconds>{timeout}</forkedProcessTimeoutInSeconds>\n"
+              "\t\t\t\t</configuration>\n"
+              "\t\t\t</plugin>")
+    plugins = re.search(r"([ \t]*)<plugins>(.*?)</plugins>", text, re.S)
+    if plugins:
+        indent = plugins.group(1)
+        return text[:plugins.end(2)] + "\n" + indent + plugin + text[plugins.end(2):]
+    build = re.search(r"([ \t]*)<build>(.*?)</build>", text, re.S)
+    if build:
+        block = "\n\t\t<plugins>\n\t\t\t" + plugin + "\n\t\t</plugins>"
+        return text[:build.end(2)] + block + text[build.end(2):]
+    wrapper = ("\n\t<build>\n\t\t<plugins>\n\t\t\t" + plugin
+               + "\n\t\t</plugins>\n\t</build>\n")
+    return text.replace("</project>", wrapper + "</project>", 1)
 
 
 def main() -> int:
@@ -137,6 +173,9 @@ def main() -> int:
     ap.add_argument("--major", required=True, help="planned framework major, e.g. 3")
     ap.add_argument("--require", default="", help="comma list of test artifacts the plan names"
                                                   " but the generator catalog may lack (test, reactor-test)")
+    ap.add_argument("--surefire-timeout", type=int, default=0,
+                    help="seconds for maven-surefire forkedProcessTimeoutInSeconds (the"
+                         " scaffold-intent test-run guardrail); 0 = leave the pom untouched")
     ap.add_argument("--timeout", type=int, default=600)
     args = ap.parse_args()
 
@@ -160,7 +199,8 @@ def main() -> int:
     out["to"] = target
     requires = [r.strip() for r in args.require.split(",") if r.strip()]
     try:
-        new_text, changed = transform(original, target, requires)
+        new_text, changed = transform(original, target, requires,
+                                      surefire_timeout=args.surefire_timeout)
     except ValueError as exc:
         out["reason"] = str(exc)
         print(json.dumps(out))

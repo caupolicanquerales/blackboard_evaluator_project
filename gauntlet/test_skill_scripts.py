@@ -128,6 +128,22 @@ check("W15 legacy board (no task record) unaffected: guard inert, payload lands"
 def demands_of(output):
     return runner.parse(output)[5]
 
+
+def mocks_of(output):
+    return runner.parse(output)[8]
+
+
+# Mockito sealed/final mock gap -> normalized `mock_impossible` simple type name.
+# The engine attributes such a red to whoever CLOSED the type, never to the mocking
+# unit whose frozen test it cannot edit (2026-11-16: sealed event interface died 7 of
+# a consumer's tests and its own unit was charged for a foreign file).
+_m_sealed = mocks_of(
+    "org.mockito.exceptions.base.MockitoException: \n"
+    "Mockito cannot mock this class: interface com.x.TelemetryIngestionEvent.\n"
+    "Sealed interfaces or abstract classes can't be mocked.\n")
+check("R-mock: 'Mockito cannot mock this class: interface X' normalizes to [X]",
+      _m_sealed == ["TelemetryIngestionEvent"], str(_m_sealed))
+
 # javac: symbol/method + location/class pair, with and without the [ERROR] prefix
 # (Maven's logger wraps some detail lines and not others - one incident each way).
 BOX = root / "Consumer.java"
@@ -318,6 +334,37 @@ check("K6 broken YAML is still refused", ok_broken == 1 and "not parseable" in o
       out_broken.strip()[:120])
 
 # --- summary -----------------------------------------------------------------
+# --- P. scaffold tooling: the repin script's surefire guardrail (live 2026-11-16
+#    14:01: the stage-0 intent demanded a test-run timeout guardrail, NO sanctioned
+#    tool could add it - the generator has no option, hand-editing the pom is
+#    forbidden - so the container agent correctly refused to deliver an incomplete
+#    scaffold and the whole run died fatal on 'pom.xml was not created'. The one
+#    sanctioned pom editor now carries the capability.)
+import xml.etree.ElementTree as _ET
+repin = load_module(REPO / ".opencode" / "skills" / "mcp-server-alternatives" /
+                    "mcp-server-springboot" / "repin-parent.py", "repin_parent")
+POM_WITH_PLUGINS = ('<project>\n\t<build>\n\t\t<plugins>\n\t\t\t<plugin>'
+                    '<artifactId>spring-boot-maven-plugin</artifactId></plugin>\n'
+                    '\t\t</plugins>\n\t</build>\n</project>')
+out_p, ch_p = repin.transform(POM_WITH_PLUGINS, "3.5.16", [], surefire_timeout=300)
+_ET.fromstring(out_p)
+check("P1 the sanctioned scaffold script adds forkedProcessTimeoutInSeconds when the "
+      "plan names a test-run guardrail (agents never hand-edit the pom)",
+      ch_p == ["surefire forkedProcessTimeoutInSeconds=300"]
+      and "<forkedProcessTimeoutInSeconds>300</forkedProcessTimeoutInSeconds>" in out_p
+      and "spring-boot-maven-plugin" in out_p)
+out_p2, ch_p2 = repin.transform(out_p, "3.5.16", [], surefire_timeout=300)
+check("P2 idempotent: the guardrail is never duplicated on a re-run",
+      ch_p2 == [] and out_p2 == out_p)
+POM_NO_BUILD = '<project><modelVersion>4.0.0</modelVersion></project>'
+out_p3, ch_p3 = repin.transform(POM_NO_BUILD, "3.5.16", [], surefire_timeout=120)
+_ET.fromstring(out_p3)
+check("P3 a pom without any <build> receives the full block (valid XML both ways)",
+      ch_p3 and "<build><plugins>" in out_p3.replace("\n\t", "").replace("\t", "")
+      or "<build>" in out_p3)
+out_p4, ch_p4 = repin.transform(POM_WITH_PLUGINS, "3.5.16", [])
+check("P4 timeout=0 keeps a plain re-pin pure (no unrequested pom edits)", ch_p4 == [])
+
 bad_names = [n for n, c in CHECKS if not c]
 print(f"\nSKILL-SCRIPTS SUITE: {len(CHECKS) - len(bad_names)}/{len(CHECKS)}")
 print("FAILED:", bad_names if bad_names else "none")

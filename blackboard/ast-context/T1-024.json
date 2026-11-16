@@ -1,0 +1,85 @@
+{
+  "task_id": "T1-024",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "InMemoryHistoryEventPublisher",
+    "constructors": [
+      [
+        "new TelemetryProperties(\n                Duration.ofSeconds(5), 10, 10, capacity"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "publisher",
+        "method": "events",
+        "args": []
+      },
+      {
+        "receiver": "publisher",
+        "method": "publish",
+        "args": [
+          "event"
+        ]
+      },
+      {
+        "receiver": "publisher",
+        "method": "publish",
+        "args": [
+          "e1"
+        ]
+      },
+      {
+        "receiver": "publisher",
+        "method": "publish",
+        "args": [
+          "e2"
+        ]
+      },
+      {
+        "receiver": "publisher",
+        "method": "publish",
+        "args": [
+          "e3"
+        ]
+      },
+      {
+        "receiver": "publisher",
+        "method": "publish",
+        "args": [
+          "event(\"req-1\")"
+        ]
+      },
+      {
+        "receiver": "publisher",
+        "method": "publish",
+        "args": [
+          "event(\"req-2\")"
+        ]
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class InMemoryHistoryEventPublisherTest {",
+      "logger = (Logger) LoggerFactory.getLogger(InMemoryHistoryEventPublisher.class);",
+      "private static InMemoryHistoryEventPublisher publisher(int capacity) {",
+      "return new InMemoryHistoryEventPublisher(new TelemetryProperties(",
+      "InMemoryHistoryEventPublisher publisher = publisher(4);",
+      "var verifier = StepVerifier.create(publisher.events().take(1)).expectNext(event).expectComplete();",
+      "publisher.publish(event).block();",
+      "StepVerifier.create(publisher(4).publish(event(\"req-1\"))).verifyComplete();",
+      "InMemoryHistoryEventPublisher publisher = publisher(2);",
+      "publisher.publish(e1).block();",
+      "publisher.publish(e2).block();",
+      "publisher.publish(e3).block();",
+      "StepVerifier.create(publisher.events().take(2))",
+      "InMemoryHistoryEventPublisher publisher = publisher(4);",
+      "publisher.publish(event(\"req-1\")).block();",
+      "publisher.publish(event(\"req-2\")).block();",
+      ".isEqualTo(InMemoryHistoryEventPublisher.class.getName()));"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

@@ -1,0 +1,36 @@
+{
+  "id": "T2-027",
+  "project": "telemetry-ingestion-processing",
+  "targetFile": "src/main/java/com/blackboard/telemetry/history/infrastructure/PipelineSubscriber.java",
+  "export": "PipelineSubscriber",
+  "kind": "class",
+  "method": "start",
+  "language": "java",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "signature": "public void start()",
+  "returns": "void",
+  "body": "this.subscription = stream.events()\n        .concatMap(event -> service.handle(event).onErrorResume(error -> Mono.empty()))\n        .subscribe();",
+  "imports": [
+    "org.springframework.context.SmartLifecycle",
+    "reactor.core.Disposable",
+    "reactor.core.publisher.Mono",
+    "com.blackboard.telemetry.history.application.ReorderHistoryService",
+    "com.blackboard.telemetry.ingestion.application.ValidatedSampleStream"
+  ],
+  "implements": [
+    "SmartLifecycle"
+  ],
+  "members": [
+    "private final ValidatedSampleStream stream",
+    "private final ReorderHistoryService service",
+    "private volatile Disposable subscription",
+    "public PipelineSubscriber(ValidatedSampleStream stream, ReorderHistoryService service) { this.stream = stream; this.service = service; }",
+    "@Override public void stop() { Disposable current = this.subscription; if (current != null) { current.dispose(); } this.subscription = null; }",
+    "@Override public boolean isRunning() { Disposable current = this.subscription; return current != null && !current.isDisposed(); }"
+  ],
+  "missing": [],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-16T20:12:42.511789+00:00"
+}

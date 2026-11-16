@@ -3,38 +3,112 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "R2dbcAuditTrail",
+    "type": "HistoryEvent",
     "constructors": [
       [
-        "databaseClient"
+        "TYPE",
+        "sample",
+        "1",
+        "3",
+        "\"req-1\""
+      ],
+      [
+        "TYPE",
+        "sample()",
+        "0",
+        "0",
+        "\"req-1\""
+      ],
+      [
+        "TYPE",
+        "sample()",
+        "-1",
+        "0",
+        "\"req-1\""
+      ],
+      [
+        "TYPE",
+        "sample()",
+        "0",
+        "-1",
+        "\"req-1\""
+      ],
+      [
+        "null",
+        "sample()",
+        "0",
+        "0",
+        "\"req-1\""
+      ],
+      [
+        "TYPE",
+        "null",
+        "0",
+        "0",
+        "\"req-1\""
+      ],
+      [
+        "TYPE",
+        "sample()",
+        "0",
+        "0",
+        "null"
+      ],
+      [
+        "TYPE",
+        "sample()",
+        "0",
+        "0",
+        "\"  \""
       ]
     ],
     "static_calls": [],
     "calls": [
       {
-        "receiver": "trail",
-        "method": "record",
-        "args": [
-          "entry"
-        ]
+        "receiver": "event",
+        "method": "type",
+        "args": []
       },
       {
-        "receiver": "trail",
-        "method": "record",
-        "args": [
-          "new AuditEntry(\"actor-1\", \"INGEST\", \"SUCCESS\", TS, \"req-1\")"
-        ]
+        "receiver": "event",
+        "method": "sample",
+        "args": []
+      },
+      {
+        "receiver": "event",
+        "method": "revisionNo",
+        "args": []
+      },
+      {
+        "receiver": "event",
+        "method": "windowSize",
+        "args": []
+      },
+      {
+        "receiver": "event",
+        "method": "correlationId",
+        "args": []
       }
     ],
     "verified": [],
     "usage_lines": [
-      "class R2dbcAuditTrailTest {",
-      "private R2dbcAuditTrail trail;",
-      "trail = new R2dbcAuditTrail(databaseClient);",
-      "StepVerifier.create(trail.record(entry)).verifyComplete();",
-      "trail.record(new AuditEntry(\"actor-1\", \"INGEST\", \"SUCCESS\", TS, \"req-1\")).block();",
-      "trail.record(entry).block();",
-      "trail.record(entry).block();"
+      "class HistoryEventTest {",
+      "private static final HistoryEventType TYPE = HistoryEventType.values()[0];",
+      "HistoryEvent event = new HistoryEvent(TYPE, sample, 1, 3, \"req-1\");",
+      "assertThat(event.type()).isEqualTo(TYPE);",
+      "assertThat(event.sample()).isEqualTo(sample);",
+      "assertThat(event.revisionNo()).isEqualTo(1);",
+      "assertThat(event.windowSize()).isEqualTo(3);",
+      "assertThat(event.correlationId()).isEqualTo(\"req-1\");",
+      "HistoryEvent event = new HistoryEvent(TYPE, sample(), 0, 0, \"req-1\");",
+      "assertThat(event.revisionNo()).isZero();",
+      "assertThat(event.windowSize()).isZero();",
+      "assertThatThrownBy(() -> new HistoryEvent(TYPE, sample(), -1, 0, \"req-1\"))",
+      "assertThatThrownBy(() -> new HistoryEvent(TYPE, sample(), 0, -1, \"req-1\"))",
+      "assertThatThrownBy(() -> new HistoryEvent(null, sample(), 0, 0, \"req-1\"))",
+      "assertThatThrownBy(() -> new HistoryEvent(TYPE, null, 0, 0, \"req-1\"))",
+      "assertThatThrownBy(() -> new HistoryEvent(TYPE, sample(), 0, 0, null))",
+      "assertThatThrownBy(() -> new HistoryEvent(TYPE, sample(), 0, 0, \"  \"))"
     ]
   },
   "stderr": "",

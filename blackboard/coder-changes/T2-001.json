@@ -1,19 +1,28 @@
 {
   "id": "T2-001",
   "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/resources/application.yml",
-  "export": "application.yml",
-  "method": "application.yml",
-  "language": "yaml",
+  "targetFile": "src/main/java/com/blackboard/telemetry/ingestion/domain/MetricKind.java",
+  "export": "MetricKind",
+  "method": "valueOf",
+  "language": "java",
   "framework": "springboot",
   "skill": "java-springboot",
-  "signature": "application.yml",
-  "returns": "void",
-  "body": "spring.application.name: telemetry-ingestion-processing\nspring.flyway.locations: classpath:db/migration\nspring.r2dbc.url: ${R2DBC_URL:r2dbc:postgresql://localhost:5432/telemetry}\nspring.r2dbc.username: ${R2DBC_USERNAME:telemetry}\nspring.r2dbc.password: ${R2DBC_PASSWORD:telemetry}\ntelemetry.backfill.window-seconds: 60\ntelemetry.buffer.capacity: 1024\nmanagement.endpoints.web.exposure.include: health,metrics\nlogging.file.name: logs/telemetry-ingestion-processing.log\nlogging.structured.format.file: ecs\nlogging.logback.rollingpolicy.max-file-size: 10MB\nlogging.logback.rollingpolicy.max-history: 7\n---\nspring.config.activate.on-profile: test\nspring.r2dbc.url: r2dbc:h2:mem:///telemetrydb;DB_CLOSE_DELAY=-1;NON_KEYWORDS=VALUE\nspring.flyway.enabled: false\n",
-  "members": [],
+  "kind": "enum",
+  "signature": "static MetricKind valueOf(String name)",
+  "returns": "MetricKind",
+  "body": "",
   "imports": [],
+  "members": [
+    "HEART_RATE",
+    "POWER",
+    "CADENCE",
+    "SWIM_PACE",
+    "GROUND_CONTACT_TIME",
+    "RESPIRATION",
+    "SWIM_STROKE"
+  ],
   "missing": [],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-13T16:40:28.631139+00:00"
+  "recorded_at": "2026-11-16T20:13:42.361325+00:00"
 }

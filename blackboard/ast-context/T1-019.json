@@ -1,0 +1,147 @@
+{
+  "task_id": "T1-019",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "TelemetryHistoryRepository",
+    "constructors": [],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "repository",
+        "method": "appendSample",
+        "args": [
+          "sample"
+        ],
+        "stubbed_to": "Mono.just(7L)"
+      },
+      {
+        "receiver": "repository",
+        "method": "appendSample",
+        "args": [
+          "sample"
+        ]
+      },
+      {
+        "receiver": "repository",
+        "method": "appendSample",
+        "args": [
+          "sample"
+        ],
+        "stubbed_to": "Mono.empty()"
+      },
+      {
+        "receiver": "repository",
+        "method": "appendRevision",
+        "args": [
+          "7L",
+          "RevisionReason.BACKFILL",
+          "1.0",
+          "T0"
+        ],
+        "stubbed_to": "Mono.just(1)"
+      },
+      {
+        "receiver": "repository",
+        "method": "appendRevision",
+        "args": [
+          "7L",
+          "RevisionReason.BACKFILL",
+          "1.0",
+          "T0"
+        ]
+      },
+      {
+        "receiver": "repository",
+        "method": "appendRevision",
+        "args": [
+          "7L",
+          "RevisionReason.BACKFILL",
+          "2.0",
+          "T0"
+        ],
+        "stubbed_to": "Mono.just(2)"
+      },
+      {
+        "receiver": "repository",
+        "method": "appendRevision",
+        "args": [
+          "7L",
+          "RevisionReason.BACKFILL",
+          "2.0",
+          "T0"
+        ]
+      },
+      {
+        "receiver": "repository",
+        "method": "findLatestTDevice",
+        "args": [
+          "\"dev-1\"",
+          "METRIC"
+        ],
+        "stubbed_to": "Mono.just(T0.plusSeconds(5))"
+      },
+      {
+        "receiver": "repository",
+        "method": "findLatestTDevice",
+        "args": [
+          "\"dev-1\"",
+          "METRIC"
+        ]
+      },
+      {
+        "receiver": "repository",
+        "method": "findLatestTDevice",
+        "args": [
+          "\"dev-1\"",
+          "METRIC"
+        ],
+        "stubbed_to": "Mono.empty()"
+      },
+      {
+        "receiver": "repository",
+        "method": "findWindow",
+        "args": [
+          "\"dev-1\"",
+          "METRIC",
+          "T0",
+          "T0.plusSeconds(5)",
+          "2"
+        ],
+        "stubbed_to": "Flux.just(a, b)"
+      },
+      {
+        "receiver": "repository",
+        "method": "findWindow",
+        "args": [
+          "\"dev-1\"",
+          "METRIC",
+          "T0",
+          "T0.plusSeconds(5)",
+          "2"
+        ]
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class TelemetryHistoryRepositoryTest {",
+      "private final TelemetryHistoryRepository repository = mock(TelemetryHistoryRepository.class);",
+      "when(repository.appendSample(sample)).thenReturn(Mono.just(7L));",
+      "StepVerifier.create(repository.appendSample(sample)).expectNext(7L).verifyComplete();",
+      "when(repository.appendSample(sample)).thenReturn(Mono.empty());",
+      "StepVerifier.create(repository.appendSample(sample)).verifyComplete();",
+      "when(repository.appendRevision(7L, RevisionReason.BACKFILL, 1.0, T0)).thenReturn(Mono.just(1));",
+      "StepVerifier.create(repository.appendRevision(7L, RevisionReason.BACKFILL, 1.0, T0))",
+      "when(repository.appendRevision(7L, RevisionReason.BACKFILL, 2.0, T0)).thenReturn(Mono.just(2));",
+      "StepVerifier.create(repository.appendRevision(7L, RevisionReason.BACKFILL, 2.0, T0))",
+      "when(repository.findLatestTDevice(\"dev-1\", METRIC)).thenReturn(Mono.just(T0.plusSeconds(5)));",
+      "StepVerifier.create(repository.findLatestTDevice(\"dev-1\", METRIC))",
+      "when(repository.findLatestTDevice(\"dev-1\", METRIC)).thenReturn(Mono.empty());",
+      "StepVerifier.create(repository.findLatestTDevice(\"dev-1\", METRIC)).verifyComplete();",
+      "when(repository.findWindow(\"dev-1\", METRIC, T0, T0.plusSeconds(5), 2)).thenReturn(Flux.just(a, b));",
+      "StepVerifier.create(repository.findWindow(\"dev-1\", METRIC, T0, T0.plusSeconds(5), 2))"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

@@ -1,0 +1,52 @@
+{
+  "id": "T1-022",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-018",
+    "T1-014",
+    "T1-007"
+  ],
+  "path": "src/test/java/com/blackboard/telemetry/ingestion/infrastructure/InMemoryValidatedSampleStreamTest.java",
+  "kind": "test",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "InMemoryValidatedSampleStream",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Write JUnit 5 + AssertJ tests (reactor-test StepVerifier for Mono/Flux, Mockito for collaborators, no external services, no Thread.sleep) for InMemoryValidatedSampleStream. Assert ONLY against the ast_hints method table; at least one given/when/then case per table method and per branch. Unit contract: Infrastructure adapter implementing ValidatedSampleStream with Sinks.many().multicast().onBackpressureBuffer(properties.validatedStreamCapacity(), false) (autoCancel false so a subscriber disconnect never terminates ingestion). publish emits with emitNext and Sinks.EmitFailureHandler.busyLooping(properties.emitRetryTimeout()); on FAIL_OVERFLOW or FAIL_TERMINATED it returns Mono.error(IllegalStateException). No unbounded buffer, no blocking. Registered ONLY by the wiring unit TelemetryConfiguration. Cover: events delivered in order to a subscriber, overflow beyond capacity errors with IllegalStateException, sink survives a subscriber cancel (later publish still works).",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.ingestion.infrastructure",
+    "implements": [
+      "ValidatedSampleStream"
+    ],
+    "dependencies": [
+      {
+        "type": "ValidatedSampleStream",
+        "task_id": "T2-018"
+      },
+      {
+        "type": "TelemetryProperties",
+        "task_id": "T2-014"
+      },
+      {
+        "type": "ValidatedSampleEvent",
+        "task_id": "T2-007"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "InMemoryValidatedSampleStream(TelemetryProperties properties)",
+        "returns": ""
+      },
+      {
+        "signature": "Mono<Void> publish(ValidatedSampleEvent event)",
+        "returns": "Mono<Void>"
+      },
+      {
+        "signature": "Flux<ValidatedSampleEvent> events()",
+        "returns": "Flux<ValidatedSampleEvent>"
+      }
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+# Loaded by the app's application.yml via:
+#   spring.config.import: optional:file:./db/migrations/application-db.yml
+spring:
+  r2dbc:
+    url: ${TELEMETRY_R2DBC_URL:r2dbc:h2:mem:///telemetry;DB_CLOSE_DELAY=-1;MODE=PostgreSQL}
+    username: ${TELEMETRY_DB_USER:sa}
+    password: ${TELEMETRY_DB_PASSWORD:}
+  flyway:
+    enabled: true
+    url: ${TELEMETRY_JDBC_URL:jdbc:h2:mem:telemetry;DB_CLOSE_DELAY=-1;MODE=PostgreSQL}
+    user: ${TELEMETRY_DB_USER:sa}
+    password: ${TELEMETRY_DB_PASSWORD:}
+    locations: filesystem:db/migrations
+    clean-disabled: true
+    out-of-order: false

@@ -1,0 +1,38 @@
+{
+  "id": "T1-018",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-007"
+  ],
+  "path": "src/test/java/com/blackboard/telemetry/ingestion/application/ValidatedSampleStreamTest.java",
+  "kind": "test",
+  "layer": "application",
+  "feature": null,
+  "export": "ValidatedSampleStream",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Write JUnit 5 + AssertJ tests (reactor-test StepVerifier for Mono/Flux, Mockito for collaborators, no external services, no Thread.sleep) for ValidatedSampleStream. Assert ONLY against the ast_hints method table; at least one given/when/then case per table method and per branch. Unit contract: Context Telemetry Ingestion & Validation. Outbound port of the bounded, backpressure-aware validated sample event stream (customer-supplier link to History). Overflow posture is ERROR with a declared reason; consumer is the pipeline subscription (PipelineSubscriber). Imports only reactor and java.*.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.ingestion.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ValidatedSampleEvent",
+        "task_id": "T2-007"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> publish(ValidatedSampleEvent event)",
+        "returns": "Mono<Void>",
+        "semantics": "Completes when the event is accepted by the bounded buffer; emits IllegalStateException when the buffer is full (overflow posture ERROR) - the false path is an error, never a silent drop."
+      },
+      {
+        "signature": "Flux<ValidatedSampleEvent> events()",
+        "returns": "Flux<ValidatedSampleEvent>",
+        "semantics": "Hot fan-out of published events, consumed by PipelineSubscriber."
+      }
+    ]
+  }
+}

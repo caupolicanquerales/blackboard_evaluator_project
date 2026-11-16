@@ -1,0 +1,32 @@
+{
+  "id": "T2-013",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-013",
+    "T2-012"
+  ],
+  "path": "src/main/java/com/blackboard/telemetry/shared/audit/AuditTrail.java",
+  "kind": "code",
+  "layer": "application",
+  "feature": null,
+  "export": "AuditTrail",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Implement AuditTrail (Java 21, Spring Boot 3, WebFlux/Reactor/R2DBC, constructor injection, no blocking calls) so that the frozen test passes, providing exactly the ast_hints table and nothing improvised. Unit contract: Shared outbound port for the append-only audit trail. record(entry) appends one entry and completes when durable; storage errors are emitted as error signals (never swallowed). Imports only reactor and java.*. Append-only: no update or delete operation exists.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.shared.audit",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "AuditEntry",
+        "task_id": "T2-012"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> record(AuditEntry entry)",
+        "returns": "Mono<Void>"
+      }
+    ]
+  }
+}

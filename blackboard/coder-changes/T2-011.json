@@ -1,39 +1,25 @@
 {
   "id": "T2-011",
   "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/blackboard/telemetry/shared/observability/CorrelationIdWebFilter.java",
-  "export": "CorrelationIdWebFilter",
-  "kind": "class",
-  "method": "filter",
+  "targetFile": "src/main/java/com/blackboard/telemetry/shared/audit/AuditAction.java",
+  "export": "AuditAction",
+  "method": "values",
   "language": "java",
   "framework": "springboot",
   "skill": "java-springboot",
-  "signature": "public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain)",
-  "returns": "Mono<Void>",
-  "body": "String inbound = exchange.getRequest().getHeaders().getFirst(HEADER);\nString requestId = inbound == null || inbound.isBlank() ? UUID.randomUUID().toString() : inbound;\nexchange.getResponse().getHeaders().set(HEADER, requestId);\nreturn chain.filter(exchange).contextWrite(ctx -> ctx.put(CONTEXT_KEY, requestId));",
-  "imports": [
-    "java.util.UUID",
-    "org.springframework.stereotype.Component",
-    "org.springframework.web.server.ServerWebExchange",
-    "org.springframework.web.server.WebFilter",
-    "org.springframework.web.server.WebFilterChain",
-    "reactor.core.publisher.Mono"
-  ],
+  "kind": "enum",
+  "signature": "static AuditAction[] values()",
+  "returns": "AuditAction[]",
+  "body": "",
+  "imports": [],
   "missing": [],
-  "annotations": [
-    "Component"
-  ],
-  "implements": [
-    "WebFilter"
-  ],
   "members": [
-    "public static final String HEADER = \"X-Request-Id\"",
-    "public static final String CONTEXT_KEY = \"requestId\""
-  ],
-  "methodAnnotations": [
-    "Override"
+    "INGEST_PACKET",
+    "VALIDATE_SAMPLE",
+    "APPEND_REVISION",
+    "BROADCAST_WINDOW"
   ],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-13T16:20:12.239835+00:00"
+  "recorded_at": "2026-11-16T20:16:19.045449+00:00"
 }

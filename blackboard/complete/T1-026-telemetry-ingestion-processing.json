@@ -1,0 +1,71 @@
+{
+  "id": "T1-026",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-019",
+    "T1-020",
+    "T1-013",
+    "T1-016",
+    "T1-014",
+    "T1-007",
+    "T1-010",
+    "T1-008"
+  ],
+  "path": "src/test/java/com/blackboard/telemetry/history/application/ReorderHistoryServiceTest.java",
+  "kind": "test",
+  "layer": "application",
+  "feature": null,
+  "export": "ReorderHistoryService",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Write JUnit 5 + AssertJ tests (reactor-test StepVerifier for Mono/Flux, Mockito for collaborators, no external services, no Thread.sleep) for ReorderHistoryService. Assert ONLY against the ast_hints method table; at least one given/when/then case per table method and per branch. Unit contract: Context Telemetry Stream Processing & History use case (consumes TelemetrySampleValidated/ValidationFailed from the in-process stream). handle(event): sample = event.sample(); latest = repository.findLatestTDevice(deviceId, metric); id = repository.appendSample(sample). Dedup identity (deviceId, metric, tDevice): when appendSample is EMPTY the sample is a retry of an already stored one (on_empty): do nothing more, no revision, no event - at-least-once safe. Otherwise lateness = Duration between sample.tDevice() and sample.tIngress(): if lateness is greater than properties.reorderWindow() the sample is late beyond the Backfill Reorder Window -> repository.appendRevision(id, RevisionReason.BACKFILL, value, tIngress), meters.revisionAppended, log 'revision appended', audit APPEND_REVISION SUCCESS, publish HistoryEvent REVISION_APPENDED with the revision number; else if latest exists and is after sample.tDevice() the sample is an out-of-order arrival re-indexed by tDevice (never by tIngress) -> meters.sampleReordered, log 'sample reordered within backfill window', publish HistoryEvent SAMPLE_BACKFILLED (revisionNo 0). Then read the window with repository.findWindow(deviceId, metric, tDevice minus reorderWindow, tDevice, properties.reorderBufferCapacity()), log 'window buffered', publish HistoryEvent WINDOW_BUFFERED with windowSize = rows read and audit BROADCAST_WINDOW SUCCESS. On any failure after the append: audit the failing action with outcome FAILURE and propagate the error. Audit actor 'history-service', correlationId from the event, timestamp clock.instant(); meters.recordLatency('history', elapsed). Invalid (VALIDATION_FAILED) payloads are stored like any other. No blocking, no .subscribe(). Owns the step logs 'sample reordered within backfill window', 'revision appended', 'window buffered'. Registered ONLY by the wiring unit TelemetryConfiguration. Reached from PipelineSubscriber. Cover every branch with Mockito-stubbed ports: in-order sample (only window event), out-of-order within window (reordered meter + SAMPLE_BACKFILLED), late beyond window (BACKFILL revision number 1 + REVISION_APPENDED + audit), duplicate (appendSample empty -> nothing published), failure path (FAILURE audit + error), captured step logs.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.history.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetryHistoryRepository",
+        "task_id": "T2-019"
+      },
+      {
+        "type": "HistoryEventPublisher",
+        "task_id": "T2-020"
+      },
+      {
+        "type": "AuditTrail",
+        "task_id": "T2-013"
+      },
+      {
+        "type": "TelemetryMeters",
+        "task_id": "T2-016"
+      },
+      {
+        "type": "TelemetryProperties",
+        "task_id": "T2-014"
+      },
+      {
+        "type": "ValidatedSampleEvent",
+        "task_id": "T2-007"
+      },
+      {
+        "type": "HistoryEvent",
+        "task_id": "T2-010"
+      },
+      {
+        "type": "RevisionReason",
+        "task_id": "T2-008"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "ReorderHistoryService(TelemetryHistoryRepository repository, HistoryEventPublisher publisher, AuditTrail auditTrail, TelemetryMeters meters, TelemetryProperties properties, Clock clock)",
+        "returns": ""
+      },
+      {
+        "signature": "Mono<Void> handle(ValidatedSampleEvent event)",
+        "returns": "Mono<Void>"
+      }
+    ]
+  }
+}

@@ -5,17 +5,26 @@
   "dependsOn": [
     "T1-001"
   ],
-  "path": "src/main/resources/application.yml",
+  "path": "src/main/java/com/blackboard/telemetry/ingestion/domain/MetricKind.java",
   "kind": "code",
-  "layer": "root",
+  "layer": "domain",
   "feature": null,
-  "export": "application.yml",
-  "intent": "Context telemetry-ingestion-processing runtime configuration (merge the keys of the queued flyway-config profile). Base document: spring.application.name=telemetry-ingestion-processing; spring.flyway.locations=classpath:db/migration; spring.r2dbc.url/username/password from env with PostgreSQL r2dbc defaults; telemetry.backfill.window-seconds=60; telemetry.buffer.capacity=1024; management.endpoints.web.exposure.include=health,metrics; logging.file.name=logs/telemetry-ingestion-processing.log; logging.structured.format.file=ecs; logging.logback.rollingpolicy.max-file-size=10MB; logging.logback.rollingpolicy.max-history=7. Second document with spring.config.activate.on-profile=test: spring.r2dbc.url=r2dbc:h2:mem:///telemetrydb;DB_CLOSE_DELAY=-1;NON_KEYWORDS=VALUE and spring.flyway.enabled=false. No runtime dependency on any log shipper.",
+  "export": "MetricKind",
   "project": "telemetry-ingestion-processing",
+  "intent": "Implement MetricKind (Java 21, Spring Boot 3, WebFlux/Reactor/R2DBC, constructor injection, no blocking calls) so that the frozen test passes, providing exactly the ast_hints table and nothing improvised. Unit contract: Context Telemetry Ingestion & Validation. Enum of the telemetry metrics a Telemetry Sample can carry, constants exactly: HEART_RATE, POWER, CADENCE, SWIM_PACE, GROUND_CONTACT_TIME, RESPIRATION, SWIM_STROKE. Pure domain type, no framework imports. It is the single owner of the metric vocabulary; every other unit pins it and never re-spells metric names.",
   "ast_hints": {
-    "package": "com.blackboard.telemetry",
+    "package": "com.blackboard.telemetry.ingestion.domain",
     "implements": [],
     "dependencies": [],
-    "methods": []
+    "methods": [
+      {
+        "signature": "static MetricKind valueOf(String name)",
+        "returns": "MetricKind"
+      },
+      {
+        "signature": "static MetricKind[] values()",
+        "returns": "MetricKind[]"
+      }
+    ]
   }
 }

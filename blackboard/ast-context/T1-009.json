@@ -3,89 +3,48 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "R2dbcTelemetryEventStore",
-    "constructors": [
-      [
-        "databaseClient"
-      ]
+    "type": "HistoryEventType",
+    "constructors": [],
+    "static_calls": [
+      {
+        "method": "values",
+        "args": []
+      },
+      {
+        "method": "valueOf",
+        "args": [
+          "type.name()"
+        ]
+      },
+      {
+        "method": "valueOf",
+        "args": [
+          "\"SAMPLE_DELETED\""
+        ]
+      },
+      {
+        "method": "valueOf",
+        "args": [
+          "null"
+        ]
+      }
     ],
-    "static_calls": [],
     "calls": [
       {
-        "receiver": "store",
-        "method": "append",
-        "args": [
-          "record"
-        ]
-      },
-      {
-        "receiver": "store",
-        "method": "append",
-        "args": [
-          "rec(T1, 1)"
-        ]
-      },
-      {
-        "receiver": "store",
-        "method": "append",
-        "args": [
-          "rec(T1, 2)"
-        ]
-      },
-      {
-        "receiver": "store",
-        "method": "findLatestInRange",
-        "args": [
-          "\"dev-1\"",
-          "\"temp\"",
-          "T1",
-          "T3"
-        ]
-      },
-      {
-        "receiver": "store",
-        "method": "append",
-        "args": [
-          "rec(T3, 1)"
-        ]
-      },
-      {
-        "receiver": "store",
-        "method": "append",
-        "args": [
-          "rec(T2, 1)"
-        ]
-      },
-      {
-        "receiver": "store",
-        "method": "findLatestInRange",
-        "args": [
-          "\"dev-1\"",
-          "\"temp\"",
-          "T2",
-          "T3"
-        ]
+        "receiver": "type",
+        "method": "name",
+        "args": []
       }
     ],
     "verified": [],
     "usage_lines": [
-      "class R2dbcTelemetryEventStoreTest {",
-      "private R2dbcTelemetryEventStore store;",
-      "store = new R2dbcTelemetryEventStore(databaseClient);",
-      "StepVerifier.create(store.append(record)).expectNext(record).verifyComplete();",
-      "store.append(rec(T1, 1)).block();",
-      "StepVerifier.create(store.append(rec(T1, 2))).expectNext(rec(T1, 2)).verifyComplete();",
-      "store.append(rec(T1, 1)).block();",
-      "store.append(rec(T1, 2)).block();",
-      "StepVerifier.create(store.findLatestInRange(\"dev-1\", \"temp\", T1, T3))",
-      "store.append(rec(T3, 1)).block();",
-      "store.append(rec(T1, 1)).block();",
-      "store.append(rec(T2, 1)).block();",
-      "StepVerifier.create(store.findLatestInRange(\"dev-1\", \"temp\", T1, T3).map(TelemetryRecord::tDevice))",
-      "store.append(rec(T1, 1)).block();",
-      "store.append(rec(T2, 1)).block();",
-      "store.append(rec(T3, 1)).block();",
-      "StepVerifier.create(store.findLatestInRange(\"dev-1\", \"temp\", T2, T3).map(TelemetryRecord::tDevice))"
+      "class HistoryEventTypeTest {",
+      "HistoryEventType[] values = HistoryEventType.values();",
+      "@EnumSource(HistoryEventType.class)",
+      "void valueOf_constantName_returnsSameConstant(HistoryEventType type) {",
+      "assertThat(HistoryEventType.valueOf(type.name())).isSameAs(type);",
+      "assertThatThrownBy(() -> HistoryEventType.valueOf(\"SAMPLE_DELETED\"))",
+      "assertThatThrownBy(() -> HistoryEventType.valueOf(null))"
     ]
   },
   "stderr": "",

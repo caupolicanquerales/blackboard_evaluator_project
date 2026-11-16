@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "report_type": "context-map",
   "metadata": {
-    "generated_at": "2026-11-13T13:07:00-03:00",
+    "generated_at": "2026-11-16T16:45:00-03:00",
     "agent": "domain-context-mapping",
     "source_report": "blackboard/domain"
   },
@@ -12,63 +12,54 @@
       "downstream": "Telemetry Ingestion & Validation",
       "relationship": "Anticorruption layer",
       "direction": "external -> Telemetry Ingestion & Validation",
-      "exchanged_information": "Ingress Packets with 1Hz telemetry samples from edge devices, bike computers and wearables",
-      "boundary_protection": "Device payloads are translated into Telemetry Samples at the entry point; device-specific formats never leak inward; no blocking I/O, backpressure applied"
+      "exchanged_information": "Ingress Packets with Telemetry Samples from edge devices, bike computers, wearables; device-initiated, immediate, under backpressure.",
+      "boundary_protection": "Validation context translates heterogeneous device payloads into Telemetry Samples and tags VALIDATION_FAILED; device-specific formats never leak downstream."
     },
     {
       "upstream": "Telemetry Ingestion & Validation",
-      "downstream": "Telemetry Stream Reconciliation",
-      "relationship": "Open host service / published language",
-      "direction": "Telemetry Ingestion & Validation -> Telemetry Stream Reconciliation",
-      "exchanged_information": "TelemetrySampleValidated and TelemetrySampleValidationFailed events carrying Telemetry Samples with validation status and t_device",
-      "boundary_protection": "Only versioned validation events cross; Sensor Metric Boundary definitions stay internal; failed samples are tagged, never dropped"
-    },
-    {
-      "upstream": "Telemetry Ingestion & Validation",
-      "downstream": "Telemetry Event Store",
-      "relationship": "Open host service / published language",
-      "direction": "Telemetry Ingestion & Validation -> Telemetry Event Store",
-      "exchanged_information": "TelemetrySampleValidated and TelemetrySampleValidationFailed events with raw samples and validation status",
-      "boundary_protection": "Consumes the published validation events only; store never re-validates; records appended as-is"
-    },
-    {
-      "upstream": "Telemetry Stream Reconciliation",
-      "downstream": "Telemetry Event Store",
+      "downstream": "Telemetry Stream Processing & History",
       "relationship": "Customer-supplier",
-      "direction": "Telemetry Stream Reconciliation -> Telemetry Event Store",
-      "exchanged_information": "TelemetryBackfillReordered events identifying late samples to append as Event Revisions",
-      "boundary_protection": "Reorder window internals stay private; store appends new revisions, never mutates existing records"
+      "direction": "Telemetry Ingestion & Validation -> Telemetry Stream Processing & History",
+      "exchanged_information": "Events TelemetrySampleValidated and TelemetrySampleValidationFailed carrying Telemetry Sample with validation status and t_device; published by Validation, consumed by History.",
+      "boundary_protection": "Only the two named events cross; Sensor Metric Boundary definitions and intake/backpressure internals stay private; History never re-validates and never drops failed samples."
     },
     {
-      "upstream": "Telemetry Stream Reconciliation",
+      "upstream": "Telemetry Stream Processing & History",
       "downstream": "external",
       "relationship": "Open host service / published language",
-      "direction": "Telemetry Stream Reconciliation -> external",
-      "exchanged_information": "TelemetryWindowEmitted ordered windows for streaming analytics consumers",
-      "boundary_protection": "Backpressure-aware broadcast of ordered windows only; ingress timestamps and buffers not exposed"
+      "direction": "Telemetry Stream Processing & History -> external",
+      "exchanged_information": "TelemetrySampleBackfilled, TelemetryRevisionAppended, TelemetryWindowBuffered to downstream streaming analytics (PulseStream Engine).",
+      "boundary_protection": "Versioned event contract with backpressure-aware broadcast; raw history storage and reorder window internals are not exposed."
     }
   ],
   "cross_boundary_flows": [
     {
-      "business_process": "Ingest and validate telemetry",
+      "business_process": "Sample ingestion to validated stream",
       "contexts_involved": [
         "external",
         "Telemetry Ingestion & Validation",
-        "Telemetry Stream Reconciliation",
-        "Telemetry Event Store"
+        "Telemetry Stream Processing & History"
       ],
       "consistency_expectation": "eventual",
-      "notes": "Validation precedes any downstream propagation; consumers must be idempotent; backpressure signals flow upstream."
+      "notes": "Retry with idempotent consumption. AMBIGUITY/FLAG: delivery posture and dedup identity (device, metric, t_device) unspecified; assumed owned by History pending discovery answer."
     },
     {
-      "business_process": "Reorder late packets within 60s backfill window",
+      "business_process": "Out-of-order backfill and revision",
       "contexts_involved": [
-        "Telemetry Stream Reconciliation",
-        "Telemetry Event Store",
+        "Telemetry Ingestion & Validation",
+        "Telemetry Stream Processing & History"
+      ],
+      "consistency_expectation": "eventual",
+      "notes": "Samples delayed up to 60s reordered by t_device; later packets assumed Event Revision (unspecified). No invariant has 0 or 2 owners. No coupling cycles."
+    },
+    {
+      "business_process": "Windowed broadcast to streaming analytics",
+      "contexts_involved": [
+        "Telemetry Stream Processing & History",
         "external"
       ],
       "consistency_expectation": "eventual",
-      "notes": "Ordering by t_device; corrections appended as revisions. Flagged ambiguity: handling of packets later than 60s is unspecified (assumed revision appended by store); TelemetryRevisionAppended has no consumer in this slice."
+      "notes": "Backpressure-aware; consumers are outside slice, so consumes unmatched on their side."
     }
   ]
 }

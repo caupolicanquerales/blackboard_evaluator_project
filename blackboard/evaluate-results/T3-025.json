@@ -1,0 +1,35 @@
+{
+  "project": "telemetry-ingestion-processing",
+  "targetFile": "src/main/java/com/blackboard/telemetry/ingestion/application/IngestPacketService.java",
+  "stack": "java-springboot3",
+  "skill": "java-springboot3",
+  "summary": "Extracted outcome/latency-step constants and a private audit helper; behavior unchanged.",
+  "findings": [
+    "Magic strings SUCCESS/FAILURE/validate duplicated",
+    "Audit entry construction repeated 3 times"
+  ],
+  "changes": [
+    "Added OUTCOME_SUCCESS, OUTCOME_FAILURE, LATENCY_STEP constants",
+    "Added private audit(...) helper"
+  ],
+  "reverts": [],
+  "final_test": {
+    "status": "passed",
+    "exit_code": 0,
+    "command": "./mvnw -q -Dtest=IngestPacketServiceTest test"
+  },
+  "task_id": "T3-025",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-16T21:43:18.773619+00:00",
+  "engine_diff": [
+    {
+      "file": "src/main/java/com/blackboard/telemetry/ingestion/application/IngestPacketService.java",
+      "added": 12,
+      "removed": 2,
+      "capped": false,
+      "patch": "--- a/src/main/java/com/blackboard/telemetry/ingestion/application/IngestPacketService.java\n+++ b/src/main/java/com/blackboard/telemetry/ingestion/application/IngestPacketService.java\n@@ -21,6 +21,12 @@\n public class IngestPacketService {\n \n     private static final Logger LOGGER = LoggerFactory.getLogger(IngestPacketService.class);\n+\n+    private static final String OUTCOME_SUCCESS = \"SUCCESS\";\n+\n+    private static final String OUTCOME_FAILURE = \"FAILURE\";\n+\n+    private static final String LATENCY_STEP = \"validate\";\n \n     private final TelemetryProperties properties;\n \n@@ -54,8 +60,12 @@\n                 } else {\n                     LOGGER.info(\"sample tagged VALIDATION_FAILED requestId={} metric={}\", requestId, sample.metric());\n                 }\n-                return stream.publish(new ValidatedSampleEvent(sample.withStatus(status), requestId)).then(Mono.defer(() -> auditTrail.record(new AuditEntry(packet.deviceId(), AuditAction.VALIDATE_SAMPLE, \"SUCCESS\", clock.instant(), requestId))));\n-            }).then(Mono.defer(() -> auditTrail.record(new AuditEntry(packet.deviceId(), AuditAction.INGEST_PACKET, \"SUCCESS\", clock.instant(), requestId)))).onErrorResume(error -> auditTrail.record(new AuditEntry(packet.deviceId(), AuditAction.INGEST_PACKET, \"FAILURE\", clock.instant(), requestId)).then(Mono.<Void>error(error))).doFinally(signal -> meters.recordLatency(\"validate\", Duration.between(start, clock.instant())));\n+                return stream.publish(new ValidatedSampleEvent(sample.withStatus(status), requestId)).then(Mono.defer(() -> audit(packet, AuditAction.VALIDATE_SAMPLE, OUTCOME_SUCCESS, requestId)));\n+            }).then(Mono.defer(() -> audit(packet, AuditAction.INGEST_PACKET, OUTCOME_SUCCESS, requestId))).onErrorResume(error -> audit(packet, AuditAction.INGEST_PACKET, OUTCOME_FAILURE, requestId).then(Mono.<Void>error(error))).doFinally(signal -> meters.recordLatency(LATENCY_STEP, Duration.between(start, clock.instant())));\n         });\n     }\n+\n+    private Mono<Void> audit(IngressPacket packet, AuditAction action, String outcome, String requestId) {\n+        return auditTrail.record(new AuditEntry(packet.deviceId(), action, outcome, clock.instant(), requestId));\n+    }\n }"
+    }
+  ],
+  "engine_diff_files": 1
+}

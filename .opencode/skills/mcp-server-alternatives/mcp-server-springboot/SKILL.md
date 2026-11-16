@@ -42,23 +42,34 @@ If the server rejects `javaVersion` as an unknown parameter, the running image p
    from the tool's return text alone.
 5. `mcp_workspace/projects/<name>/src/test/resources/application.properties` EXISTS and carries
    `spring.profiles.active=test` - the boot test's profile-activation route. It is a runtime CONFIG
-   resource, not test code: when the generator omits it, the container CREATES it (this is the one
-   allowed file write after generation). Without it no profile document is ever active, and the
+   resource, not test code: when the generator omits it, YOU - the agent running this skill -
+   CREATE IT with one shell line (`mkdir -p src/test/resources && printf 'spring.profiles.active=test\n' > src/test/resources/application.properties`).
+   This is the one allowed file write after generation ("the container creates it" means the
+   container AGENT, never the MCP image). Without it no profile document is ever active, and the
    only route left to a green boot is H2 as a base default - production wiring fiction (seed-002
    rerun 2026-11-13 13:41 live shape).
+6. When the scaffold intent names a TEST-RUN TIMEOUT guardrail: the final pom must contain
+   `forkedProcessTimeoutInSeconds` - add it with Step 4's script flag `--surefire-timeout
+   <seconds>` (same sanctioned, verified, self-reverting edit; usable OUTSIDE the REPIN CASE -
+   pass `--major` the planned major, the parent rewrite is idempotent when already conforming).
 Any miss => ONE regeneration with corrected params (fixed id list / resolved bootVersion); still missing
 => report `BLOCKED: generator lacks id <x>` with the exact list - never hand-edit the pom, never proceed.
+`BLOCKED` leaves NO artifact at the task path and aborts the whole pipeline by design: it is reserved
+for a true catalog gap, NEVER for the check-5/check-6 guardrails, which have sanctioned tools.
 Report name, path, java version, boot version, status; never edit generated code.
-# Step 4 - re-pin when the generator retired the planned major (REPIN CASE only)
+# Step 4 - re-pin when the generator retired the planned major (REPIN CASE), and the
+# sanctioned route for any Step-3 check-6 pom addition (works outside the REPIN CASE too)
 Run the skill's deterministic transformation from the repository root (it rewrites ONLY
 <parent><version> to the newest release of the pinned major read live from Maven Central, collapses
 Boot-4-only per-starter test slices into `spring-boot-starter-test`, adds any `--require` artifact as
-a BOM-managed test dependency, verifies with `mvnw -q -DskipTests test-compile`, and RESTORES the
-original pom on any failure; this scripted edit is the one sanctioned manifest change - never
-hand-edit the pom yourself):
+a BOM-managed test dependency, adds `--surefire-timeout <seconds>` as the surefire
+`forkedProcessTimeoutInSeconds` guardrail when the intent names one, verifies with `mvnw -q -DskipTests
+test-compile`, and RESTORES the original pom on any failure; this scripted edit is the one sanctioned
+manifest change - never hand-edit the pom yourself):
     python3 .opencode/skills/mcp-server-alternatives/mcp-server-springboot/repin-parent.py \
         --project-root ../mcp_workspace/projects/<name>-<timestamp> --major <pinned major> \
-        --require <plan artifacts the generator catalog lacked, e.g. test,reactor-test>
+        --require <plan artifacts the generator catalog lacked, e.g. test,reactor-test> \
+        [--surefire-timeout <seconds>]
 status ok (with `to` = a <major>.x version, `changed[]` covering every catalog gap and
 `verified: true`) => move to the domain root and finish; status error => report the JSON verbatim
 and STOP: an unproven pin must not enter the board. The script also maps known 4.x-only starters

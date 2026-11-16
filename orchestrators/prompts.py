@@ -132,10 +132,17 @@ def _collaborator_tables(task):
                          "complete - PLAN HOLE: report it as blocked, never guess its surface")
             continue
         ph = producer.get("ast_hints") or {}
-        methods = "; ".join(f"{m.get('signature')}: {m.get('returns')}"
-                            for m in (ph.get("methods") or [])[:8])
+        methods = "; ".join(
+            f"{m.get('signature')}: {m.get('returns')}"
+            + (f" [semantics: {m.get('semantics')}]" if str(m.get("semantics") or "").strip() else "")
+            for m in (ph.get("methods") or [])[:8])
         lines.append(f"- {name} ({ph.get('package', '?')}) by {producer['id']}: "
-                     f"implements {ph.get('implements') or []}; methods: {methods or '(value object)'}")
+                     f"implements {ph.get('implements') or []}; methods: {methods or '(value object)'}"
+                     + ("  <- CONSTRUCTION CONTRACT: table `semantics` bind legal values; "
+                        "build fixtures through the named factory/legal literals only, "
+                        "never a guessed argument" if any(
+                            str(m.get("semantics") or "").strip()
+                            for m in (ph.get("methods") or [])) else ""))
     return "\n" + "\n".join(lines) + "\n"
 
 
@@ -417,7 +424,9 @@ Follow these steps exactly, once per domain:
      it must protect, and the expected behavior. The tester, coder, and evaluator tasks
      for the same unit must describe the same unit and stay consistent.
    - ast_hints (stage 1-2; the test task and code task of one unit carry the IDENTICAL
-     table): {"package": the unit's namespace as its language spells it; "implements":
+     table): {"package": the unit's namespace as its language spells it - every segment a
+     legal identifier in the pinned language, NEVER a reserved word (a driver layer is
+     "api" or "adapters", never "interface"; emit refuses the collision); "implements":
      supertype names the unit must satisfy; "dependencies": [{"type", "task_id"}] one per
      collaborator, pinned to the task that produces it; "methods": [{"signature",
      "returns"} - or {"signature", "returns", "semantics"} where rule (d) below
@@ -456,7 +465,25 @@ Follow these steps exactly, once per domain:
      that unit's ast_hints.methods must carry `semantics` naming the initial-state encoding
      (a shipped constant such as UNVALIDATED, or the nullable alternative). A null-intolerant
      value with no legal way to represent its pre-use state freezes tester and coder on
-     contradictory contracts nobody can edit.
+     contradictory contracts nobody can edit. The same holds for ARGUMENT RANGES: an intent
+     spelling a bound like `revision (>=1 ...)` is refused unless the constructor's table
+     entry carries that bound in `semantics` - consumer units' testers receive the injected
+     collaborator TABLE, never this unit's prose, and a prose-only bound invites a foreign
+     fixture to fabricate the illegal literal and die on a frozen test.
+   - Duties the emit gates refuse mechanically - plan them in from the start: every unit whose
+     contract executes SQL/DML against a schema gets a paired test intent demanding the
+     REAL-SUBSTRATE run (the embedded substitute executing the actual migration DDL, asserting
+     the durable row; a mocked-client case may be extra, never the only substrate proof);
+     every inbound adapter surface comes with ONE end-to-end request-path slice task driving
+     the entry and asserting durable effects; an at-least-once inbound over an append-only
+     revision chain names its dedup identity (client-supplied key or natural identity) in the
+     receiving contracts, or the strategy declares the at-most-once posture beside the inbound
+     words; a config unit enabling a migration runner references the PACKAGED location form
+     (classpath: + the stack's packaged resources root), never a CWD-relative filesystem: path -
+     portability is a plan-time decision, never relitigated at the assembly gate against the
+     config unit's own frozen test; a rule-implementing service is reachable in the pin graph
+     by a consumer unit (the
+     wiring unit's factory pin proves production, never consumption).
    - Prose may never be the only place a signature exists: every method an intent describes
      must also appear in that unit's ast_hints.methods, spelled identically, so prose and
      table can never disagree.

@@ -1,0 +1,45 @@
+{
+  "id": "T2-021",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-021",
+    "T0-002",
+    "T0-003",
+    "T2-013",
+    "T2-012"
+  ],
+  "path": "src/main/java/com/blackboard/telemetry/shared/audit/R2dbcAuditTrail.java",
+  "kind": "code",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "R2dbcAuditTrail",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Implement R2dbcAuditTrail (Java 21, Spring Boot 3, WebFlux/Reactor/R2DBC, constructor injection, no blocking calls) so that the frozen test passes, providing exactly the ast_hints table and nothing improvised. Unit contract: Infrastructure adapter implementing AuditTrail with the non-blocking Spring DatabaseClient: inserts one row into append-only table audit_trail (columns actor, action = enum name, outcome, occurred_at = UTC LocalDateTime of the entry timestamp, correlation_id; id is database-generated). Never updates or deletes. Failures surface as error signals. Registered ONLY by the wiring unit TelemetryConfiguration (no stereotype annotation).",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.shared.audit",
+    "implements": [
+      "AuditTrail"
+    ],
+    "dependencies": [
+      {
+        "type": "AuditTrail",
+        "task_id": "T2-013"
+      },
+      {
+        "type": "AuditEntry",
+        "task_id": "T2-012"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "R2dbcAuditTrail(DatabaseClient client)",
+        "returns": ""
+      },
+      {
+        "signature": "Mono<Void> record(AuditEntry entry)",
+        "returns": "Mono<Void>"
+      }
+    ]
+  }
+}

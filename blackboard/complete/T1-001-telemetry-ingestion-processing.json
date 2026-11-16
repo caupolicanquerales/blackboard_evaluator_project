@@ -3,20 +3,28 @@
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
-    "T0-001",
-    "T0-004"
+    "T0-001"
   ],
-  "path": "src/test/java/com/blackboard/telemetry/shared/config/ApplicationConfigTest.java",
+  "path": "src/test/java/com/blackboard/telemetry/ingestion/domain/MetricKindTest.java",
   "kind": "test",
-  "layer": "root",
+  "layer": "domain",
   "feature": null,
-  "export": "ApplicationConfigTest",
-  "intent": "Context telemetry-ingestion-processing. Test that src/main/resources/application.yml carries the literal values: telemetry.backfill.window-seconds=60, telemetry.buffer.capacity=1024, spring.flyway.locations=classpath:db/migration, management.endpoints.web.exposure.include=health,metrics, logging.file.name=logs/telemetry-ingestion-processing.log, logging.structured.format.file=ecs, logging.logback.rollingpolicy.max-file-size=10MB, logging.logback.rollingpolicy.max-history=7; and the test profile document (spring.config.activate.on-profile=test) uses r2dbc:h2:mem:///telemetrydb;DB_CLOSE_DELAY=-1;NON_KEYWORDS=VALUE with spring.flyway.enabled=false. Load via YAML loader; no external services.",
+  "export": "MetricKind",
   "project": "telemetry-ingestion-processing",
+  "intent": "Write JUnit 5 + AssertJ tests (reactor-test StepVerifier for Mono/Flux, Mockito for collaborators, no external services, no Thread.sleep) for MetricKind. Assert ONLY against the ast_hints method table; at least one given/when/then case per table method and per branch. Unit contract: Context Telemetry Ingestion & Validation. Enum of the telemetry metrics a Telemetry Sample can carry, constants exactly: HEART_RATE, POWER, CADENCE, SWIM_PACE, GROUND_CONTACT_TIME, RESPIRATION, SWIM_STROKE. Pure domain type, no framework imports. It is the single owner of the metric vocabulary; every other unit pins it and never re-spells metric names.",
   "ast_hints": {
-    "package": "com.blackboard.telemetry",
+    "package": "com.blackboard.telemetry.ingestion.domain",
     "implements": [],
     "dependencies": [],
-    "methods": []
+    "methods": [
+      {
+        "signature": "static MetricKind valueOf(String name)",
+        "returns": "MetricKind"
+      },
+      {
+        "signature": "static MetricKind[] values()",
+        "returns": "MetricKind[]"
+      }
+    ]
   }
 }

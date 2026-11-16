@@ -428,6 +428,176 @@ def _reopen_contract_regression(result, task):
     return reopened
 
 
+_TERMINAL_SUITE_SEEN = set()
+_TERMINAL_T4_ATTRIBUTED = set()
+
+
+def _safe_read(path):
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def terminal_suite_gate():
+    """TERMINAL SUITE gate (live 2026-11-16 10:52 shape). The stage-3 evaluator and the
+    stage-4 assembler edit production files AFTER the last wave gate ran: each is judged
+    only by what it owns (the scoped final test, the boot smoke). When such an edit
+    breaks a PEER's frozen test no gate ever fires again - the board fell silent at
+    queue 0 while the delivered suite was red, the same exit-lie family as 2026-11-12's
+    "89/96 + boot green, tree does not compile". On a quiet board the pipeline runs the
+    WHOLE frozen suite over the delivered tree (the wave's own memoized verdict, keyed
+    by tree fingerprint: an unchanged tree costs zero builds), attributes every red
+    class to its producing unit through the stage-1 pair (class stem == test file
+    stem, the same stem-equality the wave gate uses) and reopens the COMPLETED owners
+    onto their attempt budgets. Reds owned by quarantined units are left to the normal
+    retry path; ownerless reds are NAMED in the report - a red nobody owns is an
+    operator fact, not board silence. Returns the reopened ids."""
+    reopened = []
+    # include_error: a red class whose OWNER is quarantined must read as "the
+    # quarantine owns it" (deferred), not as "NO producing unit" - the owner map is
+    # built from twos, and excluding error records made the quarantined owner
+    # invisible, dressing a known quarantine up as an ownerless mystery (2026-11-16).
+    index = task_queue.load_index(include_error=True)
+    error_ids = {str(rec.get("id")) for f in settings.ERROR_DIR.glob("*.json")
+                 if isinstance(rec := _safe_read(f), dict)}
+    projects = sorted({str(rec.get("project", "")) for rec in index.values()
+                       if str(rec.get("project", ""))})
+    for slug in projects:
+        twos = [(tid, rec) for tid, rec in sorted(index.items())
+                if str(rec.get("project", "")) == slug
+                and int(rec.get("stage") or 0) == settings.TDD_STAGE]
+        if not twos:
+            continue
+        root = workspace.project_root_for(slug)
+        if not root.is_dir():
+            continue
+        command = ""
+        for _, rec in twos:
+            record = test_gate.red_phase_record(rec) or {}
+            command = str(record.get("command") or "").strip()
+            if command:
+                break
+        suite = test_gate._suite_command(command) if command else None
+        if not suite:
+            continue
+        fixed = test_gate.repair_test_imports(root)
+        if fixed:
+            print(f"[suite ] {slug}: repaired missing imports in {fixed} test file(s)")
+        fp = test_gate._tree_fingerprint(root)
+        # Same stamp the per-unit wave gate uses: a tree the wave already judged is
+        # served from cache; a tree an evaluator/assembler moved re-runs ONCE.
+        stamp = f"{slug}-v9-{fp}"
+        cache_file = settings.GATE_CACHE_DIR / f"wave-{stamp}.json"
+        data = None
+        if cache_file.is_file():
+            try:
+                data = json.loads(cache_file.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                data = None
+        if data is None:
+            data = test_gate._run_suite_once(root, suite, stamp)
+        if not isinstance(data, dict):
+            continue
+        classes = data.get("classes") or {}
+        reds = sorted(str(k) for k, v in classes.items() if v != "passed")
+        if not reds and data.get("status") not in ("passed", None):
+            reds = [f"<tree-wide {data.get('status')}>"]
+        if not reds:
+            continue
+        owners = {}
+        for tid, rec in twos:
+            for dep in rec.get("dependsOn") or []:
+                pair = index.get(str(dep))
+                if pair and int(pair.get("stage") or 0) == 1:
+                    stem = str(pair.get("path", "")).split("/")[-1].rsplit(".", 1)[0]
+                    if stem:
+                        owners[stem.lower()] = tid
+        deferred, ownerless, mine = [], [], []
+        # A red class whose failure is a MOCKABILITY gap on a FOREIGN closed type is a
+        # victim: its owner cannot edit either the frozen test or the peer's modifier.
+        # The class below (mock_impossible -> producer) charges whoever closed the type.
+        mock_closed = {str(t) for t in data.get("mock_impossible") or []}
+        mock_victims = set()
+        for fl in (data.get("failures") or []) if mock_closed else []:
+            mt = str((fl or {}).get("mock_type") or "")
+            if mt not in mock_closed:
+                continue
+            base = str(fl.get("test", "")).rsplit(".", 1)[0].split("$")[0].split(".")[-1].lower()
+            owner = owners.get(base)
+            op = tasks.exported_product(index.get(owner)) if owner and index.get(owner) else ""
+            if owner and op != mt:
+                mock_victims.add(base)
+        for key in reds:
+            base = key.split("$")[0].split(".")[-1].lower()
+            if base in mock_victims:
+                continue
+            owner = owners.get(base)
+            if owner is None:
+                ownerless.append(key)
+            elif owner in error_ids:
+                deferred.append(f"{key} (owner {owner} is quarantined)")
+            else:
+                mine.append((owner, key))
+        # FILE blame over class blame when the evidence names a main file: a red test
+        # class is often poisoned by a COLLABORATOR's source (2026-11-16: an evaluator
+        # added a constructor guard to TelemetrySample.java; SampleValidatorTest - which
+        # legitimately builds invalid samples for the VALIDATOR to judge - went red, and
+        # the validator's owner T2-008 was charged for a file it must not touch).
+        # error_locations is the engine's existing stack-agnostic file+line scanner.
+        file_owner = {}
+        for f in settings.COMPLETE_DIR.glob("T2-*.json"):
+            rec = _safe_read(f)
+            if not isinstance(rec, dict) or str(rec.get("project", "")) != slug:
+                continue
+            base = str(rec.get("path", "")).replace("\\", "/").split("/")[-1]
+            if base:
+                file_owner[base] = str(rec.get("id", ""))
+        for name, _tail in test_gate.error_locations(data):
+            blame = file_owner.get(name)
+            if blame and blame not in error_ids:
+                mine.append((blame, f"file:{name}"))
+        # MOCKABILITY reds: the file that closed a mocked type is the producer's, never
+        # the mocking unit's (its test is frozen and the modifier is a foreign file).
+        for tname in data.get("mock_impossible") or []:
+            for tid, rec in twos:
+                if tasks.exported_product(rec) == str(tname) and tid not in error_ids:
+                    mine.append((tid, f"mock-closed:{tname}"))
+        acted = False
+        for owner, _key in sorted(set(mine)):
+            if task_queue.reopen_completed(owner):
+                reopened.append(owner)
+                acted = True
+        # Ownerless integration reds belong to STAGE 4: assembly is the only unit whose
+        # contract is the WHOLE tree, and its boot gate ran at ITS moment - a later
+        # evaluator edit that breaks the boot had no owner left to charge (2026-11-16:
+        # the scaffold smoke class sat red with no producing unit while the board idled).
+        if ownerless:
+            for tid, rec in sorted(index.items()):
+                if (str(rec.get("project", "")) == slug
+                        and int(rec.get("stage") or 0) == 4
+                        and (slug, fp) not in _TERMINAL_T4_ATTRIBUTED
+                        and task_queue.reopen_completed(tid)):
+                    _TERMINAL_T4_ATTRIBUTED.add((slug, fp))
+                    reopened.append(tid)
+                    acted = True
+                    break
+        signature = (slug, fp)
+        if signature not in _TERMINAL_SUITE_SEEN or acted:
+            _TERMINAL_SUITE_SEEN.add(signature)
+            lines = [f"[suite ] {slug}: delivered suite is RED - "
+                     f"{len(reds)} class(es) failed after the last wave"]
+            for owner, key in sorted(set(mine)):
+                lines.append(f"[suite ] {slug}: reopened {owner} (owner of {key})")
+            for note in sorted(set(deferred)):
+                lines.append(f"[suite ] {slug}: {note} - the quarantine already owns it")
+            for key in sorted(set(ownerless)):
+                lines.append(f"[suite ] {slug}: {key} has NO producing unit - the "
+                             "operator reads this, the board does not hide it")
+            print("\n".join(lines))
+    return sorted(set(reopened))
+
+
 def _dangling_main_consumers(task):
     """Main-source files that still reference the product of a unit whose payload is
     being rolled back (seed-002 rerun F1: quarantine deleted DefaultIngestTelemetryUseCase.java
@@ -721,6 +891,28 @@ def _pending_bean_demand(result, task):
     return bool(simple & pending)
 
 
+def _mock_impossible_owner(result, task):
+    """The id of a FOREIGN unit whose exported type a frozen test can no longer stub
+    (`mock_impossible` = the runner's normalized Mockito sealed/final gap). The mocking
+    unit owns no editable surface for that fact - its test is frozen and the closure
+    lives in the collaborator's file - so the producer that closed the type is charged
+    (2026-11-16: an evaluator sealed an event interface and the CONSUMER's 7 stub-based
+    tests died; T2-023 burned its whole life budget on a file it must not touch).
+    None when the closed type IS this unit's own product: keeping a collaborator it
+    itself ships stubbable is part of ITS contract, and it gets charged normally."""
+    names = result.get("mock_impossible") if isinstance(result, dict) else None
+    if not names:
+        return None
+    own = tasks.exported_product(task)
+    for tid, rec in sorted(task_queue.load_index(include_error=True).items()):
+        if (str(rec.get("project", "")) == str(task.get("project", ""))
+                and int(rec.get("stage") or 0) == settings.TDD_STAGE
+                and tasks.exported_product(rec) in set(names)
+                and tasks.exported_product(rec) != own):
+            return tid
+    return None
+
+
 def _blocked_by_peers(result, task):
     """True when a red stage-2 gate is NOT this unit's own fault.
 
@@ -734,6 +926,8 @@ def _blocked_by_peers(result, task):
         return False
     if _pending_bean_demand(result, task):
         return True              # runtime wiring gap: a pending peer's bean is demanded
+    if _mock_impossible_owner(result, task):
+        return True              # a peer CLOSED a type this unit's frozen test stubs
     if result.get("status") not in ("compile_error", "error"):
         return False
     owners = _queued_main_file_owners(task.get("project", ""))
@@ -1220,6 +1414,12 @@ def drain_queue(args, invoke_for_task):
                     if _reopen_contract_regression(result, task):
                         raise DeferredTask(str(problem) +
                                            " [contract-regression owner reopened to queue]")
+                    mock_owner = _mock_impossible_owner(result, task)
+                    if mock_owner and task_queue.reopen_completed(mock_owner):
+                        raise DeferredTask(
+                            str(problem) +
+                            f" [mockability gap: {mock_owner} closed a type this unit's "
+                            "frozen test stubs - its producer owns the fix, not this unit]")
                     if _blocked_by_peers(result, task):
                         raise DeferredTask(problem)
                     return False, problem

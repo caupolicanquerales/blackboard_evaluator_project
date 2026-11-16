@@ -5,11 +5,11 @@
   "dependsOn": [
     "T2-002"
   ],
-  "path": "src/main/java/com/blackboard/telemetry/ingestion/domain/TelemetrySample.java",
+  "path": "src/main/java/com/blackboard/telemetry/ingestion/domain/ValidationStatus.java",
   "kind": "refactor",
   "layer": "domain",
   "feature": null,
-  "export": "TelemetrySample",
-  "intent": "Inspect TelemetrySample record (immutable, no validation, no framework imports) and tidy without changing its public surface.",
-  "project": "telemetry-ingestion-processing"
+  "export": "ValidationStatus",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Inspect and refactor ValidationStatus without changing the ast_hints surface or the tests' behavior (never seal or finalize a type another unit stubs; no magic numbers, no blocking calls, no raw logger calls beyond the claimed step logs). Unit contract: Context Telemetry Ingestion & Validation. Enum of a Telemetry Sample validation status, constants exactly: UNVALIDATED (initial state before boundary validation), VALID, VALIDATION_FAILED (sample violated its Sensor Metric Boundary; the payload is never dropped). Single owner of these names; consumers pin it."
 }

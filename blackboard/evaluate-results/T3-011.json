@@ -1,25 +1,25 @@
 {
   "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/blackboard/telemetry/shared/observability/CorrelationIdWebFilter.java",
-  "stack": "java-springboot3-webflux",
+  "targetFile": "src/main/java/com/blackboard/telemetry/shared/audit/AuditAction.java",
+  "stack": "java-springboot3",
   "skill": "java-springboot3",
-  "summary": "Audit only: filter is non-blocking, reads X-Request-Id (generates UUID if absent/blank), echoes on response, and propagates via Reactor context key requestId. No duplicates, hacks, or security sinks found.",
+  "summary": "AuditAction is a minimal framework-free enum with exactly the four contract constants; no audit findings.",
   "findings": [],
   "changes": [],
   "reverts": [],
   "final_test": {
     "status": "passed",
     "counts": {
-      "run": 54,
-      "failures": 0,
-      "errors": 5
+      "run": 242,
+      "failures": 14,
+      "errors": 2
     },
-    "source": "gate-cache/T2-011.json (baseline, unit unchanged)"
+    "source": "gate-cache/T2-011.json"
   },
   "task_id": "T3-011",
   "stage": 3,
   "executed": true,
-  "recorded_at": "2026-11-13T16:29:32.097436+00:00",
+  "recorded_at": "2026-11-16T21:47:18.080012+00:00",
   "engine_diff": [],
   "engine_diff_files": 0
 }

@@ -5,11 +5,11 @@
   "dependsOn": [
     "T2-007"
   ],
-  "path": "src/main/java/com/blackboard/telemetry/reconciliation/domain/BackfillReorderer.java",
+  "path": "src/main/java/com/blackboard/telemetry/ingestion/domain/ValidatedSampleEvent.java",
   "kind": "refactor",
   "layer": "domain",
   "feature": null,
-  "export": "BackfillReorderer",
-  "intent": "Inspect BackfillReorderer: ordering by tDevice only, stable, non-mutating; tidy without changing the surface.",
-  "project": "telemetry-ingestion-processing"
+  "export": "ValidatedSampleEvent",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Inspect and refactor ValidatedSampleEvent without changing the ast_hints surface or the tests' behavior (never seal or finalize a type another unit stubs; no magic numbers, no blocking calls, no raw logger calls beyond the claimed step logs). Unit contract: Context Telemetry Ingestion & Validation. Published-language record carrying both TelemetrySampleValidated (status VALID) and TelemetrySampleValidationFailed (status VALIDATION_FAILED): one type, discriminated by the sample status. Never carries an UNVALIDATED sample."
 }

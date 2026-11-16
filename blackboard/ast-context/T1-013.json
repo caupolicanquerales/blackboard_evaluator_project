@@ -1,0 +1,39 @@
+{
+  "task_id": "T1-013",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "AuditTrail",
+    "constructors": [],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "trail",
+        "method": "record",
+        "args": [
+          "entry"
+        ]
+      },
+      {
+        "receiver": "trail",
+        "method": "record",
+        "args": [
+          "entry()"
+        ]
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class AuditTrailTest {",
+      "AuditTrail trail = e -> Mono.fromRunnable(() -> stored.add(e));",
+      "StepVerifier.create(trail.record(entry)).verifyComplete();",
+      "AuditTrail trail = e -> Mono.error(new IllegalStateException(\"storage down\"));",
+      "StepVerifier.create(trail.record(entry()))",
+      "AuditTrail trail = e -> Mono.fromRunnable(() -> stored.add(e));",
+      "StepVerifier.create(trail.record(entry()).then(trail.record(entry()))).verifyComplete();",
+      "List<String> names = Arrays.stream(AuditTrail.class.getDeclaredMethods())"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

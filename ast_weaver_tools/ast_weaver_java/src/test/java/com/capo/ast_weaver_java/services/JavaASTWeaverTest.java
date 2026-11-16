@@ -228,6 +228,57 @@ class JavaASTWeaverTest {
     }
 
     @Test
+    void weave_recordConstructorPayloadWithBody_createsRealCompact_notDeadVoidMethod()
+            throws IOException {
+        // 2026-11-16: a payload with method == record name and a guard BODY fell into the
+        // METHOD splice (declaresConstructor only recognized ClassOrInterfaceDeclaration):
+        // the tool synthesized `public void Sensor(int value) {...}` - legal Java for a
+        // method that NEVER runs, so six production records shipped silently dead guards.
+        Path file = tempDir.resolve("Source.java");
+        JavaASTWeaver.weave(file, payload("Sensor", "Sensor", "Sensor(int value)", "void", "record",
+            List.of("int value"), "if (value < 0) { throw new IllegalArgumentException(\"value\"); }"));
+
+        String result = Files.readString(file);
+        assertThat(result)
+            .as("guard must live in a compact constructor that RUNS, not a void method")
+            .doesNotContain("public void Sensor(")
+            .contains("Sensor {")
+            .contains("value < 0");
+    }
+
+    @Test
+    void weave_recordCanonicalBodyPayload_createsCanonicalConstructor_notBrokenCompact()
+            throws IOException {
+        // 2026-11-16: the compact wrap fits guard-only bodies; payloads whose body
+        // ASSIGNS components (this.x = ...) need the canonical explicit constructor -
+        // wrapping them compact produced 'cannot assign a value to final variable'
+        // and burned the unit's whole attempt budget on the tool's own mistake.
+        Path file = tempDir.resolve("Source.java");
+        JavaASTWeaver.weave(file, payload("Packet", "Packet", "Packet(String id)", "void", "record",
+            List.of("String id"), "this.id = java.util.Objects.requireNonNull(id, \"id\");"));
+
+        String result = Files.readString(file);
+        assertThat(result)
+            .as("component-assigning body must become the canonical constructor")
+            .contains("public Packet(String id)")
+            .contains("this.id =")
+            .doesNotContain("public void Packet(");
+    }
+
+    @Test
+    void weave_memberTextSpellingVoidMethodLikeTheHolder_bouncesAsPayloadReject()
+            throws IOException {
+        // The members[] route must reject the dead shape too - attempt-free, with a
+        // message that teaches the compact spelling.
+        Path file = tempDir.resolve("Source.java");
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> JavaASTWeaver.weave(file,
+            payload("Sensor", "value", "int value()", "int", "record",
+                List.of("int value", "public void Sensor(int value) { if (value < 0) {} }"), "")))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("VOID METHOD");
+    }
+
+    @Test
     void weave_recordCompactConstructorAlreadyBare_replacedNotDuplicated() throws IOException {
         Path file = givenSource("""
             package com.acme;

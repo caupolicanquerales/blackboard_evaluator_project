@@ -3,36 +3,55 @@
   "targetAgent": "agent-coder",
   "stage": 2,
   "dependsOn": [
-    "T1-012"
+    "T1-012",
+    "T2-011"
   ],
-  "path": "src/main/java/com/blackboard/telemetry/ingestion/interface_/TelemetryIngestController.java",
+  "path": "src/main/java/com/blackboard/telemetry/shared/audit/AuditEntry.java",
   "kind": "code",
-  "layer": "interface",
+  "layer": "domain",
   "feature": null,
-  "export": "TelemetryIngestController",
-  "intent": "Ingress entry point (@RestController, POST /api/v1/telemetry/ingress, consumes application/x-ndjson, produces application/json). ingest(@RequestBody Flux<TelemetrySample> samples, @RequestHeader(value=\"X-Request-Id\", required=false) String requestId) delegates to IngestTelemetryUseCase.ingest with the header value, or a generated UUID string when absent or blank, and returns the Mono<Long> count. No business logic.",
+  "export": "AuditEntry",
   "project": "telemetry-ingestion-processing",
+  "intent": "Implement AuditEntry (Java 21, Spring Boot 3, WebFlux/Reactor/R2DBC, constructor injection, no blocking calls) so that the frozen test passes, providing exactly the ast_hints table and nothing improvised. Unit contract: Shared audit trail record: actor, action, outcome (SUCCESS|FAILURE), timestamp, correlationId (the requestId). Immutable record; the outcome literals SUCCESS and FAILURE are owned here and consumers pin this unit.",
   "ast_hints": {
-    "package": "com.blackboard.telemetry.ingestion.interface_",
+    "package": "com.blackboard.telemetry.shared.audit",
     "implements": [],
     "dependencies": [
       {
-        "type": "IngestTelemetryUseCase",
-        "task_id": "T2-008"
-      },
-      {
-        "type": "TelemetrySample",
-        "task_id": "T2-002"
+        "type": "AuditAction",
+        "task_id": "T2-011"
       }
     ],
     "methods": [
       {
-        "signature": "public TelemetryIngestController(IngestTelemetryUseCase useCase)",
-        "returns": ""
+        "signature": "AuditEntry(String actor, AuditAction action, String outcome, Instant timestamp, String correlationId)",
+        "returns": "",
+        "semantics": "Null rejected (NullPointerException); actor and correlationId non-blank; outcome is exactly SUCCESS or FAILURE (IllegalArgumentException otherwise)."
       },
       {
-        "signature": "public Mono<Long> ingest(Flux<TelemetrySample> samples, String requestId)",
-        "returns": "Mono<Long>"
+        "signature": "String actor()",
+        "returns": "String",
+        "semantics": "Never blank."
+      },
+      {
+        "signature": "AuditAction action()",
+        "returns": "AuditAction",
+        "semantics": "Never null."
+      },
+      {
+        "signature": "String outcome()",
+        "returns": "String",
+        "semantics": "SUCCESS or FAILURE."
+      },
+      {
+        "signature": "Instant timestamp()",
+        "returns": "Instant",
+        "semantics": "Never null."
+      },
+      {
+        "signature": "String correlationId()",
+        "returns": "String",
+        "semantics": "The requestId; never blank."
       }
     ]
   }

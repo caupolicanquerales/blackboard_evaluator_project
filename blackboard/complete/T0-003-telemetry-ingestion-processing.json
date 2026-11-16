@@ -5,11 +5,11 @@
   "dependsOn": [
     "T0-001"
   ],
-  "path": "db/migrations/V2__create_audit_trail.sql",
+  "path": "db/migrations/V2__create_event_revision_and_audit_trail.sql",
   "kind": "bootstrap",
   "layer": "root",
   "feature": null,
-  "export": "V2__create_audit_trail",
-  "intent": "Schema migration: PostgreSQL (Flyway, expand-only) append-only audit_trail table, all fields NOT NULL, for context telemetry-ingestion-processing; script V2 create audit trail.",
+  "export": "V2__create_event_revision_and_audit_trail",
+  "intent": "Schema migration: PostgreSQL 16 Flyway script V2__create_event_revision_and_audit_trail adds append-only event_revision and audit_trail tables for context telemetry-ingestion-processing; expand-only.",
   "project": "telemetry-ingestion-processing"
 }

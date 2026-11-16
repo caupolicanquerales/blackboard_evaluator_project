@@ -5,11 +5,11 @@
   "dependsOn": [
     "T2-006"
   ],
-  "path": "src/main/java/com/blackboard/telemetry/eventstore/application/TelemetryEventStore.java",
+  "path": "src/main/java/com/blackboard/telemetry/ingestion/domain/SensorMetricBoundary.java",
   "kind": "refactor",
-  "layer": "application",
+  "layer": "domain",
   "feature": null,
-  "export": "TelemetryEventStore",
-  "intent": "Inspect TelemetryEventStore port: append-only, domain types only; tidy without changing the surface.",
-  "project": "telemetry-ingestion-processing"
+  "export": "SensorMetricBoundary",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Inspect and refactor SensorMetricBoundary without changing the ast_hints surface or the tests' behavior (never seal or finalize a type another unit stubs; no magic numbers, no blocking calls, no raw logger calls beyond the claimed step logs). Unit contract: Context Telemetry Ingestion & Validation. Immutable record Sensor Metric Boundary (physical limit of a metric, Source of truth of boundary definitions, supplied by configuration and bound through TelemetryProperties). Rules: accepts(value) is true when disabled; otherwise min <= value <= max, with value > min when minExclusive (swim pace must be strictly above its minimum). Pure domain logic, no framework imports."
 }

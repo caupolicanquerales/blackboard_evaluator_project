@@ -3,87 +3,41 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "TelemetryRecord",
-    "constructors": [
-      [
-        "\"dev-1\"",
-        "\"temp\"",
-        "T_DEVICE",
-        "T_INGRESS",
-        "21.5",
-        "\"VALIDATED\"",
-        "revision"
-      ],
-      [
-        "\"dev-1\"",
-        "\"temp\"",
-        "T_DEVICE",
-        "T_INGRESS",
-        "Double.NaN",
-        "\"VALIDATION_FAILED\"",
-        "1L"
-      ]
+    "type": "SourceKind",
+    "constructors": [],
+    "static_calls": [
+      {
+        "method": "values",
+        "args": []
+      },
+      {
+        "method": "valueOf",
+        "args": [
+          "kind.name()"
+        ]
+      },
+      {
+        "method": "valueOf",
+        "args": [
+          "\"TOASTER\""
+        ]
+      }
     ],
-    "static_calls": [],
     "calls": [
       {
-        "receiver": "failed",
-        "method": "status",
-        "args": []
-      },
-      {
-        "receiver": "record",
-        "method": "deviceId",
-        "args": []
-      },
-      {
-        "receiver": "record",
-        "method": "metric",
-        "args": []
-      },
-      {
-        "receiver": "record",
-        "method": "tDevice",
-        "args": []
-      },
-      {
-        "receiver": "record",
-        "method": "tIngress",
-        "args": []
-      },
-      {
-        "receiver": "record",
-        "method": "value",
-        "args": []
-      },
-      {
-        "receiver": "record",
-        "method": "status",
-        "args": []
-      },
-      {
-        "receiver": "record",
-        "method": "revision",
+        "receiver": "kind",
+        "method": "name",
         "args": []
       }
     ],
     "verified": [],
     "usage_lines": [
-      "class TelemetryRecordTest {",
-      "private TelemetryRecord record(long revision) {",
-      "return new TelemetryRecord(\"dev-1\", \"temp\", T_DEVICE, T_INGRESS, 21.5, \"VALIDATED\", revision);",
-      "TelemetryRecord record = record(1L);",
-      "assertThat(record.deviceId()).isEqualTo(\"dev-1\");",
-      "assertThat(record.metric()).isEqualTo(\"temp\");",
-      "assertThat(record.tDevice()).isEqualTo(T_DEVICE);",
-      "assertThat(record.tIngress()).isEqualTo(T_INGRESS);",
-      "assertThat(record.value()).isEqualTo(21.5);",
-      "assertThat(record.status()).isEqualTo(\"VALIDATED\");",
-      "assertThat(record.revision()).isEqualTo(1L);",
-      "assertThat(record(1L)).isEqualTo(record(1L)).hasSameHashCodeAs(record(1L));",
-      "assertThat(record(1L)).isNotEqualTo(record(2L));",
-      "TelemetryRecord failed = new TelemetryRecord(\"dev-1\", \"temp\", T_DEVICE, T_INGRESS, Double.NaN,",
-      "assertThat(failed.status()).isEqualTo(\"VALIDATION_FAILED\");"
+      "class SourceKindTest {",
+      "SourceKind[] result = SourceKind.values();",
+      "@EnumSource(SourceKind.class)",
+      "void valueOf_existingName_returnsSameConstant(SourceKind kind) {",
+      "assertThat(SourceKind.valueOf(kind.name())).isSameAs(kind);",
+      "assertThatThrownBy(() -> SourceKind.valueOf(\"TOASTER\"))"
     ]
   },
   "stderr": "",

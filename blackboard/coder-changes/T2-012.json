@@ -1,40 +1,30 @@
 {
   "id": "T2-012",
   "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/blackboard/telemetry/ingestion/interface_/TelemetryIngestController.java",
-  "export": "TelemetryIngestController",
-  "kind": "class",
-  "method": "ingest",
+  "targetFile": "src/main/java/com/blackboard/telemetry/shared/audit/AuditEntry.java",
+  "export": "AuditEntry",
+  "method": "AuditEntry",
   "language": "java",
-  "framework": "springboot3",
-  "skill": "java-standard-best-practices",
-  "signature": "public Mono<Long> ingest(@RequestBody Flux<TelemetrySample> samples, @RequestHeader(value = \"X-Request-Id\", required = false) String requestId)",
-  "returns": "Mono<Long>",
-  "body": "String correlationId = (requestId == null || requestId.isBlank()) ? UUID.randomUUID().toString() : requestId;\nreturn useCase.ingest(samples, correlationId);",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "kind": "record",
+  "signature": "public AuditEntry(String actor, AuditAction action, String outcome, Instant timestamp, String correlationId)",
+  "returns": "void",
+  "body": "Objects.requireNonNull(actor, \"actor\");\nObjects.requireNonNull(action, \"action\");\nObjects.requireNonNull(outcome, \"outcome\");\nObjects.requireNonNull(timestamp, \"timestamp\");\nObjects.requireNonNull(correlationId, \"correlationId\");\nif (actor.isBlank()) {\n    throw new IllegalArgumentException(\"actor must not be blank\");\n}\nif (correlationId.isBlank()) {\n    throw new IllegalArgumentException(\"correlationId must not be blank\");\n}\nif (!outcome.equals(\"SUCCESS\") && !outcome.equals(\"FAILURE\")) {\n    throw new IllegalArgumentException(\"outcome must be SUCCESS or FAILURE\");\n}\nthis.actor = actor;\nthis.action = action;\nthis.outcome = outcome;\nthis.timestamp = timestamp;\nthis.correlationId = correlationId;",
   "imports": [
-    "java.util.UUID",
-    "reactor.core.publisher.Flux",
-    "reactor.core.publisher.Mono",
-    "org.springframework.web.bind.annotation.RestController",
-    "org.springframework.web.bind.annotation.PostMapping",
-    "org.springframework.web.bind.annotation.RequestBody",
-    "org.springframework.web.bind.annotation.RequestHeader",
-    "org.springframework.web.bind.annotation.RequestMapping",
-    "com.blackboard.telemetry.ingestion.application.IngestTelemetryUseCase",
-    "com.blackboard.telemetry.ingestion.domain.TelemetrySample"
+    "java.time.Instant",
+    "java.util.Objects",
+    "com.blackboard.telemetry.shared.audit.AuditAction"
   ],
   "missing": [],
-  "annotations": [
-    "RestController"
-  ],
-  "methodAnnotations": [
-    "PostMapping(value = \"/api/v1/telemetry/ingress\", consumes = \"application/x-ndjson\", produces = \"application/json\")"
-  ],
   "members": [
-    "private final IngestTelemetryUseCase useCase",
-    "public TelemetryIngestController(IngestTelemetryUseCase useCase) { this.useCase = useCase; }"
+    "String actor",
+    "AuditAction action",
+    "String outcome",
+    "Instant timestamp",
+    "String correlationId"
   ],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-13T16:19:19.126494+00:00"
+  "recorded_at": "2026-11-16T21:35:07.436396+00:00"
 }

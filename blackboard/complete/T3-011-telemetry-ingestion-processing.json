@@ -5,11 +5,11 @@
   "dependsOn": [
     "T2-011"
   ],
-  "path": "src/main/java/com/blackboard/telemetry/shared/observability/CorrelationIdWebFilter.java",
+  "path": "src/main/java/com/blackboard/telemetry/shared/audit/AuditAction.java",
   "kind": "refactor",
-  "layer": "shared",
+  "layer": "domain",
   "feature": null,
-  "export": "CorrelationIdWebFilter",
-  "intent": "Inspect CorrelationIdWebFilter: non-blocking, correlation key semantics preserved; tidy without changing the surface.",
-  "project": "telemetry-ingestion-processing"
+  "export": "AuditAction",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Inspect and refactor AuditAction without changing the ast_hints surface or the tests' behavior (never seal or finalize a type another unit stubs; no magic numbers, no blocking calls, no raw logger calls beyond the claimed step logs). Unit contract: Shared audit vocabulary. Enum of audited actions, constants exactly: INGEST_PACKET, VALIDATE_SAMPLE, APPEND_REVISION, BROADCAST_WINDOW."
 }

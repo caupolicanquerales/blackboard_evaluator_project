@@ -1,0 +1,57 @@
+{
+  "id": "T2-024",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-024",
+    "T2-020",
+    "T2-014",
+    "T2-010"
+  ],
+  "path": "src/main/java/com/blackboard/telemetry/history/infrastructure/InMemoryHistoryEventPublisher.java",
+  "kind": "code",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "InMemoryHistoryEventPublisher",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Implement InMemoryHistoryEventPublisher (Java 21, Spring Boot 3, WebFlux/Reactor/R2DBC, constructor injection, no blocking calls) so that the frozen test passes, providing exactly the ast_hints table and nothing improvised. Unit contract: Infrastructure adapter implementing HistoryEventPublisher with Sinks.many().replay().limit(properties.broadcastCapacity()) (bounded, drops oldest, never overflows or terminates). publish uses emitNext with Sinks.EmitFailureHandler.busyLooping(properties.emitRetryTimeout()). Owns the step log 'event broadcast downstream' (one logger call per published event). Registered ONLY by the wiring unit TelemetryConfiguration.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.history.infrastructure",
+    "implements": [
+      "HistoryEventPublisher"
+    ],
+    "dependencies": [
+      {
+        "type": "HistoryEventPublisher",
+        "task_id": "T2-020"
+      },
+      {
+        "type": "TelemetryProperties",
+        "task_id": "T2-014"
+      },
+      {
+        "type": "HistoryEvent",
+        "task_id": "T2-010"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "InMemoryHistoryEventPublisher(TelemetryProperties properties)",
+        "returns": ""
+      },
+      {
+        "signature": "Mono<Void> publish(HistoryEvent event)",
+        "returns": "Mono<Void>"
+      },
+      {
+        "signature": "Flux<HistoryEvent> events()",
+        "returns": "Flux<HistoryEvent>"
+      }
+    ]
+  },
+  "observability": {
+    "step_logs": [
+      "event broadcast downstream"
+    ]
+  }
+}

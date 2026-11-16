@@ -3,32 +3,40 @@
   "targetAgent": "agent-coder",
   "stage": 2,
   "dependsOn": [
-    "T1-007"
+    "T1-007",
+    "T2-004"
   ],
-  "path": "src/main/java/com/blackboard/telemetry/reconciliation/domain/BackfillReorderer.java",
+  "path": "src/main/java/com/blackboard/telemetry/ingestion/domain/ValidatedSampleEvent.java",
   "kind": "code",
   "layer": "domain",
   "feature": null,
-  "export": "BackfillReorderer",
-  "intent": "Context Telemetry Stream Reconciliation. Pure domain service (public no-arg constructor, instance method): reorder(List<TelemetrySample>) returns a new, stable list sorted ascending by tDevice, never by tIngress; the input is not mutated. No framework imports.",
+  "export": "ValidatedSampleEvent",
   "project": "telemetry-ingestion-processing",
+  "intent": "Implement ValidatedSampleEvent (Java 21, Spring Boot 3, WebFlux/Reactor/R2DBC, constructor injection, no blocking calls) so that the frozen test passes, providing exactly the ast_hints table and nothing improvised. Unit contract: Context Telemetry Ingestion & Validation. Published-language record carrying both TelemetrySampleValidated (status VALID) and TelemetrySampleValidationFailed (status VALIDATION_FAILED): one type, discriminated by the sample status. Never carries an UNVALIDATED sample.",
   "ast_hints": {
-    "package": "com.blackboard.telemetry.reconciliation.domain",
+    "package": "com.blackboard.telemetry.ingestion.domain",
     "implements": [],
     "dependencies": [
       {
         "type": "TelemetrySample",
-        "task_id": "T2-002"
+        "task_id": "T2-004"
       }
     ],
     "methods": [
       {
-        "signature": "public BackfillReorderer()",
-        "returns": ""
+        "signature": "ValidatedSampleEvent(TelemetrySample sample, String correlationId)",
+        "returns": "",
+        "semantics": "Null rejected (NullPointerException); sample.status() must be VALID or VALIDATION_FAILED (IllegalArgumentException for UNVALIDATED); correlationId non-blank."
       },
       {
-        "signature": "public List<TelemetrySample> reorder(List<TelemetrySample> samples)",
-        "returns": "List<TelemetrySample>"
+        "signature": "TelemetrySample sample()",
+        "returns": "TelemetrySample",
+        "semantics": "Never null; status is VALID or VALIDATION_FAILED."
+      },
+      {
+        "signature": "String correlationId()",
+        "returns": "String",
+        "semantics": "The requestId of the originating request; never blank."
       }
     ]
   }

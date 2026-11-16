@@ -1,1 +1,1 @@
-src/main/java/com/blackboard/telemetry/shared/observability/AuditEntry.java
+src/main/java/com/blackboard/telemetry/ingestion/domain/TelemetrySample.java

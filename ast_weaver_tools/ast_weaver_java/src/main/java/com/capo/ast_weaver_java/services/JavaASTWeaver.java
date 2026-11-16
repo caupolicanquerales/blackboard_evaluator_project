@@ -88,7 +88,7 @@ public final class JavaASTWeaver {
                 // A payload whose method name IS the class name declares a constructor:
                 // it must splice into a ConstructorDeclaration - a MethodDeclaration
                 // named like the class can never assign final fields (T2-017 storm).
-                com.github.javaparser.ast.body.CallableDeclaration<?> target;
+                com.github.javaparser.ast.body.BodyDeclaration<?> target;
                 if (MethodWeaver.declaresConstructor(payload.method(), owner)) {
                     target = MethodWeaver.selectOrCreateConstructor(owner, payload);
                 } else {

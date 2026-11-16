@@ -1,0 +1,76 @@
+{
+  "id": "T1-025",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-014",
+    "T1-018",
+    "T1-013",
+    "T1-016",
+    "T1-017",
+    "T1-005",
+    "T1-007",
+    "T1-006",
+    "T1-002"
+  ],
+  "path": "src/test/java/com/blackboard/telemetry/ingestion/application/IngestPacketServiceTest.java",
+  "kind": "test",
+  "layer": "application",
+  "feature": null,
+  "export": "IngestPacketService",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Write JUnit 5 + AssertJ tests (reactor-test StepVerifier for Mono/Flux, Mockito for collaborators, no external services, no Thread.sleep) for IngestPacketService. Assert ONLY against the ast_hints method table; at least one given/when/then case per table method and per branch. Unit contract: Context Telemetry Ingestion & Validation use case. ingest(packet): read the requestId with CorrelationContext.current(); log 'packet received' and meters.packetReceived(sourceKind); for each sample sequentially (concatMap) find the enabled boundary of the metric in properties.boundaries(); status = VALID when no enabled boundary exists or boundary.accepts(value) is true (on_true), VALIDATION_FAILED when it is false (on_false) - an invalid sample is tagged, NEVER dropped or rejected; meters.sampleValidated(metric, status); log 'sample validated' (VALID) or 'sample tagged VALIDATION_FAILED' (on_false); publish new ValidatedSampleEvent(sample.withStatus(status), requestId) through stream.publish; if publish emits an error (overflow) the error is propagated; record audit entries through auditTrail.record: VALIDATE_SAMPLE with outcome SUCCESS per sample (tagging counts as success) and finally INGEST_PACKET SUCCESS, or INGEST_PACKET FAILURE then error propagation when publish failed; actor = packet.deviceId(); timestamp = clock.instant(); meters.recordLatency('validate', elapsed). Zero blocking, no .subscribe(), no block(). Owns the step logs 'packet received', 'sample validated', 'sample tagged VALIDATION_FAILED'. Registered ONLY by the wiring unit TelemetryConfiguration. Reached from IngestionController. Cover both branches: in-boundary (HR 150 VALID), out-of-boundary (HR 300 and swim pace 45 VALIDATION_FAILED but still published), disabled metric VALID, publish error propagates with FAILURE audit, meters via SimpleMeterRegistry, audit entries via a fake AuditTrail, captured step logs.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.ingestion.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetryProperties",
+        "task_id": "T2-014"
+      },
+      {
+        "type": "ValidatedSampleStream",
+        "task_id": "T2-018"
+      },
+      {
+        "type": "AuditTrail",
+        "task_id": "T2-013"
+      },
+      {
+        "type": "TelemetryMeters",
+        "task_id": "T2-016"
+      },
+      {
+        "type": "CorrelationContext",
+        "task_id": "T2-017"
+      },
+      {
+        "type": "IngressPacket",
+        "task_id": "T2-005"
+      },
+      {
+        "type": "ValidatedSampleEvent",
+        "task_id": "T2-007"
+      },
+      {
+        "type": "SensorMetricBoundary",
+        "task_id": "T2-006"
+      },
+      {
+        "type": "ValidationStatus",
+        "task_id": "T2-002"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "IngestPacketService(TelemetryProperties properties, ValidatedSampleStream stream, AuditTrail auditTrail, TelemetryMeters meters, Clock clock)",
+        "returns": ""
+      },
+      {
+        "signature": "Mono<Void> ingest(IngressPacket packet)",
+        "returns": "Mono<Void>"
+      }
+    ]
+  }
+}

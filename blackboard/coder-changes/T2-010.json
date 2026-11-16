@@ -1,37 +1,30 @@
 {
   "id": "T2-010",
   "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/blackboard/telemetry/shared/observability/R2dbcAuditTrail.java",
-  "export": "R2dbcAuditTrail",
-  "kind": "class",
-  "method": "record",
+  "targetFile": "src/main/java/com/blackboard/telemetry/history/domain/HistoryEvent.java",
+  "export": "HistoryEvent",
+  "method": "type",
   "language": "java",
   "framework": "springboot",
   "skill": "java-springboot",
-  "signature": "public Mono<Void> record(AuditEntry entry)",
-  "returns": "Mono<Void>",
-  "body": "return databaseClient\n        .sql(\"INSERT INTO audit_trail (actor, action, outcome, occurred_at, correlation_id) VALUES (:actor, :action, :outcome, :occurredAt, :correlationId)\")\n        .bind(\"actor\", entry.actor())\n        .bind(\"action\", entry.action())\n        .bind(\"outcome\", entry.outcome())\n        .bind(\"occurredAt\", entry.timestamp().atOffset(ZoneOffset.UTC))\n        .bind(\"correlationId\", entry.correlationId())\n        .fetch()\n        .rowsUpdated()\n        .then();",
+  "signature": "HistoryEventType type()",
+  "returns": "HistoryEventType",
+  "body": "return type;",
   "imports": [
-    "java.time.ZoneOffset",
-    "org.springframework.r2dbc.core.DatabaseClient",
-    "org.springframework.stereotype.Repository",
-    "reactor.core.publisher.Mono"
+    "java.util.Objects",
+    "com.blackboard.telemetry.ingestion.domain.TelemetrySample"
   ],
   "missing": [],
-  "annotations": [
-    "Repository"
-  ],
-  "implements": [
-    "AuditTrail"
-  ],
+  "kind": "record",
   "members": [
-    "private final DatabaseClient databaseClient",
-    "public R2dbcAuditTrail(DatabaseClient databaseClient) { this.databaseClient = databaseClient; }"
-  ],
-  "methodAnnotations": [
-    "Override"
+    "HistoryEventType type",
+    "TelemetrySample sample",
+    "int revisionNo",
+    "int windowSize",
+    "String correlationId",
+    "public HistoryEvent {\n    Objects.requireNonNull(type, \"type\");\n    Objects.requireNonNull(sample, \"sample\");\n    Objects.requireNonNull(correlationId, \"correlationId\");\n    if (revisionNo < 0) {\n        throw new IllegalArgumentException(\"revisionNo must be >= 0\");\n    }\n    if (windowSize < 0) {\n        throw new IllegalArgumentException(\"windowSize must be >= 0\");\n    }\n    if (correlationId.isBlank()) {\n        throw new IllegalArgumentException(\"correlationId must not be blank\");\n    }\n}"
   ],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-13T16:21:49.735182+00:00"
+  "recorded_at": "2026-11-16T21:01:01.000032+00:00"
 }

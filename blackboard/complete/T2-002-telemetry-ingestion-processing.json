@@ -5,41 +5,25 @@
   "dependsOn": [
     "T1-002"
   ],
-  "path": "src/main/java/com/blackboard/telemetry/ingestion/domain/TelemetrySample.java",
+  "path": "src/main/java/com/blackboard/telemetry/ingestion/domain/ValidationStatus.java",
   "kind": "code",
   "layer": "domain",
   "feature": null,
-  "export": "TelemetrySample",
-  "intent": "Context Telemetry Ingestion & Validation. TelemetrySample is an immutable Java record of a raw device sample (deviceId, metric, tDevice device clock, tIngress arrival clock, value). No validation, no framework annotations; ordering semantics use tDevice only.",
+  "export": "ValidationStatus",
   "project": "telemetry-ingestion-processing",
+  "intent": "Implement ValidationStatus (Java 21, Spring Boot 3, WebFlux/Reactor/R2DBC, constructor injection, no blocking calls) so that the frozen test passes, providing exactly the ast_hints table and nothing improvised. Unit contract: Context Telemetry Ingestion & Validation. Enum of a Telemetry Sample validation status, constants exactly: UNVALIDATED (initial state before boundary validation), VALID, VALIDATION_FAILED (sample violated its Sensor Metric Boundary; the payload is never dropped). Single owner of these names; consumers pin it.",
   "ast_hints": {
     "package": "com.blackboard.telemetry.ingestion.domain",
     "implements": [],
     "dependencies": [],
     "methods": [
       {
-        "signature": "public record TelemetrySample(String deviceId, String metric, Instant tDevice, Instant tIngress, double value)",
-        "returns": ""
+        "signature": "static ValidationStatus valueOf(String name)",
+        "returns": "ValidationStatus"
       },
       {
-        "signature": "String deviceId()",
-        "returns": "String"
-      },
-      {
-        "signature": "String metric()",
-        "returns": "String"
-      },
-      {
-        "signature": "Instant tDevice()",
-        "returns": "Instant"
-      },
-      {
-        "signature": "Instant tIngress()",
-        "returns": "Instant"
-      },
-      {
-        "signature": "double value()",
-        "returns": "double"
+        "signature": "static ValidationStatus[] values()",
+        "returns": "ValidationStatus[]"
       }
     ]
   }

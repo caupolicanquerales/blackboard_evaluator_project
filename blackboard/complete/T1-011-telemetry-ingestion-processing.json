@@ -5,31 +5,25 @@
   "dependsOn": [
     "T0-001"
   ],
-  "path": "src/test/java/com/blackboard/telemetry/shared/observability/CorrelationIdWebFilterTest.java",
+  "path": "src/test/java/com/blackboard/telemetry/shared/audit/AuditActionTest.java",
   "kind": "test",
-  "layer": "shared",
+  "layer": "domain",
   "feature": null,
-  "export": "CorrelationIdWebFilterTest",
-  "intent": "Correlation middleware. Using MockServerWebExchange: when header X-Request-Id is present the same value is adopted; otherwise a non-blank UUID is generated; the value is echoed in the response header X-Request-Id and the chain is invoked exactly once with Reactor context key 'requestId' holding the value (assert from within a stub chain via Mono.deferContextual). Public constants HEADER='X-Request-Id' and CONTEXT_KEY='requestId'.",
+  "export": "AuditAction",
   "project": "telemetry-ingestion-processing",
+  "intent": "Write JUnit 5 + AssertJ tests (reactor-test StepVerifier for Mono/Flux, Mockito for collaborators, no external services, no Thread.sleep) for AuditAction. Assert ONLY against the ast_hints method table; at least one given/when/then case per table method and per branch. Unit contract: Shared audit vocabulary. Enum of audited actions, constants exactly: INGEST_PACKET, VALIDATE_SAMPLE, APPEND_REVISION, BROADCAST_WINDOW.",
   "ast_hints": {
-    "package": "com.blackboard.telemetry.shared.observability",
-    "implements": [
-      "WebFilter"
-    ],
+    "package": "com.blackboard.telemetry.shared.audit",
+    "implements": [],
     "dependencies": [],
     "methods": [
       {
-        "signature": "public static final String HEADER",
-        "returns": "String"
+        "signature": "static AuditAction valueOf(String name)",
+        "returns": "AuditAction"
       },
       {
-        "signature": "public static final String CONTEXT_KEY",
-        "returns": "String"
-      },
-      {
-        "signature": "public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain)",
-        "returns": "Mono<Void>"
+        "signature": "static AuditAction[] values()",
+        "returns": "AuditAction[]"
       }
     ]
   }

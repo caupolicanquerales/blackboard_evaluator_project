@@ -5,49 +5,25 @@
   "dependsOn": [
     "T1-003"
   ],
-  "path": "src/main/java/com/blackboard/telemetry/eventstore/domain/TelemetryRecord.java",
+  "path": "src/main/java/com/blackboard/telemetry/ingestion/domain/SourceKind.java",
   "kind": "code",
   "layer": "domain",
   "feature": null,
-  "export": "TelemetryRecord",
-  "intent": "Context Telemetry Event Store. TelemetryRecord is an immutable Java record of one stored revision of a sample; corrections append a new revision, rows are never mutated. Pure record, no validation, no framework imports.",
+  "export": "SourceKind",
   "project": "telemetry-ingestion-processing",
+  "intent": "Implement SourceKind (Java 21, Spring Boot 3, WebFlux/Reactor/R2DBC, constructor injection, no blocking calls) so that the frozen test passes, providing exactly the ast_hints table and nothing improvised. Unit contract: Context Telemetry Ingestion & Validation. Enum of the bounded origins of an Ingress Packet, constants exactly: EDGE_DEVICE, BIKE_COMPUTER, SMART_WEARABLE. Used as the bounded metric tag source_kind; single owner of these names.",
   "ast_hints": {
-    "package": "com.blackboard.telemetry.eventstore.domain",
+    "package": "com.blackboard.telemetry.ingestion.domain",
     "implements": [],
     "dependencies": [],
     "methods": [
       {
-        "signature": "public record TelemetryRecord(String deviceId, String metric, Instant tDevice, Instant tIngress, double value, String status, long revision)",
-        "returns": ""
+        "signature": "static SourceKind valueOf(String name)",
+        "returns": "SourceKind"
       },
       {
-        "signature": "String deviceId()",
-        "returns": "String"
-      },
-      {
-        "signature": "String metric()",
-        "returns": "String"
-      },
-      {
-        "signature": "Instant tDevice()",
-        "returns": "Instant"
-      },
-      {
-        "signature": "Instant tIngress()",
-        "returns": "Instant"
-      },
-      {
-        "signature": "double value()",
-        "returns": "double"
-      },
-      {
-        "signature": "String status()",
-        "returns": "String"
-      },
-      {
-        "signature": "long revision()",
-        "returns": "long"
+        "signature": "static SourceKind[] values()",
+        "returns": "SourceKind[]"
       }
     ]
   }

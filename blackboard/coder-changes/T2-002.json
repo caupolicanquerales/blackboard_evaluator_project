@@ -1,28 +1,24 @@
 {
   "id": "T2-002",
   "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/blackboard/telemetry/ingestion/domain/TelemetrySample.java",
-  "export": "TelemetrySample",
-  "kind": "record",
-  "method": "TelemetrySample",
+  "targetFile": "src/main/java/com/blackboard/telemetry/ingestion/domain/ValidationStatus.java",
+  "export": "ValidationStatus",
+  "method": "values",
   "language": "java",
-  "framework": "springboot3",
-  "skill": "java-standard-best-practices",
-  "signature": "public record TelemetrySample(String deviceId, String metric, Instant tDevice, Instant tIngress, double value)",
-  "returns": "void",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "kind": "enum",
+  "signature": "static ValidationStatus[] values()",
+  "returns": "ValidationStatus[]",
   "body": "",
-  "imports": [
-    "java.time.Instant"
-  ],
+  "imports": [],
   "missing": [],
   "members": [
-    "String deviceId",
-    "String metric",
-    "Instant tDevice",
-    "Instant tIngress",
-    "double value"
+    "UNVALIDATED",
+    "VALID",
+    "VALIDATION_FAILED"
   ],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-13T16:19:19.027398+00:00"
+  "recorded_at": "2026-11-16T20:16:18.868258+00:00"
 }

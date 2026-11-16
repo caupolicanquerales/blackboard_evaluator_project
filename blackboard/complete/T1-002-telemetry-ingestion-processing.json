@@ -5,41 +5,25 @@
   "dependsOn": [
     "T0-001"
   ],
-  "path": "src/test/java/com/blackboard/telemetry/ingestion/domain/TelemetrySampleTest.java",
+  "path": "src/test/java/com/blackboard/telemetry/ingestion/domain/ValidationStatusTest.java",
   "kind": "test",
   "layer": "domain",
   "feature": null,
-  "export": "TelemetrySampleTest",
-  "intent": "Context Telemetry Ingestion & Validation. TelemetrySample is an immutable Java record of a raw device sample: accessors return constructor values; equality is by value. It performs no validation (validation belongs to the use case). Assert accessors and record equality only.",
+  "export": "ValidationStatus",
   "project": "telemetry-ingestion-processing",
+  "intent": "Write JUnit 5 + AssertJ tests (reactor-test StepVerifier for Mono/Flux, Mockito for collaborators, no external services, no Thread.sleep) for ValidationStatus. Assert ONLY against the ast_hints method table; at least one given/when/then case per table method and per branch. Unit contract: Context Telemetry Ingestion & Validation. Enum of a Telemetry Sample validation status, constants exactly: UNVALIDATED (initial state before boundary validation), VALID, VALIDATION_FAILED (sample violated its Sensor Metric Boundary; the payload is never dropped). Single owner of these names; consumers pin it.",
   "ast_hints": {
     "package": "com.blackboard.telemetry.ingestion.domain",
     "implements": [],
     "dependencies": [],
     "methods": [
       {
-        "signature": "public record TelemetrySample(String deviceId, String metric, Instant tDevice, Instant tIngress, double value)",
-        "returns": ""
+        "signature": "static ValidationStatus valueOf(String name)",
+        "returns": "ValidationStatus"
       },
       {
-        "signature": "String deviceId()",
-        "returns": "String"
-      },
-      {
-        "signature": "String metric()",
-        "returns": "String"
-      },
-      {
-        "signature": "Instant tDevice()",
-        "returns": "Instant"
-      },
-      {
-        "signature": "Instant tIngress()",
-        "returns": "Instant"
-      },
-      {
-        "signature": "double value()",
-        "returns": "double"
+        "signature": "static ValidationStatus[] values()",
+        "returns": "ValidationStatus[]"
       }
     ]
   }

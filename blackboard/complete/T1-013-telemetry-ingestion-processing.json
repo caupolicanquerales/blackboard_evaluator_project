@@ -1,0 +1,32 @@
+{
+  "id": "T1-013",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-012"
+  ],
+  "path": "src/test/java/com/blackboard/telemetry/shared/audit/AuditTrailTest.java",
+  "kind": "test",
+  "layer": "application",
+  "feature": null,
+  "export": "AuditTrail",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Write JUnit 5 + AssertJ tests (reactor-test StepVerifier for Mono/Flux, Mockito for collaborators, no external services, no Thread.sleep) for AuditTrail. Assert ONLY against the ast_hints method table; at least one given/when/then case per table method and per branch. Unit contract: Shared outbound port for the append-only audit trail. record(entry) appends one entry and completes when durable; storage errors are emitted as error signals (never swallowed). Imports only reactor and java.*. Append-only: no update or delete operation exists.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.shared.audit",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "AuditEntry",
+        "task_id": "T2-012"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> record(AuditEntry entry)",
+        "returns": "Mono<Void>"
+      }
+    ]
+  }
+}

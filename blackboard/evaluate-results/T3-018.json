@@ -1,0 +1,27 @@
+{
+  "project": "telemetry-ingestion-processing",
+  "targetFile": "src/main/java/com/blackboard/telemetry/ingestion/application/ValidatedSampleStream.java",
+  "stack": "java-springboot3",
+  "skill": "java-springboot3",
+  "status": "CLEAN",
+  "summary": "Pure outbound port interface (publish/events) importing only reactor and the domain event; no duplicates, hacks, blocking calls, magic numbers or framework leakage. No edits.",
+  "findings": [],
+  "changes": [],
+  "reverts": [],
+  "final_test": {
+    "status": "passed",
+    "counts": {
+      "run": 242,
+      "failures": 14,
+      "errors": 2
+    },
+    "source": "gate-cache/T2-018.json",
+    "command": "./mvnw -q -Dtest=ValidatedSampleStreamTest test"
+  },
+  "task_id": "T3-018",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-16T21:43:41.202108+00:00",
+  "engine_diff": [],
+  "engine_diff_files": 0
+}

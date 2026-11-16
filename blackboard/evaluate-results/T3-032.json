@@ -1,0 +1,31 @@
+{
+  "project": "telemetry-ingestion-processing",
+  "targetFile": "src/test/java/com/blackboard/telemetry/support/PipelineSliceFixtures.java",
+  "stack": "java-springboot3",
+  "skill": "java-springboot3",
+  "summary": "Extracted inline table whitelist into a COUNTABLE_TABLES constant; removed fully-qualified Set use. Behavior unchanged.",
+  "findings": [
+    "Whitelist guard prevents SQL concatenation injection; kept",
+    "packetJson concatenates JSON by hand; test-only, signature must stay"
+  ],
+  "changes": [
+    "Introduced private static final Set<String> COUNTABLE_TABLES and reused it in countRows"
+  ],
+  "reverts": [],
+  "final_test": {
+    "status": "passed",
+    "command": "./mvnw -Dtest=PipelineEndToEndTest test",
+    "counts": {
+      "run": 8,
+      "failures": 0,
+      "errors": 0
+    },
+    "exit_code": 0
+  },
+  "task_id": "T3-032",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-16T22:24:37.074023+00:00",
+  "engine_diff": [],
+  "engine_diff_files": 0
+}

@@ -1,0 +1,52 @@
+{
+  "id": "T2-022",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-022",
+    "T2-018",
+    "T2-014",
+    "T2-007"
+  ],
+  "path": "src/main/java/com/blackboard/telemetry/ingestion/infrastructure/InMemoryValidatedSampleStream.java",
+  "kind": "code",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "InMemoryValidatedSampleStream",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Implement InMemoryValidatedSampleStream (Java 21, Spring Boot 3, WebFlux/Reactor/R2DBC, constructor injection, no blocking calls) so that the frozen test passes, providing exactly the ast_hints table and nothing improvised. Unit contract: Infrastructure adapter implementing ValidatedSampleStream with Sinks.many().multicast().onBackpressureBuffer(properties.validatedStreamCapacity(), false) (autoCancel false so a subscriber disconnect never terminates ingestion). publish emits with emitNext and Sinks.EmitFailureHandler.busyLooping(properties.emitRetryTimeout()); on FAIL_OVERFLOW or FAIL_TERMINATED it returns Mono.error(IllegalStateException). No unbounded buffer, no blocking. Registered ONLY by the wiring unit TelemetryConfiguration.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.ingestion.infrastructure",
+    "implements": [
+      "ValidatedSampleStream"
+    ],
+    "dependencies": [
+      {
+        "type": "ValidatedSampleStream",
+        "task_id": "T2-018"
+      },
+      {
+        "type": "TelemetryProperties",
+        "task_id": "T2-014"
+      },
+      {
+        "type": "ValidatedSampleEvent",
+        "task_id": "T2-007"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "InMemoryValidatedSampleStream(TelemetryProperties properties)",
+        "returns": ""
+      },
+      {
+        "signature": "Mono<Void> publish(ValidatedSampleEvent event)",
+        "returns": "Mono<Void>"
+      },
+      {
+        "signature": "Flux<ValidatedSampleEvent> events()",
+        "returns": "Flux<ValidatedSampleEvent>"
+      }
+    ]
+  }
+}

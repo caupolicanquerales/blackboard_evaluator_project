@@ -1,0 +1,73 @@
+{
+  "task_id": "T1-021",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "R2dbcAuditTrail",
+    "constructors": [
+      [
+        "client"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "trail",
+        "method": "record",
+        "args": [
+          "entry"
+        ]
+      },
+      {
+        "receiver": "trail",
+        "method": "record",
+        "args": [
+          "entry(\"device-1\", \"FAILURE\", \"req-2\")"
+        ]
+      },
+      {
+        "receiver": "trail",
+        "method": "record",
+        "args": [
+          "entry(\"a\", \"SUCCESS\", \"r1\")"
+        ]
+      },
+      {
+        "receiver": "trail",
+        "method": "record",
+        "args": [
+          "entry(\"b\", \"FAILURE\", \"r2\")"
+        ]
+      },
+      {
+        "receiver": "trail",
+        "method": "record",
+        "args": [
+          "tooLong"
+        ]
+      },
+      {
+        "receiver": "trail",
+        "method": "record",
+        "args": [
+          "entry(\"a\", \"SUCCESS\", \"r\")"
+        ]
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class R2dbcAuditTrailTest {",
+      "private R2dbcAuditTrail trail;",
+      "trail = new R2dbcAuditTrail(client);",
+      "StepVerifier.create(trail.record(entry)).verifyComplete();",
+      "StepVerifier.create(trail.record(entry(\"device-1\", \"FAILURE\", \"req-2\"))).verifyComplete();",
+      "StepVerifier.create(trail.record(entry(\"a\", \"SUCCESS\", \"r1\"))",
+      ".then(trail.record(entry(\"b\", \"FAILURE\", \"r2\")))).verifyComplete();",
+      "StepVerifier.create(trail.record(tooLong)).expectError().verify();",
+      "StepVerifier.create(trail.record(tooLong)).expectError().verify();",
+      "StepVerifier.create(trail.record(entry(\"a\", \"SUCCESS\", \"r\"))).expectError().verify();"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

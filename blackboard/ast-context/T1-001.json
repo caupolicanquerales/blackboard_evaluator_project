@@ -3,16 +3,58 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "yml",
+    "type": "MetricKind",
     "constructors": [],
-    "static_calls": [],
-    "calls": [],
+    "static_calls": [
+      {
+        "method": "values",
+        "args": []
+      },
+      {
+        "method": "valueOf",
+        "args": [
+          "name"
+        ]
+      },
+      {
+        "method": "valueOf",
+        "args": [
+          "\"SPEED\""
+        ]
+      },
+      {
+        "method": "valueOf",
+        "args": [
+          "\"power\""
+        ]
+      },
+      {
+        "method": "valueOf",
+        "args": [
+          "null"
+        ]
+      }
+    ],
+    "calls": [
+      {
+        "receiver": "result",
+        "method": "name",
+        "args": []
+      }
+    ],
     "verified": [],
     "usage_lines": [
-      "try (InputStream in = ApplicationConfigTest.class.getResourceAsStream(\"/application.yml\")) {",
-      "assertThat(in).as(\"application.yml on classpath\").isNotNull();",
-      ".filter(d -> !d.containsKey(\"spring.config.activate.on-profile\"))",
-      ".filter(d -> \"test\".equals(d.get(\"spring.config.activate.on-profile\")))"
+      "class MetricKindTest {",
+      "MetricKind[] result = MetricKind.values();",
+      "assertThat(result).containsExactly(",
+      "MetricKind.HEART_RATE, MetricKind.POWER, MetricKind.CADENCE, MetricKind.SWIM_PACE,",
+      "MetricKind.GROUND_CONTACT_TIME, MetricKind.RESPIRATION, MetricKind.SWIM_STROKE);",
+      "assertThat(MetricKind.values()).hasSize(7);",
+      "MetricKind result = MetricKind.valueOf(name);",
+      "assertThat(result.name()).isEqualTo(name);",
+      "assertThatThrownBy(() -> MetricKind.valueOf(\"SPEED\")).isInstanceOf(IllegalArgumentException.class);",
+      "assertThatThrownBy(() -> MetricKind.valueOf(\"power\")).isInstanceOf(IllegalArgumentException.class);",
+      "assertThatThrownBy(() -> MetricKind.valueOf(null)).isInstanceOf(NullPointerException.class);"
     ]
   },
   "stderr": "",

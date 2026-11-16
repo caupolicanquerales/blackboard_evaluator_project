@@ -1,1 +1,1 @@
-src/main/java/com/blackboard/telemetry/ingestion/interface_/TelemetryIngestController.java
+src/main/java/com/blackboard/telemetry/shared/audit/AuditEntry.java

@@ -94,6 +94,15 @@ def _application_tasks_queued():
                for task_id in task_queue.load_index())
 
 
+def _strategy_phase_gaps(slugs):
+    """Domains whose strategy file is on disk but whose stage-0 scaffold task never
+    landed - the resumable partial state (2026-11-16 09:50: the claim gate refused
+    T0 before decomposition could exist, the strategy file survived; skipping phase
+    1 on `database_slugs()` alone made every relaunch die [fatal] again at zero
+    sessions, unable to heal the state it was handed)."""
+    return [slug for slug in slugs if task_queue.scaffold_task_id(slug) == "T0-000"]
+
+
 def _closure_blockers():
     """Summary of test imports without producer tasks, per domain (empty string when closed)."""
     root = workspace.get_project_root()
@@ -248,18 +257,29 @@ def run(args, backend):
             return 1
         print("[ddd ] context maps ready")
 
-    if ddd.database_slugs():
-        print(f"[skip] execution strategies already written: {len(ddd.database_slugs())} domain(s)")
+    slugs = ddd.database_slugs()
+    missing_scaffold = _strategy_phase_gaps(slugs)
+    if slugs and not missing_scaffold:
+        print(f"[skip] execution strategies already written: {len(slugs)} domain(s)")
     else:
-        print("[plan] architect writing execution strategies")
+        if slugs:
+            # 2026-11-16 resume hole: the strategy file survived a phase-1 abort whose
+            # REAL defect (a claim gate demanding stage-2 claims before decomposition
+            # can exist) refused the scaffold task. Skipping phase 1 because a strategy
+            # was on disk made every relaunch die [fatal] again without a session.
+            print(f"[plan] strategies written but scaffold task missing for "
+                  f"{', '.join(missing_scaffold)}: re-running phase 1")
+        else:
+            print("[plan] architect writing execution strategies")
         ok, reason = backend.run_architect(args, "strategy")
         if not ok:
             print(f"[fatal] architect strategy: {reason}")
             return 1
-    for slug in ddd.database_slugs():
-        if task_queue.scaffold_task_id(slug) == "T0-000":
-            print(f"[fatal] architect strategy: no scaffold task for domain {slug}")
-            return 1
+        slugs = ddd.database_slugs()
+        missing_scaffold = _strategy_phase_gaps(slugs)
+    for slug in missing_scaffold:
+        print(f"[fatal] architect strategy: no scaffold task for domain {slug}")
+        return 1
     for slug in ddd.database_slugs():
         migrations = workspace.project_root_for(slug) / "db" / "migrations"
         if task_queue.database_task_ids(slug) and _migration_files(slug):
@@ -324,6 +344,15 @@ def run(args, backend):
                 _pass_summary(pass_started, processed, blocked)
                 if processed == 0:
                     idle_passes += 1
+                    # Quiet board: the suite gate re-reads the DELIVERED tree, not the
+                    # board statistics (2026-11-16: an evaluator and the assembler each
+                    # broke a peer's frozen test AFTER the last wave; every later gate
+                    # passed and the drain idled on a red tree). Memoized per tree
+                    # fingerprint: a converged board costs file hashes, never builds.
+                    if not any(settings.QUEUE_DIR.glob("*.json")):
+                        if tdd_engine.terminal_suite_gate():
+                            idle_passes = 0
+                            continue
                     # Nothing was produced this pass: every unit is idle (empty queue)
                     # or deferred on work only the OPERATOR can unlock (--retry restore,
                     # a newly emitted producer, a source fix). A fixed 5s re-poll burns

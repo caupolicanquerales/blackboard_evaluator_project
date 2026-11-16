@@ -13,7 +13,6 @@ import java.util.Set;
  */
 public final class PayloadNames {
 
-    private static final String JAVA_SOURCE_MARKER = "src/main/java";
     private static final Set<String> KINDS = Set.of("class", "interface", "enum", "record", "exception");
 
     private PayloadNames() {
@@ -95,7 +94,12 @@ public final class PayloadNames {
 
     /**
      * The package a new file declares: the export's qualifier when it has one, otherwise
-     * the directory chain below {@code src/main/java} of the target path.
+     * the directory chain below the FIRST Maven/Gradle-style source root of the target
+     * path ({@code src/<config>/java} - main, test, integration-test alike).
+     * (seed-002 2026-11-16: the marker was hardcoded to src/main/java, so a created
+     * support class under src/test/java landed WITHOUT a package; the frozen E2E test
+     * importing it died on 'duplicate class'/'cannot access' and the whole domain could
+     * not go green while the tool reported every splice applied.)
      */
     public static String packageOf(String export, Path targetPath) {
         String head = headOf(export);
@@ -104,14 +108,17 @@ public final class PayloadNames {
             return head.substring(0, dot);
         }
         String normalized = targetPath.toAbsolutePath().normalize().toString().replace('\\', '/');
-        int marker = normalized.indexOf(JAVA_SOURCE_MARKER + "/");
-        if (marker < 0) {
+        java.util.regex.Matcher m = SOURCE_ROOT.matcher(normalized);
+        if (!m.find()) {
             return "";
         }
-        String inside = normalized.substring(marker + JAVA_SOURCE_MARKER.length() + 1);
+        String inside = normalized.substring(m.end());
         int lastSlash = inside.lastIndexOf('/');
         return lastSlash < 0 ? "" : inside.substring(0, lastSlash).replace('/', '.');
     }
+
+    private static final java.util.regex.Pattern SOURCE_ROOT =
+            java.util.regex.Pattern.compile("(?:^|/)src/[^/]+/java/");
 
     /** The export cut before any type-parameter clause, so dots inside bounds never leak. */
     private static String headOf(String export) {

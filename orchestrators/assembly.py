@@ -83,6 +83,18 @@ STACKS = {
         "slice_markers": ("@SpringBootTest", "@DataR2dbcTest", "@DataJpaTest",
                           "@WebFluxTest", "@WebMvcTest", "@JsonTest", "@JdbcTest"),
         "slice_exempt_regex": r"classes\s*=|@ContextConfiguration",
+        # seed-002 SECOND drain N1/N3: the delivered smoke booted a context and the
+        # suite mocked the database client - nothing ever sent a request through the
+        # wired entry against the real schema. The gate now requires (DATA, not code):
+        # a request-path slice marker in the test tree, and it refuses the embedded
+        # substitute living in the BASE config document or CWD-relative locations.
+        "request_globs": ("src/test/java/**/*.java",),
+        "request_markers": ("WebTestClient", "TestRestTemplate", "MockMvc",
+                            "withSecure", "@WebFluxTest", "@WebMvcTest"),
+        "base_config_globs": ("src/main/resources/application.yml",
+                              "src/main/resources/application.yaml",
+                              "src/main/resources/application.properties"),
+        "substitute_value_markers": ("h2:mem", "hsqldb:mem", "derby:mem"),
     },
     "typescript-nestjs": {
         "skill": SKILL_FAMILY + "/typescript-nestjs/SKILL.md",
@@ -97,6 +109,8 @@ STACKS = {
         "locations_props_globs": ("src/**/*.ts", "ormconfig.json", ".env"),
         "classpath_roots": ("src", "."),
         "schema_hint": "wire the ORM migration tooling (TypeORM/Prisma/knex migrations)",
+        "request_globs": ("test/**/*.spec.ts", "test/**/*.e2e-spec.ts", "src/**/*.e2e-spec.ts"),
+        "request_markers": ("getHttpServer", "supertest", ".inject(", "createTestAgent"),
     },
     "python-fastapi": {
         "skill": SKILL_FAMILY + "/python-fastapi/SKILL.md",
@@ -111,6 +125,9 @@ STACKS = {
         "locations_props_globs": ("alembic.ini", "*.ini", "src/**/settings.py", "app/**/settings.py"),
         "classpath_roots": (".", "src", "app"),
         "schema_hint": "add alembic (or an in-tree migrations package) to apply the schema",
+        "request_globs": ("tests/**/*.py", "test/**/*.py"),
+        "request_markers": ("TestClient", "AsyncClient", "client.post", "client.get",
+                            "httpx"),
     },
 }
 
@@ -398,12 +415,73 @@ def _detect_fastapi(service_root: Path):
 DETECTORS = (_detect_java, _detect_nestjs, _detect_fastapi)
 
 
+def _request_path_problems(service_root: Path, stack: str) -> list:
+    """The delivered suite must send at least one REAL request through the entry
+    surface (seed-002 second drain N1: a contextLoads smoke and mocked-client adapter
+    tests stayed green while EVERY production audit write failed - nothing in the
+    verified set ever crossed controller -> store -> row). Vocabulary is row data."""
+    row = STACKS.get(stack) or {}
+    markers = tuple(row.get("request_markers") or ())
+    globs = tuple(row.get("request_globs") or ())
+    if not markers or not globs:
+        return []
+    for pattern in globs:
+        for f in service_root.glob(pattern):
+            if f.is_file() and any(marker in _read(f) for marker in markers):
+                return []
+    return ["no delivered test sends a request through the entry surface "
+            f"(none of {', '.join(markers[:4])} appears in the test tree): a booted "
+            "context and mocked-store unit tests never prove the wired components AGREE "
+            "against the real schema - schedule the request-path slice (drive the entry, "
+            "assert durable rows for valid AND invalid payloads)"]
+
+
+def _base_config_problems(service_root: Path, stack: str) -> list:
+    """Embedded-substitute discipline in the BASE configuration document (second-drain
+    N3): a substitute datasource spelled as a LITERAL base value is production wiring
+    fiction - the substitute belongs in the test-profile document behind the activation
+    route, the base carries ${...} placeholders.
+    SCOPE NOTE (2026-11-16 livelock): migration LOCATION portability (filesystem: vs
+    classpath:) is enforced at EMIT time (plan rule r), never here - the delivered
+    config unit's FROZEN test pins the location string it was planned with, so a
+    second gate demanding a different value at assembly time asks the assembler to
+    break a contract it may not touch: two gates, one truth, enforced where the agent
+    can still fix it. Row-data vocabulary; profile segments (after `---`) are exempt -
+    the substitute belongs exactly there."""
+    row = STACKS.get(stack) or {}
+    globs = tuple(row.get("base_config_globs") or ())
+    schemes = tuple(s.lower() for s in (row.get("substitute_value_markers") or ()))
+    problems = []
+    if globs and schemes:
+        for pattern in globs:
+            for f in service_root.glob(pattern):
+                if not f.is_file():
+                    continue
+                text = _read(f)
+                base_segment = text.split("\n---")[0]
+                for line in base_segment.splitlines():
+                    low = line.lower()
+                    if not any(s in low for s in schemes):
+                        continue
+                    if not re.search(r"(url|jdbc|r2dbc|host|address)", low):
+                        continue
+                    problems.append(
+                        f"{f.name}: base document carries the embedded substitute "
+                        f"({line.strip()[:90]}) - production fiction whether spelled as a "
+                        "literal default or inside a ${VAR:h2://...} fallback: the base "
+                        "value must be a bare ${...} placeholder (or the production "
+                        "store the description names), and the substitute reaches the "
+                        "boot ONLY through the test-profile document + activation route")
+    return problems
+
+
 def detect(service_root: Path):
     """Assembly contract for one domain service, or None when no registered probe matches.
 
-    Structural problems (composition-root uniqueness, schema wiring) are evaluated for
-    EVERY stack from the STACKS row; a probe returning an unregistered stack is reported
-    instead of crashing the drain.
+    Structural problems (composition-root uniqueness, schema wiring, request-path
+    evidence, base-document discipline) are evaluated for EVERY stack from the
+    STACKS row; a probe returning an unregistered stack is reported instead of
+    crashing the drain.
     """
     for probe in DETECTORS:
         found = probe(service_root)
@@ -420,7 +498,9 @@ def detect(service_root: Path):
         found["skill"] = row["skill"]
         found["problems"] = found["problems"] + _entry_problems(service_root, found["stack"]) \
             + _coverage_problems(service_root, found["stack"]) \
-            + _schema_problems(service_root, found["stack"])
+            + _schema_problems(service_root, found["stack"]) \
+            + _request_path_problems(service_root, found["stack"]) \
+            + _base_config_problems(service_root, found["stack"])
         return found
     return None
 

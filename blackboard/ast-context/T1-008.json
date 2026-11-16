@@ -3,94 +3,41 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "IngestTelemetryUseCase",
-    "constructors": [
-      [
-        "store",
-        "auditTrail",
-        "registry"
-      ]
-    ],
-    "static_calls": [],
-    "calls": [
+    "type": "RevisionReason",
+    "constructors": [],
+    "static_calls": [
       {
-        "receiver": "useCase",
-        "method": "ingest",
+        "method": "values",
+        "args": []
+      },
+      {
+        "method": "valueOf",
         "args": [
-          "samples",
-          "\"corr-1\""
+          "\"BACKFILL\""
         ]
       },
       {
-        "receiver": "useCase",
-        "method": "ingest",
+        "method": "valueOf",
         "args": [
-          "Flux.just(new TelemetrySample(\" \", \"temp\", T, T, 1.0))",
-          "\"c\""
+          "\"CORRECTION\""
         ]
       },
       {
-        "receiver": "useCase",
-        "method": "ingest",
+        "method": "valueOf",
         "args": [
-          "Flux.just(new TelemetrySample(\"dev-1\", \"\", T, T, 1.0))",
-          "\"c\""
-        ]
-      },
-      {
-        "receiver": "useCase",
-        "method": "ingest",
-        "args": [
-          "Flux.just(new TelemetrySample(\"dev-1\", \"temp\", null, T, 1.0))",
-          "\"c\""
-        ]
-      },
-      {
-        "receiver": "useCase",
-        "method": "ingest",
-        "args": [
-          "Flux.just(new TelemetrySample(\"dev-1\", \"temp\", T, T, Double.POSITIVE_INFINITY))",
-          "\"c\""
-        ]
-      },
-      {
-        "receiver": "useCase",
-        "method": "ingest",
-        "args": [
-          "samples",
-          "\"c\""
-        ]
-      },
-      {
-        "receiver": "useCase",
-        "method": "ingest",
-        "args": [
-          "samples",
-          "\"corr-7\""
-        ]
-      },
-      {
-        "receiver": "useCase",
-        "method": "ingest",
-        "args": [
-          "Flux.empty()",
-          "\"corr-0\""
+          "\"UNKNOWN\""
         ]
       }
     ],
+    "calls": [],
     "verified": [],
     "usage_lines": [
-      "class IngestTelemetryUseCaseTest {",
-      "private IngestTelemetryUseCase useCase;",
-      "useCase = new IngestTelemetryUseCase(store, auditTrail, registry);",
-      "StepVerifier.create(useCase.ingest(samples, \"corr-1\")).expectNext(2L).verifyComplete();",
-      "StepVerifier.create(useCase.ingest(Flux.just(new TelemetrySample(\" \", \"temp\", T, T, 1.0)), \"c\"))",
-      "StepVerifier.create(useCase.ingest(Flux.just(new TelemetrySample(\"dev-1\", \"\", T, T, 1.0)), \"c\"))",
-      "StepVerifier.create(useCase.ingest(Flux.just(new TelemetrySample(\"dev-1\", \"temp\", null, T, 1.0)), \"c\"))",
-      "StepVerifier.create(useCase.ingest(",
-      "useCase.ingest(samples, \"c\").block();",
-      "useCase.ingest(samples, \"corr-7\").block();",
-      "StepVerifier.create(useCase.ingest(Flux.empty(), \"corr-0\")).expectNext(0L).verifyComplete();"
+      "class RevisionReasonTest {",
+      "RevisionReason[] result = RevisionReason.values();",
+      "assertThat(result).containsExactly(RevisionReason.BACKFILL, RevisionReason.CORRECTION);",
+      "assertThat(RevisionReason.valueOf(\"BACKFILL\")).isEqualTo(RevisionReason.BACKFILL);",
+      "assertThat(RevisionReason.valueOf(\"CORRECTION\")).isEqualTo(RevisionReason.CORRECTION);",
+      "assertThatThrownBy(() -> RevisionReason.valueOf(\"UNKNOWN\"))"
     ]
   },
   "stderr": "",

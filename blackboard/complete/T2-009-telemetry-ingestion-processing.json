@@ -5,44 +5,25 @@
   "dependsOn": [
     "T1-009"
   ],
-  "path": "src/main/java/com/blackboard/telemetry/eventstore/infrastructure/R2dbcTelemetryEventStore.java",
+  "path": "src/main/java/com/blackboard/telemetry/history/domain/HistoryEventType.java",
   "kind": "code",
-  "layer": "infrastructure",
+  "layer": "domain",
   "feature": null,
-  "export": "R2dbcTelemetryEventStore",
-  "intent": "Context Telemetry Event Store adapter (@Repository) over DatabaseClient against the telemetry_records table created by migration V1 (use the exact column names of that script; quote the value column). append inserts only (never update/delete) and emits the record; findLatestInRange selects the highest revision per (device_id, metric, t_device) with t_device between from and to, ordered by t_device ascending. Bind parameters, no string concatenation of values.",
+  "export": "HistoryEventType",
   "project": "telemetry-ingestion-processing",
+  "intent": "Implement HistoryEventType (Java 21, Spring Boot 3, WebFlux/Reactor/R2DBC, constructor injection, no blocking calls) so that the frozen test passes, providing exactly the ast_hints table and nothing improvised. Unit contract: Context Telemetry Stream Processing & History. Enum of broadcast event kinds, constants exactly: SAMPLE_BACKFILLED, REVISION_APPENDED, WINDOW_BUFFERED (published-language events TelemetrySampleBackfilled, TelemetryRevisionAppended, TelemetryWindowBuffered).",
   "ast_hints": {
-    "package": "com.blackboard.telemetry.eventstore.infrastructure",
-    "implements": [
-      "TelemetryEventStore"
-    ],
-    "dependencies": [
-      {
-        "type": "DatabaseClient",
-        "task_id": "T0-001"
-      },
-      {
-        "type": "TelemetryRecord",
-        "task_id": "T2-003"
-      },
-      {
-        "type": "TelemetryEventStore",
-        "task_id": "T2-006"
-      }
-    ],
+    "package": "com.blackboard.telemetry.history.domain",
+    "implements": [],
+    "dependencies": [],
     "methods": [
       {
-        "signature": "public R2dbcTelemetryEventStore(DatabaseClient databaseClient)",
-        "returns": ""
+        "signature": "static HistoryEventType valueOf(String name)",
+        "returns": "HistoryEventType"
       },
       {
-        "signature": "public Mono<TelemetryRecord> append(TelemetryRecord record)",
-        "returns": "Mono<TelemetryRecord>"
-      },
-      {
-        "signature": "public Flux<TelemetryRecord> findLatestInRange(String deviceId, String metric, Instant from, Instant to)",
-        "returns": "Flux<TelemetryRecord>"
+        "signature": "static HistoryEventType[] values()",
+        "returns": "HistoryEventType[]"
       }
     ]
   }

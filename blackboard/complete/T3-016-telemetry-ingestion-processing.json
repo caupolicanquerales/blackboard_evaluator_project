@@ -1,0 +1,15 @@
+{
+  "id": "T3-016",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-016"
+  ],
+  "path": "src/main/java/com/blackboard/telemetry/shared/observability/TelemetryMeters.java",
+  "kind": "refactor",
+  "layer": "shared",
+  "feature": null,
+  "export": "TelemetryMeters",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Inspect and refactor TelemetryMeters without changing the ast_hints surface or the tests' behavior (never seal or finalize a type another unit stubs; no magic numbers, no blocking calls, no raw logger calls beyond the claimed step logs). Unit contract: Single owner of the Micrometer meter names and bounded tags of the context (tags are enumerations only, NEVER deviceId): counters telemetry.packets.received{source_kind}, telemetry.samples.validated{metric,status}, telemetry.samples.reordered{metric}, telemetry.revisions.appended{reason}; timer telemetry.pipeline.latency{stage in validate,history}. Consumers pin this unit and never spell meter names. Registered ONLY by the wiring unit TelemetryConfiguration (no stereotype annotation). Metrics are asserted through an injected SimpleMeterRegistry."
+}

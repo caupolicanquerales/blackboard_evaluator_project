@@ -1,0 +1,29 @@
+{
+  "project": "telemetry-ingestion-processing",
+  "targetFile": "src/main/resources/application.yml",
+  "stack": "spring-boot3-yaml",
+  "skill": "java-springboot3",
+  "summary": "Audit only: flat dotted keys, two documents, bare placeholders, no secrets, no H2 in base; matches unit contract. No edits.",
+  "findings": [],
+  "changes": [],
+  "reverts": [],
+  "final_test": {
+    "status": "passed",
+    "exit_code": 0,
+    "counts": {
+      "run": 9,
+      "failures": 0,
+      "errors": 0
+    },
+    "classes": {
+      "com.blackboard.telemetry.shared.config.ApplicationYmlTest": "passed"
+    },
+    "evidence": "gate-cache T2-015 (surefire-xml)"
+  },
+  "task_id": "T3-015",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-16T21:58:29.443532+00:00",
+  "engine_diff": [],
+  "engine_diff_files": 0
+}

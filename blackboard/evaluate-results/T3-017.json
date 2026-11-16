@@ -1,0 +1,25 @@
+{
+  "project": "telemetry-ingestion-processing",
+  "targetFile": "src/main/java/com/blackboard/telemetry/shared/observability/CorrelationContext.java",
+  "stack": "java-springboot3",
+  "skill": "java-springboot3",
+  "summary": "Audit clean: static-only holder with private constructor, single owner of requestId/X-Request-Id/UNCORRELATED, non-blocking Reactor Context lookup, no logging, no hacks. No edits.",
+  "findings": [],
+  "changes": [],
+  "reverts": [],
+  "final_test": {
+    "status": "passed",
+    "source": "gate-cache/T2-017",
+    "counts": {
+      "run": 242,
+      "failures": 0,
+      "errors": 2
+    }
+  },
+  "task_id": "T3-017",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-16T21:49:55.892942+00:00",
+  "engine_diff": [],
+  "engine_diff_files": 0
+}

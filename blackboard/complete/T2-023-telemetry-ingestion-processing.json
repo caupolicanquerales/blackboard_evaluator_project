@@ -1,0 +1,67 @@
+{
+  "id": "T2-023",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-023",
+    "T0-002",
+    "T0-003",
+    "T2-019",
+    "T2-004",
+    "T2-001",
+    "T2-008"
+  ],
+  "path": "src/main/java/com/blackboard/telemetry/history/infrastructure/R2dbcTelemetryHistoryRepository.java",
+  "kind": "code",
+  "layer": "infrastructure",
+  "feature": null,
+  "export": "R2dbcTelemetryHistoryRepository",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Implement R2dbcTelemetryHistoryRepository (Java 21, Spring Boot 3, WebFlux/Reactor/R2DBC, constructor injection, no blocking calls) so that the frozen test passes, providing exactly the ast_hints table and nothing improvised. Unit contract: Infrastructure adapter implementing TelemetryHistoryRepository with DatabaseClient against tables telemetry_sample (id, device_id, metric = enum name, t_device, t_ingress, value, validation_status, unique (device_id, metric, t_device)) and event_revision (id, sample_id, reason, value, t_ingress, revision_no, unique (sample_id, revision_no)). Instants are stored as UTC LocalDateTime. appendSample returns the generated id and maps a unique-identity violation to an EMPTY Mono (dedup of at-least-once retries) while every other error propagates; appendRevision computes max(revision_no)+1 (first = 1); findWindow orders by t_device ascending with LIMIT. INSERT only: no UPDATE or DELETE exists. Registered ONLY by the wiring unit TelemetryConfiguration.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.history.infrastructure",
+    "implements": [
+      "TelemetryHistoryRepository"
+    ],
+    "dependencies": [
+      {
+        "type": "TelemetryHistoryRepository",
+        "task_id": "T2-019"
+      },
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-004"
+      },
+      {
+        "type": "MetricKind",
+        "task_id": "T2-001"
+      },
+      {
+        "type": "RevisionReason",
+        "task_id": "T2-008"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "R2dbcTelemetryHistoryRepository(DatabaseClient client)",
+        "returns": ""
+      },
+      {
+        "signature": "Mono<Long> appendSample(TelemetrySample sample)",
+        "returns": "Mono<Long>"
+      },
+      {
+        "signature": "Mono<Integer> appendRevision(long sampleId, RevisionReason reason, double value, Instant tIngress)",
+        "returns": "Mono<Integer>"
+      },
+      {
+        "signature": "Mono<Instant> findLatestTDevice(String deviceId, MetricKind metric)",
+        "returns": "Mono<Instant>"
+      },
+      {
+        "signature": "Flux<TelemetrySample> findWindow(String deviceId, MetricKind metric, Instant from, Instant to, int limit)",
+        "returns": "Flux<TelemetrySample>"
+      }
+    ]
+  }
+}

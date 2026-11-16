@@ -1,0 +1,15 @@
+{
+  "id": "T3-019",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-019"
+  ],
+  "path": "src/main/java/com/blackboard/telemetry/history/application/TelemetryHistoryRepository.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "TelemetryHistoryRepository",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Inspect and refactor TelemetryHistoryRepository without changing the ast_hints surface or the tests' behavior (never seal or finalize a type another unit stubs; no magic numbers, no blocking calls, no raw logger calls beyond the claimed step logs). Unit contract: Context Telemetry Stream Processing & History. Outbound port of the append-only raw history. Dedup identity is the natural identity (deviceId, metric, tDevice) owned here; rows and revisions are never updated or deleted; first revision number is 1 (single owner of that fact). Imports only reactor, java.*, and domain types."
+}

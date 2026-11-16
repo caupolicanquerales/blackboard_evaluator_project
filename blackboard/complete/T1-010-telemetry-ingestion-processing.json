@@ -4,42 +4,59 @@
   "stage": 1,
   "dependsOn": [
     "T0-001",
-    "T0-003"
+    "T1-009",
+    "T1-004"
   ],
-  "path": "src/test/java/com/blackboard/telemetry/shared/observability/R2dbcAuditTrailTest.java",
+  "path": "src/test/java/com/blackboard/telemetry/history/domain/HistoryEventTest.java",
   "kind": "test",
-  "layer": "infrastructure",
+  "layer": "domain",
   "feature": null,
-  "export": "R2dbcAuditTrailTest",
-  "intent": "Audit adapter. With the test profile (embedded H2, NON_KEYWORDS=VALUE) and the V2 audit_trail schema applied by the test setup, record(entry) inserts exactly one row carrying actor, action, outcome, timestamp and correlation id and completes empty; recording twice yields two rows (append-only). Use StepVerifier.",
+  "export": "HistoryEvent",
   "project": "telemetry-ingestion-processing",
+  "intent": "Write JUnit 5 + AssertJ tests (reactor-test StepVerifier for Mono/Flux, Mockito for collaborators, no external services, no Thread.sleep) for HistoryEvent. Assert ONLY against the ast_hints method table; at least one given/when/then case per table method and per branch. Unit contract: Context Telemetry Stream Processing & History. Immutable published-language record broadcast downstream to the analytics consumers. Invariants: revisionNo >= 0 (0 = none, first revision = 1, enforced by IllegalArgumentException), windowSize >= 0, non-null type/sample, non-blank correlationId.",
   "ast_hints": {
-    "package": "com.blackboard.telemetry.shared.observability",
-    "implements": [
-      "AuditTrail"
-    ],
+    "package": "com.blackboard.telemetry.history.domain",
+    "implements": [],
     "dependencies": [
       {
-        "type": "DatabaseClient",
-        "task_id": "T0-001"
+        "type": "HistoryEventType",
+        "task_id": "T2-009"
       },
       {
-        "type": "AuditEntry",
+        "type": "TelemetrySample",
         "task_id": "T2-004"
-      },
-      {
-        "type": "AuditTrail",
-        "task_id": "T2-005"
       }
     ],
     "methods": [
       {
-        "signature": "public R2dbcAuditTrail(DatabaseClient databaseClient)",
-        "returns": ""
+        "signature": "HistoryEvent(HistoryEventType type, TelemetrySample sample, int revisionNo, int windowSize, String correlationId)",
+        "returns": "",
+        "semantics": "Null rejected (NullPointerException); type and sample non-null; revisionNo >= 0 where 0 means no revision and the first Event Revision of a sample is 1; windowSize >= 0; correlationId non-blank."
       },
       {
-        "signature": "public Mono<Void> record(AuditEntry entry)",
-        "returns": "Mono<Void>"
+        "signature": "HistoryEventType type()",
+        "returns": "HistoryEventType",
+        "semantics": "Never null."
+      },
+      {
+        "signature": "TelemetrySample sample()",
+        "returns": "TelemetrySample",
+        "semantics": "Never null."
+      },
+      {
+        "signature": "int revisionNo()",
+        "returns": "int",
+        "semantics": "0 = not a revision event; otherwise >= 1."
+      },
+      {
+        "signature": "int windowSize()",
+        "returns": "int",
+        "semantics": "Number of samples in the buffered window; 0 for non-window events."
+      },
+      {
+        "signature": "String correlationId()",
+        "returns": "String",
+        "semantics": "Never blank."
       }
     ]
   }

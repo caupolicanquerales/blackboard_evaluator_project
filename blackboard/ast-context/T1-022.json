@@ -1,0 +1,74 @@
+{
+  "task_id": "T1-022",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "InMemoryValidatedSampleStream",
+    "constructors": [
+      [
+        "properties"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "stream",
+        "method": "publish",
+        "args": [
+          "first"
+        ]
+      },
+      {
+        "receiver": "stream",
+        "method": "publish",
+        "args": [
+          "second"
+        ]
+      },
+      {
+        "receiver": "stream",
+        "method": "events",
+        "args": []
+      },
+      {
+        "receiver": "stream",
+        "method": "publish",
+        "args": [
+          "mock(ValidatedSampleEvent.class)"
+        ]
+      },
+      {
+        "receiver": "stream",
+        "method": "events",
+        "args": [],
+        "returns": "Disposable"
+      },
+      {
+        "receiver": "stream",
+        "method": "publish",
+        "args": [
+          "event"
+        ]
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class InMemoryValidatedSampleStreamTest {",
+      "private static InMemoryValidatedSampleStream streamWithCapacity(int capacity) {",
+      "return new InMemoryValidatedSampleStream(properties);",
+      "InMemoryValidatedSampleStream stream = streamWithCapacity(4);",
+      "StepVerifier.create(stream.publish(first)).verifyComplete();",
+      "StepVerifier.create(stream.publish(second)).verifyComplete();",
+      "StepVerifier.create(stream.events().take(2))",
+      "InMemoryValidatedSampleStream stream = streamWithCapacity(1);",
+      "StepVerifier.create(stream.publish(mock(ValidatedSampleEvent.class))).verifyComplete();",
+      "StepVerifier.create(stream.publish(mock(ValidatedSampleEvent.class)))",
+      "InMemoryValidatedSampleStream stream = streamWithCapacity(2);",
+      "Disposable subscription = stream.events().subscribe();",
+      "StepVerifier.create(stream.publish(event)).verifyComplete();",
+      "StepVerifier.create(stream.events().take(1))"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

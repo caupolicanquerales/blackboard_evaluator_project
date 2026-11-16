@@ -218,7 +218,15 @@ def _steplog_claim_errors(staged, index):
     every step_logs entry must be claimed VERBATIM (normalized exact text) by exactly ONE
     stage-2 task; unowned entries, double claims and off-plan claims are refused naming
     the string. Boards whose project has NO strategy file (legacy, unknown stacks) still
-    skip - coverage cannot be demanded of a plan that never went through phase 1."""
+    skip - coverage cannot be demanded of a plan that never went through phase 1.
+
+    Layer 2 only applies once the project HAS stage-2 tasks on the board (queue or staged
+    batch). The pipeline schedules the stage-0 scaffold task in phase 1, BEFORE any
+    decomposition exists - demanding claims there is a phase-order hole no agent can fix:
+    live 2026-11-16 09:50 the architect burned 19 calls (budget 12) chasing an impossible
+    refusal on T0 and the run died `[fatal] no scaffold task`. Coverage is not lost: the
+    FIRST stage-2 emit for the slug re-runs this gate over the whole board and refuses an
+    incomplete decomposition (pinned by V1/V6)."""
     errors = []
     projects = {str(t.get("project", "")) for t in staged if t.get("project")}
     for slug in sorted(projects):
@@ -260,6 +268,10 @@ def _steplog_claim_errors(staged, index):
         for record in list(index.values()) + list(staged):
             if isinstance(record, dict) and record.get("id"):
                 by_id[str(record["id"])] = record
+        if not any(str(r.get("project", "")) == slug
+                   and int(r.get("stage") or 0) == settings.TDD_STAGE
+                   for r in by_id.values()):
+            continue  # phase-order hole: decomposition has not landed yet (see docstring)
         for record in by_id.values():
             if (str(record.get("project", "")) != slug
                     or int(record.get("stage") or 0) != settings.TDD_STAGE):
@@ -285,6 +297,85 @@ def _steplog_claim_errors(staged, index):
                 errors.append(
                     f"{slug}: unit(s) {sorted(set(owners))} claim step log '{key}' the "
                     "execution strategy never planned - fix the plan or the claim")
+    return errors
+
+
+# Reserved package/path segments (live 2026-11-16 10:15: the architect planned the driver
+# layer as `...intake.interface` - a Java reserved word. The weaver can never render the
+# package line, the frozen test can never compile, and every unit in the family bounced
+# to quarantine while the coder, correctly, could not change a pinned package. A plan
+# segment that is reserved IN THE PLANNED LANGUAGE is an impossible artifact: die at
+# emit, at zero sessions. The vocabulary is per-language DATA (stack-neutral engine),
+# restricted to unconditional reserved words; contextual ones (Java record/var/yield,
+# Python match) stay legal. No strategy or an unknown language -> skip (legacy-safe).
+LANGUAGE_RESERVED_SEGMENTS = {
+    "java": {"abstract", "assert", "boolean", "break", "byte", "case", "catch", "char",
+             "class", "const", "continue", "default", "do", "double", "else", "enum",
+             "extends", "final", "finally", "float", "for", "goto", "if", "implements",
+             "import", "instanceof", "int", "interface", "long", "native", "new",
+             "package", "private", "protected", "public", "return", "short", "static",
+             "strictfp", "super", "switch", "synchronized", "this", "throw", "throws",
+             "transient", "try", "void", "volatile", "while"},
+    "typescript": {"break", "case", "catch", "class", "const", "continue", "debugger",
+                   "default", "delete", "do", "else", "enum", "export", "extends",
+                   "false", "finally", "for", "function", "if", "import", "in",
+                   "instanceof", "interface", "let", "new", "null", "package", "private",
+                   "protected", "public", "return", "super", "switch", "this", "throw",
+                   "true", "try", "typeof", "var", "void", "while", "with"},
+    "javascript": {"break", "case", "catch", "class", "const", "continue", "debugger",
+                   "default", "delete", "do", "else", "export", "extends", "false",
+                   "finally", "for", "function", "if", "import", "in", "instanceof",
+                   "interface", "let", "new", "null", "package", "private", "protected",
+                   "public", "return", "super", "switch", "this", "throw", "true", "try",
+                   "typeof", "var", "void", "while", "with"},
+    "python": {"False", "None", "True", "and", "as", "assert", "async", "await", "break",
+               "class", "continue", "def", "del", "elif", "else", "except", "finally",
+               "for", "from", "global", "if", "import", "in", "is", "lambda", "nonlocal",
+               "not", "or", "pass", "raise", "return", "try", "while", "with"},
+    "go": {"break", "case", "chan", "const", "continue", "default", "defer", "else",
+           "fallthrough", "for", "func", "go", "goto", "if", "import", "interface",
+           "map", "package", "range", "return", "select", "struct", "switch", "type",
+           "var"},
+}
+
+
+def _strategy_language(slug):
+    # shared with the (k)/(m)/(n) plan rules - one strategy reader, one vocabulary key
+    return tasks.strategy_language(slug)
+
+
+def _reserved_segment_errors(staged):
+    errors = []
+    projects = {str(t.get("project", "")) for t in staged if t.get("project")}
+    for slug in sorted(projects):
+        reserved = LANGUAGE_RESERVED_SEGMENTS.get(_strategy_language(slug))
+        if not reserved:
+            continue
+        for task in staged:
+            if str(task.get("project", "")) != slug:
+                continue
+            candidates = []
+            package = str((task.get("ast_hints") or {}).get("package") or "")
+            if package.strip():
+                candidates.append(("ast_hints.package", package.split("."), package))
+            export = str(task.get("export") or "")
+            if "." in export:
+                candidates.append(("export", export.split("."), export))
+            path = str(task.get("path") or "")
+            directories = [seg for seg in path.split("/")[:-1] if seg]
+            if directories:
+                candidates.append(("path", directories, path))
+            for field, segments, shown in candidates:
+                hits = [seg for seg in segments
+                        if str(seg).strip().lower() in reserved
+                        or str(seg).strip() in reserved]
+                if hits:
+                    errors.append(
+                        f"{task.get('id')}: {field} '{shown}' uses segment(s) "
+                        f"{sorted(set(hits))} - reserved words in {slug}'s planned "
+                        f"language: no artifact can ever compile or weave under them. "
+                        "Rename the segment (a driver layer is 'api' or 'adapters', "
+                        "never 'interface') and re-emit once.")
     return errors
 
 
@@ -356,6 +447,7 @@ def emit_tasks(paths):
         # runtime plans and request-encoding contradictions die here, at zero sessions.
         errors.extend(tasks.plan_consistency(staged, index))
         errors.extend(_steplog_claim_errors(staged, index))
+        errors.extend(_reserved_segment_errors(staged))
         if errors:
             reason = "\n".join(errors + [
                 "Fix EVERY error above with one rewrite of the draft file, then re-emit once."])

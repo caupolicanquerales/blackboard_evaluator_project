@@ -3,87 +3,53 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "TelemetrySample",
-    "constructors": [
-      [
-        "\"dev-1\"",
-        "\"temp\"",
-        "T_DEVICE",
-        "T_INGRESS",
-        "21.5"
-      ],
-      [
-        "\"dev-1\"",
-        "\"temp\"",
-        "T_DEVICE",
-        "T_INGRESS",
-        "22.0"
-      ],
-      [
-        "null",
-        "\"\"",
-        "null",
-        "null",
-        "-1.0"
-      ]
+    "type": "ValidationStatus",
+    "constructors": [],
+    "static_calls": [
+      {
+        "method": "values",
+        "args": []
+      },
+      {
+        "method": "valueOf",
+        "args": [
+          "status.name()"
+        ]
+      },
+      {
+        "method": "valueOf",
+        "args": [
+          "\"DROPPED\""
+        ]
+      },
+      {
+        "method": "valueOf",
+        "args": [
+          "null"
+        ]
+      }
     ],
-    "static_calls": [],
     "calls": [
       {
-        "receiver": "a",
-        "method": "hashCode",
-        "args": []
-      },
-      {
-        "receiver": "b",
-        "method": "hashCode",
-        "args": []
-      },
-      {
-        "receiver": "sample",
-        "method": "deviceId",
-        "args": []
-      },
-      {
-        "receiver": "sample",
-        "method": "metric",
-        "args": []
-      },
-      {
-        "receiver": "sample",
-        "method": "tDevice",
-        "args": []
-      },
-      {
-        "receiver": "sample",
-        "method": "tIngress",
-        "args": []
-      },
-      {
-        "receiver": "sample",
-        "method": "value",
+        "receiver": "status",
+        "method": "name",
         "args": []
       }
     ],
     "verified": [],
     "usage_lines": [
-      "class TelemetrySampleTest {",
-      "TelemetrySample sample = new TelemetrySample(\"dev-1\", \"temp\", T_DEVICE, T_INGRESS, 21.5);",
-      "assertThat(sample.deviceId()).isEqualTo(\"dev-1\");",
-      "assertThat(sample.metric()).isEqualTo(\"temp\");",
-      "assertThat(sample.tDevice()).isEqualTo(T_DEVICE);",
-      "assertThat(sample.tIngress()).isEqualTo(T_INGRESS);",
-      "assertThat(sample.value()).isEqualTo(21.5);",
-      "TelemetrySample a = new TelemetrySample(\"dev-1\", \"temp\", T_DEVICE, T_INGRESS, 21.5);",
-      "TelemetrySample b = new TelemetrySample(\"dev-1\", \"temp\", T_DEVICE, T_INGRESS, 21.5);",
-      "assertThat(a).isEqualTo(b);",
-      "assertThat(a.hashCode()).isEqualTo(b.hashCode());",
-      "TelemetrySample a = new TelemetrySample(\"dev-1\", \"temp\", T_DEVICE, T_INGRESS, 21.5);",
-      "TelemetrySample b = new TelemetrySample(\"dev-1\", \"temp\", T_DEVICE, T_INGRESS, 22.0);",
-      "assertThat(a).isNotEqualTo(b);",
-      "TelemetrySample sample = new TelemetrySample(null, \"\", null, null, -1.0);",
-      "assertThat(sample.deviceId()).isNull();",
-      "assertThat(sample.value()).isEqualTo(-1.0);"
+      "class ValidationStatusTest {",
+      "ValidationStatus[] result = ValidationStatus.values();",
+      "assertThat(result).containsExactly(",
+      "ValidationStatus.UNVALIDATED,",
+      "ValidationStatus.VALID,",
+      "ValidationStatus.VALIDATION_FAILED);",
+      "@EnumSource(ValidationStatus.class)",
+      "void valueOf_constantName_returnsSameConstant(ValidationStatus status) {",
+      "ValidationStatus result = ValidationStatus.valueOf(status.name());",
+      "assertThat(result).isSameAs(status);",
+      "assertThatThrownBy(() -> ValidationStatus.valueOf(\"DROPPED\"))",
+      "assertThatThrownBy(() -> ValidationStatus.valueOf(null))"
     ]
   },
   "stderr": "",

@@ -1,46 +1,24 @@
 {
   "id": "T2-009",
   "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/blackboard/telemetry/eventstore/infrastructure/R2dbcTelemetryEventStore.java",
-  "export": "R2dbcTelemetryEventStore",
-  "kind": "class",
-  "method": "findLatestInRange",
+  "targetFile": "src/main/java/com/blackboard/telemetry/history/domain/HistoryEventType.java",
+  "export": "HistoryEventType",
+  "kind": "enum",
+  "method": "values",
   "language": "java",
   "framework": "springboot",
   "skill": "java-springboot",
-  "signature": "public Flux<TelemetryRecord> findLatestInRange(String deviceId, String metric, Instant from, Instant to)",
-  "returns": "Flux<TelemetryRecord>",
-  "body": "String sql = \"SELECT r.device_id, r.metric, r.t_device, r.t_ingress, r.\\\"value\\\", r.validation_status, r.revision \"\n        + \"FROM telemetry_records r \"\n        + \"WHERE r.device_id = :pDeviceId AND r.metric = :pMetric AND r.t_device >= :pFrom AND r.t_device <= :pTo \"\n        + \"AND r.revision = (SELECT MAX(m.revision) FROM telemetry_records m \"\n        + \"WHERE m.device_id = r.device_id AND m.metric = r.metric AND m.t_device = r.t_device) \"\n        + \"ORDER BY r.t_device ASC\";\nreturn databaseClient.sql(sql)\n        .bind(\"pDeviceId\", deviceId)\n        .bind(\"pMetric\", metric)\n        .bind(\"pFrom\", from.atOffset(ZoneOffset.UTC))\n        .bind(\"pTo\", to.atOffset(ZoneOffset.UTC))\n        .map((row, metadata) -> new TelemetryRecord(\n                row.get(\"device_id\", String.class),\n                row.get(\"metric\", String.class),\n                toInstant(row.get(\"t_device\")),\n                toInstant(row.get(\"t_ingress\")),\n                ((Number) row.get(\"value\")).doubleValue(),\n                row.get(\"validation_status\", String.class),\n                ((Number) row.get(\"revision\")).longValue()))\n        .all();",
-  "imports": [
-    "java.time.Instant",
-    "java.time.OffsetDateTime",
-    "java.time.ZoneOffset",
-    "java.time.ZonedDateTime",
-    "java.time.LocalDateTime",
-    "reactor.core.publisher.Flux",
-    "reactor.core.publisher.Mono",
-    "org.springframework.r2dbc.core.DatabaseClient",
-    "org.springframework.stereotype.Repository",
-    "com.blackboard.telemetry.eventstore.application.TelemetryEventStore",
-    "com.blackboard.telemetry.eventstore.domain.TelemetryRecord"
-  ],
-  "missing": [],
-  "annotations": [
-    "Repository"
-  ],
-  "implements": [
-    "TelemetryEventStore"
-  ],
+  "signature": "static HistoryEventType[] values()",
+  "returns": "HistoryEventType[]",
   "members": [
-    "private final DatabaseClient databaseClient",
-    "public R2dbcTelemetryEventStore(DatabaseClient databaseClient) { this.databaseClient = databaseClient; }",
-    "@Override public Mono<TelemetryRecord> append(TelemetryRecord record) { return databaseClient.sql(\"INSERT INTO telemetry_records (device_id, metric, t_device, revision, \\\"value\\\", validation_status, t_ingress) VALUES (:pDeviceId, :pMetric, :pTDevice, :pRevision, :pValue, :pStatus, :pTIngress)\").bind(\"pDeviceId\", record.deviceId()).bind(\"pMetric\", record.metric()).bind(\"pTDevice\", record.tDevice().atOffset(ZoneOffset.UTC)).bind(\"pRevision\", (int) record.revision()).bind(\"pValue\", record.value()).bind(\"pStatus\", record.status()).bind(\"pTIngress\", record.tIngress().atOffset(ZoneOffset.UTC)).fetch().rowsUpdated().thenReturn(record); }",
-    "private static Instant toInstant(Object raw) { if (raw instanceof OffsetDateTime odt) { return odt.toInstant(); } if (raw instanceof ZonedDateTime zdt) { return zdt.toInstant(); } if (raw instanceof LocalDateTime ldt) { return ldt.toInstant(ZoneOffset.UTC); } return (Instant) raw; }"
+    "SAMPLE_BACKFILLED",
+    "REVISION_APPENDED",
+    "WINDOW_BUFFERED"
   ],
-  "methodAnnotations": [
-    "Override"
-  ],
+  "body": "",
+  "imports": [],
+  "missing": [],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-13T16:25:13.047245+00:00"
+  "recorded_at": "2026-11-16T20:11:56.563178+00:00"
 }

@@ -1,0 +1,55 @@
+{
+  "id": "T2-031",
+  "project": "telemetry-ingestion-processing",
+  "targetFile": "src/main/java/com/blackboard/telemetry/shared/config/TelemetryConfiguration.java",
+  "export": "TelemetryConfiguration",
+  "kind": "class",
+  "method": "clock",
+  "language": "java",
+  "framework": "springboot3",
+  "skill": "java-springboot3",
+  "signature": "Clock clock()",
+  "returns": "Clock",
+  "body": "return Clock.systemUTC();",
+  "methodAnnotations": [
+    "Bean"
+  ],
+  "annotations": [
+    "Configuration",
+    "EnableConfigurationProperties(TelemetryProperties.class)"
+  ],
+  "members": [
+    "@Bean TelemetryMeters telemetryMeters(MeterRegistry registry) { return new TelemetryMeters(registry); }",
+    "@Bean AuditTrail auditTrail(DatabaseClient client) { return new R2dbcAuditTrail(client); }",
+    "@Bean ValidatedSampleStream validatedSampleStream(TelemetryProperties properties) { return new InMemoryValidatedSampleStream(properties); }",
+    "@Bean TelemetryHistoryRepository telemetryHistoryRepository(DatabaseClient client) { return new R2dbcTelemetryHistoryRepository(client); }",
+    "@Bean HistoryEventPublisher historyEventPublisher(TelemetryProperties properties) { return new InMemoryHistoryEventPublisher(properties); }",
+    "@Bean IngestPacketService ingestPacketService(TelemetryProperties properties, ValidatedSampleStream stream, AuditTrail auditTrail, TelemetryMeters meters, Clock clock) { return new IngestPacketService(properties, stream, auditTrail, meters, clock); }",
+    "@Bean ReorderHistoryService reorderHistoryService(TelemetryHistoryRepository repository, HistoryEventPublisher publisher, AuditTrail auditTrail, TelemetryMeters meters, TelemetryProperties properties, Clock clock) { return new ReorderHistoryService(repository, publisher, auditTrail, meters, properties, clock); }",
+    "@Bean PipelineSubscriber pipelineSubscriber(ValidatedSampleStream stream, ReorderHistoryService service) { return new PipelineSubscriber(stream, service); }"
+  ],
+  "imports": [
+    "org.springframework.context.annotation.Bean",
+    "org.springframework.context.annotation.Configuration",
+    "org.springframework.boot.context.properties.EnableConfigurationProperties",
+    "java.time.Clock",
+    "io.micrometer.core.instrument.MeterRegistry",
+    "org.springframework.r2dbc.core.DatabaseClient",
+    "com.blackboard.telemetry.shared.observability.TelemetryMeters",
+    "com.blackboard.telemetry.shared.audit.AuditTrail",
+    "com.blackboard.telemetry.shared.audit.R2dbcAuditTrail",
+    "com.blackboard.telemetry.ingestion.application.ValidatedSampleStream",
+    "com.blackboard.telemetry.ingestion.application.IngestPacketService",
+    "com.blackboard.telemetry.ingestion.infrastructure.InMemoryValidatedSampleStream",
+    "com.blackboard.telemetry.history.application.TelemetryHistoryRepository",
+    "com.blackboard.telemetry.history.application.HistoryEventPublisher",
+    "com.blackboard.telemetry.history.application.ReorderHistoryService",
+    "com.blackboard.telemetry.history.infrastructure.R2dbcTelemetryHistoryRepository",
+    "com.blackboard.telemetry.history.infrastructure.InMemoryHistoryEventPublisher",
+    "com.blackboard.telemetry.history.infrastructure.PipelineSubscriber"
+  ],
+  "missing": [],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-16T20:48:44.650602+00:00"
+}

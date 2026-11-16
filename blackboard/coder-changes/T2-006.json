@@ -1,27 +1,29 @@
 {
   "id": "T2-006",
   "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/blackboard/telemetry/eventstore/application/TelemetryEventStore.java",
-  "export": "TelemetryEventStore",
-  "method": "append",
+  "targetFile": "src/main/java/com/blackboard/telemetry/ingestion/domain/SensorMetricBoundary.java",
+  "export": "SensorMetricBoundary",
+  "kind": "record",
+  "method": "accepts",
   "language": "java",
   "framework": "springboot",
   "skill": "java-springboot",
-  "kind": "interface",
-  "signature": "Mono<TelemetryRecord> append(TelemetryRecord record);",
-  "returns": "Mono<TelemetryRecord>",
-  "body": "",
-  "members": [
-    "Flux<TelemetryRecord> findLatestInRange(String deviceId, String metric, Instant from, Instant to);"
-  ],
+  "signature": "boolean accepts(double value)",
+  "returns": "boolean",
+  "body": "if (!enabled) {\n    return true;\n}\nboolean aboveMin = minExclusive ? value > min : value >= min;\nreturn aboveMin && value <= max;",
   "imports": [
-    "java.time.Instant",
-    "reactor.core.publisher.Flux",
-    "reactor.core.publisher.Mono",
-    "com.blackboard.telemetry.eventstore.domain.TelemetryRecord"
+    "java.util.Objects"
+  ],
+  "members": [
+    "MetricKind metric",
+    "double min",
+    "double max",
+    "boolean minExclusive",
+    "boolean enabled",
+    "public SensorMetricBoundary { Objects.requireNonNull(metric, \"metric must not be null\"); if (min > max) { throw new IllegalArgumentException(\"min must be <= max\"); } }"
   ],
   "missing": [],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-13T16:18:38.918313+00:00"
+  "recorded_at": "2026-11-16T20:14:59.469647+00:00"
 }

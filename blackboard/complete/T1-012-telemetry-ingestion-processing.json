@@ -3,36 +3,55 @@
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
-    "T0-001"
+    "T0-001",
+    "T1-011"
   ],
-  "path": "src/test/java/com/blackboard/telemetry/ingestion/interface_/TelemetryIngestControllerTest.java",
+  "path": "src/test/java/com/blackboard/telemetry/shared/audit/AuditEntryTest.java",
   "kind": "test",
-  "layer": "interface",
+  "layer": "domain",
   "feature": null,
-  "export": "TelemetryIngestControllerTest",
-  "intent": "Context Telemetry Ingestion & Validation entry point. Use WebTestClient bound to the controller with a mocked IngestTelemetryUseCase. POST /api/v1/telemetry/ingress with Content-Type application/x-ndjson and a body of one JSON sample document per line (streamed Flux<TelemetrySample> = streamed documents, not one array) responds 200 with the use case count as JSON number; the X-Request-Id header value is passed as correlationId, and a generated non-blank UUID is passed when absent.",
+  "export": "AuditEntry",
   "project": "telemetry-ingestion-processing",
+  "intent": "Write JUnit 5 + AssertJ tests (reactor-test StepVerifier for Mono/Flux, Mockito for collaborators, no external services, no Thread.sleep) for AuditEntry. Assert ONLY against the ast_hints method table; at least one given/when/then case per table method and per branch. Unit contract: Shared audit trail record: actor, action, outcome (SUCCESS|FAILURE), timestamp, correlationId (the requestId). Immutable record; the outcome literals SUCCESS and FAILURE are owned here and consumers pin this unit.",
   "ast_hints": {
-    "package": "com.blackboard.telemetry.ingestion.interface_",
+    "package": "com.blackboard.telemetry.shared.audit",
     "implements": [],
     "dependencies": [
       {
-        "type": "IngestTelemetryUseCase",
-        "task_id": "T2-008"
-      },
-      {
-        "type": "TelemetrySample",
-        "task_id": "T2-002"
+        "type": "AuditAction",
+        "task_id": "T2-011"
       }
     ],
     "methods": [
       {
-        "signature": "public TelemetryIngestController(IngestTelemetryUseCase useCase)",
-        "returns": ""
+        "signature": "AuditEntry(String actor, AuditAction action, String outcome, Instant timestamp, String correlationId)",
+        "returns": "",
+        "semantics": "Null rejected (NullPointerException); actor and correlationId non-blank; outcome is exactly SUCCESS or FAILURE (IllegalArgumentException otherwise)."
       },
       {
-        "signature": "public Mono<Long> ingest(Flux<TelemetrySample> samples, String requestId)",
-        "returns": "Mono<Long>"
+        "signature": "String actor()",
+        "returns": "String",
+        "semantics": "Never blank."
+      },
+      {
+        "signature": "AuditAction action()",
+        "returns": "AuditAction",
+        "semantics": "Never null."
+      },
+      {
+        "signature": "String outcome()",
+        "returns": "String",
+        "semantics": "SUCCESS or FAILURE."
+      },
+      {
+        "signature": "Instant timestamp()",
+        "returns": "Instant",
+        "semantics": "Never null."
+      },
+      {
+        "signature": "String correlationId()",
+        "returns": "String",
+        "semantics": "The requestId; never blank."
       }
     ]
   }

@@ -1,0 +1,51 @@
+{
+  "task_id": "T1-025",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "IngestPacketService",
+    "constructors": [
+      [
+        "properties",
+        "stream",
+        "auditTrail",
+        "new TelemetryMeters(registry)",
+        "Clock.fixed(NOW, ZoneOffset.UTC)"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "service",
+        "method": "ingest",
+        "args": [
+          "packet"
+        ]
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class IngestPacketServiceTest {",
+      "logger = (Logger) LoggerFactory.getLogger(IngestPacketService.class);",
+      "private IngestPacketService service(SensorMetricBoundary... boundaries) {",
+      "return new IngestPacketService(properties, stream, auditTrail, new TelemetryMeters(registry),",
+      "private Mono<Void> ingest(IngestPacketService service, IngressPacket packet) {",
+      "return service.ingest(packet)",
+      "StepVerifier.create(ingest(service(heartRate(true)), packet(sample(MetricKind.HEART_RATE, 150.0))))",
+      "StepVerifier.create(ingest(service(heartRate(true)), packet(sample(MetricKind.HEART_RATE, 300.0))))",
+      "StepVerifier.create(ingest(service(swimPace()), packet(sample(MetricKind.SWIM_PACE, 5.0))))",
+      "StepVerifier.create(ingest(service(), packet(sample(MetricKind.POWER, 99999.0)))).verifyComplete();",
+      "StepVerifier.create(ingest(service(heartRate(false)), packet(sample(MetricKind.HEART_RATE, 999.0))))",
+      "StepVerifier.create(ingest(service(heartRate(true)), packet)).verifyComplete();",
+      "StepVerifier.create(ingest(service(heartRate(true)), packet)).verifyComplete();",
+      "StepVerifier.create(ingest(service(heartRate(true)), packet(sample(MetricKind.HEART_RATE, 150.0))))",
+      "StepVerifier.create(ingest(service(heartRate(true)), packet)).expectError().verify();",
+      "StepVerifier.create(service().ingest(packet(sample(MetricKind.POWER, 1.0)))).verifyComplete();",
+      "StepVerifier.create(ingest(service(heartRate(true)), packet)).verifyComplete();",
+      "StepVerifier.create(ingest(service(heartRate(true)), packet)).verifyComplete();",
+      "StepVerifier.create(ingest(service(heartRate(true)), packet(sample(MetricKind.HEART_RATE, 150.0))))"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

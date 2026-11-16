@@ -1,0 +1,15 @@
+{
+  "id": "T3-020",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-020"
+  ],
+  "path": "src/main/java/com/blackboard/telemetry/history/application/HistoryEventPublisher.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "HistoryEventPublisher",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Inspect and refactor HistoryEventPublisher without changing the ast_hints surface or the tests' behavior (never seal or finalize a type another unit stubs; no magic numbers, no blocking calls, no raw logger calls beyond the claimed step logs). Unit contract: Context Telemetry Stream Processing & History. Outbound published-language stream port broadcasting TelemetrySampleBackfilled, TelemetryRevisionAppended and TelemetryWindowBuffered. Out-of-process boundary: subscribers are downstream systems declared in the strategy."
+}

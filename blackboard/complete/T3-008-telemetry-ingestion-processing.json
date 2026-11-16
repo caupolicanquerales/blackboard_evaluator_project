@@ -5,11 +5,11 @@
   "dependsOn": [
     "T2-008"
   ],
-  "path": "src/main/java/com/blackboard/telemetry/ingestion/application/IngestTelemetryUseCase.java",
+  "path": "src/main/java/com/blackboard/telemetry/history/domain/RevisionReason.java",
   "kind": "refactor",
-  "layer": "application",
+  "layer": "domain",
   "feature": null,
-  "export": "IngestTelemetryUseCase",
-  "intent": "Inspect IngestTelemetryUseCase: non-blocking chain, no raw logger calls, metric names and audit fields as specified; tidy without changing the surface.",
-  "project": "telemetry-ingestion-processing"
+  "export": "RevisionReason",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Inspect and refactor RevisionReason without changing the ast_hints surface or the tests' behavior (never seal or finalize a type another unit stubs; no magic numbers, no blocking calls, no raw logger calls beyond the claimed step logs). Unit contract: Context Telemetry Stream Processing & History. Enum of Event Revision reasons, constants exactly: BACKFILL (sample arrived later than the Backfill Reorder Window), CORRECTION. Bounded metric tag reason; single owner of these names."
 }

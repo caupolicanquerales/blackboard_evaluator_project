@@ -65,6 +65,41 @@ public final class PayloadParser {
     }
 
     public static List<BodyDeclaration<?>> member(String text, String ladderKind, String holderType) {
+        List<BodyDeclaration<?>> parsed = memberLadder(text, ladderKind, holderType);
+        rejectDeadConstructor(parsed, ladderKind, holderType);
+        return parsed;
+    }
+
+    /**
+     * Last-line-of-defense against the dead-compact-constructor shape: a VOID member
+     * method named exactly like its class/record/enum holder parses as legal Java but
+     * can never run as a constructor - every invariant it spells is silently dead
+     * (2026-11-16: six records shipped guardless because this tool synthesized
+     * `public void <Type>(...)` for every compact-constructor payload). Interface
+     * ladderKind is exempt: a void method named like an interface is a legal, if odd,
+     * abstract member. Rejection rides the payload-reject bounce: zero attempts charged.
+     */
+    static void rejectDeadConstructor(List<BodyDeclaration<?>> parsed, String ladderKind,
+            String holderType) {
+        if (holderType == null || holderType.isBlank() || "interface".equals(ladderKind)) {
+            return;
+        }
+        for (BodyDeclaration<?> member : parsed) {
+            if (member instanceof MethodDeclaration method
+                    && method.getType().isVoidType()
+                    && method.getNameAsString().equals(holderType)) {
+                throw new IllegalArgumentException("Payload member '" + method.getNameAsString()
+                    + "(...)' is a VOID METHOD named like its " + holderType + " - it can never"
+                    + " run as a constructor and the invariants it spells are silently dead."
+                    + " Spell a compact constructor as '" + holderType + "(...)' (no return"
+                    + " type) or a real constructor via the constructor-shaped payload; this"
+                    + " payload is rejected without charging an attempt");
+            }
+        }
+    }
+
+    private static List<BodyDeclaration<?>> memberLadder(String text, String ladderKind,
+            String holderType) {
         String holder = holderType == null || holderType.isBlank() ? "WeaverProbe" : holderType;
         List<String> errors = new ArrayList<>();
 

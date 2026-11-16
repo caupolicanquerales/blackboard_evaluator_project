@@ -5,11 +5,11 @@
   "dependsOn": [
     "T0-001"
   ],
-  "path": "db/migrations/V1__create_telemetry_records.sql",
+  "path": "db/migrations/V1__create_telemetry_history.sql",
   "kind": "bootstrap",
   "layer": "root",
   "feature": null,
-  "export": "V1__create_telemetry_records",
-  "intent": "Store setup: PostgreSQL (Flyway, expand-only) append-only telemetry_records table for context telemetry-ingestion-processing; PK (device_id, metric, t_device, revision), index for latest-revision and range queries, version column, quoted value column; script V1 create telemetry records.",
+  "export": "V1__create_telemetry_history",
+  "intent": "Store setup: PostgreSQL 16 primary store (H2 PostgreSQL-mode for boot/tests only) via R2DBC + Flyway; script V1__create_telemetry_history creates append-only telemetry_sample history for context telemetry-ingestion-processing.",
   "project": "telemetry-ingestion-processing"
 }

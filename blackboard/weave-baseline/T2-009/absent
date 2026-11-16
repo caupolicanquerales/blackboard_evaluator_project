@@ -1,1 +1,1 @@
-src/main/java/com/blackboard/telemetry/eventstore/infrastructure/R2dbcTelemetryEventStore.java
+src/main/java/com/blackboard/telemetry/history/domain/HistoryEventType.java

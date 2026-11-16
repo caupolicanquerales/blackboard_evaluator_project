@@ -5,11 +5,11 @@
   "dependsOn": [
     "T2-009"
   ],
-  "path": "src/main/java/com/blackboard/telemetry/eventstore/infrastructure/R2dbcTelemetryEventStore.java",
+  "path": "src/main/java/com/blackboard/telemetry/history/domain/HistoryEventType.java",
   "kind": "refactor",
-  "layer": "infrastructure",
+  "layer": "domain",
   "feature": null,
-  "export": "R2dbcTelemetryEventStore",
-  "intent": "Inspect R2dbcTelemetryEventStore: append-only SQL, bound parameters, non-blocking; tidy without changing the surface.",
-  "project": "telemetry-ingestion-processing"
+  "export": "HistoryEventType",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Inspect and refactor HistoryEventType without changing the ast_hints surface or the tests' behavior (never seal or finalize a type another unit stubs; no magic numbers, no blocking calls, no raw logger calls beyond the claimed step logs). Unit contract: Context Telemetry Stream Processing & History. Enum of broadcast event kinds, constants exactly: SAMPLE_BACKFILLED, REVISION_APPENDED, WINDOW_BUFFERED (published-language events TelemetrySampleBackfilled, TelemetryRevisionAppended, TelemetryWindowBuffered)."
 }

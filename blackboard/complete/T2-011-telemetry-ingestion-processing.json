@@ -5,31 +5,25 @@
   "dependsOn": [
     "T1-011"
   ],
-  "path": "src/main/java/com/blackboard/telemetry/shared/observability/CorrelationIdWebFilter.java",
+  "path": "src/main/java/com/blackboard/telemetry/shared/audit/AuditAction.java",
   "kind": "code",
-  "layer": "shared",
+  "layer": "domain",
   "feature": null,
-  "export": "CorrelationIdWebFilter",
-  "intent": "Single correlation unit (@Component WebFilter). Adopts inbound X-Request-Id or generates a UUID, sets it on the response header X-Request-Id, and continues the chain with contextWrite of key 'requestId'. Constants HEADER='X-Request-Id', CONTEXT_KEY='requestId'.",
+  "export": "AuditAction",
   "project": "telemetry-ingestion-processing",
+  "intent": "Implement AuditAction (Java 21, Spring Boot 3, WebFlux/Reactor/R2DBC, constructor injection, no blocking calls) so that the frozen test passes, providing exactly the ast_hints table and nothing improvised. Unit contract: Shared audit vocabulary. Enum of audited actions, constants exactly: INGEST_PACKET, VALIDATE_SAMPLE, APPEND_REVISION, BROADCAST_WINDOW.",
   "ast_hints": {
-    "package": "com.blackboard.telemetry.shared.observability",
-    "implements": [
-      "WebFilter"
-    ],
+    "package": "com.blackboard.telemetry.shared.audit",
+    "implements": [],
     "dependencies": [],
     "methods": [
       {
-        "signature": "public static final String HEADER",
-        "returns": "String"
+        "signature": "static AuditAction valueOf(String name)",
+        "returns": "AuditAction"
       },
       {
-        "signature": "public static final String CONTEXT_KEY",
-        "returns": "String"
-      },
-      {
-        "signature": "public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain)",
-        "returns": "Mono<Void>"
+        "signature": "static AuditAction[] values()",
+        "returns": "AuditAction[]"
       }
     ]
   }

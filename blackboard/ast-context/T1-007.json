@@ -3,61 +3,48 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "BackfillReorderer",
+    "type": "ValidatedSampleEvent",
     "constructors": [
-      []
+      [
+        "s",
+        "\"req-1\""
+      ],
+      [
+        "null",
+        "\"req-1\""
+      ],
+      [
+        "s",
+        "null"
+      ],
+      [
+        "s",
+        "blank"
+      ]
     ],
     "static_calls": [],
     "calls": [
       {
-        "receiver": "reorderer",
-        "method": "reorder",
-        "args": [
-          "List.of(a, b, c)"
-        ],
-        "returns": "List<TelemetrySample>"
+        "receiver": "event",
+        "method": "sample",
+        "args": []
       },
       {
-        "receiver": "reorderer",
-        "method": "reorder",
-        "args": [
-          "List.of(b, a)"
-        ],
-        "returns": "List<TelemetrySample>"
-      },
-      {
-        "receiver": "reorderer",
-        "method": "reorder",
-        "args": [
-          "List.of(c, a, b)"
-        ],
-        "returns": "List<TelemetrySample>"
-      },
-      {
-        "receiver": "reorderer",
-        "method": "reorder",
-        "args": [
-          "List.of()"
-        ]
-      },
-      {
-        "receiver": "reorderer",
-        "method": "reorder",
-        "args": [
-          "input"
-        ],
-        "returns": "List<TelemetrySample>"
+        "receiver": "event",
+        "method": "correlationId",
+        "args": []
       }
     ],
     "verified": [],
     "usage_lines": [
-      "class BackfillReordererTest {",
-      "private final BackfillReorderer reorderer = new BackfillReorderer();",
-      "List<TelemetrySample> result = reorderer.reorder(List.of(a, b, c));",
-      "List<TelemetrySample> result = reorderer.reorder(List.of(b, a));",
-      "List<TelemetrySample> result = reorderer.reorder(List.of(c, a, b));",
-      "assertThat(reorderer.reorder(List.of())).isEmpty();",
-      "List<TelemetrySample> result = reorderer.reorder(input);"
+      "class ValidatedSampleEventTest {",
+      "ValidatedSampleEvent event = new ValidatedSampleEvent(s, \"req-1\");",
+      "assertThat(event.sample()).isEqualTo(s);",
+      "assertThat(event.correlationId()).isEqualTo(\"req-1\");",
+      "assertThatThrownBy(() -> new ValidatedSampleEvent(s, \"req-1\"))",
+      "assertThatThrownBy(() -> new ValidatedSampleEvent(null, \"req-1\"))",
+      "assertThatThrownBy(() -> new ValidatedSampleEvent(s, null))",
+      "assertThatThrownBy(() -> new ValidatedSampleEvent(s, blank))"
     ]
   },
   "stderr": "",

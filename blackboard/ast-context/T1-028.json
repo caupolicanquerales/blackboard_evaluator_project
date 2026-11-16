@@ -1,0 +1,112 @@
+{
+  "task_id": "T1-028",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "IngressPacketRequest",
+    "constructors": [
+      [
+        "\"dev-1\"",
+        "source()",
+        "List.of(sample)"
+      ],
+      [
+        "\"dev-1\"",
+        "source()",
+        "List.of(sample())"
+      ],
+      [
+        "\" \"",
+        "source()",
+        "List.of(sample())"
+      ],
+      [
+        "\"dev-1\"",
+        "\"\"",
+        "List.of(sample())"
+      ],
+      [
+        "\"dev-1\"",
+        "source()",
+        "List.of()"
+      ],
+      [
+        "\"dev-1\"",
+        "source()",
+        "List.of(new SampleRequest(\"HEART_RATE\", 1L, null))"
+      ],
+      [
+        "\"dev-1\"",
+        "source()",
+        "List.of(new SampleRequest(\"\", null, 1.0))"
+      ],
+      [
+        "\"dev-1\"",
+        "\"NOT_A_SOURCE\"",
+        "List.of(sample())"
+      ],
+      [
+        "\"dev-1\"",
+        "source()",
+        "List.of(new SampleRequest(\"NOPE\", 1L, 1.0))"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "request",
+        "method": "deviceId",
+        "args": []
+      },
+      {
+        "receiver": "request",
+        "method": "sourceKind",
+        "args": []
+      },
+      {
+        "receiver": "request",
+        "method": "samples",
+        "args": []
+      },
+      {
+        "receiver": "request",
+        "method": "toDomain",
+        "args": [
+          "T_INGRESS"
+        ],
+        "returns": "IngressPacket"
+      },
+      {
+        "receiver": "request",
+        "method": "toDomain",
+        "args": [
+          "T_INGRESS"
+        ]
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class IngressPacketRequestTest {",
+      "IngressPacketRequest request = new IngressPacketRequest(\"dev-1\", source(), List.of(sample));",
+      "assertThat(request.deviceId()).isEqualTo(\"dev-1\");",
+      "assertThat(request.sourceKind()).isEqualTo(source());",
+      "assertThat(request.samples()).containsExactly(sample);",
+      "assertThat(VALIDATOR.validate(new IngressPacketRequest(\"dev-1\", source(), List.of(sample())))).isEmpty();",
+      "var violations = VALIDATOR.validate(new IngressPacketRequest(\" \", source(), List.of(sample())));",
+      "var violations = VALIDATOR.validate(new IngressPacketRequest(\"dev-1\", \"\", List.of(sample())));",
+      "var violations = VALIDATOR.validate(new IngressPacketRequest(\"dev-1\", source(), List.of()));",
+      "var request = new IngressPacketRequest(\"dev-1\", source(), List.of(new SampleRequest(\"HEART_RATE\", 1L, null)));",
+      "assertThat(VALIDATOR.validate(request)).extracting(v -> v.getPropertyPath().toString())",
+      "var request = new IngressPacketRequest(\"dev-1\", source(), List.of(new SampleRequest(\"\", null, 1.0)));",
+      "assertThat(VALIDATOR.validate(request)).extracting(v -> v.getPropertyPath().toString())",
+      "var request = new IngressPacketRequest(\"dev-1\", source(), List.of(sample()));",
+      "IngressPacket packet = request.toDomain(T_INGRESS);",
+      "var request = new IngressPacketRequest(\"dev-1\", \"NOT_A_SOURCE\", List.of(sample()));",
+      "assertThatThrownBy(() -> request.toDomain(T_INGRESS)).isInstanceOf(IllegalArgumentException.class);",
+      "var request = new IngressPacketRequest(\"dev-1\", source(), List.of(new SampleRequest(\"NOPE\", 1L, 1.0)));",
+      "assertThatThrownBy(() -> request.toDomain(T_INGRESS)).isInstanceOf(IllegalArgumentException.class);"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

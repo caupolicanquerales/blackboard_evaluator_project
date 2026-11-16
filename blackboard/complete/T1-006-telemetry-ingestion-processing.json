@@ -3,32 +3,60 @@
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
-    "T0-001"
+    "T0-001",
+    "T1-001"
   ],
-  "path": "src/test/java/com/blackboard/telemetry/eventstore/application/TelemetryEventStoreTest.java",
+  "path": "src/test/java/com/blackboard/telemetry/ingestion/domain/SensorMetricBoundaryTest.java",
   "kind": "test",
-  "layer": "application",
+  "layer": "domain",
   "feature": null,
-  "export": "TelemetryEventStoreTest",
-  "intent": "Context Telemetry Event Store. TelemetryEventStore is the append-only port. Test its contract with an in-memory stub: append(TelemetryRecord) emits the stored record; findLatestInRange returns, per (deviceId, metric, tDevice), only the highest revision with tDevice in [from, to], ordered by tDevice ascending. Assert that the interface declares only append and findLatestInRange (no update/delete).",
+  "export": "SensorMetricBoundary",
   "project": "telemetry-ingestion-processing",
+  "intent": "Write JUnit 5 + AssertJ tests (reactor-test StepVerifier for Mono/Flux, Mockito for collaborators, no external services, no Thread.sleep) for SensorMetricBoundary. Assert ONLY against the ast_hints method table; at least one given/when/then case per table method and per branch. Unit contract: Context Telemetry Ingestion & Validation. Immutable record Sensor Metric Boundary (physical limit of a metric, Source of truth of boundary definitions, supplied by configuration and bound through TelemetryProperties). Rules: accepts(value) is true when disabled; otherwise min <= value <= max, with value > min when minExclusive (swim pace must be strictly above its minimum). Pure domain logic, no framework imports.",
   "ast_hints": {
-    "package": "com.blackboard.telemetry.eventstore.application",
+    "package": "com.blackboard.telemetry.ingestion.domain",
     "implements": [],
     "dependencies": [
       {
-        "type": "TelemetryRecord",
-        "task_id": "T2-003"
+        "type": "MetricKind",
+        "task_id": "T2-001"
       }
     ],
     "methods": [
       {
-        "signature": "Mono<TelemetryRecord> append(TelemetryRecord record)",
-        "returns": "Mono<TelemetryRecord>"
+        "signature": "SensorMetricBoundary(MetricKind metric, double min, double max, boolean minExclusive, boolean enabled)",
+        "returns": "",
+        "semantics": "Null rejected (NullPointerException); metric non-null; min must be <= max (IllegalArgumentException otherwise); when enabled is false the range is ignored."
       },
       {
-        "signature": "Flux<TelemetryRecord> findLatestInRange(String deviceId, String metric, Instant from, Instant to)",
-        "returns": "Flux<TelemetryRecord>"
+        "signature": "MetricKind metric()",
+        "returns": "MetricKind",
+        "semantics": "Never null."
+      },
+      {
+        "signature": "double min()",
+        "returns": "double",
+        "semantics": "Lower limit."
+      },
+      {
+        "signature": "double max()",
+        "returns": "double",
+        "semantics": "Upper limit, always >= min."
+      },
+      {
+        "signature": "boolean minExclusive()",
+        "returns": "boolean",
+        "semantics": "True when value == min is outside the boundary."
+      },
+      {
+        "signature": "boolean enabled()",
+        "returns": "boolean",
+        "semantics": "False means the metric is unbounded."
+      },
+      {
+        "signature": "boolean accepts(double value)",
+        "returns": "boolean",
+        "semantics": "Signal: true = value is inside the boundary (min inclusive unless minExclusive, max inclusive) or the boundary is disabled; false = Sensor Metric Boundary violated. Consumers MUST handle both branches: on_true the sample is tagged VALID, on_false it is tagged VALIDATION_FAILED and still propagated."
       }
     ]
   }

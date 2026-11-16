@@ -5,11 +5,11 @@
   "dependsOn": [
     "T2-001"
   ],
-  "path": "src/main/resources/application.yml",
+  "path": "src/main/java/com/blackboard/telemetry/ingestion/domain/MetricKind.java",
   "kind": "refactor",
-  "layer": "root",
+  "layer": "domain",
   "feature": null,
-  "export": "application.yml",
-  "intent": "Inspect application.yml for telemetry-ingestion-processing: keep literal values (window 60s, buffer 1024, ECS file log with 10MB/7 rolling, test profile H2 NON_KEYWORDS=VALUE, flyway disabled in test), remove duplication and misplaced keys without changing values.",
-  "project": "telemetry-ingestion-processing"
+  "export": "MetricKind",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Inspect and refactor MetricKind without changing the ast_hints surface or the tests' behavior (never seal or finalize a type another unit stubs; no magic numbers, no blocking calls, no raw logger calls beyond the claimed step logs). Unit contract: Context Telemetry Ingestion & Validation. Enum of the telemetry metrics a Telemetry Sample can carry, constants exactly: HEART_RATE, POWER, CADENCE, SWIM_PACE, GROUND_CONTACT_TIME, RESPIRATION, SWIM_STROKE. Pure domain type, no framework imports. It is the single owner of the metric vocabulary; every other unit pins it and never re-spells metric names."
 }

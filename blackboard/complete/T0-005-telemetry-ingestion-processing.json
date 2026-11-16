@@ -10,6 +10,6 @@
   "layer": "root",
   "feature": null,
   "export": "backup-recovery",
-  "intent": "Backup/recovery: PostgreSQL snapshots plus log-based recovery for context telemetry-ingestion-processing; expand-only so rollback is forward-fix or restore; recovery runbook script.",
+  "intent": "Backup/recovery: PostgreSQL 16 base snapshots plus WAL point-in-time recovery for append-only history of context telemetry-ingestion-processing; replay of revisions rebuilds derived views.",
   "project": "telemetry-ingestion-processing"
 }

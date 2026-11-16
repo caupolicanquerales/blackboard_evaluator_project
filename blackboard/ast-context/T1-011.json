@@ -3,57 +3,54 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "CorrelationIdWebFilter",
-    "constructors": [
-      []
+    "type": "AuditAction",
+    "constructors": [],
+    "static_calls": [
+      {
+        "method": "values",
+        "args": []
+      },
+      {
+        "method": "valueOf",
+        "args": [
+          "action.name()"
+        ]
+      },
+      {
+        "method": "valueOf",
+        "args": [
+          "\"UNKNOWN_ACTION\""
+        ]
+      },
+      {
+        "method": "valueOf",
+        "args": [
+          "null"
+        ]
+      }
     ],
-    "static_calls": [],
     "calls": [
       {
-        "receiver": "filter",
-        "method": "filter",
-        "args": [
-          "exchange(\"abc-123\")",
-          "probe"
-        ]
-      },
-      {
-        "receiver": "filter",
-        "method": "filter",
-        "args": [
-          "exchange",
-          "new Probe()"
-        ]
-      },
-      {
-        "receiver": "filter",
-        "method": "filter",
-        "args": [
-          "exchange",
-          "probe"
-        ]
-      },
-      {
-        "receiver": "filter",
-        "method": "filter",
-        "args": [
-          "exchange(null)",
-          "probe"
-        ]
+        "receiver": "action",
+        "method": "name",
+        "args": []
       }
     ],
     "verified": [],
     "usage_lines": [
-      "class CorrelationIdWebFilterTest {",
-      "private final CorrelationIdWebFilter filter = new CorrelationIdWebFilter();",
-      "public Mono<Void> filter(ServerWebExchange exchange) {",
-      "contextValue.set(ctx.getOrDefault(CorrelationIdWebFilter.CONTEXT_KEY, null));",
-      "assertThat(CorrelationIdWebFilter.HEADER).isEqualTo(\"X-Request-Id\");",
-      "assertThat(CorrelationIdWebFilter.CONTEXT_KEY).isEqualTo(\"requestId\");",
-      "StepVerifier.create(filter.filter(exchange(\"abc-123\"), probe)).verifyComplete();",
-      "filter.filter(exchange, new Probe()).block();",
-      "filter.filter(exchange, probe).block();",
-      "filter.filter(exchange(null), probe).block();"
+      "class AuditActionTest {",
+      "AuditAction[] result = AuditAction.values();",
+      "assertThat(result).containsExactly(",
+      "AuditAction.INGEST_PACKET,",
+      "AuditAction.VALIDATE_SAMPLE,",
+      "AuditAction.APPEND_REVISION,",
+      "AuditAction.BROADCAST_WINDOW);",
+      "@EnumSource(AuditAction.class)",
+      "void valueOf_constantName_returnsSameConstant(AuditAction action) {",
+      "AuditAction result = AuditAction.valueOf(action.name());",
+      "assertThat(result).isSameAs(action);",
+      "assertThatThrownBy(() -> AuditAction.valueOf(\"UNKNOWN_ACTION\"))",
+      "assertThatThrownBy(() -> AuditAction.valueOf(null))"
     ]
   },
   "stderr": "",

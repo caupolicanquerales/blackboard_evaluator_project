@@ -1,0 +1,15 @@
+{
+  "id": "T3-031",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-031"
+  ],
+  "path": "src/main/java/com/blackboard/telemetry/shared/config/TelemetryConfiguration.java",
+  "kind": "refactor",
+  "layer": "shared",
+  "feature": null,
+  "export": "TelemetryConfiguration",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Inspect and refactor TelemetryConfiguration without changing the ast_hints surface or the tests' behavior (never seal or finalize a type another unit stubs; no magic numbers, no blocking calls, no raw logger calls beyond the claimed step logs). Unit contract: Composition wiring unit (@Configuration + @EnableConfigurationProperties(TelemetryProperties.class)) in package com.blackboard.telemetry.shared.config, under the single boot class in base package com.blackboard.telemetry (which is an ancestor of every component and test package, so no scan directive is needed). It is the ONE registration mechanism for exactly these types: Clock (UTC system clock), TelemetryProperties (via @EnableConfigurationProperties), TelemetryMeters, AuditTrail (R2dbcAuditTrail), ValidatedSampleStream (InMemoryValidatedSampleStream), TelemetryHistoryRepository (R2dbcTelemetryHistoryRepository), HistoryEventPublisher (InMemoryHistoryEventPublisher), IngestPacketService, ReorderHistoryService, PipelineSubscriber; those classes carry no stereotype annotations. MeterRegistry and DatabaseClient are provided by the Spring Boot actuator and R2DBC auto-configuration. IngestionController and CorrelationWebFilter self-register and are NOT produced here. Routing duty: PipelineSubscriber places ReorderHistoryService on the validated-stream path, IngestionController places IngestPacketService on the request path. Values come from application.yml only."
+}

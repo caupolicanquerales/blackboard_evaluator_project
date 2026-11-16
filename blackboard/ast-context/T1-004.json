@@ -3,76 +3,154 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "AuditEntry",
+    "type": "TelemetrySample",
     "constructors": [
       [
-        "\"actor-1\"",
-        "\"INGEST\"",
-        "\"SUCCESS\"",
-        "TS",
-        "\"req-1\""
+        "\"dev-1\"",
+        "metric()",
+        "T_DEVICE",
+        "T_INGRESS",
+        "42.5",
+        "status"
       ],
       [
-        "\"actor-1\"",
-        "\"INGEST\"",
-        "\"SUCCESS\"",
-        "TS",
-        "\"req-2\""
+        "null",
+        "metric()",
+        "T_DEVICE",
+        "T_INGRESS",
+        "1.0",
+        "ValidationStatus.UNVALIDATED"
       ],
       [
-        "\"actor-1\"",
-        "\"INGEST\"",
-        "\"FAILURE\"",
-        "TS",
-        "\"req-1\""
+        "\"dev-1\"",
+        "null",
+        "T_DEVICE",
+        "T_INGRESS",
+        "1.0",
+        "ValidationStatus.UNVALIDATED"
+      ],
+      [
+        "\"dev-1\"",
+        "metric()",
+        "null",
+        "T_INGRESS",
+        "1.0",
+        "ValidationStatus.UNVALIDATED"
+      ],
+      [
+        "\"dev-1\"",
+        "metric()",
+        "T_DEVICE",
+        "null",
+        "1.0",
+        "ValidationStatus.UNVALIDATED"
+      ],
+      [
+        "\"dev-1\"",
+        "metric()",
+        "T_DEVICE",
+        "T_INGRESS",
+        "1.0",
+        "null"
+      ],
+      [
+        "blank",
+        "metric()",
+        "T_DEVICE",
+        "T_INGRESS",
+        "1.0",
+        "ValidationStatus.UNVALIDATED"
+      ],
+      [
+        "\"dev-1\"",
+        "metric()",
+        "T_DEVICE",
+        "T_INGRESS",
+        "Double.NaN",
+        "ValidationStatus.UNVALIDATED"
       ]
     ],
     "static_calls": [],
     "calls": [
       {
-        "receiver": "entry",
-        "method": "actor",
+        "receiver": "original",
+        "method": "withStatus",
+        "args": [
+          "ValidationStatus.VALID"
+        ],
+        "returns": "TelemetrySample"
+      },
+      {
+        "receiver": "original",
+        "method": "status",
         "args": []
       },
       {
-        "receiver": "entry",
-        "method": "action",
+        "receiver": "original",
+        "method": "withStatus",
+        "args": [
+          "null"
+        ]
+      },
+      {
+        "receiver": "s",
+        "method": "deviceId",
         "args": []
       },
       {
-        "receiver": "entry",
-        "method": "outcome",
+        "receiver": "s",
+        "method": "metric",
         "args": []
       },
       {
-        "receiver": "entry",
-        "method": "timestamp",
+        "receiver": "s",
+        "method": "tDevice",
         "args": []
       },
       {
-        "receiver": "entry",
-        "method": "correlationId",
+        "receiver": "s",
+        "method": "tIngress",
+        "args": []
+      },
+      {
+        "receiver": "s",
+        "method": "value",
+        "args": []
+      },
+      {
+        "receiver": "s",
+        "method": "status",
         "args": []
       }
     ],
     "verified": [],
     "usage_lines": [
-      "class AuditEntryTest {",
-      "AuditEntry entry = new AuditEntry(\"actor-1\", \"INGEST\", \"SUCCESS\", TS, \"req-1\");",
-      "assertThat(entry.actor()).isEqualTo(\"actor-1\");",
-      "assertThat(entry.action()).isEqualTo(\"INGEST\");",
-      "assertThat(entry.outcome()).isEqualTo(\"SUCCESS\");",
-      "assertThat(entry.timestamp()).isEqualTo(TS);",
-      "assertThat(entry.correlationId()).isEqualTo(\"req-1\");",
-      "AuditEntry a = new AuditEntry(\"actor-1\", \"INGEST\", \"SUCCESS\", TS, \"req-1\");",
-      "AuditEntry b = new AuditEntry(\"actor-1\", \"INGEST\", \"SUCCESS\", TS, \"req-1\");",
-      "assertThat(a).isEqualTo(b).hasSameHashCodeAs(b);",
-      "AuditEntry a = new AuditEntry(\"actor-1\", \"INGEST\", \"SUCCESS\", TS, \"req-1\");",
-      "AuditEntry b = new AuditEntry(\"actor-1\", \"INGEST\", \"SUCCESS\", TS, \"req-2\");",
-      "assertThat(a).isNotEqualTo(b);",
-      "AuditEntry a = new AuditEntry(\"actor-1\", \"INGEST\", \"SUCCESS\", TS, \"req-1\");",
-      "AuditEntry b = new AuditEntry(\"actor-1\", \"INGEST\", \"FAILURE\", TS, \"req-1\");",
-      "assertThat(a).isNotEqualTo(b);"
+      "class TelemetrySampleTest {",
+      "private static TelemetrySample sample(ValidationStatus status) {",
+      "return new TelemetrySample(\"dev-1\", metric(), T_DEVICE, T_INGRESS, 42.5, status);",
+      "TelemetrySample s = sample(ValidationStatus.UNVALIDATED);",
+      "assertThat(s.deviceId()).isEqualTo(\"dev-1\");",
+      "assertThat(s.metric()).isEqualTo(metric());",
+      "assertThat(s.tDevice()).isEqualTo(T_DEVICE);",
+      "assertThat(s.tIngress()).isEqualTo(T_INGRESS);",
+      "assertThat(s.value()).isEqualTo(42.5);",
+      "assertThat(s.status()).isEqualTo(ValidationStatus.UNVALIDATED);",
+      "assertThatThrownBy(() -> new TelemetrySample(null, metric(), T_DEVICE, T_INGRESS, 1.0,",
+      "assertThatThrownBy(() -> new TelemetrySample(\"dev-1\", null, T_DEVICE, T_INGRESS, 1.0,",
+      "assertThatThrownBy(() -> new TelemetrySample(\"dev-1\", metric(), null, T_INGRESS, 1.0,",
+      "assertThatThrownBy(() -> new TelemetrySample(\"dev-1\", metric(), T_DEVICE, null, 1.0,",
+      "assertThatThrownBy(() -> new TelemetrySample(\"dev-1\", metric(), T_DEVICE, T_INGRESS, 1.0,",
+      "assertThatThrownBy(() -> new TelemetrySample(blank, metric(), T_DEVICE, T_INGRESS, 1.0,",
+      "TelemetrySample s = new TelemetrySample(\"dev-1\", metric(), T_DEVICE, T_INGRESS,",
+      "assertThat(s.value()).isNaN();",
+      "TelemetrySample original = sample(ValidationStatus.UNVALIDATED);",
+      "TelemetrySample result = original.withStatus(ValidationStatus.VALID);",
+      "assertThat(result).isEqualTo(sample(ValidationStatus.VALID));",
+      "assertThat(original.status()).isEqualTo(ValidationStatus.UNVALIDATED);",
+      "TelemetrySample original = sample(ValidationStatus.UNVALIDATED);",
+      "assertThatThrownBy(() -> original.withStatus(null))",
+      "assertThat(sample(ValidationStatus.VALID)).isEqualTo(sample(ValidationStatus.VALID))",
+      ".hasSameHashCodeAs(sample(ValidationStatus.VALID));"
     ]
   },
   "stderr": "",

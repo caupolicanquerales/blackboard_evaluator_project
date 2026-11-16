@@ -1,0 +1,35 @@
+{
+  "id": "T2-016",
+  "project": "telemetry-ingestion-processing",
+  "targetFile": "src/main/java/com/blackboard/telemetry/shared/observability/TelemetryMeters.java",
+  "export": "TelemetryMeters",
+  "kind": "class",
+  "method": "recordLatency",
+  "language": "java",
+  "framework": "spring-boot",
+  "skill": "java-standard-best-practices",
+  "signature": "public void recordLatency(String stage, Duration elapsed)",
+  "returns": "void",
+  "body": "if (!\"validate\".equals(stage) && !\"history\".equals(stage)) {\n    throw new IllegalArgumentException(\"Unknown pipeline stage: \" + stage);\n}\nregistry.timer(\"telemetry.pipeline.latency\", \"stage\", stage).record(elapsed);",
+  "imports": [
+    "io.micrometer.core.instrument.MeterRegistry",
+    "java.time.Duration",
+    "java.util.Objects",
+    "com.blackboard.telemetry.ingestion.domain.SourceKind",
+    "com.blackboard.telemetry.ingestion.domain.MetricKind",
+    "com.blackboard.telemetry.ingestion.domain.ValidationStatus",
+    "com.blackboard.telemetry.history.domain.RevisionReason"
+  ],
+  "members": [
+    "private final MeterRegistry registry",
+    "public TelemetryMeters(MeterRegistry registry) { this.registry = Objects.requireNonNull(registry, \"registry\"); }",
+    "public void packetReceived(SourceKind sourceKind) { registry.counter(\"telemetry.packets.received\", \"source_kind\", sourceKind.name()).increment(); }",
+    "public void sampleValidated(MetricKind metric, ValidationStatus status) { registry.counter(\"telemetry.samples.validated\", \"metric\", metric.name(), \"status\", status.name()).increment(); }",
+    "public void sampleReordered(MetricKind metric) { registry.counter(\"telemetry.samples.reordered\", \"metric\", metric.name()).increment(); }",
+    "public void revisionAppended(RevisionReason reason) { registry.counter(\"telemetry.revisions.appended\", \"reason\", reason.name()).increment(); }"
+  ],
+  "missing": [],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-16T20:20:40.957907+00:00"
+}

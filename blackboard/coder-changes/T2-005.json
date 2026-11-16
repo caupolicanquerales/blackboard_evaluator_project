@@ -1,24 +1,27 @@
 {
   "id": "T2-005",
   "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/blackboard/telemetry/shared/observability/AuditTrail.java",
-  "export": "AuditTrail",
-  "kind": "interface",
-  "method": "record",
+  "targetFile": "src/main/java/com/blackboard/telemetry/ingestion/domain/IngressPacket.java",
+  "export": "IngressPacket",
+  "kind": "record",
+  "method": "IngressPacket",
   "language": "java",
   "framework": "springboot",
   "skill": "java-springboot",
-  "signature": "Mono<Void> record(AuditEntry entry)",
-  "returns": "Mono<Void>",
-  "body": "",
+  "signature": "IngressPacket(String deviceId, SourceKind sourceKind, List<TelemetrySample> samples)",
+  "returns": "void",
+  "members": [
+    "String deviceId",
+    "SourceKind sourceKind",
+    "List<TelemetrySample> samples"
+  ],
+  "body": "Objects.requireNonNull(deviceId, \"deviceId must not be null\");\nObjects.requireNonNull(sourceKind, \"sourceKind must not be null\");\nObjects.requireNonNull(samples, \"samples must not be null\");\nif (deviceId.isBlank()) {\n    throw new IllegalArgumentException(\"deviceId must not be blank\");\n}\nif (samples.isEmpty()) {\n    throw new IllegalArgumentException(\"samples must not be empty\");\n}\nsamples = List.copyOf(samples);",
   "imports": [
-    "reactor.core.publisher.Mono"
+    "java.util.List",
+    "java.util.Objects"
   ],
   "missing": [],
-  "members": [
-    "Mono<Void> record(AuditEntry entry);"
-  ],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-13T16:20:32.855089+00:00"
+  "recorded_at": "2026-11-16T21:14:31.361102+00:00"
 }

@@ -1,0 +1,70 @@
+{
+  "id": "T2-032",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-032",
+    "T0-002",
+    "T0-003",
+    "T2-030",
+    "T2-031",
+    "T2-029",
+    "T2-028",
+    "T2-014",
+    "T2-021",
+    "T2-023"
+  ],
+  "path": "src/test/java/com/blackboard/telemetry/support/PipelineSliceFixtures.java",
+  "kind": "code",
+  "layer": "root",
+  "feature": null,
+  "export": "PipelineSliceFixtures",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Implement PipelineSliceFixtures (Java 21, Spring Boot 3, WebFlux/Reactor/R2DBC, constructor injection, no blocking calls) so that the frozen test passes, providing exactly the ast_hints table and nothing improvised. Unit contract: Test-support unit for the end-to-end request-path slice (lives under src/test): static helper holder with the two table members above, used by the slice test. Boundaries of the test code only; no production behavior.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.support",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "IngestionController",
+        "task_id": "T2-030"
+      },
+      {
+        "type": "TelemetryConfiguration",
+        "task_id": "T2-031"
+      },
+      {
+        "type": "CorrelationWebFilter",
+        "task_id": "T2-029"
+      },
+      {
+        "type": "IngressPacketRequest",
+        "task_id": "T2-028"
+      },
+      {
+        "type": "TelemetryProperties",
+        "task_id": "T2-014"
+      },
+      {
+        "type": "R2dbcAuditTrail",
+        "task_id": "T2-021"
+      },
+      {
+        "type": "R2dbcTelemetryHistoryRepository",
+        "task_id": "T2-023"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "static String packetJson(String deviceId, String sourceKind, String metric, long tDeviceEpochMillis, double value)",
+        "returns": "String",
+        "semantics": "Builds one single-object JSON body for POST /api/v1/telemetry/packets."
+      },
+      {
+        "signature": "static Mono<Long> countRows(DatabaseClient client, String table)",
+        "returns": "Mono<Long>",
+        "semantics": "SELECT COUNT(*) of the given table; table must be one of telemetry_sample, event_revision, audit_trail (IllegalArgumentException otherwise)."
+      }
+    ]
+  }
+}

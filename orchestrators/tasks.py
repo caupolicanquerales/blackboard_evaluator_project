@@ -1,4 +1,5 @@
 """Blackboard task schema: validation and ordering keys (pure, no I/O state)."""
+import json
 import re
 from pathlib import Path
 
@@ -22,12 +23,43 @@ CONFIG_TRIGGER_RE = re.compile(
     r"@ConfigurationProperties|application\.(?:ya?ml|properties)|externalized[- ]config", re.I)
 NULL_REJECT_RE = re.compile(
     r"rejects?[^.;]*\bnull\b|null[- ]?(?:reject|intoler)|\bnon-null\b", re.I)
+# argument + comparison inside parentheses (or adjacent): "revision (>=1, ...)",
+# "window (> 0)", "capacity (<= 1000)" - the invariant-claim surface of an intent.
+CONSTRUCTOR_CLAIM_RE = re.compile(r"\b(\w+)\s*\(\s*(?:>=|<=|>|<)\s*\d")
 STREAM_REQUEST_TYPES = ("Flux<", "Observable<", "ReadableStream", "AsyncGenerator",
                         "AsyncIterable", "stream of")
 ARRAY_REQUEST_TYPES = ("List<", "Set<", "Collection<", "Iterable<")
 ARRAY_BODY_RE = re.compile(r"JSON array|array of\b|single array|array body|array document", re.I)
 STREAM_BODY_RE = re.compile(r"streamed (?:JSON )?documents|line[- ]delimited|ndjson|"
                             r"newline[- ]delimited|sequence of (?:JSON )?documents|stream body", re.I)
+
+# --- Mechanized plan rules (o)/(p)/(q): the machine half of the 2026-11-16 SECOND
+# drain findings (a mocked substrate hid a NOT NULL PK; a contextLoads-only boot;
+# retries minting revisions). Generic vocabulary only: intent phrases and the layer
+# field - never compiler output, never source reading.
+DML_CLAIM_RE = re.compile(r"\b(?:INSERT INTO|UPDATE\s+\w+\s+SET|DELETE FROM|"
+                          r"SELECT\b[^\n]*\bFROM\b)", re.I)
+REAL_SUBSTRATE_RE = re.compile(
+    r"real (?:embedded )?(?:database|substitute|store|ddl|schema|h2)|"
+    r"embedded substitute|against the (?:real |live )?(?:database|substitute|schema|ddl)|"
+    r"actual (?:migration|ddl|schema)|(?:executes?|run(?:s|ning)?) (?:the )?(?:real|actual) "
+    r"(?:ddl|migration)|migration ddl|real ddl", re.I)
+INTEGRATION_MARK_RE = re.compile(r"end[- ]to[- ]end|integration slice|request[- ]path", re.I)
+APPEND_CHAIN_RE = re.compile(r"revision|append[- ]only|supersedes", re.I)
+INBOUND_RE = re.compile(r"@(?:Post|Get|Put|Request)Mapping|/api/|\broutes?\b.*(?:POST|GET)|"
+                        r"POST\b[^\n]*(?:body|endpoint|packet)|inbound (?:http|request)", re.I)
+DEDUP_RE = re.compile(r"idempoten|dedup|client[- ]supplied|client[- ]key|natural key|"
+                      r"at[- ]most[- ]once|unique business key", re.I)
+# (r) migrations must TRAVEL WITH THE ARTIFACT: a config unit that spells a runner
+# location CWD-relative (filesystem:/file:) into the project's own tree is refused at
+# EMIT - the packaged jar would boot green over an EMPTY schema from any other
+# directory. classpath: locations (the packaged form) are the demanded shape. Enforced
+# HERE, never at the assembly gate: the config unit's frozen test pins the location
+# string, so a delivered-time second opinion demanding another value is an unsatisfiable
+# pair (2026-11-16: the assembly-side probe livelocked T4 against its own frozen test).
+MIGRATION_SCHEME_RE = re.compile(r"flyway|liquibase|schema-locations|script_location|"
+                                 r"version_locations|sql\.init", re.I)
+CWD_RELATIVE_LOCATION_RE = re.compile(r"(?:filesystem|file)\s*:[:\w./-]*migrations?/?", re.I)
 
 # Prose-vs-table shape (seed-002 rerun F2: the T2-014 pair that froze T2-020 and the
 # whole deferred cluster behind it). Two deterministic contradiction classes are emit-
@@ -42,6 +74,75 @@ STREAM_BODY_RE = re.compile(r"streamed (?:JSON )?documents|line[- ]delimited|ndj
 UNCONSTRUCTIBLE_RE = re.compile(
     r"private\s+(?:final\s+)?constructor|utility\s+class|non[-\s]instantiable", re.I)
 STATIC_CALL_RE = re.compile(r"\b([A-Z][A-Za-z0-9]{2,})\.([a-z][A-Za-z0-9]*)\(")
+
+# --- Mechanized plan rules (k)/(m)/(n): the machine half of the 2026-11-16 findings.
+# (k) SOURCE CLOSURE (F1): a table method that RETURNS a stream/publisher makes its
+#     unit an egress source. A source nobody pins is a rule that executes zero times:
+#     its own tests are green (they call it directly), the context boots (it resolves),
+#     and the business rule never runs. Rule (i) proved streams-ports need consumers;
+#     F1 slipped through because the orphan exposed its stream as a plain method.
+# (m) SIGNALLING RETURN (F2): a method returning a boolean/status signal forces its
+#     `semantics` to state BOTH outcomes - a false the plan never describes is a false
+#     the coder will discard (publish() -> silently dropped sample under burst).
+# (n) REGISTRATION XOR (F8): a type the plan has a FACTORY produce (it appears as a
+#     wiring unit's method return) must not ALSO carry a self-registration duty; two
+#     registration claims per product is decided by container precedence, not the plan.
+PUBLISHER_FORMS = ("flux<", "observable<", "publisher<", "readablestream", "asyncgenerator",
+                   "asynciterable")
+SIGNAL_FORMS = {"boolean", "bool", "java.lang.boolean", "mono<boolean>", "flux<boolean>",
+                "observable<boolean>", "publisher<boolean>", "task<bool>",
+                "promise<boolean>", "mono<java.lang.boolean>", "result<boolean>"}
+BOUNDARY_MARKER_RE = re.compile(r"out-of-process|external subscribers|"
+                                r"downstream subscribers", re.I)
+SELF_REGISTRATION_RES = {
+    "java": re.compile(r"@(?:Component|Service|Repository|RestController|Controller)\b|"
+                       r"self[- ]?registers?", re.I),
+    "typescript": re.compile(r"@Injectable\b|module provider|provided by\b|self[- ]?registers?", re.I),
+    "javascript": re.compile(r"@Injectable\b|module provider|provided by\b|self[- ]?registers?", re.I),
+    "python": re.compile(r"router registration|registered dependency|self[- ]?registers?", re.I),
+    "go": re.compile(r"self[- ]?registers?", re.I),
+}
+# Any language's generic stereotype vocabulary: used when the strategy names an
+# unknown stack - catches the plan's own words ("registers itself") without vocab.
+GENERIC_SELF_REGISTRATION_RE = re.compile(r"self[- ]?registers?|registers? itself", re.I)
+
+
+def strategy_language(slug):
+    """Lowercase first token of the strategy's planned language ("" with no strategy
+    file or unknown shape - language-keyed rules then skip, legacy-safe)."""
+    file = settings.COMPLETE_DIR / f"execution-strategy-{slug}.json"
+    try:
+        strategy = json.loads(file.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return ""
+    stack = strategy.get("tech_stack") or strategy.get("tech stack") or {}
+    language = str(stack.get("language") or strategy.get("language") or "").strip().lower()
+    return language.split()[0] if language else ""
+
+
+def _returns_publisher(returns):
+    text = str(returns or "").strip().lower().replace(" ", "")
+    return any(text.startswith(form) for form in PUBLISHER_FORMS)
+
+
+def _returns_signal(returns):
+    return str(returns or "").strip().lower().replace(" ", "") in SIGNAL_FORMS
+
+
+def _simple_return_type(returns):
+    """The bare type name of a return spelling (generics/arrays/package stripped):
+    `Mono<Event>`, `Event[]`, `com.x.Event` -> Mono/Event/event."""
+    text = str(returns or "").strip()
+    text = re.sub(r"<.*>", "", text).replace("[]", "").strip()
+    return text.rsplit(".", 1)[-1]
+
+
+def _strategy_text(slug):
+    file = settings.COMPLETE_DIR / f"execution-strategy-{slug}.json"
+    try:
+        return file.read_text(encoding="utf-8")
+    except OSError:
+        return ""
 
 
 def _table_signatures(hints):
@@ -262,6 +363,27 @@ def validate(task, index, planning=False):
                         "the producing unit ships, or the nullable alternative) - a mandatory "
                         "field that rejects null with no legal way to represent its pre-use "
                         "state froze two contradictory contracts (seed-002 D1)")
+        # RANGE-CLAIM -> CONSTRUCTOR SEMANTICS (2026-11-16): an intent that states a
+        # numeric/argument invariant ("revision (>=1, else ...)") must carry it in the
+        # constructor's table entry. The consumer units' testers see the injected
+        # collaborator TABLE, never this unit's prose; a prose-only invariant let four
+        # units' frozen fixtures construct revision=0 against a domain that rejects it,
+        # and those units died 3/3 on tests they cannot edit.
+        claims = CONSTRUCTOR_CLAIM_RE.findall(str(task["intent"]))
+        if claims and task.get("stage") in (1, 2):
+            product = (exported_product(task) or "").strip()
+            ctor = next((m for m in ((task.get("ast_hints") or {}).get("methods") or [])
+                         if isinstance(m, dict)
+                         and str(m.get("signature", "")).startswith(product + "(")), None)
+            if ctor is not None and not str(ctor.get("semantics") or "").strip():
+                return (f"intent states constructor invariants on {sorted(set(claims))} but "
+                        f"the '{product}' constructor table entry carries no `semantics`: "
+                        "consumer units' testers receive ONLY the collaborator table - spell "
+                        "the valid-argument ranges and the sanctioned construction (factory, "
+                        "initial value) into that entry's `semantics`, or the next unit's "
+                        "fixture guesses an illegal literal and dies on this record "
+                        "(seed-002 2026-11-16: revision (>=1) lived only in prose; four "
+                        "consumer tests fabricated 0)")
         if (task["ast_hints"] or {}).get("methods") and \
                 UNCONSTRUCTIBLE_RE.search(str(task["intent"])) and \
                 _instance_members(task["ast_hints"], exported_product(task) or ""):
@@ -377,4 +499,214 @@ def plan_consistency(staged, index):
                     "shape must win at plan time: rewrite the prose against the injected "
                     f"collaborator, or bind `static` in {producer.get('id')}'s table; two "
                     "frozen tests written from the two shapes can never both pass (F2)")
+    # (k)/(m)/(n): the machine half of the 2026-11-16 findings - see the vocabulary
+    # block above for what each refusal class means and why the per-unit gates
+    # structurally cannot see them.
+    universe = {}
+    for record in list(index.values()) + list(staged):
+        if isinstance(record, dict) and record.get("id"):
+            universe.setdefault(str(record.get("project", "")), []).append(record)
+    for task in staged:
+        if task.get("stage") not in (1, 2):
+            continue
+        for member in (task.get("ast_hints") or {}).get("methods") or []:
+            if (isinstance(member, dict) and _returns_signal(member.get("returns"))
+                    and not str(member.get("semantics") or "").strip()):
+                errors.append(
+                    f"{task['id']}: tabled method '{member.get('signature')}' returns a "
+                    "SIGNAL but carries no `semantics` - spell what TRUE and what FALSE "
+                    "mean to the caller (accepted/rejected, inserted/duplicate, "
+                    "written/dropped): a false the plan never describes is a false the "
+                    "coder discards, and the caller answers success anyway (2026-11-16: "
+                    "publish()->false silently dropped samples under burst, API lied 202)")
+    for project, units in sorted(universe.items()):
+        live = [u for u in units if isinstance(u, dict)]
+        by_product = {}
+        for u in live:
+            name = exported_product(u)
+            if name:
+                by_product.setdefault(name.lower(), u)
+        pinned_ids, pinned_types = set(), set()
+        by_id = {str(u.get("id", "")): u for u in live}
+        for u in live:
+            if u.get("stage") not in (1, 2):
+                continue
+            # a pin from a unit whose OWN table returns that type is a PRODUCTION edge
+            # (wiring/factory), not a consumer: 2026-11-16's orphaned reordering service
+            # was exactly "registered by the config unit, called by nobody" - counting
+            # the factory's pin as consumption lets the F1 shape pass this gate.
+            own_returns = {(_simple_return_type(m.get("returns")) or "").lower()
+                           for m in ((u.get("ast_hints") or {}).get("methods") or [])
+                           if isinstance(m, dict)}
+            for dep in (u.get("ast_hints") or {}).get("dependencies") or []:
+                if not isinstance(dep, dict):
+                    continue
+                dep_type = str(dep.get("type") or "").lower()
+                dep_id = str(dep.get("task_id") or "")
+                dep_owner = by_id.get(dep_id) or by_product.get(dep_type)
+                dep_product = str(exported_product(dep_owner) or "").lower() if dep_owner else ""
+                if dep_type in own_returns or (dep_product and dep_product in own_returns):
+                    continue  # this unit FACTORIES the type - not its consumer
+                pinned_ids.add(dep_id)
+                pinned_types.add(dep_type)
+                if dep_product:
+                    pinned_types.add(dep_product)
+
+        def boundary_named(*names):
+            """out-of-process exemption is PER SOURCE: a strategy segment must name
+            THIS unit's product next to the marker (coarse whole-strategy markers
+            would exempt every island in the plan)."""
+            text = _strategy_text(project)
+            candidates = [n for n in names if n]
+            for segment in re.split(r"[;\n]|\|\", \"", text):
+                if BOUNDARY_MARKER_RE.search(segment) and any(
+                        c.lower() in segment.lower() for c in candidates):
+                    return True
+            return False
+        self_reg = SELF_REGISTRATION_RES.get(strategy_language(project),
+                                             GENERIC_SELF_REGISTRATION_RE)
+        factory_claims, source_claims = {}, {}
+        for u in live:
+            if u.get("stage") != 2:
+                continue  # the SOURCE/factory duty lives in the implementation unit;
+                          # the stage-1 twin mirrors the table to assert it
+            hints = u.get("ast_hints") or {}
+            for member in hints.get("methods") or []:
+                if not isinstance(member, dict):
+                    continue
+                if _returns_publisher(member.get("returns")):
+                    source_claims.setdefault(str(u.get("id")), (u, member))
+                ret = _simple_return_type(member.get("returns"))
+                owner = by_product.get(ret.lower()) if ret else None
+                if owner is not None and str(owner.get("id")) != str(u.get("id")):
+                    factory_claims.setdefault(ret.lower(), []).append(u)
+        for uid, (unit, member) in sorted(source_claims.items()):
+            faces = {str(exported_product(unit) or "").lower()}
+            faces |= {str(s).lower() for s in (unit.get("ast_hints") or {}).get("implements") or []}
+            faces.discard("")
+            if (uid in pinned_ids or (pinned_types & faces)
+                    or BOUNDARY_MARKER_RE.search(str(unit.get("intent", "")))
+                    or boundary_named(*faces)):
+                continue
+            errors.append(
+                f"{uid}: tabled method '{member.get('signature')}' PUBLISHES a stream "
+                f"({member.get('returns')}) but no unit pins this type as a collaborator - "
+                "the rule behind an unconsumed source executes zero times while its unit "
+                "tests and the boot gate stay green (2026-11-16: the reordering service "
+                "was a registered island; the seed's core rule never ran). Name its "
+                "consumer unit in the DAG, route it in the wiring unit's duty list, or "
+                "declare the out-of-process boundary in the strategy")
+        for ret, producers in sorted(factory_claims.items()):
+            owner = by_product.get(ret)
+            if owner is None or owner.get("stage") not in (1, 2):
+                continue
+            if not self_reg.search(str(owner.get("intent", ""))):
+                continue
+            for producer in producers:
+                errors.append(
+                    f"{producer.get('id')}/{owner.get('id')}: type '{ret}' is claimed by "
+                    "TWO registration duties - a factory method in the wiring unit AND a "
+                    "self-registration stereotype in its own intent. One mechanism per "
+                    "product (factory XOR self-register): the container's precedence, not "
+                    "the plan, currently decides which definition survives")
+        # (o) PERSISTENCE ADAPTERS ARE TESTED AGAINST THE REAL SUBSTRATE, never a mock
+        #     of the database client: the mock proves call SHAPE, never schema FIT -
+        #     NOT NULL floors, CHECK bounds and PK population stay unproven until the
+        #     first production request (2026-11-16: mocked DatabaseClient hid an
+        #     unpopulated NOT NULL audit_id; EVERY audit write failed on the live path
+        #     while 186 tests stayed green).
+        by_num = {}
+        for u in live:
+            ident = str(u.get("id", ""))
+            mark = ident.rsplit("-", 1)
+            if len(mark) == 2 and mark[1].isdigit():
+                by_num.setdefault(mark[1], {})[mark[0]] = u
+        for u in live:
+            if u.get("stage") != 2 or not DML_CLAIM_RE.search(str(u.get("intent", ""))):
+                continue
+            pair = by_num.get(str(u.get("id", "")).rsplit("-", 1)[-1], {}).get("T1")
+            if pair is None:
+                continue
+            pair_intent = str(pair.get("intent", ""))
+            if not REAL_SUBSTRATE_RE.search(pair_intent):
+                errors.append(
+                    f"{u['id']}/{pair['id']}: the unit executes SQL/DML against a schema, "
+                    "but its paired test intent never demands a REAL-SUBSTRATE run "
+                    "(the embedded substitute executing the actual migration DDL) - a "
+                    "client-mocked slice verifies call SHAPE, never schema fit: NOT NULL "
+                    "floors, CHECK bounds and PK population stay unproven until the "
+                    "first production request (2026-11-16: mocked DatabaseClient hid an "
+                    "unpopulated NOT NULL audit_id; every audit write failed live with "
+                    "the whole suite green). Rewrite the test intent to run the real "
+                    "DDL against the substitute and assert the durable row; a mocked "
+                    "client case may be EXTRA, never the only substrate test")
+        # (p) INBOUND SURFACES SHIP A REQUEST-PATH SLICE: an entry adapter's unit tests
+        #     construct the use case with `new`; the boot smoke loads a context without
+        #     sending a request. Only an end-to-end slice - drive the entry, assert the
+        #     durable rows - makes the components agree with the real schema (2026-11-16
+        #     PART II N1: contextLoads passed over an adapter that failed every write).
+        inbound = [u for u in live if u.get("stage") == 2
+                   and (str(u.get("layer", "")) in ("interface", "api", "entry")
+                        or INBOUND_RE.search(str(u.get("intent", ""))))]
+        if inbound and not any(
+                u.get("stage") == 1 and INTEGRATION_MARK_RE.search(str(u.get("intent", "")))
+                for u in list(index.values()) + list(staged)
+                if str(u.get("project", "")) == project):
+            errors.append(
+                f"{project}: {len(inbound)} inbound adapter unit(s) but NO end-to-end "
+                "request-path slice scheduled: unit tests build the use case with new, "
+                "the smoke test loads a context without a request - neither proves the "
+                "entry, the store and the schema agree. Add one integration test task "
+                "that drives the entry surface against the embedded substitute and "
+                "asserts the durable effect (valid AND invalid payloads)")
+        # (q) RETRYABLE INBOUND + APPEND-ONLY CHAIN = IDEMPOTENCY DUTY or an explicit
+        #     at-most-once declaration: with a server-minted identity, a network retry
+        #     is indistinguishable from a correction and becomes a domain revision
+        #     (2026-11-16 PART II N4: overflow-then-retry minted spurious revisions).
+        #     The duty must live ON THE INGRESS CHAIN - the same units that receive and
+        #     append - not merely somewhere in the plan (an unrelated resubscribe
+        #     idempotency note must not excuse a non-idempotent POST).
+        chain_ids = {str(u.get("id")) for u in inbound}
+        frontier = list(chain_ids)
+        by_id_all = {str(u.get("id")): u for u in live}
+        while frontier:
+            fid = frontier.pop()
+            for dep in by_id_all.get(fid, {}).get("dependsOn") or []:
+                dep = str(dep)
+                if dep not in chain_ids and dep in by_id_all:
+                    chain_ids.add(dep)
+                    frontier.append(dep)
+        chain_text = " ".join(str(by_id_all[i].get("intent", "")) for i in chain_ids)
+        strategy_exempt = False
+        for segment in re.split(r"[.;\n]", _strategy_text(project)):
+            if DEDUP_RE.search(segment) and re.search(r"ingress|inbound|post|http|request",
+                                                      segment, re.I):
+                strategy_exempt = True
+                break
+        if (APPEND_CHAIN_RE.search(chain_text) and INBOUND_RE.search(chain_text)
+                and not DEDUP_RE.search(chain_text) and not strategy_exempt):
+            errors.append(
+                f"{project}: the ingress chain ({', '.join(sorted(chain_ids)[:5])}) is "
+                "at-least-once inbound over an append-only revision chain with NO "
+                "idempotency duty ON THE CHAIN: name the client-supplied dedup key (or "
+                "natural identity) in the receiving use-case/store contracts, or declare "
+                "the at-most-once posture in the strategy - otherwise every network "
+                "retry mints a revision the device never sent twice")
+        # (r) migration locations must be the PACKAGED (classpath) form - enforced at
+        #     emit, where the architect can still fix it; see the vocabulary note above.
+        if (workspace.project_root_for(project) / "db" / "migrations").is_dir():
+            for u in live:
+                if u.get("stage") != 2 or not _path_is_config_artifact(u.get("path")):
+                    continue
+                cfg_intent = str(u.get("intent", ""))
+                if (MIGRATION_SCHEME_RE.search(cfg_intent)
+                        and CWD_RELATIVE_LOCATION_RE.search(cfg_intent)
+                        and "classpath:" not in cfg_intent):
+                    errors.append(
+                        f"{u['id']}: the runtime configuration pins migration locations "
+                        "CWD-relative (filesystem:/file: into the project tree): the "
+                        "packaged jar boots green over an EMPTY schema from any other "
+                        "directory. Spell the runner location as the PACKAGED form "
+                        "(classpath:<dir>) and have the scripts live under the stack's "
+                        "packaged resources root - the DB handoff names that directory")
     return errors

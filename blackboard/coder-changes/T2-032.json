@@ -1,0 +1,25 @@
+{
+  "id": "T2-032",
+  "project": "telemetry-ingestion-processing",
+  "targetFile": "src/test/java/com/blackboard/telemetry/support/PipelineSliceFixtures.java",
+  "export": "PipelineSliceFixtures",
+  "method": "packetJson",
+  "language": "java",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "kind": "class",
+  "signature": "public static String packetJson(String deviceId, String sourceKind, String metric, long tDeviceEpochMillis, double value)",
+  "returns": "String",
+  "body": "return \"{\\\"deviceId\\\":\\\"\" + deviceId + \"\\\",\\\"sourceKind\\\":\\\"\" + sourceKind + \"\\\",\\\"samples\\\":[{\\\"metric\\\":\\\"\" + metric + \"\\\",\\\"tDeviceEpochMillis\\\":\" + tDeviceEpochMillis + \",\\\"value\\\":\" + value + \"}]}\";",
+  "imports": [
+    "reactor.core.publisher.Mono",
+    "org.springframework.r2dbc.core.DatabaseClient"
+  ],
+  "missing": [],
+  "members": [
+    "public static Mono<Long> countRows(DatabaseClient client, String table) { if (!java.util.Set.of(\"telemetry_sample\", \"event_revision\", \"audit_trail\").contains(table)) { throw new IllegalArgumentException(\"Unsupported table: \" + table); } return client.sql(\"SELECT COUNT(*) AS c FROM \" + table).map((row, meta) -> row.get(0, Long.class)).one(); }"
+  ],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-16T20:41:23.050598+00:00"
+}

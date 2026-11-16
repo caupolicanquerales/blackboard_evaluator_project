@@ -367,7 +367,7 @@ def _failure_detail(result, task=None):
 # go "main.go:12:5", pytest "test_foo.py:12:5", kotlinc "Foo.kt: (12, 3)". One generic pattern
 # so the orchestrator's blame/defer logic is not Maven-only: any source file + line (+col).
 SOURCE_EXT = (r"(?:java|kt|kts|scala|groovy|ts|tsx|js|jsx|mjs|cjs|go|py|rs|rb|php|c|h|cc|cpp|hpp|cs|m|swift|vue|svelte)")
-FILE_REFERENCE_RE = re.compile(rf"([^\s:()\[\]]+\.{SOURCE_EXT})[\s\[\(:]+(\d+)\s*[,:]\s*(\d+)?")
+FILE_REFERENCE_RE = re.compile(rf"([^\s:()\[\]]+\.{SOURCE_EXT})[\s\[\(:]+(\d+)\s*[,:]?\s*(\d+)?")
 
 # Phrases that mark a CASCADING error (a symbol missing because a FOREIGN file is broken),
 # not a structural defect of the blamed file itself.

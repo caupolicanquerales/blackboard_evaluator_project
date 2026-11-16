@@ -1,0 +1,58 @@
+{
+  "id": "T2-019",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-019",
+    "T2-004",
+    "T2-001",
+    "T2-008"
+  ],
+  "path": "src/main/java/com/blackboard/telemetry/history/application/TelemetryHistoryRepository.java",
+  "kind": "code",
+  "layer": "application",
+  "feature": null,
+  "export": "TelemetryHistoryRepository",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Implement TelemetryHistoryRepository (Java 21, Spring Boot 3, WebFlux/Reactor/R2DBC, constructor injection, no blocking calls) so that the frozen test passes, providing exactly the ast_hints table and nothing improvised. Unit contract: Context Telemetry Stream Processing & History. Outbound port of the append-only raw history. Dedup identity is the natural identity (deviceId, metric, tDevice) owned here; rows and revisions are never updated or deleted; first revision number is 1 (single owner of that fact). Imports only reactor, java.*, and domain types.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.history.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-004"
+      },
+      {
+        "type": "MetricKind",
+        "task_id": "T2-001"
+      },
+      {
+        "type": "RevisionReason",
+        "task_id": "T2-008"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Long> appendSample(TelemetrySample sample)",
+        "returns": "Mono<Long>",
+        "semantics": "Emits the generated sample id; EMPTY when a sample with the same identity (deviceId, metric, tDevice) is already stored (at-least-once dedup)."
+      },
+      {
+        "signature": "Mono<Integer> appendRevision(long sampleId, RevisionReason reason, double value, Instant tIngress)",
+        "returns": "Mono<Integer>",
+        "semantics": "Appends an Event Revision and emits its revision number; the first revision of a sample is 1, then incremented by 1."
+      },
+      {
+        "signature": "Mono<Instant> findLatestTDevice(String deviceId, MetricKind metric)",
+        "returns": "Mono<Instant>",
+        "semantics": "Greatest stored tDevice for the device and metric; EMPTY when nothing stored."
+      },
+      {
+        "signature": "Flux<TelemetrySample> findWindow(String deviceId, MetricKind metric, Instant from, Instant to, int limit)",
+        "returns": "Flux<TelemetrySample>",
+        "semantics": "Samples with from <= tDevice <= to ordered ascending by tDevice (never tIngress), at most limit rows."
+      }
+    ]
+  }
+}

@@ -5,50 +5,25 @@
   "dependsOn": [
     "T0-001"
   ],
-  "path": "src/test/java/com/blackboard/telemetry/ingestion/application/IngestTelemetryUseCaseTest.java",
+  "path": "src/test/java/com/blackboard/telemetry/history/domain/RevisionReasonTest.java",
   "kind": "test",
-  "layer": "application",
+  "layer": "domain",
   "feature": null,
-  "export": "IngestTelemetryUseCaseTest",
-  "intent": "Context Telemetry Ingestion & Validation. Use Mockito doubles for TelemetryEventStore and AuditTrail and SimpleMeterRegistry. ingest(samples, correlationId) appends one TelemetryRecord with revision 1 per sample and emits the number appended. Status is VALIDATED when deviceId and metric are not blank, tDevice is present and value is finite; otherwise VALIDATION_FAILED (still appended, never dropped). Counters: telemetry.ingress.packets (tag outcome=accepted), telemetry.samples.validated (tags metric, status), timer telemetry.ingest.latency (tag outcome). Exactly one audit record per call: actor = deviceId of the first sample or 'system' when empty, action 'INGEST', outcome 'ACCEPTED', timestamp set, correlationId as passed. Use StepVerifier.",
+  "export": "RevisionReason",
   "project": "telemetry-ingestion-processing",
+  "intent": "Write JUnit 5 + AssertJ tests (reactor-test StepVerifier for Mono/Flux, Mockito for collaborators, no external services, no Thread.sleep) for RevisionReason. Assert ONLY against the ast_hints method table; at least one given/when/then case per table method and per branch. Unit contract: Context Telemetry Stream Processing & History. Enum of Event Revision reasons, constants exactly: BACKFILL (sample arrived later than the Backfill Reorder Window), CORRECTION. Bounded metric tag reason; single owner of these names.",
   "ast_hints": {
-    "package": "com.blackboard.telemetry.ingestion.application",
+    "package": "com.blackboard.telemetry.history.domain",
     "implements": [],
-    "dependencies": [
-      {
-        "type": "TelemetryEventStore",
-        "task_id": "T2-006"
-      },
-      {
-        "type": "AuditTrail",
-        "task_id": "T2-005"
-      },
-      {
-        "type": "MeterRegistry",
-        "task_id": "T0-001"
-      },
-      {
-        "type": "TelemetrySample",
-        "task_id": "T2-002"
-      },
-      {
-        "type": "TelemetryRecord",
-        "task_id": "T2-003"
-      },
-      {
-        "type": "AuditEntry",
-        "task_id": "T2-004"
-      }
-    ],
+    "dependencies": [],
     "methods": [
       {
-        "signature": "public IngestTelemetryUseCase(TelemetryEventStore store, AuditTrail auditTrail, MeterRegistry meterRegistry)",
-        "returns": ""
+        "signature": "static RevisionReason valueOf(String name)",
+        "returns": "RevisionReason"
       },
       {
-        "signature": "public Mono<Long> ingest(Flux<TelemetrySample> samples, String correlationId)",
-        "returns": "Mono<Long>"
+        "signature": "static RevisionReason[] values()",
+        "returns": "RevisionReason[]"
       }
     ]
   }

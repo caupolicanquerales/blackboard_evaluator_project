@@ -1,0 +1,72 @@
+{
+  "id": "T2-016",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-016",
+    "T2-003",
+    "T2-001",
+    "T2-002",
+    "T2-008"
+  ],
+  "path": "src/main/java/com/blackboard/telemetry/shared/observability/TelemetryMeters.java",
+  "kind": "code",
+  "layer": "shared",
+  "feature": null,
+  "export": "TelemetryMeters",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Implement TelemetryMeters (Java 21, Spring Boot 3, WebFlux/Reactor/R2DBC, constructor injection, no blocking calls) so that the frozen test passes, providing exactly the ast_hints table and nothing improvised. Unit contract: Single owner of the Micrometer meter names and bounded tags of the context (tags are enumerations only, NEVER deviceId): counters telemetry.packets.received{source_kind}, telemetry.samples.validated{metric,status}, telemetry.samples.reordered{metric}, telemetry.revisions.appended{reason}; timer telemetry.pipeline.latency{stage in validate,history}. Consumers pin this unit and never spell meter names. Registered ONLY by the wiring unit TelemetryConfiguration (no stereotype annotation). Metrics are asserted through an injected SimpleMeterRegistry.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.shared.observability",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "SourceKind",
+        "task_id": "T2-003"
+      },
+      {
+        "type": "MetricKind",
+        "task_id": "T2-001"
+      },
+      {
+        "type": "ValidationStatus",
+        "task_id": "T2-002"
+      },
+      {
+        "type": "RevisionReason",
+        "task_id": "T2-008"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "TelemetryMeters(MeterRegistry registry)",
+        "returns": ""
+      },
+      {
+        "signature": "void packetReceived(SourceKind sourceKind)",
+        "returns": "void",
+        "semantics": "Increments counter telemetry.packets.received with tag source_kind=sourceKind name."
+      },
+      {
+        "signature": "void sampleValidated(MetricKind metric, ValidationStatus status)",
+        "returns": "void",
+        "semantics": "Increments counter telemetry.samples.validated with tags metric and status."
+      },
+      {
+        "signature": "void sampleReordered(MetricKind metric)",
+        "returns": "void",
+        "semantics": "Increments counter telemetry.samples.reordered with tag metric."
+      },
+      {
+        "signature": "void revisionAppended(RevisionReason reason)",
+        "returns": "void",
+        "semantics": "Increments counter telemetry.revisions.appended with tag reason."
+      },
+      {
+        "signature": "void recordLatency(String stage, Duration elapsed)",
+        "returns": "void",
+        "semantics": "Records timer telemetry.pipeline.latency with tag stage; stage must be one of validate, history (IllegalArgumentException otherwise)."
+      }
+    ]
+  }
+}

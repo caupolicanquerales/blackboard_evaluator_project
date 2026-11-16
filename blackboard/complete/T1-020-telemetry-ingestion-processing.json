@@ -1,0 +1,38 @@
+{
+  "id": "T1-020",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-010"
+  ],
+  "path": "src/test/java/com/blackboard/telemetry/history/application/HistoryEventPublisherTest.java",
+  "kind": "test",
+  "layer": "application",
+  "feature": null,
+  "export": "HistoryEventPublisher",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Write JUnit 5 + AssertJ tests (reactor-test StepVerifier for Mono/Flux, Mockito for collaborators, no external services, no Thread.sleep) for HistoryEventPublisher. Assert ONLY against the ast_hints method table; at least one given/when/then case per table method and per branch. Unit contract: Context Telemetry Stream Processing & History. Outbound published-language stream port broadcasting TelemetrySampleBackfilled, TelemetryRevisionAppended and TelemetryWindowBuffered. Out-of-process boundary: subscribers are downstream systems declared in the strategy.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.history.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "HistoryEvent",
+        "task_id": "T2-010"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> publish(HistoryEvent event)",
+        "returns": "Mono<Void>",
+        "semantics": "Completes when the event is placed on the bounded downstream broadcast buffer; overflow posture is DROP_OLDEST so it never fails for slow subscribers."
+      },
+      {
+        "signature": "Flux<HistoryEvent> events()",
+        "returns": "Flux<HistoryEvent>",
+        "semantics": "Subscriber-facing hot stream for downstream analytics (PulseStream Engine); consumers are out-of-process, no consumer unit exists in this service."
+      }
+    ]
+  }
+}

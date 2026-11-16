@@ -1,0 +1,38 @@
+{
+  "id": "T2-018",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-018",
+    "T2-007"
+  ],
+  "path": "src/main/java/com/blackboard/telemetry/ingestion/application/ValidatedSampleStream.java",
+  "kind": "code",
+  "layer": "application",
+  "feature": null,
+  "export": "ValidatedSampleStream",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Implement ValidatedSampleStream (Java 21, Spring Boot 3, WebFlux/Reactor/R2DBC, constructor injection, no blocking calls) so that the frozen test passes, providing exactly the ast_hints table and nothing improvised. Unit contract: Context Telemetry Ingestion & Validation. Outbound port of the bounded, backpressure-aware validated sample event stream (customer-supplier link to History). Overflow posture is ERROR with a declared reason; consumer is the pipeline subscription (PipelineSubscriber). Imports only reactor and java.*.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.ingestion.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ValidatedSampleEvent",
+        "task_id": "T2-007"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> publish(ValidatedSampleEvent event)",
+        "returns": "Mono<Void>",
+        "semantics": "Completes when the event is accepted by the bounded buffer; emits IllegalStateException when the buffer is full (overflow posture ERROR) - the false path is an error, never a silent drop."
+      },
+      {
+        "signature": "Flux<ValidatedSampleEvent> events()",
+        "returns": "Flux<ValidatedSampleEvent>",
+        "semantics": "Hot fan-out of published events, consumed by PipelineSubscriber."
+      }
+    ]
+  }
+}

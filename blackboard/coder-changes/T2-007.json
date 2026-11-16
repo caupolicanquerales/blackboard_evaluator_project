@@ -1,23 +1,25 @@
 {
   "id": "T2-007",
   "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/blackboard/telemetry/reconciliation/domain/BackfillReorderer.java",
-  "export": "BackfillReorderer",
-  "kind": "class",
-  "method": "reorder",
+  "targetFile": "src/main/java/com/blackboard/telemetry/ingestion/domain/ValidatedSampleEvent.java",
+  "export": "ValidatedSampleEvent",
+  "method": "ValidatedSampleEvent",
   "language": "java",
-  "framework": "springboot3",
-  "skill": "java-standard-best-practices",
-  "signature": "public List<TelemetrySample> reorder(List<TelemetrySample> samples)",
-  "returns": "List<TelemetrySample>",
-  "body": "return samples.stream().sorted(Comparator.comparing(TelemetrySample::tDevice)).toList();",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "signature": "public ValidatedSampleEvent(TelemetrySample sample, String correlationId)",
+  "returns": "void",
+  "body": "Objects.requireNonNull(sample, \"sample\");\nObjects.requireNonNull(correlationId, \"correlationId\");\nif (sample.status() == ValidationStatus.UNVALIDATED) {\n    throw new IllegalArgumentException(\"sample must be validated\");\n}\nif (correlationId.isBlank()) {\n    throw new IllegalArgumentException(\"correlationId must not be blank\");\n}\nthis.sample = sample;\nthis.correlationId = correlationId;",
   "imports": [
-    "java.util.List",
-    "java.util.Comparator",
-    "com.blackboard.telemetry.ingestion.domain.TelemetrySample"
+    "java.util.Objects"
   ],
   "missing": [],
+  "kind": "record",
+  "members": [
+    "TelemetrySample sample",
+    "String correlationId"
+  ],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-13T16:19:19.220803+00:00"
+  "recorded_at": "2026-11-16T21:23:49.872483+00:00"
 }

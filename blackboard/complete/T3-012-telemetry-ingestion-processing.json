@@ -5,11 +5,11 @@
   "dependsOn": [
     "T2-012"
   ],
-  "path": "src/main/java/com/blackboard/telemetry/ingestion/interface_/TelemetryIngestController.java",
+  "path": "src/main/java/com/blackboard/telemetry/shared/audit/AuditEntry.java",
   "kind": "refactor",
-  "layer": "interface",
+  "layer": "domain",
   "feature": null,
-  "export": "TelemetryIngestController",
-  "intent": "Inspect TelemetryIngestController: thin delegation, NDJSON streamed body, correlation id fallback; tidy without changing the surface.",
-  "project": "telemetry-ingestion-processing"
+  "export": "AuditEntry",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Inspect and refactor AuditEntry without changing the ast_hints surface or the tests' behavior (never seal or finalize a type another unit stubs; no magic numbers, no blocking calls, no raw logger calls beyond the claimed step logs). Unit contract: Shared audit trail record: actor, action, outcome (SUCCESS|FAILURE), timestamp, correlationId (the requestId). Immutable record; the outcome literals SUCCESS and FAILURE are owned here and consumers pin this unit."
 }

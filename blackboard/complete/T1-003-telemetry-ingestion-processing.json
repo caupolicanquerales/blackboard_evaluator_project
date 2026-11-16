@@ -5,49 +5,25 @@
   "dependsOn": [
     "T0-001"
   ],
-  "path": "src/test/java/com/blackboard/telemetry/eventstore/domain/TelemetryRecordTest.java",
+  "path": "src/test/java/com/blackboard/telemetry/ingestion/domain/SourceKindTest.java",
   "kind": "test",
   "layer": "domain",
   "feature": null,
-  "export": "TelemetryRecordTest",
-  "intent": "Context Telemetry Event Store. TelemetryRecord is an immutable append-only record of a stored sample revision: sample identity (deviceId, metric, tDevice) plus tIngress, value, status (VALIDATED or VALIDATION_FAILED) and revision (starting at 1). Assert accessors and value equality only; no validation or mutation.",
+  "export": "SourceKind",
   "project": "telemetry-ingestion-processing",
+  "intent": "Write JUnit 5 + AssertJ tests (reactor-test StepVerifier for Mono/Flux, Mockito for collaborators, no external services, no Thread.sleep) for SourceKind. Assert ONLY against the ast_hints method table; at least one given/when/then case per table method and per branch. Unit contract: Context Telemetry Ingestion & Validation. Enum of the bounded origins of an Ingress Packet, constants exactly: EDGE_DEVICE, BIKE_COMPUTER, SMART_WEARABLE. Used as the bounded metric tag source_kind; single owner of these names.",
   "ast_hints": {
-    "package": "com.blackboard.telemetry.eventstore.domain",
+    "package": "com.blackboard.telemetry.ingestion.domain",
     "implements": [],
     "dependencies": [],
     "methods": [
       {
-        "signature": "public record TelemetryRecord(String deviceId, String metric, Instant tDevice, Instant tIngress, double value, String status, long revision)",
-        "returns": ""
+        "signature": "static SourceKind valueOf(String name)",
+        "returns": "SourceKind"
       },
       {
-        "signature": "String deviceId()",
-        "returns": "String"
-      },
-      {
-        "signature": "String metric()",
-        "returns": "String"
-      },
-      {
-        "signature": "Instant tDevice()",
-        "returns": "Instant"
-      },
-      {
-        "signature": "Instant tIngress()",
-        "returns": "Instant"
-      },
-      {
-        "signature": "double value()",
-        "returns": "double"
-      },
-      {
-        "signature": "String status()",
-        "returns": "String"
-      },
-      {
-        "signature": "long revision()",
-        "returns": "long"
+        "signature": "static SourceKind[] values()",
+        "returns": "SourceKind[]"
       }
     ]
   }

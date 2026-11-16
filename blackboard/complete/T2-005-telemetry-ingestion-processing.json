@@ -3,28 +3,50 @@
   "targetAgent": "agent-coder",
   "stage": 2,
   "dependsOn": [
-    "T1-005"
+    "T1-005",
+    "T2-003",
+    "T2-004"
   ],
-  "path": "src/main/java/com/blackboard/telemetry/shared/observability/AuditTrail.java",
+  "path": "src/main/java/com/blackboard/telemetry/ingestion/domain/IngressPacket.java",
   "kind": "code",
-  "layer": "shared",
+  "layer": "domain",
   "feature": null,
-  "export": "AuditTrail",
-  "intent": "Append-only audit port. Interface with a single method record(AuditEntry) returning Mono<Void>; no update/delete. Implemented by the R2DBC adapter; business units record contractual facts only through this port.",
+  "export": "IngressPacket",
   "project": "telemetry-ingestion-processing",
+  "intent": "Implement IngressPacket (Java 21, Spring Boot 3, WebFlux/Reactor/R2DBC, constructor injection, no blocking calls) so that the frozen test passes, providing exactly the ast_hints table and nothing improvised. Unit contract: Context Telemetry Ingestion & Validation. Immutable record Ingress Packet: the raw payload from a device carrying one or more Telemetry Samples. Invariants: non-null components, non-blank deviceId, at least one sample (IllegalArgumentException otherwise), unmodifiable copy of the sample list.",
   "ast_hints": {
-    "package": "com.blackboard.telemetry.shared.observability",
+    "package": "com.blackboard.telemetry.ingestion.domain",
     "implements": [],
     "dependencies": [
       {
-        "type": "AuditEntry",
+        "type": "SourceKind",
+        "task_id": "T2-003"
+      },
+      {
+        "type": "TelemetrySample",
         "task_id": "T2-004"
       }
     ],
     "methods": [
       {
-        "signature": "Mono<Void> record(AuditEntry entry)",
-        "returns": "Mono<Void>"
+        "signature": "IngressPacket(String deviceId, SourceKind sourceKind, List<TelemetrySample> samples)",
+        "returns": "",
+        "semantics": "Null rejected (NullPointerException); deviceId non-blank; samples non-empty and defensively copied into an unmodifiable list."
+      },
+      {
+        "signature": "String deviceId()",
+        "returns": "String",
+        "semantics": "Never blank."
+      },
+      {
+        "signature": "SourceKind sourceKind()",
+        "returns": "SourceKind",
+        "semantics": "Never null."
+      },
+      {
+        "signature": "List<TelemetrySample> samples()",
+        "returns": "List<TelemetrySample>",
+        "semantics": "Unmodifiable, non-empty."
       }
     ]
   }

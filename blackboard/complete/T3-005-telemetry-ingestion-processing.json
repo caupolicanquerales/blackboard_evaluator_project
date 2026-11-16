@@ -5,11 +5,11 @@
   "dependsOn": [
     "T2-005"
   ],
-  "path": "src/main/java/com/blackboard/telemetry/shared/observability/AuditTrail.java",
+  "path": "src/main/java/com/blackboard/telemetry/ingestion/domain/IngressPacket.java",
   "kind": "refactor",
-  "layer": "shared",
+  "layer": "domain",
   "feature": null,
-  "export": "AuditTrail",
-  "intent": "Inspect AuditTrail port: single append-only method, domain types only; tidy without changing the surface.",
-  "project": "telemetry-ingestion-processing"
+  "export": "IngressPacket",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Inspect and refactor IngressPacket without changing the ast_hints surface or the tests' behavior (never seal or finalize a type another unit stubs; no magic numbers, no blocking calls, no raw logger calls beyond the claimed step logs). Unit contract: Context Telemetry Ingestion & Validation. Immutable record Ingress Packet: the raw payload from a device carrying one or more Telemetry Samples. Invariants: non-null components, non-blank deviceId, at least one sample (IllegalArgumentException otherwise), unmodifiable copy of the sample list."
 }

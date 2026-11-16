@@ -1,0 +1,15 @@
+{
+  "id": "T3-013",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-013"
+  ],
+  "path": "src/main/java/com/blackboard/telemetry/shared/audit/AuditTrail.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "AuditTrail",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Inspect and refactor AuditTrail without changing the ast_hints surface or the tests' behavior (never seal or finalize a type another unit stubs; no magic numbers, no blocking calls, no raw logger calls beyond the claimed step logs). Unit contract: Shared outbound port for the append-only audit trail. record(entry) appends one entry and completes when durable; storage errors are emitted as error signals (never swallowed). Imports only reactor and java.*. Append-only: no update or delete operation exists."
+}

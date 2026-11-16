@@ -1,0 +1,38 @@
+{
+  "id": "T2-020",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-020",
+    "T2-010"
+  ],
+  "path": "src/main/java/com/blackboard/telemetry/history/application/HistoryEventPublisher.java",
+  "kind": "code",
+  "layer": "application",
+  "feature": null,
+  "export": "HistoryEventPublisher",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Implement HistoryEventPublisher (Java 21, Spring Boot 3, WebFlux/Reactor/R2DBC, constructor injection, no blocking calls) so that the frozen test passes, providing exactly the ast_hints table and nothing improvised. Unit contract: Context Telemetry Stream Processing & History. Outbound published-language stream port broadcasting TelemetrySampleBackfilled, TelemetryRevisionAppended and TelemetryWindowBuffered. Out-of-process boundary: subscribers are downstream systems declared in the strategy.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.history.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "HistoryEvent",
+        "task_id": "T2-010"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> publish(HistoryEvent event)",
+        "returns": "Mono<Void>",
+        "semantics": "Completes when the event is placed on the bounded downstream broadcast buffer; overflow posture is DROP_OLDEST so it never fails for slow subscribers."
+      },
+      {
+        "signature": "Flux<HistoryEvent> events()",
+        "returns": "Flux<HistoryEvent>",
+        "semantics": "Subscriber-facing hot stream for downstream analytics (PulseStream Engine); consumers are out-of-process, no consumer unit exists in this service."
+      }
+    ]
+  }
+}

@@ -5,11 +5,11 @@
   "dependsOn": [
     "T2-004"
   ],
-  "path": "src/main/java/com/blackboard/telemetry/shared/observability/AuditEntry.java",
+  "path": "src/main/java/com/blackboard/telemetry/ingestion/domain/TelemetrySample.java",
   "kind": "refactor",
-  "layer": "shared",
+  "layer": "domain",
   "feature": null,
-  "export": "AuditEntry",
-  "intent": "Inspect AuditEntry record and tidy without changing its public surface.",
-  "project": "telemetry-ingestion-processing"
+  "export": "TelemetrySample",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Inspect and refactor TelemetrySample without changing the ast_hints surface or the tests' behavior (never seal or finalize a type another unit stubs; no magic numbers, no blocking calls, no raw logger calls beyond the claimed step logs). Unit contract: Context Telemetry Ingestion & Validation. Immutable record Telemetry Sample (one 1Hz data point): deviceId, metric, tDevice, tIngress, value, status. Invariants: all reference components non-null and deviceId non-blank (violations throw NullPointerException / IllegalArgumentException); the value is never altered or dropped, validation only replaces the status through withStatus. Record equality is by components."
 }

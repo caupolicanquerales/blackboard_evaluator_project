@@ -790,7 +790,7 @@ svc = ROOT / "svc" / "hollow-demo"
 (svc / "src" / "test" / "java" / "com" / "a").mkdir(parents=True)
 (svc / "pom.xml").write_text("<project><artifactId>hollow-demo</artifactId></project>")
 (svc / "src" / "test" / "java" / "com" / "a" / "AppTests.java").write_text(
-    "package com.a;\n@SpringBootTest\nclass AppTests {}\n")
+    "package com.a;\n@SpringBootTest\nclass AppTests {\n  void entryRoundTrip() { WebTestClient client = null; client = null; }\n}\n")
 app = svc / "src" / "main" / "java" / "com" / "a" / "App.java"
 app.write_text("package com.a;\n@SpringBootApplication\npublic class App {\n"
                "  public static void main(String[] a) {}\n}\n")
@@ -847,7 +847,7 @@ tree = sched / "services" / "demo2"
 (tree / "src" / "test" / "java" / "com" / "a").mkdir(parents=True)
 (tree / "pom.xml").write_text("<project/>")
 (tree / "src" / "test" / "java" / "com" / "a" / "AppTests.java").write_text(
-    "package com.a;\n@SpringBootTest\nclass AppTests {}\n")
+    "package com.a;\n@SpringBootTest\nclass AppTests {\n  void entryRoundTrip() { WebTestClient client = null; client = null; }\n}\n")
 (tree / "src" / "main" / "java" / "com" / "a" / "App.java").write_text(
     "package com.a;\n@SpringBootApplication\npublic class App {\n"
     "  public static void main(String[] a) {}\n}\n")
@@ -946,6 +946,110 @@ check("V4 a double-claimed step log names both rivals and is REJECTED",
 no_obs = gtask("T2-796", "Plain", 2, project="legacy", hints=sl_hints)
 check("V5 projects WITHOUT a promised step-log surface skip the rule (legacy-safe)",
       emit([no_obs]) is None)
+# V6 (live 2026-11-16 09:50): phase 1 emits the stage-0 scaffold task BEFORE any
+# decomposition exists. With claims demanded there, T0 is unemittable by construction -
+# the architect burned 19 calls (budget 12) and the run died [fatal] no scaffold task.
+# The floor check must STILL fire on a stage-0-only emit; only the claim layer waits.
+FULL_FLOOR = {"correlation_key": "cid", "step_logs": ["packet received (IngressPacket)"],
+              "audit_trail": {"port": "Audit.record(A)"},
+              "metrics": [{"name": "pkts", "type": "counter", "tags": []}],
+              "export": {"logs": "ecs file sink"}}
+(ROOT / "blackboard" / "complete" / "execution-strategy-phase.json").write_text(
+    json.dumps({"slug": "phase", "observability": FULL_FLOOR}))
+t0_phase = gtask("T0-801", "Scaffold", 0, project="phase")
+t0_phase["layer"] = "root"
+rc_v = emit([t0_phase])
+check("V6 a stage-0-only emit with ZERO stage-2 tasks on the board is ACCEPTED "
+      "(phase-order hole: claims demanded before decomposition can exist killed the run)",
+      rc_v is None and (settings.QUEUE_DIR / "T0-801-phase.json").is_file(), str(rc_v))
+rc_v = emit([gtask("T2-802", "Unclean", 2, project="phase", hints=sl_hints)])
+check("V6b the first stage-2 emit arms the claim gate: an unclaimed step log is REJECTED",
+      bool(rc_v) and "claimed by NO stage-2 unit" in str(rc_v), str(rc_v))
+(ROOT / "blackboard" / "complete" / "execution-strategy-nofloor.json").write_text(
+    json.dumps({"slug": "nofloor", "bounded_contexts": ["x"]}))
+t0_nofloor = gtask("T0-803", "ScaffoldB", 0, project="nofloor")
+t0_nofloor["layer"] = "root"
+rc_v = emit([t0_nofloor])
+check("V6c the FLOOR layer is not weakened: a stage-0 emit whose strategy on disk has "
+      "no observability object is still REJECTED (the agent CAN fix that in-session)",
+      bool(rc_v) and "NO `observability` object" in str(rc_v), str(rc_v))
+import pipeline as _pipe_v6
+(ROOT / "blackboard" / "complete" / "execution-strategy-resume.json").write_text(
+    json.dumps({"slug": "resume", "observability": FULL_FLOOR}))
+_gap_a = _pipe_v6._strategy_phase_gaps(["resume"])
+t0_ok = gtask("T0-805", "Scaffold", 0, project="resume")
+t0_ok["layer"] = "root"
+emit([t0_ok])
+_gap_b = _pipe_v6._strategy_phase_gaps(["resume"])
+check("V9 a strategy on disk with NO scaffold task reads as an OPEN phase-1 gap (the "
+      "resume state after V6's incident no longer silently skips then dies [fatal])",
+      _gap_a == ["resume"] and _gap_b == [], f"{_gap_a} {_gap_b}")
+# V10+ (live 2026-11-16 10:15): the plan pinned the driver package `...intake.interface`
+# - a Java reserved word. The weaver can never render it, the frozen test can never
+# compile: 3 units + 3 evaluators quarantined, ~6 coder sessions spent on an
+# unfixable contract. Reserved segments must die at EMIT, in the planned language.
+(ROOT / "blackboard" / "complete" / "execution-strategy-kw.json").write_text(json.dumps(
+    {"slug": "kw", "tech_stack": {"language": "Java 21"},
+     "observability": FULL_FLOOR}))
+kw_hints = {"package": "com.demo.kw.interface", "implements": [], "dependencies": [],
+            "methods": [{"signature": "go()", "returns": "void"}]}
+kw_bad = gtask("T2-810", "com.demo.kw.interface.Resp", 2, project="kw", hints=kw_hints)
+kw_bad["path"] = "src/main/java/com/demo/kw/interface/Resp.java"
+kw_bad["observability"] = {"step_logs": ["packet received (IngressPacket)"]}
+rc_v = emit([kw_bad])
+check("V10 a stage-2 task whose package segment is reserved in the PLANNED language "
+      "(Java `interface`) is REFUSED at emit naming the field and the word",
+      bool(rc_v) and "reserved words" in str(rc_v) and "interface" in str(rc_v), str(rc_v))
+kw_ok = json.loads(json.dumps(kw_bad))
+kw_ok["id"] = "T2-811"
+kw_ok["ast_hints"]["package"] = "com.demo.kw.api"
+kw_ok["export"] = "com.demo.kw.api.Resp"
+kw_ok["path"] = "src/main/java/com/demo/kw/api/Resp.java"
+rc_v = emit([kw_ok])
+check("V10b the renamed segment (api) is ACCEPTED - the gate refuses only the collision",
+      rc_v is None, str(rc_v))
+(ROOT / "blackboard" / "complete" / "execution-strategy-py.json").write_text(json.dumps(
+    {"slug": "py", "tech_stack": {"language": "Python 3.12"},
+     "observability": {**FULL_FLOOR, "step_logs": ["x done"]}}))
+py_bad = gtask("T2-812", "app.src.lambda.handler", 2, project="py", hints={
+    "package": "app.src.lambda", "implements": [], "dependencies": [],
+    "methods": [{"signature": "go()", "returns": "None"}]})
+py_bad["path"] = "src/app/src/lambda/handler.py"
+py_bad["observability"] = {"step_logs": ["x done"]}
+rc_v = emit([py_bad])
+check("V11 the gate follows the strategy's language: `lambda` is reserved in Python "
+      "and refused there, and PATH segments are checked too",
+      bool(rc_v) and "lambda" in str(rc_v), str(rc_v))
+py_ok = gtask("T2-813", "app.src.core.handler", 2, project="py", hints={
+    "package": "app.src.core", "implements": [], "dependencies": [],
+    "methods": [{"signature": "go()", "returns": "None"}]})
+py_ok["path"] = "src/app/src/core/handler.py"
+py_ok["observability"] = {"step_logs": ["x done"]}
+rc_v = emit([py_ok])
+check("V11b a legal Python path/package pair is ACCEPTED", rc_v is None, str(rc_v))
+(ROOT / "blackboard" / "complete" / "execution-strategy-ctx.json").write_text(json.dumps(
+    {"slug": "ctx", "tech_stack": {"language": "Java 21"},
+     "observability": {**FULL_FLOOR, "step_logs": ["x done"]}}))
+ctx_task = gtask("T2-814", "com.demo.ctx.record.Handler", 2, project="ctx", hints={
+    "package": "com.demo.ctx.record", "implements": [], "dependencies": [],
+    "methods": [{"signature": "go()", "returns": "void"}]})
+ctx_task["path"] = "src/main/java/com/demo/ctx/record/Handler.java"
+ctx_task["observability"] = {"step_logs": ["x done"]}
+rc_v = emit([ctx_task])
+check("V12 CONTEXTUAL Java identifiers stay legal (record/var/yield are NOT reserved "
+      "words - over-refusing a valid plan is the same defect wearing the other uniform)",
+      rc_v is None, str(rc_v))
+(ROOT / "blackboard" / "complete" / "execution-strategy-nolang.json").write_text(
+    json.dumps({"slug": "nolang", "observability": {**FULL_FLOOR,
+                                                    "step_logs": ["x done"]}}))
+nl_task = gtask("T2-815", "com.demo.nl.interface.X", 2, project="nolang", hints={
+    "package": "com.demo.nl.interface", "implements": [], "dependencies": [],
+    "methods": [{"signature": "go()", "returns": "void"}]})
+nl_task["path"] = "src/main/java/com/demo/nl/interface/X.java"
+nl_task["observability"] = {"step_logs": ["x done"]}
+rc_v = emit([nl_task])
+check("V12b a strategy with no language (legacy, unknown stack) SKIPS the gate",
+      rc_v is None, str(rc_v))
 (ROOT / "blackboard" / "complete" / "execution-strategy-bare.json").write_text(
     json.dumps({"slug": "bare", "bounded_contexts": ["x"]}))
 rc_v = emit([gtask("T2-798", "Bare1", 2, project="bare", hints=sl_hints)])
@@ -966,6 +1070,408 @@ h2 = attempt_ledger.contract_hash({**base_h, "observability": {"step_logs": ["x"
 check("U4 attempt-ledger continuity: an absent claim hashes IDENTICALLY to the pre-field "
       "contract (no budget reset on resumed boards); a real claim moves the contract",
       h0 == h1 and h2 != h0, f"{h0[:8]} {h1[:8]} {h2[:8]}")
+
+# --- V13. TERMINAL SUITE gate (live 2026-11-16 10:52): the T3-007 evaluator refactored
+#    EventRevision and the T4 assembler rewrote flyway.url AFTER the last wave gate -
+#    two peers' frozen tests broke with no gate left to notice, the board idled at
+#    queue 0 on a red tree. The quiet-board suite must reopen the COMPLETED owners
+#    (T3 mirror rides along), leave quarantined owners alone, and NAME ownerless reds.
+for _n, _stage, _dep in (("T1-820", 1, None), ("T1-821", 1, None)):
+    (ROOT / "blackboard" / "complete" / f"{_n}-ts.json").write_text(json.dumps(
+        gtask(_n, f"ts.{_n[-3:]}", _stage, project="ts",
+              path=f"src/test/java/ts/{'Widget' if _n.endswith('20') else 'Sock'}Test.java")))
+(ROOT / "blackboard" / "complete" / "T2-820-ts.json").write_text(json.dumps(
+    gtask("T2-820", "ts.Widget", 2, deps=("T1-820",), project="ts")))
+(ROOT / "blackboard" / "complete" / "T3-820-ts.json").write_text(json.dumps(
+    gtask("T3-820", "ts.Widget", 3, deps=("T2-820",), project="ts")))
+(ROOT / "blackboard" / "error" / "T2-821-ts.json").write_text(json.dumps(
+    gtask("T2-821", "ts.Sock", 2, deps=("T1-821",), project="ts")))
+(ROOT / "blackboard" / "complete" / "T4-822-ts.json").write_text(json.dumps(
+    gtask("T4-822", "ts.App", 4, deps=(), project="ts")))
+(ROOT / "blackboard" / "complete" / "T1-823-ts.json").write_text(json.dumps(
+    gtask("T1-823", "ts.GearTest", 1, project="ts",
+          path="src/test/java/ts/GearTest.java")))
+(ROOT / "blackboard" / "complete" / "T2-823-ts.json").write_text(json.dumps(
+    gtask("T2-823", "ts.Gear", 2, deps=("T1-823",), project="ts",
+          path="src/main/java/ts/Gear.java")))
+(ROOT / "blackboard" / "red-phase" / "T1-820.json").write_text(json.dumps(
+    {"executed": True, "status": "compile_error", "command": "./mvnw -Dtest=WidgetTest test"}))
+(ROOT / "blackboard" / "red-phase" / "T1-821.json").write_text(json.dumps(
+    {"executed": True, "status": "compile_error", "command": "./mvnw -Dtest=SockTest test"}))
+test_gate._tool_result = lambda root, command, timeout: (
+    {"status": "passed", "exit_code": 0, "classes": {}, "counts": {}}
+    if "compile" in command else
+    {"status": "assertion_failure", "exit_code": 1, "counts": {"run": 4, "failures": 3},
+     "classes": {"ts.WidgetTest": "failed", "ts.SockTest": "failed",
+                 "x.GhostTest": "failed", "ts.GearTest": "passed"},
+     "excerpt": ["java.lang.IllegalArgumentException: deviceId must not be blank",
+                 "at com.ts.Gear.<init>(Gear.java:9)"],
+     "failures": [{"test": "ts.WidgetTest.g", "message": "expected 0 but was 1"}]})
+import contextlib as _cl
+import io as _io
+_buf = _io.StringIO()
+with _cl.redirect_stdout(_buf):
+    _ts_reopen = tdd_engine.terminal_suite_gate()
+_ts_out = _buf.getvalue()
+with _cl.redirect_stdout(_io.StringIO()):
+    _ts_again = tdd_engine.terminal_suite_gate()
+check("V13 a red delivered-suite class whose owner is COMPLETED reopens the owner "
+      "(and its T3 mirror) instead of an idle board lying green",
+      "T2-820" in _ts_reopen and "T4-822" in _ts_reopen and "T2-823" in _ts_reopen
+      and (settings.QUEUE_DIR / "T2-820-ts.json").is_file()
+      and not (settings.COMPLETE_DIR / "T2-820-ts.json").is_file()
+      and (settings.QUEUE_DIR / "T3-820-ts.json").is_file()
+      and (settings.QUEUE_DIR / "T4-822-ts.json").is_file(),
+      f"{_ts_reopen} {_ts_out[:180]}")
+check("V13c an ownerless red class is NAMED and handed to stage 4 (the only unit whose "
+      "contract is the whole tree), once per tree state - not board silence",
+      "GhostTest has NO producing unit" in _ts_out, _ts_out[:400])
+check("V13b a red owned by a QUARANTINED unit is left to the retry path (no double claim)",
+      (settings.ERROR_DIR / "T2-821-ts.json").is_file()
+      and not (settings.QUEUE_DIR / "T2-821-ts.json").is_file())
+check("V13d the second quiet pass re-reads the memoized verdict and reopens nothing "
+      "(converged or not, the same tree never rebuilds twice)",
+      _ts_again == [], str(_ts_again))
+
+# --- W. the MECHANIZED plan rules (k)/(m)/(n): the machine half of the 2026-11-16
+#    artifact findings (orphaned rule service F1, discarded boolean signal F2,
+#    double registration duty F8). Fixtures use the exact incident shapes.
+wl_hints = {"package": "com.w", "implements": [], "dependencies": [],
+            "methods": [{"signature": "Flux<Event> out()", "returns": "Flux<Event>"}]}
+island = gtask("T2-900", "Feeder", 2, project="wl", path="src/main/java/w/Feeder.java",
+              hints=wl_hints)
+rc_w = emit([island])
+check("W1 a unit whose table PUBLISHES a stream and nobody pins it is REFUSED at emit "
+      "(the F1 orphan: registered, green-tested, never executed)",
+      bool(rc_w) and "PUBLISHES a stream" in str(rc_w), str(rc_w)[:200])
+consumer_hints = {"package": "com.w", "implements": [],
+                  "dependencies": [{"type": "Feeder", "task_id": "T2-900"}],
+                  "methods": [{"signature": "go()", "returns": "void"}]}
+consumer = gtask("T2-901", "Drain", 2, deps=("T2-900",), project="wl",
+                 path="src/main/java/w/Drain.java", hints=consumer_hints)
+rc_w = emit([island, consumer])
+check("W2 the same source ACCEPTS once a real consumer pins it (dependency edge, "
+      "not a mention)", rc_w is None, str(rc_w)[:200])
+wiring_hints = {"package": "com.w", "implements": [],
+                "dependencies": [{"type": "Feeder2", "task_id": "T2-902"}],
+                "methods": [{"signature": "Feeder2 feeder2()", "returns": "Feeder2"}]}
+island2 = gtask("T2-902", "Feeder2", 2, project="wm",
+                  path="src/main/java/w/Feeder2.java", hints={
+    "package": "com.w", "implements": [], "dependencies": [],
+    "methods": [{"signature": "Flux<Event> out()", "returns": "Flux<Event>"}]})
+wiring = gtask("T2-903", "Wiring", 2, deps=("T2-902",), project="wm",
+               path="src/main/java/w/Wiring.java", hints=wiring_hints)
+rc_w = emit([island2, wiring])
+check("W2b a WIRING unit's pin does NOT count as consumption - the config unit that "
+      "FACTORIES the orphan is exactly today's F1 shape (factory edge != consumer)",
+      bool(rc_w) and "PUBLISHES a stream" in str(rc_w), str(rc_w)[:200])
+boundary = gtask("T2-904", "Feeder4", 2, project="wn",
+                 path="src/main/java/w/Feeder4.java",
+                 intent="Publishes the window Flux for out-of-process analytics "
+                        "subscribers; no in-tree consumer.", hints={
+                     "package": "com.w", "implements": [], "dependencies": [],
+                     "methods": [{"signature": "Flux<Event> out()", "returns": "Flux<Event>"}]})
+rc_w = emit([boundary])
+check("W3 the boundary exemption is honored ONLY when the UNIT's own intent declares "
+      "the out-of-process surface (rule (i)'s vocabulary, per source)",
+      rc_w is None, str(rc_w)[:200])
+sig_hints = {"package": "com.w", "implements": [], "dependencies": [],
+             "methods": [{"signature": "boolean publish(Event e)", "returns": "boolean"}]}
+sig = gtask("T2-905", "Pub", 2, project="wp", path="src/main/java/w/Pub.java",
+           hints=sig_hints)
+rc_w = emit([sig])
+check("W4 a tabled SIGNAL return (boolean / Mono<Boolean>) with no `semantics` naming "
+      "both outcomes is REFUSED (F2: an unowned false branch is a silent drop)",
+      bool(rc_w) and "SIGNAL" in str(rc_w), str(rc_w)[:200])
+fixed_hints = json.loads(json.dumps(sig_hints))
+fixed_hints["methods"][0]["semantics"] = ("true = buffered for the appender; false = the "
+                                          "bounded sink dropped it, the caller must reject 503")
+rc_w = emit([gtask("T2-906", "Pub6", 2, project="wp", path="src/main/java/w/Pub6.java",
+               hints=fixed_hints)])
+check("W4b the same signal ACCEPTS once `semantics` spells both outcomes", rc_w is None,
+      str(rc_w)[:200])
+mono_sig = {"package": "com.w", "implements": [], "dependencies": [],
+            "methods": [{"signature": "Mono<Boolean> append(Event e)", "returns": "Mono<Boolean>"}]}
+rc_w = emit([gtask("T2-907", "App7", 2, project="wq", path="src/main/java/w/App7.java",
+               hints=mono_sig)])
+check("W4c the wrapped reactive form Mono<Boolean> is a signal too (the F3 dropped-"
+      "duplicate path rode exactly this spelling)", bool(rc_w) and "SIGNAL" in str(rc_w),
+      str(rc_w)[:200])
+owner8 = gtask("T2-908", "Widget8", 2, project="wr",
+               path="src/main/java/w/Widget8.java",
+               intent="Implementation unit; registers itself as a managed component.",
+               hints={"package": "com.w", "implements": [], "dependencies": [],
+                      "methods": [{"signature": "go()", "returns": "void"}]})
+maker8 = gtask("T2-909", "Wiring8", 2, deps=("T2-908",), project="wr",
+               path="src/main/java/w/Wiring8.java", hints={
+    "package": "com.w", "implements": [],
+    "dependencies": [{"type": "Widget8", "task_id": "T2-908"}],
+    "methods": [{"signature": "Widget8 widget8()", "returns": "Widget8"}]})
+rc_w = emit([owner8, maker8])
+check("W5 a product claimed by TWO registration duties (own intent registers itself + "
+      "a wiring factory returns it) is REFUSED - factory XOR self-register (F8)",
+      bool(rc_w) and "TWO registration" in str(rc_w), str(rc_w)[:200])
+owner8b = dict(owner8, id="T2-920", export="Widget9",
+               path="src/main/java/w/Widget9.java", intent="Plain unit; the wiring "
+               "unit is the only registration duty.")
+owner8b["ast_hints"] = json.loads(json.dumps(owner8["ast_hints"]))
+maker8b = dict(maker8, id="T2-921", export="Wiring9",
+               path="src/main/java/w/Wiring9.java")
+maker8b["dependsOn"] = ["T2-920"]
+maker8b["ast_hints"] = json.loads(json.dumps(maker8["ast_hints"]))
+maker8b["ast_hints"]["dependencies"][0] = {"type": "Widget9", "task_id": "T2-920"}
+maker8b["ast_hints"]["methods"][0] = {"signature": "Widget9 widget9()", "returns": "Widget9"}
+rc_w = emit([owner8b, maker8b])
+check("W5b ONE registration mechanism (factory only) is the accepted shape",
+      rc_w is None, str(rc_w)[:200])
+# W6: range-claim -> constructor semantics (2026-11-16: `revision (>=1)` lived only in
+# the producer's intent prose; the collaborator TABLE is what consumer testers receive,
+# and four frozen fixtures fabricated revision=0 and died on a test nobody could edit).
+ctor_hints = {"package": "com.w", "implements": [], "dependencies": [],
+              "methods": [{"signature": "Sample6(int revision)", "returns": ""}]}
+claim = gtask("T2-922", "Sample6", 2, project="ws",
+              intent="record; revision (>=1, else IllegalArgumentException)",
+              path="src/main/java/w/Sample6.java", hints=ctor_hints)
+rc_w = emit([claim])
+check("W6 an intent stating a constructor ARGUMENT INVARIANT is refused when the "
+      "constructor's table entry carries no `semantics` (the bound must reach the "
+      "consumer units' injected collaborator table, not live only in prose)",
+      bool(rc_w) and "semantics" in str(rc_w) and "Sample6" in str(rc_w), str(rc_w)[:200])
+claim_ok = gtask("T2-923", "Sample7", 2, project="ws",
+                 intent="record; revision (>=1, else IllegalArgumentException)",
+                 path="src/main/java/w/Sample7.java",
+                 hints={"package": "com.w", "implements": [], "dependencies": [],
+                        "methods": [{"signature": "Sample7(int revision)", "returns": "",
+                                     "semantics": "revision >= 1; first revision is 1; "
+                                                  "consumers build via received()"}]})
+rc_w = emit([claim_ok])
+check("W6b the same claim ACCEPTS once the constructor entry spells the bound in "
+      "`semantics` (the tester-facing construction contract is complete)",
+      rc_w is None, str(rc_w)[:200])
+# W7: the MOCKABILITY gap (2026-11-16 15:17: an evaluator sealed an event interface and
+# the CONSUMER's seven stub-based tests died - the consumer burned its whole life budget
+# on a file it must not touch). Runner normalizes `mock_impossible`/failure.mock_type;
+# the engine charges the producer that CLOSED the type, never the mocking victim, and an
+# own-product closure stays the unit's own fault.
+(ROOT / "blackboard" / "complete" / "T2-930-wt.json").write_text(json.dumps(
+    gtask("T2-930", "EvtClosed", 2, project="wt", path="src/main/java/w/EvtClosed.java",
+          hints={"package": "com.w", "implements": [], "dependencies": [],
+                 "methods": [{"signature": "payload()", "returns": "String"}]})))
+(ROOT / "blackboard" / "complete" / "T1-931-wt.json").write_text(json.dumps(
+    gtask("T1-931", "StubberTest", 1, project="wt",
+          path="src/test/java/w/StubberTest.java")))
+(ROOT / "blackboard" / "complete" / "T2-931-wt.json").write_text(json.dumps(
+    gtask("T2-931", "Stubber", 2, deps=("T1-931",), project="wt",
+          path="src/main/java/w/Stubber.java", hints={
+              "package": "com.w", "implements": [],
+              "dependencies": [{"type": "EvtClosed", "task_id": "T2-930"}],
+              "methods": [{"signature": "go()", "returns": "void"}]})))
+mock_result = {"status": "assertion_failure", "exit_code": 1, "counts": {"run": 7, "errors": 7},
+               "mock_impossible": ["EvtClosed"],
+               "failures": [{"test": "w.StubberTest.stubs", "mock_type": "EvtClosed",
+                             "message": "Mockito cannot mock this class"}]}
+_stubber = json.load(open(ROOT / "blackboard" / "complete" / "T2-931-wt.json"))
+check("W7 a mockability gap on a FOREIGN closed type defers the mocking unit and names "
+      "its producer (_mock_impossible_owner -> T2-930, not the victim T2-931)",
+      tdd_engine._mock_impossible_owner(mock_result, _stubber) == "T2-930"
+      and tdd_engine._blocked_by_peers(mock_result, _stubber) is True)
+_self = json.load(open(ROOT / "blackboard" / "complete" / "T2-930-wt.json"))
+check("W7b closing the type the unit ITSELF ships is its own contract's problem "
+      "(no foreign owner -> charged normally)",
+      tdd_engine._mock_impossible_owner(mock_result, _self) is None)
+(ROOT / "blackboard" / "red-phase" / "T1-931.json").write_text(json.dumps(
+    {"executed": True, "status": "compile_error",
+     "command": "./mvnw -q -Dtest=StubberTest test"}))
+test_gate._tool_result = lambda root, command, timeout: (
+    {"status": "passed", "exit_code": 0, "classes": {}, "counts": {}}
+    if "compile" in command else
+    {"status": "assertion_failure", "exit_code": 1, "counts": {"run": 7, "errors": 7},
+     "classes": {"w.StubberTest": "failed"},
+     "mock_impossible": ["EvtClosed"],
+     "failures": [{"test": "w.StubberTest.stubs", "mock_type": "EvtClosed",
+                   "message": "Mockito cannot mock this class"}],
+     "excerpt": []})
+with _cl.redirect_stdout(_io.StringIO()):
+    _wt_reopen = tdd_engine.terminal_suite_gate()
+check("W7c the terminal suite gate charges the CLOSED-type producer (T2-930 reopened) "
+      "and leaves the victim's completed record (T2-931) alone",
+      "T2-930" in _wt_reopen and "T2-931" not in _wt_reopen, str(_wt_reopen))
+
+# --- X. the REAL-SUBSTRATE / REQUEST-PATH / IDEMPOTENCY plan gates (2026-11-16
+#    second drain: mocked DatabaseClient hid an unpopulated NOT NULL PK while 186
+#    tests and a contextLoads boot stayed green).
+xu_hints = {"package": "com.x", "implements": [], "dependencies": [],
+            "methods": [{"signature": "record(E e)", "returns": "void"}]}
+x_mockonly_t1 = gtask("T1-941", "com.x.AuditMock", 1, project="xu",
+                      path="src/test/java/x/AuditMockTest.java",
+                      intent="Test the audit adapter with a mocked database client.",
+                      hints=xu_hints)
+x_mockonly_t2 = gtask("T2-941", "com.x.AuditMock", 2, deps=("T1-941",), project="xu",
+                      path="src/main/java/x/AuditMock.java",
+                      intent="INSERT INTO audit_trail (actor, action) VALUES ...",
+                      hints=xu_hints)
+rc_x = emit([x_mockonly_t1, x_mockonly_t2])
+check("X1 an SQL-executing unit whose paired test intent lacks a real-substrate demand "
+      "is REFUSED (the N1 class: mocked client proves shape, never schema fit)",
+      bool(rc_x) and "REAL-SUBSTRATE" in str(rc_x), str(rc_x)[:200])
+x_real_t1 = gtask("T1-942", "com.x.AuditReal", 1, project="xu",
+                  path="src/test/java/x/AuditRealTest.java",
+                  intent="Execute the actual migration DDL against the embedded "
+                         "substitute database and assert the durable row.", hints=xu_hints)
+x_real_t2 = gtask("T2-942", "com.x.AuditReal", 2, deps=("T1-942",), project="xu",
+                  path="src/main/java/x/AuditReal.java",
+                  intent="INSERT INTO audit_trail (actor, action) VALUES ...",
+                  hints=xu_hints)
+rc_x = emit([x_real_t1, x_real_t2])
+check("X1b the same unit ACCEPTS once the paired test intent demands the real-substrate "
+      "run against actual migration DDL", rc_x is None, str(rc_x)[:200])
+xv_t1 = gtask("T1-943", "com.x.Ping", 1, project="xv", path="src/test/java/x/PingTest.java",
+              intent="assert the controller delegates", hints=xu_hints)
+xv_t2 = gtask("T2-943", "com.x.Ping", 2, deps=("T1-943",), project="xv",
+              path="src/main/java/x/Ping.java",
+              intent="@PostMapping /api/ping request body handling", hints=xu_hints)
+rc_x = emit([xv_t1, xv_t2])
+check("X2 a plan with an inbound HTTP adapter but no end-to-end request-path slice is "
+      "REFUSED (contextLoads + new-built unit tests never make the pieces AGREE)",
+      bool(rc_x) and "request-path slice" in str(rc_x), str(rc_x)[:200])
+xv_t1b = gtask("T1-944", "com.x.Pong", 1, project="xw", path="src/test/java/x/PongTest.java",
+               intent="assert the controller delegates", hints=xu_hints)
+xv_t2b = gtask("T2-944", "com.x.Pong", 2, deps=("T1-944",), project="xw",
+               path="src/main/java/x/Pong.java",
+               intent="@PostMapping /api/pong request body handling", hints=xu_hints)
+xv_e2e = gtask("T1-945", "com.x.EntrySliceTest", 1, project="xw",
+               path="src/test/java/x/EntrySliceTest.java",
+               intent="end-to-end request-path slice: drive the entry, assert durable rows",
+               hints=xu_hints)
+xv_e2e2 = gtask("T2-945", "com.x.EntrySliceSupport", 2, deps=("T1-945",), project="xw",
+                path="src/main/java/x/EntrySliceSupport.java",
+                intent="test support for the integration slice", hints=xu_hints)
+rc_x = emit([xv_t1b, xv_t2b, xv_e2e, xv_e2e2])
+check("X2b the same plan ACCEPTS once one integration-slice task is scheduled",
+      rc_x is None, str(rc_x)[:200])
+xw2_chain_t1 = gtask("T1-946", "com.x.Ingest", 1, project="xx",
+                     path="src/test/java/x/IngestTest.java",
+                     intent="assert the store appends", hints=xu_hints)
+xw2_chain_t2 = gtask("T2-946", "com.x.Ingest", 2, deps=("T1-946",), project="xx",
+                     path="src/main/java/x/Ingest.java",
+                     intent="append-only revision store: nextRevision per delivery",
+                     hints=xu_hints)
+xw2_in_t1 = gtask("T1-947", "com.x.Front", 1, project="xx",
+                  path="src/test/java/x/FrontTest.java",
+                  intent="assert the POST handler", hints=xu_hints)
+xw2_in_t2 = gtask("T2-947", "com.x.Front", 2, deps=("T1-947", "T2-946"), project="xx",
+                  path="src/main/java/x/Front.java",
+                  intent="@PostMapping /api/ingest request body, server-minted id",
+                  hints=xu_hints)
+xw2_e2e = gtask("T1-948", "com.x.ChainSliceTest", 1, project="xx",
+                path="src/test/java/x/ChainSliceTest.java",
+                intent="end-to-end request-path slice for the ingress chain",
+                hints=xu_hints)
+xw2_e2e2 = gtask("T2-948", "com.x.ChainSliceSupport", 2, deps=("T1-948",), project="xx",
+                 path="src/main/java/x/ChainSliceSupport.java",
+                 intent="test support", hints=xu_hints)
+rc_x = emit([xw2_chain_t1, xw2_chain_t2, xw2_in_t1, xw2_in_t2, xw2_e2e, xw2_e2e2])
+check("X3 an at-least-once inbound over an append-only chain with NO idempotency duty "
+      "on the chain is REFUSED (N4: a network retry must not mint a revision)",
+      bool(rc_x) and "idempotency" in str(rc_x), str(rc_x)[:200])
+xw2_chain_t2b = dict(xw2_chain_t2)
+xw2_chain_t2b["intent"] = ("append-only revision store: dedup by the client-supplied "
+                           "idempotency key (natural identity), nextRevision per new key")
+rc_x = emit([xw2_chain_t1, xw2_chain_t2b, xw2_in_t1, xw2_in_t2, xw2_e2e, xw2_e2e2])
+check("X3b the same chain ACCEPTS once the receiving store contract names the dedup key",
+      rc_x is None, str(rc_x)[:200])
+
+# X4/X5: the assembly-time probes (request-path evidence, base-document discipline).
+import assembly as _asm
+xs = ROOT / "xs-service"
+(xs / "src" / "main" / "java" / "com" / "a").mkdir(parents=True)
+(xs / "src" / "test" / "java" / "com" / "a").mkdir(parents=True)
+(xs / "src" / "main" / "resources").mkdir(parents=True)
+(xs / "pom.xml").write_text("<project><dependency>flyway-core</dependency></project>")
+(xs / "src" / "main" / "java" / "com" / "a" / "App.java").write_text(
+    "package com.a;\n@SpringBootApplication\npublic class App {\n"
+    "  public static void main(String[] a) {}\n}\n")
+(xs / "src" / "test" / "java" / "com" / "a" / "AppTests.java").write_text(
+    "package com.a;\n@SpringBootTest\nclass AppTests {}\n")
+(xs / "src" / "main" / "resources" / "application.yml").write_text(
+    "spring:\n  r2dbc:\n    url: r2dbc:h2:mem:///db\n")
+check("X4 the assembly gate REFUSES a delivered tree where no test ever sends a request "
+      "(contextLoads-only boot, the N1 blind spot at delivered time)",
+      bool(_asm._request_path_problems(xs, "java-springboot")))
+(xs / "src" / "test" / "java" / "com" / "a" / "EntrySliceTest.java").write_text(
+    "package com.a;\n@SpringBootTest\nclass EntrySliceTest {\n"
+    "  WebTestClient client;\n}\n")
+check("X4b one request-path slice satisfies the probe",
+      not _asm._request_path_problems(xs, "java-springboot"))
+check("X5 the base document pinning the embedded substitute LITERALLY is REFUSED "
+      "(N3 production fiction)", bool(_asm._base_config_problems(xs, "java-springboot")))
+(xs / "src" / "main" / "resources" / "application.yml").write_text(
+    "spring:\n  r2dbc:\n    url: ${DB_URL}\n  flyway:\n"
+    "    locations: classpath:db/migration\n---\nspring:\n  config:\n"
+    "    activate:\n      on-profile: test\n  r2dbc:\n    url: r2dbc:h2:mem:///db\n")
+check("X5b placeholder base + substitute isolated in the profile document ACCEPTS",
+      not _asm._base_config_problems(xs, "java-springboot"))
+(xs / "src" / "main" / "resources" / "application.yml").write_text(
+    "spring:\n  flyway:\n    locations: filesystem:db/migrations\n  r2dbc:\n"
+    "    url: ${DB_URL}\n")
+(xs / "db" / "migrations").mkdir(parents=True)
+(xs / "db" / "migrations" / "V1__x.sql").write_text("CREATE TABLE t (id INT);")
+check("X5c a delivered config whose locations token is filesystem: NO LONGER fails the "
+      "assembly gate - that check collided with the config unit's own frozen test and "
+      "livelocked T4 (2026-11-16); portability of the SAME shape is refused at EMIT "
+      "instead, where the architect can still fix it",
+      not _asm._base_config_problems(xs, "java-springboot"),
+      str(_asm._base_config_problems(xs, "java-springboot"))[:200])
+
+# X6: plan rule (r) - migration locations must be the PACKAGED classpath form, at EMIT.
+import workspace as _ws
+(_ROOT_proj := ROOT / "proj" / "db" / "migrations").mkdir(parents=True, exist_ok=True)
+(_ROOT_proj / "V1__x.sql").write_text("CREATE TABLE t (id INT);")
+_orig_root_for = workspace.project_root_for
+workspace.project_root_for = lambda slug: ROOT / "proj"
+cfg_bad = gtask("T2-952", "AppCfg", 2, project="wh",
+                path="src/main/resources/application.yml",
+                intent="runtime application.yml: spring.flyway.locations filesystem:db/migrations, "
+                       "clean ${DB_URL} placeholders for the datasource")
+rc_x = emit([cfg_bad])
+check("X6 an emit config unit that pins migration locations CWD-relative into the "
+      "project is REFUSED at plan time (jar-portability, enforced where it is "
+      "fixable - not at the assembly gate against a frozen test)",
+      bool(rc_x) and "CWD-relative" in str(rc_x), str(rc_x)[:200])
+cfg_good = gtask("T2-953", "AppCfgOk", 2, project="wh",
+                 path="src/main/resources/application.yml",
+                 intent="runtime application.yml: spring.flyway.locations classpath:db/migration, "
+                        "the scripts packaged under src/main/resources/db/migration",
+                 hints={"package": "com.w", "implements": [], "dependencies": [],
+                        "methods": []})
+rc_x = emit([cfg_good])
+check("X6b the packaged classpath form ACCEPTS", rc_x is None, str(rc_x)[:200])
+
+# X7: the terminal suite gate must read a red class whose owner is QUARANTINED as the
+# quarantine owning it - not as an ownerless mystery.
+(ROOT / "blackboard" / "error" / "T2-954-wg.json").write_text(json.dumps(
+    gtask("T2-954", "Holder954", 2, deps=("T1-954",), project="wg",
+          path="src/main/java/g/Holder954.java")))
+(ROOT / "blackboard" / "complete" / "T1-954-wg.json").write_text(json.dumps(
+    gtask("T1-954", "Holder954Test", 1, project="wg",
+          path="src/test/java/g/Holder954Test.java")))
+(ROOT / "blackboard" / "red-phase" / "T1-954.json").write_text(json.dumps(
+    {"executed": True, "status": "compile_error",
+     "command": "./mvnw -q -Dtest=Holder954Test test"}))
+test_gate._tool_result = lambda root, command, timeout: (
+    {"status": "passed", "exit_code": 0, "classes": {}, "counts": {}}
+    if "compile" in command else
+    {"status": "assertion_failure", "exit_code": 1, "counts": {"run": 3, "failures": 3},
+     "classes": {"g.Holder954Test": "failed"},
+     "failures": [{"test": "g.Holder954Test.works", "message": "expected 1 but was 2"}]})
+_buf7 = _io.StringIO()
+with _cl.redirect_stdout(_buf7):
+    _wg_reopen = tdd_engine.terminal_suite_gate()
+check("X7 a red class whose owner is QUARANTINED reads as 'the quarantine already owns "
+      "it' - not 'NO producing unit' (the owner map must see error/ records)",
+      _wg_reopen == [] and "owner T2-954 is quarantined" in _buf7.getvalue(),
+      f"{_wg_reopen} {_buf7.getvalue()[-220:]}")
+workspace.project_root_for = _orig_root_for
 
 bad_names = [n for n, c in CHECKS if not c]
 print(f"\nENGINE-DECISIONS SUITE: {len(CHECKS) - len(bad_names)}/{len(CHECKS)}")

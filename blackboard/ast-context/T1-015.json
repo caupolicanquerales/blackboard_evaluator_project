@@ -1,0 +1,17 @@
+{
+  "task_id": "T1-015",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "ApplicationYml",
+    "constructors": [],
+    "static_calls": [],
+    "calls": [],
+    "verified": [],
+    "usage_lines": [
+      "class ApplicationYmlTest {"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

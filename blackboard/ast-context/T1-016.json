@@ -1,0 +1,85 @@
+{
+  "task_id": "T1-016",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "TelemetryMeters",
+    "constructors": [
+      [
+        "registry"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "meters",
+        "method": "packetReceived",
+        "args": [
+          "kind"
+        ]
+      },
+      {
+        "receiver": "meters",
+        "method": "sampleValidated",
+        "args": [
+          "metric",
+          "status"
+        ]
+      },
+      {
+        "receiver": "meters",
+        "method": "sampleReordered",
+        "args": [
+          "metric"
+        ]
+      },
+      {
+        "receiver": "meters",
+        "method": "revisionAppended",
+        "args": [
+          "reason"
+        ]
+      },
+      {
+        "receiver": "meters",
+        "method": "recordLatency",
+        "args": [
+          "\"validate\"",
+          "Duration.ofMillis(5)"
+        ]
+      },
+      {
+        "receiver": "meters",
+        "method": "recordLatency",
+        "args": [
+          "\"history\"",
+          "Duration.ofMillis(7)"
+        ]
+      },
+      {
+        "receiver": "meters",
+        "method": "recordLatency",
+        "args": [
+          "\"other\"",
+          "Duration.ofMillis(1)"
+        ]
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class TelemetryMetersTest {",
+      "private TelemetryMeters meters;",
+      "meters = new TelemetryMeters(registry);",
+      "meters.packetReceived(kind);",
+      "meters.sampleValidated(metric, status);",
+      "meters.sampleValidated(metric, status);",
+      "meters.sampleReordered(metric);",
+      "meters.revisionAppended(reason);",
+      "meters.recordLatency(\"validate\", Duration.ofMillis(5));",
+      "meters.recordLatency(\"history\", Duration.ofMillis(7));",
+      "assertThatThrownBy(() -> meters.recordLatency(\"other\", Duration.ofMillis(1)))"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

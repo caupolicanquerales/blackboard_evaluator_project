@@ -28,10 +28,14 @@ Output JSON:
 """
 import argparse
 import json
+import os
 import re
 import shlex
 import subprocess
 import sys
+import time
+import xml.etree.ElementTree as ET
+from pathlib import Path
 
 MAX_EXCERPT_LINES = 40
 MAX_LIST = 50
@@ -72,6 +76,17 @@ RE_GO_FIELD = re.compile(r"([\w]+) undefined \(type ([\w.\-]+) has no field or m
 # Context-boot demands: "No qualifying bean of type 'x.Y' available" (Spring) - the
 # engine needs the SIMPLE TYPE NAME as a normalized field, never this phrasing.
 RE_MISSING_BEAN = re.compile(r"No qualifying bean of type '([\w.$]+)'")
+# Mockability gap: "Mockito cannot mock this class: interface x.Y. / Sealed interfaces or
+# abstract classes can't be mocked" - a FROZEN test stubs type Y and the current source
+# forbids stubbing (sealed modifier). Normalized to the simple TYPE NAME so the engine
+# attributes the red to whoever CLOSED the type (its producer), never to the mocking unit
+# whose test it cannot edit (seed-002 2026-11-16: an evaluator sealed an event interface;
+# the consumer's 7 mock-based tests died and its unit was charged for a foreign file).
+RE_MOCK_IMPOSSIBLE = re.compile(
+    r"Mockito cannot mock this class: (?:interface|class|abstract class)?\s*"
+    r"([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*)"
+    r"|Cannot mock (?:final class|sealed\w* (?:class|interface))[:\s]*"
+    r"([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*)")
 # Problem kinds per compile-error location, normalized to `problem_kinds`:
 # [{"file": NAME, "line": N, "kind": supertype|missing-symbol|other}]. The engine's
 # cascade-vs-structural and supertype-conflict decisions read this FIELD instead of
@@ -207,6 +222,18 @@ def unique_demands(items):
     return out[:MAX_LIST]
 
 
+def tag_mock_gaps(failures):
+    """Attach `mock_type` to failure entries whose message is a Mockito mockability gap.
+    Phrase matching lives in the tool; the engine gets a structured per-class link
+    between the red class and the CLOSED type, so the victim unit's owner is never
+    charged for a collaborator that was sealed under it (2026-11-16)."""
+    for f in failures:
+        m = RE_MOCK_IMPOSSIBLE.search(str(f.get("message") or ""))
+        if m:
+            f["mock_type"] = next(g for g in m.groups() if g).rsplit(".", 1)[-1]
+    return failures
+
+
 def unique_problems(items):
     seen, out = set(), []
     for item in items:
@@ -251,6 +278,8 @@ def parse(output, root=None):
     problems = []
     # Context-boot bean demands, normalized to simple type names (index 7).
     beans = []
+    # Mockability gaps (sealed/final type a frozen test stubs), simple type names (index 8).
+    mocks = []
 
     def owner_of(type_name):
         head = type_name.split("<", 1)[0]
@@ -359,6 +388,9 @@ def parse(output, root=None):
         bean = RE_MISSING_BEAN.search(line)
         if bean:
             beans.append(bean.group(1).rsplit(".", 1)[-1])
+        mock = RE_MOCK_IMPOSSIBLE.search(line)
+        if mock:
+            mocks.append(next(g for g in mock.groups() if g).rsplit(".", 1)[-1])
 
         matched_failure = False
         m = RE_JUNIT_SUMMARY.match(line)
@@ -386,9 +418,10 @@ def parse(output, root=None):
         if not matched_failure and RE_ASSERT.search(line) and "Tests run" not in line:
             failures.append({"test": "", "message": line.strip()[:300]})
 
-    return (compile_hit, unique(missing), unique(missing_packages), failures[:MAX_LIST],
+    return (compile_hit, unique(missing), unique(missing_packages),
+            tag_mock_gaps(failures)[:MAX_LIST],
             parse_counts(output), unique_demands(demands), unique_problems(problems),
-            unique(beans))
+            unique(beans), unique(mocks))
 
 
 def parse_counts(output):
@@ -463,10 +496,78 @@ def excerpt(output):
     return lines[-MAX_EXCERPT_LINES:]
 
 
+def surefire_reports(cwd, started):
+    """Ground truth a silent run cannot hide: Surefire writes TEST-*.xml per class
+    even when Maven -q suppresses every console line (live 2026-11-16 10:30: a green
+    10-test class ran under `./mvnw -q ...`, printed nothing, and the gate's silent
+    exit-0 guard classified the unit as not_run -> fatal: the class of failure where
+    the PROOF exists on disk and only the console was muted). Returns
+    (counts, failures, classes) aggregated over report files touched at/after
+    `started`, or None when there is no fresh Surefire evidence.
+    """
+    root = Path(cwd)
+    candidates = list(root.glob("target/surefire-reports/TEST-*.xml"))
+    for child in root.glob("*/target/surefire-reports/TEST-*.xml"):
+        candidates.append(child)
+    fresh = []
+    for report in candidates:
+        try:
+            # NO negative slop: consecutive scoped runs start seconds apart, and a
+            # tolerance window sweeps the PREVIOUS unit's fresh report into this
+            # verdict (live probe 2026-11-16 10:41: a 10-test class reported 17).
+            if report.stat().st_mtime >= started:
+                fresh.append(report)
+        except OSError:
+            continue
+    if not fresh:
+        return None
+    run = failures = errors = 0
+    failure_list, class_map, mock_list = [], {}, []
+    for report in fresh:
+        try:
+            suite = ET.parse(report).getroot()
+        except (ET.ParseError, OSError):
+            continue
+        if suite.tag != "testsuite":
+            continue
+        run += int(suite.get("tests") or 0)
+        suite_failed = int(suite.get("failures") or 0) + int(suite.get("errors") or 0)
+        failures += int(suite.get("failures") or 0)
+        errors += int(suite.get("errors") or 0)
+        name = str(suite.get("name") or report.stem.removeprefix("TEST-"))
+        class_map[name] = "failed" if suite_failed else "passed"
+        for case in suite.iter("testcase"):
+            bad = case.find("failure") if case.find("failure") is not None else case.find("error")
+            if bad is not None:
+                message = str(bad.get("message") or (bad.text or "")).strip()
+                mock = RE_MOCK_IMPOSSIBLE.search(message)
+                if mock:
+                    mock_list.append(next(g for g in mock.groups() if g).rsplit(".", 1)[-1])
+                failure_list.append({
+                    "test": f"{case.get('classname', name)}.{case.get('name', '?')}",
+                    "message": message[:300]})
+    if not run:
+        return None
+    return ({"run": run, "failures": failures, "errors": errors}, tag_mock_gaps(failure_list),
+            class_map, unique(mock_list))
+
+
 def classify(exit_code, compile_hit, missing, failures, counts, output):
     if compile_hit or missing:
         return "compile_error"
-    if failures or counts.get("failures") or counts.get("errors"):
+    # A green toolchain cannot be talked into red by log noise: the loose assertion
+    # vocabulary ("expected", "Expecting ", ...) also matches application LOG lines,
+    # INFO output, and test stdout. When the runner's OWN aggregated counts report
+    # zero failures/errors and the exit code is 0, failure entries that name no test
+    # (the noise-only shape produced by the loose RE_ASSERT sweep) must not flip the
+    # verdict (2026-11-16: a 258/258-green suite was classified assertion_failure by
+    # the terminal suite gate, which then reported a fake tree-wide red with no
+    # producing unit - a false alarm of the kind that erases operator trust).
+    counted_clean = (exit_code == 0 and not counts.get("failures")
+                     and not counts.get("errors") and counts.get("run"))
+    if failures and not counted_clean:
+        return "assertion_failure"
+    if counts.get("failures") or counts.get("errors"):
         return "assertion_failure"
     if exit_code != 0:
         return "error"
@@ -487,14 +588,28 @@ def main():
         print(json.dumps({"status": "not_run", "reason": blocked}, indent=2))
         return 1
 
+    started = time.time()
     exit_code, output = run(args.cmd, args.cwd, args.timeout)
     if exit_code is None:
         result = {"status": "not_run", "reason": output}
         print(json.dumps(result, indent=2))
         return 1
 
-    compile_hit, missing, missing_packages, failures, counts, demands, problems, beans = parse(output, args.cwd)
+    (compile_hit, missing, missing_packages, failures, counts, demands, problems,
+     beans, mocks) = parse(output, args.cwd)
     status = classify(exit_code, compile_hit, missing, failures, counts, output)
+    xml_evidence = None
+    if status == "not_run" and exit_code == 0:
+        xml_evidence = surefire_reports(args.cwd, started)
+    if xml_evidence:
+        counts, failures, xml_classes, xml_mocks = xml_evidence
+        mocks = mocks or xml_mocks
+        classes = dict(parse_classes(output))
+        classes.update(xml_classes)
+        status = "assertion_failure" if (counts.get("failures") or counts.get("errors")
+                                         or failures) else "passed"
+    else:
+        classes = parse_classes(output)
     result = {
         "status": status,
         "exit_code": exit_code,
@@ -502,14 +617,18 @@ def main():
         "missing_packages": missing_packages,
         "failures": failures,
         "counts": counts,
-        "classes": parse_classes(output),
+        "classes": classes,
     }
+    if xml_evidence:
+        result["evidence"] = "surefire-xml"
     if demands:
         result["member_demands"] = demands
     if problems:
         result["problem_kinds"] = problems
     if beans:
         result["bean_demands"] = beans
+    if mocks:
+        result["mock_impossible"] = mocks
     if status != "passed":
         result["excerpt"] = excerpt(output)
     print(json.dumps(result, indent=2))

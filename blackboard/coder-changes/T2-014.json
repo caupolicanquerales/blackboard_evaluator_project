@@ -1,0 +1,37 @@
+{
+  "id": "T2-014",
+  "project": "telemetry-ingestion-processing",
+  "targetFile": "src/main/java/com/blackboard/telemetry/shared/config/TelemetryProperties.java",
+  "export": "TelemetryProperties",
+  "kind": "record",
+  "method": "boundaries",
+  "language": "java",
+  "framework": "springboot3",
+  "skill": "java-springboot3",
+  "signature": "public List<SensorMetricBoundary> boundaries()",
+  "returns": "List<SensorMetricBoundary>",
+  "body": "return boundaries;",
+  "members": [
+    "Duration reorderWindow",
+    "int reorderBufferCapacity",
+    "int validatedStreamCapacity",
+    "int broadcastCapacity",
+    "Duration emitRetryTimeout",
+    "List<SensorMetricBoundary> boundaries",
+    "public TelemetryProperties {\n    Objects.requireNonNull(reorderWindow, \"reorderWindow\");\n    Objects.requireNonNull(emitRetryTimeout, \"emitRetryTimeout\");\n    Objects.requireNonNull(boundaries, \"boundaries\");\n    if (reorderWindow.isZero() || reorderWindow.isNegative()) {\n        throw new IllegalArgumentException(\"reorderWindow must be positive\");\n    }\n    if (reorderBufferCapacity < 1) {\n        throw new IllegalArgumentException(\"reorderBufferCapacity must be >= 1\");\n    }\n    if (validatedStreamCapacity < 1) {\n        throw new IllegalArgumentException(\"validatedStreamCapacity must be >= 1\");\n    }\n    if (broadcastCapacity < 1) {\n        throw new IllegalArgumentException(\"broadcastCapacity must be >= 1\");\n    }\n    if (emitRetryTimeout.isZero() || emitRetryTimeout.isNegative()) {\n        throw new IllegalArgumentException(\"emitRetryTimeout must be positive\");\n    }\n    boundaries = List.copyOf(boundaries);\n}"
+  ],
+  "annotations": [
+    "ConfigurationProperties(prefix = \"telemetry\")"
+  ],
+  "imports": [
+    "org.springframework.boot.context.properties.ConfigurationProperties",
+    "com.blackboard.telemetry.ingestion.domain.SensorMetricBoundary",
+    "java.time.Duration",
+    "java.util.List",
+    "java.util.Objects"
+  ],
+  "missing": [],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-16T21:02:48.413939+00:00"
+}

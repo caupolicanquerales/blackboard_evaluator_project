@@ -9,6 +9,7 @@ import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
@@ -135,5 +136,33 @@ class WeavePipelineServicesTest {
         assertThatThrownBy(() -> PayloadNames.normalizeKind("annotation"))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Unsupported payload kind");
+    }
+
+    @Test
+    void packageOf_prefersTheExportQualifierWhenTheExportIsFullyQualified() {
+        assertThat(PayloadNames.packageOf("com.x.deep.Box",
+                Path.of("/p/src/main/java/com/other/dir/Box.java"))).isEqualTo("com.x.deep");
+    }
+
+    @Test
+    void packageOf_derivesFromMainAndTestSourceRootsAlike() {
+        // seed-002 2026-11-16 regression: the marker was hardcoded to src/main/java, so
+        // a created support class under src/test/java got NO package and the frozen
+        // test importing it died on 'duplicate class' / 'cannot access' while every
+        // splice reported success - the whole domain could never go green.
+        assertThat(PayloadNames.packageOf("Widget",
+                Path.of("/p/src/main/java/com/x/app/Widget.java")))
+            .isEqualTo("com.x.app");
+        assertThat(PayloadNames.packageOf("PipelineSliceFixtures",
+                Path.of("/p/src/test/java/com/x/support/PipelineSliceFixtures.java")))
+            .isEqualTo("com.x.support");
+        assertThat(PayloadNames.packageOf("It",
+                Path.of("/p/src/integration-test/java/com/x/it/It.java")))
+            .isEqualTo("com.x.it");
+    }
+
+    @Test
+    void packageOf_returnsEmptyWhenNoSourceRootIsPresent() {
+        assertThat(PayloadNames.packageOf("Loose", Path.of("/p/tools/Loose.java"))).isEmpty();
     }
 }

@@ -1,0 +1,43 @@
+{
+  "id": "T2-030",
+  "project": "telemetry-ingestion-processing",
+  "targetFile": "src/main/java/com/blackboard/telemetry/ingestion/api/IngestionController.java",
+  "export": "IngestionController",
+  "method": "ingest",
+  "language": "java",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "kind": "class",
+  "signature": "Mono<ResponseEntity<Void>> ingest(@Valid @RequestBody IngressPacketRequest request)",
+  "returns": "Mono<ResponseEntity<Void>>",
+  "body": "IngressPacket packet;\ntry {\n    packet = request.toDomain(clock.instant());\n} catch (IllegalArgumentException ex) {\n    return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex));\n}\nreturn service.ingest(packet)\n        .then(Mono.fromSupplier(() -> ResponseEntity.accepted().<Void>build()))\n        .onErrorMap(IllegalStateException.class,\n                ex -> new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), ex));",
+  "imports": [
+    "com.blackboard.telemetry.ingestion.application.IngestPacketService",
+    "com.blackboard.telemetry.ingestion.domain.IngressPacket",
+    "jakarta.validation.Valid",
+    "java.time.Clock",
+    "org.springframework.http.HttpStatus",
+    "org.springframework.http.MediaType",
+    "org.springframework.http.ResponseEntity",
+    "org.springframework.web.bind.annotation.PostMapping",
+    "org.springframework.web.bind.annotation.RequestBody",
+    "org.springframework.web.bind.annotation.RestController",
+    "org.springframework.web.server.ResponseStatusException",
+    "reactor.core.publisher.Mono"
+  ],
+  "annotations": [
+    "RestController"
+  ],
+  "methodAnnotations": [
+    "PostMapping(value = \"/api/v1/telemetry/packets\", consumes = MediaType.APPLICATION_JSON_VALUE)"
+  ],
+  "members": [
+    "private final IngestPacketService service",
+    "private final Clock clock",
+    "public IngestionController(IngestPacketService service, Clock clock) { this.service = service; this.clock = clock; }"
+  ],
+  "missing": [],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-16T20:13:42.615241+00:00"
+}

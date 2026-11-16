@@ -1,0 +1,49 @@
+{
+  "task_id": "T1-027",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "PipelineSubscriber",
+    "constructors": [
+      [
+        "stream",
+        "service"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "subscriber",
+        "method": "start",
+        "args": []
+      },
+      {
+        "receiver": "subscriber",
+        "method": "isRunning",
+        "args": []
+      },
+      {
+        "receiver": "subscriber",
+        "method": "stop",
+        "args": []
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class PipelineSubscriberTest {",
+      "assertThat(new PipelineSubscriber(stream, service).isRunning()).isFalse();",
+      "PipelineSubscriber subscriber = new PipelineSubscriber(stream, service);",
+      "subscriber.start();",
+      "assertThat(subscriber.isRunning()).isTrue();",
+      "subscriber.stop();",
+      "PipelineSubscriber subscriber = new PipelineSubscriber(stream, service);",
+      "subscriber.start();",
+      "subscriber.stop();",
+      "assertThat(subscriber.isRunning()).isFalse();",
+      "new PipelineSubscriber(stream, service).start();",
+      "new PipelineSubscriber(stream, service).start();"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

@@ -8,6 +8,9 @@ import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.ConstructorDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
+import com.github.javaparser.ast.body.BodyDeclaration;
+import com.github.javaparser.ast.body.CompactConstructorDeclaration;
+import com.github.javaparser.ast.body.RecordDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 
 import java.util.List;
@@ -20,6 +23,10 @@ import java.util.Optional;
  * payload signature through the grammar gateway.
  */
 public final class MethodWeaver {
+
+    /** A constructor body that assigns components (`this.x = ...`, optionally guarded). */
+    private static final java.util.regex.Pattern ASSIGNS_COMPONENT =
+        java.util.regex.Pattern.compile("this\\.\\w+\\s*=[^=]");
 
     private MethodWeaver() {
     }
@@ -51,23 +58,57 @@ public final class MethodWeaver {
      * - a method that can never assign final fields - so a CORRECT constructor payload
      * would be un-weavable forever and every attempt would charge the coder for the
      * weaver's own shape (observed live: the ReorderWindow storm, 2026-11-12).
+     * The same trap exists for RECORDS, where a method-shaped compact constructor
+     * (`public void Foo(...)`) is legal Java that NEVER RUNS - silently dead invariants
+     * (observed live 2026-11-16: six records shipped guardless because the weaver
+     * synthesized `public void <Type>(...)` for every compact-constructor payload).
      */
     public static boolean declaresConstructor(String methodName, TypeDeclaration<?> owner) {
-        return owner instanceof ClassOrInterfaceDeclaration cls
-            && !cls.isInterface()
-            && methodName != null
-            && methodName.equals(cls.getNameAsString());
+        if (methodName == null || owner == null) {
+            return false;
+        }
+        if (owner instanceof ClassOrInterfaceDeclaration cls) {
+            return !cls.isInterface() && methodName.equals(cls.getNameAsString());
+        }
+        return methodName.equals(owner.getNameAsString());
     }
 
-    /** Select the constructor with matching parameters, or create it (public, bare body). */
-    public static CallableDeclaration<?> selectOrCreateConstructor(TypeDeclaration<?> owner,
+    /** Select the constructor with matching parameters, or create it (public, bare body).
+     *  Returns a BodyDeclaration because a record's compact constructor is modeled by
+     *  JavaParser as its own node type, not a CallableDeclaration. */
+    public static BodyDeclaration<?> selectOrCreateConstructor(TypeDeclaration<?> owner,
             CoderChangesPayload payload) {
-        ClassOrInterfaceDeclaration cls = (ClassOrInterfaceDeclaration) owner;
+        if (owner instanceof RecordDeclaration record
+                && !ASSIGNS_COMPONENT.matcher(
+                    payload.body() == null ? "" : payload.body()).find()) {
+            // A record guard that never assigns `this.x =` is the COMPACT form (the
+            // compiler assigns the components itself). A body that DOES assign them is
+            // an explicit CANONICAL constructor - legal in records only when it assigns
+            // every component, which is exactly what such payloads do - so it must take
+            // the generic path below, not the compact wrap (2026-11-16: wrapping a
+            // canonical body into a compact form produced 'cannot assign a value to
+            // final variable' and burned three attempts on the tool's own mistake).
+            record.getMembers().stream()
+                .filter(CompactConstructorDeclaration.class::isInstance)
+                .toList()
+                .forEach(record.getMembers()::remove);
+            String body = payload.body() == null ? "" : payload.body().trim();
+            List<BodyDeclaration<?>> parsed = PayloadParser.member(
+                record.getNameAsString() + " { " + body + " }", "record",
+                record.getNameAsString());
+            BodyDeclaration<?> node = parsed.get(0);
+            record.addMember(node);
+            return node;
+        }
         List<Parameter> expectedParams = PayloadParser.signatureParameters(payload.signature())
             .orElseThrow(() -> new IllegalStateException(
                 "Cannot create constructor '%s': payload signature is missing or malformed"
                     .formatted(payload.method())));
-        for (ConstructorDeclaration ctor : cls.getConstructors()) {
+        List<ConstructorDeclaration> existing = owner.getMembers().stream()
+            .filter(ConstructorDeclaration.class::isInstance)
+            .map(ConstructorDeclaration.class::cast)
+            .toList();
+        for (ConstructorDeclaration ctor : existing) {
             if (parametersMatch(ctor.getParameters(), expectedParams)) {
                 return ctor;
             }
@@ -75,7 +116,7 @@ public final class MethodWeaver {
         String signature = payload.signature() == null ? "" : payload.signature().trim();
         int paren = signature.indexOf('(');
         String head = paren >= 0 ? signature.substring(paren) : signature;
-        String rendered = "public " + cls.getNameAsString() + head + " {}";
+        String rendered = "public " + owner.getNameAsString() + head + " {}";
         ConstructorDeclaration created;
         try {
             created = (ConstructorDeclaration) StaticJavaParser.parseBodyDeclaration(rendered);
@@ -83,7 +124,7 @@ public final class MethodWeaver {
             throw new IllegalArgumentException("Payload signature does not parse as a constructor: "
                 + ParseErrors.firstLineOf(ex.getMessage()), ex);
         }
-        cls.addMember(created);
+        owner.addMember(created);
         return created;
     }
 

@@ -1,0 +1,37 @@
+{
+  "id": "T2-017",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-017"
+  ],
+  "path": "src/main/java/com/blackboard/telemetry/shared/observability/CorrelationContext.java",
+  "kind": "code",
+  "layer": "shared",
+  "feature": null,
+  "export": "CorrelationContext",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Implement CorrelationContext (Java 21, Spring Boot 3, WebFlux/Reactor/R2DBC, constructor injection, no blocking calls) so that the frozen test passes, providing exactly the ast_hints table and nothing improvised. Unit contract: Shared static-only holder (all members bound static in the table) that is the single owner of the correlation key literals requestId, the header X-Request-Id and the absent marker UNCORRELATED. Correlation lives in the Reactor Context and in the audit record's correlationId field; no MDC and no context-propagation library is used, so log lines do not carry the id (declared).",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.shared.observability",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "static String contextKey()",
+        "returns": "String",
+        "semantics": "Returns exactly requestId, the Reactor Context key and audit correlation key."
+      },
+      {
+        "signature": "static Mono<String> current()",
+        "returns": "Mono<String>",
+        "semantics": "Emits the requestId from the subscriber's Reactor Context; emits UNCORRELATED when the key is absent. Never empty, never errors."
+      },
+      {
+        "signature": "static String headerName()",
+        "returns": "String",
+        "semantics": "Returns exactly X-Request-Id, the HTTP header carrying the requestId."
+      }
+    ]
+  }
+}

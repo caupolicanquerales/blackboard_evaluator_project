@@ -1,0 +1,39 @@
+{
+  "project": "telemetry-ingestion-processing",
+  "targetFile": "src/main/java/com/blackboard/telemetry/ingestion/api/CorrelationWebFilter.java",
+  "stack": "java-springboot3",
+  "skill": "java-springboot3",
+  "summary": "Extracted magic number 128 and per-request regex compilation into constants and an isAcceptable helper; behavior unchanged.",
+  "findings": [
+    "Magic number 128 inline",
+    "String.matches recompiled the regex on every request"
+  ],
+  "changes": [
+    "Added MAX_REQUEST_ID_LENGTH and precompiled ALLOWED_REQUEST_ID Pattern",
+    "Extracted isAcceptable(String) predicate"
+  ],
+  "reverts": [],
+  "final_test": {
+    "command": "./mvnw -Dtest=CorrelationWebFilterTest test",
+    "status": "passed",
+    "counts": {
+      "run": 8,
+      "failures": 0,
+      "errors": 0
+    }
+  },
+  "task_id": "T3-029",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-16T21:41:36.479166+00:00",
+  "engine_diff": [
+    {
+      "file": "src/main/java/com/blackboard/telemetry/ingestion/api/CorrelationWebFilter.java",
+      "added": 12,
+      "removed": 1,
+      "capped": false,
+      "patch": "--- a/src/main/java/com/blackboard/telemetry/ingestion/api/CorrelationWebFilter.java\n+++ b/src/main/java/com/blackboard/telemetry/ingestion/api/CorrelationWebFilter.java\n@@ -2,6 +2,7 @@\n \n import com.blackboard.telemetry.shared.observability.CorrelationContext;\n import java.util.UUID;\n+import java.util.regex.Pattern;\n import org.springframework.core.Ordered;\n import org.springframework.core.annotation.Order;\n import org.springframework.stereotype.Component;\n@@ -14,10 +15,20 @@\n @Order(Ordered.HIGHEST_PRECEDENCE)\n public class CorrelationWebFilter implements WebFilter {\n \n+    private static final int MAX_REQUEST_ID_LENGTH = 128;\n+    private static final Pattern ALLOWED_REQUEST_ID = Pattern.compile(\"[A-Za-z0-9._-]+\");\n+\n     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {\n         String inbound = exchange.getRequest().getHeaders().getFirst(CorrelationContext.headerName());\n-        String requestId = inbound != null && !inbound.isBlank() && inbound.length() <= 128 && inbound.matches(\"[A-Za-z0-9._-]+\") ? inbound : UUID.randomUUID().toString();\n+        String requestId = isAcceptable(inbound) ? inbound : UUID.randomUUID().toString();\n         exchange.getResponse().getHeaders().set(CorrelationContext.headerName(), requestId);\n         return chain.filter(exchange).contextWrite(context -> context.put(CorrelationContext.contextKey(), requestId));\n     }\n+\n+    private static boolean isAcceptable(String candidate) {\n+        return candidate != null\n+                && !candidate.isBlank()\n+                && candidate.length() <= MAX_REQUEST_ID_LENGTH\n+                && ALLOWED_REQUEST_ID.matcher(candidate).matches();\n+    }\n }"
+    }
+  ],
+  "engine_diff_files": 1
+}

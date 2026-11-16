@@ -1,0 +1,15 @@
+{
+  "id": "T3-018",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-018"
+  ],
+  "path": "src/main/java/com/blackboard/telemetry/ingestion/application/ValidatedSampleStream.java",
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "export": "ValidatedSampleStream",
+  "project": "telemetry-ingestion-processing",
+  "intent": "Inspect and refactor ValidatedSampleStream without changing the ast_hints surface or the tests' behavior (never seal or finalize a type another unit stubs; no magic numbers, no blocking calls, no raw logger calls beyond the claimed step logs). Unit contract: Context Telemetry Ingestion & Validation. Outbound port of the bounded, backpressure-aware validated sample event stream (customer-supplier link to History). Overflow posture is ERROR with a declared reason; consumer is the pipeline subscription (PipelineSubscriber). Imports only reactor and java.*."
+}

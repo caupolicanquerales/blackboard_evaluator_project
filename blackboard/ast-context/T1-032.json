@@ -1,0 +1,115 @@
+{
+  "task_id": "T1-032",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "PipelineSliceFixtures",
+    "constructors": [],
+    "static_calls": [
+      {
+        "method": "countRows",
+        "args": [
+          "databaseClient",
+          "table"
+        ]
+      },
+      {
+        "method": "packetJson",
+        "args": [
+          "\"dev-1\"",
+          "\"BLE\"",
+          "\"HEART_RATE\"",
+          "1000L",
+          "72.5"
+        ]
+      },
+      {
+        "method": "countRows",
+        "args": [
+          "databaseClient",
+          "\"users\""
+        ]
+      },
+      {
+        "method": "countRows",
+        "args": [
+          "databaseClient",
+          "\"audit_trail\""
+        ]
+      },
+      {
+        "method": "packetJson",
+        "args": [
+          "\"dev-valid\"",
+          "\"BLE\"",
+          "\"HEART_RATE\"",
+          "Instant.now().toEpochMilli()",
+          "72.0"
+        ]
+      },
+      {
+        "method": "packetJson",
+        "args": [
+          "\"dev-high\"",
+          "\"BLE\"",
+          "\"HEART_RATE\"",
+          "Instant.now().toEpochMilli()",
+          "300.0"
+        ]
+      },
+      {
+        "method": "packetJson",
+        "args": [
+          "\"dev-retry\"",
+          "\"BLE\"",
+          "\"HEART_RATE\"",
+          "Instant.now().toEpochMilli()",
+          "70.0"
+        ]
+      },
+      {
+        "method": "countRows",
+        "args": [
+          "databaseClient",
+          "\"event_revision\""
+        ]
+      },
+      {
+        "method": "packetJson",
+        "args": [
+          "\"dev-late\"",
+          "\"BLE\"",
+          "\"HEART_RATE\"",
+          "Instant.now().minusSeconds(120).toEpochMilli()",
+          "80.0"
+        ]
+      },
+      {
+        "method": "packetJson",
+        "args": [
+          "\" \"",
+          "\"BLE\"",
+          "\"HEART_RATE\"",
+          "Instant.now().toEpochMilli()",
+          "72.0"
+        ]
+      }
+    ],
+    "calls": [],
+    "verified": [],
+    "usage_lines": [
+      "return Mono.defer(() -> PipelineSliceFixtures.countRows(databaseClient, table))",
+      "String json = PipelineSliceFixtures.packetJson(\"dev-1\", \"BLE\", \"HEART_RATE\", 1000L, 72.5);",
+      "assertThatThrownBy(() -> PipelineSliceFixtures.countRows(databaseClient, \"users\"))",
+      "StepVerifier.create(PipelineSliceFixtures.countRows(databaseClient, \"audit_trail\"))",
+      "String body = PipelineSliceFixtures.packetJson(\"dev-valid\", \"BLE\", \"HEART_RATE\",",
+      "String body = PipelineSliceFixtures.packetJson(\"dev-high\", \"BLE\", \"HEART_RATE\",",
+      "String body = PipelineSliceFixtures.packetJson(\"dev-retry\", \"BLE\", \"HEART_RATE\",",
+      "Long revisions = PipelineSliceFixtures.countRows(databaseClient, \"event_revision\").block();",
+      "String body = PipelineSliceFixtures.packetJson(\"dev-late\", \"BLE\", \"HEART_RATE\",",
+      "String body = PipelineSliceFixtures.packetJson(\" \", \"BLE\", \"HEART_RATE\","
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

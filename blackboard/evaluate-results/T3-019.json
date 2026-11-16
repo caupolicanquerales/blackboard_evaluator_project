@@ -1,0 +1,25 @@
+{
+  "project": "telemetry-ingestion-processing",
+  "targetFile": "src/main/java/com/blackboard/telemetry/history/application/TelemetryHistoryRepository.java",
+  "stack": "java-springboot3-reactor",
+  "skill": "java-springboot3",
+  "summary": "Pure outbound port interface; imports only reactor, java.time and domain types; no logic, no framework, no magic numbers. No edits needed.",
+  "findings": [],
+  "changes": [],
+  "reverts": [],
+  "final_test": {
+    "status": "passed",
+    "source": "gate-cache/T2-019.json",
+    "counts": {
+      "run": 242,
+      "failures": 42,
+      "errors": 3
+    }
+  },
+  "task_id": "T3-019",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-16T21:38:05.780910+00:00",
+  "engine_diff": [],
+  "engine_diff_files": 0
+}

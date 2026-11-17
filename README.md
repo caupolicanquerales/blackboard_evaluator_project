@@ -19,7 +19,8 @@ Contents:
 
 ## What the project does
 
-- Applies Domain-Driven Design (DDD) to split a business description into bounded contexts.
+- Applies Domain-Driven Design (DDD) to split a business description into bounded contexts, then drives every unit through a strict TDD loop (red → green → refactor) — the pair exists to make hallucination structurally impossible: DDD pins *what to build* as machine-checkable contracts before any code exists, TDD proves *what is true* through artifacts no agent can talk over.
+- No agent claim is ever a completion criterion: every phase transition is verified by a deterministic tool witness (revalidated red records, weaver results, engine-run verdicts, boot gates, terminal suite verdicts).
 - Creates an execution strategy and a separate project for each discovered domain.
 - Selects persistence technologies and queues database migration tasks.
 - Breaks application work into dependency-aware test, code, and evaluation tasks, each carrying an **`ast_hints` contract table** (package, supertypes, pinned collaborators, exact method signatures) that is validated at emit time — contradictory or under-specified plans are rejected before any agent session is billed.
@@ -39,40 +40,58 @@ Contents:
 
 ## How it works
 
+Two disciplines run the machine. **DDD decides WHAT to build** — subdomains,
+invariants, ubiquitous language — and pins them as machine-checkable contracts
+*before any code exists*. **TDD proves WHAT IS TRUE about the code** — a test frozen
+before its implementation is the only voice a unit gets, and the party judged by a
+test can never edit it. Between them, no agent claim is ever a completion criterion:
+every stage transition is a deterministic artifact produced or re-verified by tools.
+
 ```text
 Business description (seed/*.md)
               |
               v
-   Domain boundary discovery
+  ==========  DDD: decide WHAT to build, as contracts checkable by machines  ==========
+              |
+   Domain boundary discovery      subdomains, invariants, ubiquitous language;
+              |                   uncertainty becomes an explicit Assumption or
+              v                   an operator decision - never a silent invention
+        Context mapping           relationships, boundary protection, cross-domain flows
               |
               v
-        Context mapping
+   Execution strategy per domain  layers, ports/adapters, persistence, and an
+              |                   UNCONDITIONAL observability floor (audit, step
+              v                   logs, correlation, metrics, export)
+  Database planning + stage 0 tasks
               |
               v
-   Execution strategy per domain
+  Application task decomposition  per unit: a stage-1 TEST + stage-2 CODE +
+              |                   stage-3 REFACTOR triple, all pinned to the SAME
+              v                   ast_hints contract table (prose is never the only truth)
+   Plan validation + emit gates   rules (a)-(x): contradictions between artifacts
+              |                   that freeze at write time die HERE, at zero
+              v                   billed sessions - never after a test is frozen
               |
+  ==========  TDD: prove WHAT IS TRUE, without ever asking the agent  ==========
               v
-  Database planning and stage 0 tasks
-              |
-              v
-  Application task decomposition (ast_hints contract tables)
-              |
-              v
-   Plan validation + emit gates (schema, closure, contract)
-              |
-              v
-    Red-phase test execution (batched testers)
-              |
-              v
-    AST context extraction
-              |
-              v
-   Dependency-aware, domain-grouped drain:
-   coder (batched) -> weave -> wave test gate -> evaluator
-              |
-              v
-    Stage-4 assembly gate (application boots)
-              |
+   +--------------------------- per unit, dependency-ordered --------------------+
+   |  RED      tester writes the failing test at its OWN path (rule (w)); the    |
+   |           engine re-runs it and revalidates the record (or derives it       |
+   |           for free) - a PASSING pre-implementation test is refused          |
+   |    v    AST      context extracted from the REAL source tree                |
+   |    v    GREEN    coder emits a PAYLOAD (never edits source); the WEAVER     |
+   |           splices it; the wave gate runs the frozen test - ONE build per    |
+   |           tree state, verdicts memoized by fingerprint. Loop-backs: a       |
+   |           tool-reject bounces the payload FREE (no attempt consumed); a     |
+   |           red verdict is charged to the OWNING unit, never a bystander      |
+   |    v    REFACTOR evaluator cleans the unit; the SAME frozen test anchors it |
+   +--------------------------------------+--------------------------------------+
+                                          v
+    Stage-4 assembly gate        boot over the real context; structural probes
+              |                  refuse the vacuous green; a broken delivered
+              v                  contract REOPENS its owner (not the victim it broke)
+    Terminal suite gate          the WHOLE delivered suite re-run at every exit
+              |                  on a quiet board - yesterday's green is not evidence
               v
   Generated projects under projects/<name>/services/
 ```
@@ -95,6 +114,68 @@ Before these stages, two specialists create the DDD artifacts:
 - `domain-context-mapping-specialist` writes the corresponding context maps.
 - `agent-architect` writes execution strategies and decomposes the work into tasks, including each unit's `ast_hints` contract table.
 - `agent-database-architect` selects storage technologies and queues database tasks.
+
+### How the TDD is implemented — the loop per unit
+
+Every business obligation reaches the drain as a **triple of tasks pinned to one
+contract**: a stage-1 TEST task, a stage-2 CODE task, and a stage-3 REFACTOR task, all
+three describing the same unit and carrying the **identical `ast_hints` table**
+(package, supertypes, collaborators pinned to their producing tasks, exact method
+signatures). The loop then runs classic red → green → refactor, but each phase belongs
+to a different agent and is verified by a different machine, so no single session ever
+grades its own homework:
+
+1. **RED (stage 1).** The tester writes ONE failing test at its task `path` — which is
+   its own test file, never the production file (rule (w)) — asserting only against the
+   pinned table, and runs it through `run-test-tool.py`, piping the verdict into the
+   official writer. A red is only valid if the engine can RE-VERIFY it: the record must
+   show the test ran and failed with a `compile_error` (missing symbol — the
+   implementation genuinely does not exist yet) or an `assertion_failure`; a test that
+   PASSES before implementation is rejected, and a missing record is re-derived
+   deterministically at zero cost (the engine refuses to pay a session to re-observe a
+   build result it can produce itself). Once the test is frozen, the AST dispatcher
+   extracts the real context of the target file so the next phase implements against
+   the tree as it is, not as remembered.
+2. **GREEN (stage 2).** The coder never touches a source file: it emits a *payload* —
+   pure method bodies plus creation metadata, one JSON per unit — and the **code
+   weaver** splices it into the pinned surface, recording the result. A rejection by
+   the weaver tool itself is a bounce back to the coder that consumes **no attempt**
+   (a session spent on a tool rejection is pure waste). Verification is the wave gate:
+   when the domain's payloads are woven, the engine runs the frozen tests ONCE per tree
+   state — a shared build, verdicts memoized by source-tree fingerprint — and
+   normalizes each outcome through the same tool that read the red phase.
+3. **REFACTOR (stage 3).** The evaluator audits and cleans the implementation under the
+   same recorded test: it may change bodies and structure, must keep the green verdict
+   (re-run before and after), may not touch the test contract, and its diff is recorded
+   for attribution to answer later.
+4. **BOOT (stage 4) and the terminal suite gate.** Assembly proves the application
+   actually starts over its real bean graph, and on a quiet board the engine re-runs
+   the WHOLE delivered suite — a completion claim never survives on yesterday's
+   verdicts.
+
+The asymmetry that makes this anti-hallucination, not just test-first: **the judged
+cannot edit the judge.** The coder cannot edit the test that gates it; the evaluator
+cannot edit the test that anchors it; if the contract itself is wrong, the fix must
+happen where it is still cheap — the emit gate refusing the plan, or a deterministic
+reopening of the OWNING unit, never a silent edit of a frozen artifact.
+
+### DDD + TDD as one hallucination defense
+
+A language model hallucinates in three directions, and each has a mechanical answer
+in this pipeline:
+
+| Hallucination channel | Closed by |
+| --- | --- |
+| **Inventing the domain** (facts not in the description) | The DDD tier: discovery must trace every entity, bound and status literal to the seed VERBATIM or record the deviation as a named Assumption; open questions surface as operator decisions, never silent choices. |
+| **Planning a contradiction** (artifacts that freeze against each other) | The emit gates, rules (a)–(x): every duty owned by a path, prose never fighting the table, request-encoding agreement, signalling returns describing both branches, consumer closure, the correction value axis, promised mechanisms scheduled as duties, test artifacts separate from production files, handler registrations the framework can actually execute. A refused plan costs one rewrite; the same plan discovered mid-drain costs a whole run. |
+| **Claiming success that did not happen** | The TDD tier: no agent report closes a unit. Each transition needs a machine witness — a revalidated red record, a weaver result, a wave verdict from the engine's own run, an evaluate diff with the test re-greened, a boot gate re-run by the orchestrator, and the terminal suite verdict at every exit. Even the cost rollup is read from backend session events, not from what agents say they did. |
+
+And when reality breaks a promise anyway, the loop repairs at the right seam:
+verdicts are attributed to the producing unit, blame on foreign files follows
+`error_locations` to the true owner, a unit whose *peer* closed a type it must stub is
+deferred while the closer is reopened, a cross-stage regression reopens the contract's
+OWNER rather than charging the bystander whose test turned red — and every such routing
+is pinned by a gauntlet case, so a fixed class stays fixed.
 
 ## Core mechanisms
 

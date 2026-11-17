@@ -52,11 +52,28 @@ If the server rejects `javaVersion` as an unknown parameter, the running image p
    `forkedProcessTimeoutInSeconds` - add it with Step 4's script flag `--surefire-timeout
    <seconds>` (same sanctioned, verified, self-reverting edit; usable OUTSIDE the REPIN CASE -
    pass `--major` the planned major, the parent rewrite is idempotent when already conforming).
+7. COMPOSITION-ROOT PLACEMENT: when the intent names the base package for the single
+   composition root, the generated `*Application.java` must sit EXACTLY at that package.
+   Initializr nests it one level deeper (`<base>.<artifact_with_underscores>`), and a root
+   in a subpackage is a different, quieter failure than a missing one: the app boots, the
+   scaffold's own smoke test passes (same package), while component scan covers only that
+   subtree and every `@SpringBootTest` planned in a sibling package dies on the upward
+   config search (2026-11-17 live: a whole domain's e2e and config gates burned attempts
+   on it). The relocation is the second sanctioned post-generation edit - move the file
+   and rewrite its package line, nothing else:
+       APP=$(find src/main/java -name '*Application.java' | head -1)
+       DIR=src/main/java/$(echo <base-package-dots> | tr . /)   # e.g. com/pulsestream/telemetry
+       mkdir -p "$DIR" && sed -i "1s|.*|package <base-package-dots>;|" "$APP" && mv "$APP" "$DIR/"
+   Its generated smoke test stays where it is (upward search now finds the root). Verify
+   with `./mvnw -q -DskipTests test-compile`; still misplaced after ONE attempt => report
+   BLOCKED with the found path - never leave the nested root silently.
 Any miss => ONE regeneration with corrected params (fixed id list / resolved bootVersion); still missing
 => report `BLOCKED: generator lacks id <x>` with the exact list - never hand-edit the pom, never proceed.
 `BLOCKED` leaves NO artifact at the task path and aborts the whole pipeline by design: it is reserved
 for a true catalog gap, NEVER for the check-5/check-6 guardrails, which have sanctioned tools.
-Report name, path, java version, boot version, status; never edit generated code.
+Report name, path, java version, boot version, status; never edit generated code beyond the
+sanctioned edits above: the check-5 profile file, the check-6 script flag, the check-7
+composition-root relocation.
 # Step 4 - re-pin when the generator retired the planned major (REPIN CASE), and the
 # sanctioned route for any Step-3 check-6 pom addition (works outside the REPIN CASE too)
 Run the skill's deterministic transformation from the repository root (it rewrites ONLY

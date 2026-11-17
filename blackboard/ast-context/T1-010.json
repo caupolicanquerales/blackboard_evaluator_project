@@ -3,112 +3,57 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "HistoryEvent",
+    "type": "EventRecord",
     "constructors": [
       [
-        "TYPE",
         "sample",
-        "1",
         "3",
-        "\"req-1\""
+        "\"REVISION\""
       ],
       [
-        "TYPE",
         "sample()",
-        "0",
-        "0",
-        "\"req-1\""
+        "1",
+        "\"RECORD\""
       ],
       [
-        "TYPE",
         "sample()",
-        "-1",
-        "0",
-        "\"req-1\""
-      ],
-      [
-        "TYPE",
-        "sample()",
-        "0",
-        "-1",
-        "\"req-1\""
-      ],
-      [
-        "null",
-        "sample()",
-        "0",
-        "0",
-        "\"req-1\""
-      ],
-      [
-        "TYPE",
-        "null",
-        "0",
-        "0",
-        "\"req-1\""
-      ],
-      [
-        "TYPE",
-        "sample()",
-        "0",
-        "0",
-        "null"
-      ],
-      [
-        "TYPE",
-        "sample()",
-        "0",
-        "0",
-        "\"  \""
+        "2",
+        "\"RECORD\""
       ]
     ],
     "static_calls": [],
     "calls": [
       {
-        "receiver": "event",
-        "method": "type",
-        "args": []
-      },
-      {
-        "receiver": "event",
+        "receiver": "record",
         "method": "sample",
         "args": []
       },
       {
-        "receiver": "event",
-        "method": "revisionNo",
+        "receiver": "record",
+        "method": "revision",
         "args": []
       },
       {
-        "receiver": "event",
-        "method": "windowSize",
-        "args": []
-      },
-      {
-        "receiver": "event",
-        "method": "correlationId",
+        "receiver": "record",
+        "method": "kind",
         "args": []
       }
     ],
     "verified": [],
     "usage_lines": [
-      "class HistoryEventTest {",
-      "private static final HistoryEventType TYPE = HistoryEventType.values()[0];",
-      "HistoryEvent event = new HistoryEvent(TYPE, sample, 1, 3, \"req-1\");",
-      "assertThat(event.type()).isEqualTo(TYPE);",
-      "assertThat(event.sample()).isEqualTo(sample);",
-      "assertThat(event.revisionNo()).isEqualTo(1);",
-      "assertThat(event.windowSize()).isEqualTo(3);",
-      "assertThat(event.correlationId()).isEqualTo(\"req-1\");",
-      "HistoryEvent event = new HistoryEvent(TYPE, sample(), 0, 0, \"req-1\");",
-      "assertThat(event.revisionNo()).isZero();",
-      "assertThat(event.windowSize()).isZero();",
-      "assertThatThrownBy(() -> new HistoryEvent(TYPE, sample(), -1, 0, \"req-1\"))",
-      "assertThatThrownBy(() -> new HistoryEvent(TYPE, sample(), 0, -1, \"req-1\"))",
-      "assertThatThrownBy(() -> new HistoryEvent(null, sample(), 0, 0, \"req-1\"))",
-      "assertThatThrownBy(() -> new HistoryEvent(TYPE, null, 0, 0, \"req-1\"))",
-      "assertThatThrownBy(() -> new HistoryEvent(TYPE, sample(), 0, 0, null))",
-      "assertThatThrownBy(() -> new HistoryEvent(TYPE, sample(), 0, 0, \"  \"))"
+      "class EventRecordTest {",
+      "EventRecord record = new EventRecord(sample, 3, \"REVISION\");",
+      "assertThat(record.sample()).isEqualTo(sample);",
+      "assertThat(record.revision()).isEqualTo(3);",
+      "assertThat(record.kind()).isEqualTo(\"REVISION\");",
+      "EventRecord a = new EventRecord(sample(), 1, \"RECORD\");",
+      "EventRecord b = new EventRecord(sample(), 1, \"RECORD\");",
+      "assertThat(a).isEqualTo(b).hasSameHashCodeAs(b);",
+      "EventRecord a = new EventRecord(sample(), 1, \"RECORD\");",
+      "EventRecord b = new EventRecord(sample(), 2, \"RECORD\");",
+      "assertThat(a).isNotEqualTo(b);",
+      "assertThat(EventRecord.KIND_RECORD).isEqualTo(\"RECORD\");",
+      "assertThat(EventRecord.KIND_REVISION).isEqualTo(\"REVISION\");"
     ]
   },
   "stderr": "",

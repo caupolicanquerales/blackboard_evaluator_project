@@ -1,24 +1,36 @@
 {
   "id": "T2-009",
   "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/blackboard/telemetry/history/domain/HistoryEventType.java",
-  "export": "HistoryEventType",
-  "kind": "enum",
-  "method": "values",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/reordering/application/ReorderingService.java",
+  "export": "ReorderingService",
+  "kind": "class",
+  "method": "reorderWindow",
   "language": "java",
   "framework": "springboot",
   "skill": "java-springboot",
-  "signature": "static HistoryEventType[] values()",
-  "returns": "HistoryEventType[]",
+  "signature": "List<TelemetrySample> reorderWindow(List<TelemetrySample> window)",
+  "returns": "List<TelemetrySample>",
   "members": [
-    "SAMPLE_BACKFILLED",
-    "REVISION_APPENDED",
-    "WINDOW_BUFFERED"
+    "private final TelemetryProperties properties",
+    "private final StepLog stepLog",
+    "private final MeterRegistry meterRegistry",
+    "public ReorderingService(TelemetryProperties properties, StepLog stepLog, MeterRegistry meterRegistry) { this.properties = properties; this.stepLog = stepLog; this.meterRegistry = meterRegistry; }"
   ],
-  "body": "",
-  "imports": [],
+  "body": "if (window.isEmpty()) {\n    return List.of();\n}\nlong startNanos = System.nanoTime();\nDuration maxLag = Duration.ofSeconds(properties.reorderWindowSeconds());\nInstant maxSeen = null;\nfor (TelemetrySample sample : window) {\n    if (maxSeen != null && sample.tDevice().isBefore(maxSeen)) {\n        meterRegistry.counter(\"telemetry.reordering.late\", \"kind\", \"in_window\").increment();\n        stepLog.emit(\"reordering.backfill.applied\", sample.correlationId());\n    } else {\n        maxSeen = sample.tDevice();\n    }\n    if (Duration.between(sample.tDevice(), sample.tIngress()).compareTo(maxLag) > 0) {\n        meterRegistry.counter(\"telemetry.reordering.late\", \"kind\", \"beyond_window\").increment();\n    }\n}\nList<TelemetrySample> sorted = window.stream()\n        .sorted(Comparator.comparing(TelemetrySample::tDevice))\n        .toList();\nTimer.builder(\"telemetry.pipeline.latency\")\n        .tag(\"stage\", \"reordering\")\n        .register(meterRegistry)\n        .record(System.nanoTime() - startNanos, TimeUnit.NANOSECONDS);\nstepLog.emit(\"reordering.window.flushed\", window.get(0).correlationId());\nreturn sorted;",
+  "imports": [
+    "com.pulsestream.telemetry.shared.config.TelemetryProperties",
+    "com.pulsestream.telemetry.shared.observability.StepLog",
+    "com.pulsestream.telemetry.validation.domain.TelemetrySample",
+    "io.micrometer.core.instrument.MeterRegistry",
+    "io.micrometer.core.instrument.Timer",
+    "java.time.Duration",
+    "java.time.Instant",
+    "java.util.Comparator",
+    "java.util.List",
+    "java.util.concurrent.TimeUnit"
+  ],
   "missing": [],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-16T20:11:56.563178+00:00"
+  "recorded_at": "2026-11-17T15:33:06.601942+00:00"
 }

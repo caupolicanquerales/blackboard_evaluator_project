@@ -3,41 +3,135 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "SourceKind",
-    "constructors": [],
-    "static_calls": [
+    "type": "TelemetrySample",
+    "constructors": [
+      [
+        "\"dev-1\"",
+        "\"heart_rate\"",
+        "T_DEVICE",
+        "T_INGRESS",
+        "142.5",
+        "TelemetrySample.STATUS_PENDING",
+        "\"corr-1\""
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
       {
-        "method": "values",
+        "receiver": "copy",
+        "method": "status",
         "args": []
       },
       {
-        "method": "valueOf",
+        "receiver": "copy",
+        "method": "tIngress",
+        "args": []
+      },
+      {
+        "receiver": "original",
+        "method": "withStatus",
         "args": [
-          "kind.name()"
+          "TelemetrySample.STATUS_VALID"
+        ],
+        "returns": "TelemetrySample"
+      },
+      {
+        "receiver": "original",
+        "method": "withStatus",
+        "args": [
+          "TelemetrySample.STATUS_VALIDATION_FAILED"
         ]
       },
       {
-        "method": "valueOf",
+        "receiver": "original",
+        "method": "withIngress",
         "args": [
-          "\"TOASTER\""
-        ]
-      }
-    ],
-    "calls": [
+          "later"
+        ],
+        "returns": "TelemetrySample"
+      },
       {
-        "receiver": "kind",
-        "method": "name",
+        "receiver": "original",
+        "method": "withIngress",
+        "args": [
+          "T_INGRESS.plusSeconds(5)"
+        ]
+      },
+      {
+        "receiver": "original",
+        "method": "tIngress",
+        "args": []
+      },
+      {
+        "receiver": "s",
+        "method": "deviceId",
+        "args": []
+      },
+      {
+        "receiver": "s",
+        "method": "metric",
+        "args": []
+      },
+      {
+        "receiver": "s",
+        "method": "tDevice",
+        "args": []
+      },
+      {
+        "receiver": "s",
+        "method": "tIngress",
+        "args": []
+      },
+      {
+        "receiver": "s",
+        "method": "value",
+        "args": []
+      },
+      {
+        "receiver": "s",
+        "method": "status",
+        "args": []
+      },
+      {
+        "receiver": "s",
+        "method": "correlationId",
         "args": []
       }
     ],
     "verified": [],
     "usage_lines": [
-      "class SourceKindTest {",
-      "SourceKind[] result = SourceKind.values();",
-      "@EnumSource(SourceKind.class)",
-      "void valueOf_existingName_returnsSameConstant(SourceKind kind) {",
-      "assertThat(SourceKind.valueOf(kind.name())).isSameAs(kind);",
-      "assertThatThrownBy(() -> SourceKind.valueOf(\"TOASTER\"))"
+      "class TelemetrySampleTest {",
+      "private static TelemetrySample sample() {",
+      "return new TelemetrySample(\"dev-1\", \"heart_rate\", T_DEVICE, T_INGRESS, 142.5,",
+      "TelemetrySample.STATUS_PENDING, \"corr-1\");",
+      "TelemetrySample s = sample();",
+      "assertThat(s.deviceId()).isEqualTo(\"dev-1\");",
+      "assertThat(s.metric()).isEqualTo(\"heart_rate\");",
+      "assertThat(s.tDevice()).isEqualTo(T_DEVICE);",
+      "assertThat(s.tIngress()).isEqualTo(T_INGRESS);",
+      "assertThat(s.value()).isEqualTo(142.5);",
+      "assertThat(s.status()).isEqualTo(\"PENDING\");",
+      "assertThat(s.correlationId()).isEqualTo(\"corr-1\");",
+      "TelemetrySample original = sample();",
+      "TelemetrySample copy = original.withStatus(TelemetrySample.STATUS_VALID);",
+      "assertThat(copy).isNotSameAs(original);",
+      "assertThat(copy.status()).isEqualTo(\"VALID\");",
+      "assertThat(copy).usingRecursiveComparison().ignoringFields(\"status\").isEqualTo(original);",
+      "TelemetrySample original = sample();",
+      "original.withStatus(TelemetrySample.STATUS_VALIDATION_FAILED);",
+      "assertThat(original).isEqualTo(sample());",
+      "TelemetrySample original = sample();",
+      "TelemetrySample copy = original.withIngress(later);",
+      "assertThat(copy).isNotSameAs(original);",
+      "assertThat(copy.tIngress()).isEqualTo(later);",
+      "assertThat(copy).usingRecursiveComparison().ignoringFields(\"tIngress\").isEqualTo(original);",
+      "TelemetrySample original = sample();",
+      "original.withIngress(T_INGRESS.plusSeconds(5));",
+      "assertThat(original.tIngress()).isEqualTo(T_INGRESS);",
+      "assertThat(original).isEqualTo(sample());",
+      "assertThat(TelemetrySample.STATUS_PENDING).isEqualTo(\"PENDING\");",
+      "assertThat(TelemetrySample.STATUS_VALID).isEqualTo(\"VALID\");",
+      "assertThat(TelemetrySample.STATUS_VALIDATION_FAILED).isEqualTo(\"VALIDATION_FAILED\");"
     ]
   },
   "stderr": "",

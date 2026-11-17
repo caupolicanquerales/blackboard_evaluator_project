@@ -5,11 +5,11 @@
   "dependsOn": [
     "T2-010"
   ],
-  "path": "src/main/java/com/blackboard/telemetry/history/domain/HistoryEvent.java",
+  "path": "src/main/java/com/pulsestream/telemetry/eventlog/domain/EventRecord.java",
   "kind": "refactor",
   "layer": "domain",
   "feature": null,
-  "export": "HistoryEvent",
-  "project": "telemetry-ingestion-processing",
-  "intent": "Inspect and refactor HistoryEvent without changing the ast_hints surface or the tests' behavior (never seal or finalize a type another unit stubs; no magic numbers, no blocking calls, no raw logger calls beyond the claimed step logs). Unit contract: Context Telemetry Stream Processing & History. Immutable published-language record broadcast downstream to the analytics consumers. Invariants: revisionNo >= 0 (0 = none, first revision = 1, enforced by IllegalArgumentException), windowSize >= 0, non-null type/sample, non-blank correlationId."
+  "export": "EventRecord",
+  "intent": "Inspect and refactor EventRecord without changing its tabled contract or the frozen tests; keep it consistent with: Event Revision record of the append-only Telemetry Event Log: the persisted sample, its revision number (assigned by the repository, increasing per device/metric/tDevice key) and kind (RECORD for the first record of a key, REVISION for each later corrective or backfilled frame). Public String constants KIND_RECORD=\"RECORD\", KIND_REVISION=\"REVISION\".",
+  "project": "telemetry-ingestion-processing"
 }

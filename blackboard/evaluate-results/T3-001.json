@@ -1,25 +1,25 @@
 {
   "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/blackboard/telemetry/ingestion/domain/MetricKind.java",
-  "stack": "java-springboot3",
-  "skill": "java-springboot3",
-  "summary": "Pure framework-free enum with the seven required constants; nothing to refactor.",
+  "targetFile": "src/main/resources/application.yml",
+  "stack": "java-springboot",
+  "skill": "java-springboot",
+  "summary": "Audit: single YAML document, nested mappings, all literals match the contract; no secrets, duplicates or profiles. No edits needed.",
   "findings": [],
   "changes": [],
   "reverts": [],
   "final_test": {
     "status": "passed",
     "counts": {
-      "run": 242,
-      "failures": 51,
-      "errors": 3
+      "run": 131,
+      "failures": 0,
+      "errors": 0
     },
     "source": "gate-cache/T2-001.json"
   },
   "task_id": "T3-001",
   "stage": 3,
   "executed": true,
-  "recorded_at": "2026-11-16T21:44:18.368376+00:00",
+  "recorded_at": "2026-11-17T16:37:35.409408+00:00",
   "engine_diff": [],
   "engine_diff_files": 0
 }

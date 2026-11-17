@@ -1,29 +1,53 @@
 {
+  "observability": {
+    "step_logs": [
+      "validation.sample.validated",
+      "validation.sample.failed"
+    ]
+  },
   "id": "T1-008",
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
     "T0-001"
   ],
-  "path": "src/test/java/com/blackboard/telemetry/history/domain/RevisionReasonTest.java",
+  "path": "src/test/java/com/pulsestream/telemetry/validation/application/ValidationServiceTest.java",
   "kind": "test",
-  "layer": "domain",
+  "layer": "application",
   "feature": null,
-  "export": "RevisionReason",
+  "export": "ValidationService",
+  "intent": "Write the test for ValidationService (context telemetry-ingestion-processing) at the test file path; the unit under test lives at src/main/java/com/pulsestream/telemetry/validation/application/ValidationService.java. Assert only against the tabled surface. Telemetry Validation rule owner. Every sample is validated against Sensor Metric Boundaries from TelemetryProperties before downstream propagation: heart_rate within [heartRateMin,heartRateMax], power within [powerMin,powerMax], cadence within [cadenceMin,cadenceMax] (inclusive), swim_pace strictly greater than swimPaceMinExclusive; ground_contact_time, respiration, swim_stroke and unknown metrics are unbounded and VALID. Returns the sample with status VALID or VALIDATION_FAILED; the payload is never dropped or altered otherwise. Counter telemetry.validation.samples with tag status=valid or status=failed per sample. observability.step_logs: validation.sample.validated (valid sample, via the StepLog instance method emit) ; observability.step_logs: validation.sample.failed (invalid sample, via the StepLog instance method emit). Both resolved through the sample's correlationId. observability.step_logs = [\"validation.sample.validated\", \"validation.sample.failed\"] TEST DUTIES: Cover inclusive boundary values, just-out-of-range values, swim pace equal to the lower bound (failed), unbounded metrics, payload preserved on failure, counters per status, and the StepLog instance method emit step names.",
   "project": "telemetry-ingestion-processing",
-  "intent": "Write JUnit 5 + AssertJ tests (reactor-test StepVerifier for Mono/Flux, Mockito for collaborators, no external services, no Thread.sleep) for RevisionReason. Assert ONLY against the ast_hints method table; at least one given/when/then case per table method and per branch. Unit contract: Context Telemetry Stream Processing & History. Enum of Event Revision reasons, constants exactly: BACKFILL (sample arrived later than the Backfill Reorder Window), CORRECTION. Bounded metric tag reason; single owner of these names.",
   "ast_hints": {
-    "package": "com.blackboard.telemetry.history.domain",
+    "package": "com.pulsestream.telemetry.validation.application",
     "implements": [],
-    "dependencies": [],
-    "methods": [
+    "dependencies": [
       {
-        "signature": "static RevisionReason valueOf(String name)",
-        "returns": "RevisionReason"
+        "type": "TelemetryProperties",
+        "task_id": "T2-002"
       },
       {
-        "signature": "static RevisionReason[] values()",
-        "returns": "RevisionReason[]"
+        "type": "TelemetrySample",
+        "task_id": "T2-003"
+      },
+      {
+        "type": "StepLog",
+        "task_id": "T2-006"
+      },
+      {
+        "type": "io.micrometer.core.instrument.MeterRegistry",
+        "task_id": "T0-001"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "ValidationService(TelemetryProperties properties, StepLog stepLog, MeterRegistry meterRegistry)",
+        "returns": ""
+      },
+      {
+        "signature": "TelemetrySample validate(TelemetrySample sample)",
+        "returns": "TelemetrySample",
+        "semantics": "out of range: status VALIDATION_FAILED, counted in telemetry.validation.samples{status=failed}"
       }
     ]
   }

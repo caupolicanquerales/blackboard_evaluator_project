@@ -4,54 +4,129 @@
   "stage": 2,
   "dependsOn": [
     "T1-019",
-    "T2-004",
-    "T2-001",
-    "T2-008"
+    "T2-002",
+    "T2-006",
+    "T2-007",
+    "T2-008",
+    "T2-009",
+    "T2-012",
+    "T2-014",
+    "T2-015",
+    "T2-016",
+    "T2-017",
+    "T2-018",
+    "T0-001",
+    "T0-002",
+    "T0-003"
   ],
-  "path": "src/main/java/com/blackboard/telemetry/history/application/TelemetryHistoryRepository.java",
+  "path": "src/main/java/com/pulsestream/telemetry/shared/config/PipelineConfiguration.java",
   "kind": "code",
-  "layer": "application",
+  "layer": "infrastructure",
   "feature": null,
-  "export": "TelemetryHistoryRepository",
+  "export": "PipelineConfiguration",
+  "intent": "Implement PipelineConfiguration exactly as tabled. Single wiring factory (@Configuration with @EnableConfigurationProperties(the TelemetryProperties instance method class)) and the ONLY registration mechanism: every bean below is a factory @Bean method, no unit self-registers. The @SpringBootApplication composition root already lives in the base package com.pulsestream.telemetry (scaffold, no second boot class); component scanning of the base package covers this class. Providers: StepLog, ValidationService, ReorderingService, AuditTrail (R2dbcAuditTrail), EventLogRepository (R2dbcEventLogRepository), EventBroadcast (SinkEventBroadcast), EventLogService, IntakeService, CorrelationWebFilter (installs the contextWrite correlation filter), TelemetryIngestController. telemetryPipeline provides the lifecycle-managed Disposable (destroyMethod dispose) that subscribes: stream() of the intake service -> map via validate() -> buffer by Duration.ofSeconds(reorderWindowSeconds) -> map via reorderWindow() -> flatMapIterable -> concatMap via append(); this is the consumer of every rule service. The out-of-process consumer of the EventBroadcast instance method stream() is declared in the strategy.",
   "project": "telemetry-ingestion-processing",
-  "intent": "Implement TelemetryHistoryRepository (Java 21, Spring Boot 3, WebFlux/Reactor/R2DBC, constructor injection, no blocking calls) so that the frozen test passes, providing exactly the ast_hints table and nothing improvised. Unit contract: Context Telemetry Stream Processing & History. Outbound port of the append-only raw history. Dedup identity is the natural identity (deviceId, metric, tDevice) owned here; rows and revisions are never updated or deleted; first revision number is 1 (single owner of that fact). Imports only reactor, java.*, and domain types.",
   "ast_hints": {
-    "package": "com.blackboard.telemetry.history.application",
+    "package": "com.pulsestream.telemetry.shared.config",
     "implements": [],
     "dependencies": [
       {
-        "type": "TelemetrySample",
-        "task_id": "T2-004"
+        "type": "TelemetryProperties",
+        "task_id": "T2-002"
       },
       {
-        "type": "MetricKind",
-        "task_id": "T2-001"
+        "type": "StepLog",
+        "task_id": "T2-006"
       },
       {
-        "type": "RevisionReason",
+        "type": "ValidationService",
         "task_id": "T2-008"
+      },
+      {
+        "type": "ReorderingService",
+        "task_id": "T2-009"
+      },
+      {
+        "type": "R2dbcAuditTrail",
+        "task_id": "T2-007"
+      },
+      {
+        "type": "R2dbcEventLogRepository",
+        "task_id": "T2-012"
+      },
+      {
+        "type": "SinkEventBroadcast",
+        "task_id": "T2-014"
+      },
+      {
+        "type": "EventLogService",
+        "task_id": "T2-015"
+      },
+      {
+        "type": "IntakeService",
+        "task_id": "T2-016"
+      },
+      {
+        "type": "CorrelationWebFilter",
+        "task_id": "T2-017"
+      },
+      {
+        "type": "TelemetryIngestController",
+        "task_id": "T2-018"
+      },
+      {
+        "type": "org.springframework.r2dbc.core.DatabaseClient",
+        "task_id": "T0-001"
+      },
+      {
+        "type": "io.micrometer.core.instrument.MeterRegistry",
+        "task_id": "T0-001"
       }
     ],
     "methods": [
       {
-        "signature": "Mono<Long> appendSample(TelemetrySample sample)",
-        "returns": "Mono<Long>",
-        "semantics": "Emits the generated sample id; EMPTY when a sample with the same identity (deviceId, metric, tDevice) is already stored (at-least-once dedup)."
+        "signature": "StepLog stepLog()",
+        "returns": "StepLog"
       },
       {
-        "signature": "Mono<Integer> appendRevision(long sampleId, RevisionReason reason, double value, Instant tIngress)",
-        "returns": "Mono<Integer>",
-        "semantics": "Appends an Event Revision and emits its revision number; the first revision of a sample is 1, then incremented by 1."
+        "signature": "ValidationService validationService(TelemetryProperties properties, StepLog stepLog, MeterRegistry meterRegistry)",
+        "returns": "ValidationService"
       },
       {
-        "signature": "Mono<Instant> findLatestTDevice(String deviceId, MetricKind metric)",
-        "returns": "Mono<Instant>",
-        "semantics": "Greatest stored tDevice for the device and metric; EMPTY when nothing stored."
+        "signature": "ReorderingService reorderingService(TelemetryProperties properties, StepLog stepLog, MeterRegistry meterRegistry)",
+        "returns": "ReorderingService"
       },
       {
-        "signature": "Flux<TelemetrySample> findWindow(String deviceId, MetricKind metric, Instant from, Instant to, int limit)",
-        "returns": "Flux<TelemetrySample>",
-        "semantics": "Samples with from <= tDevice <= to ordered ascending by tDevice (never tIngress), at most limit rows."
+        "signature": "AuditTrail auditTrail(DatabaseClient databaseClient, MeterRegistry meterRegistry)",
+        "returns": "AuditTrail"
+      },
+      {
+        "signature": "EventLogRepository eventLogRepository(DatabaseClient databaseClient)",
+        "returns": "EventLogRepository"
+      },
+      {
+        "signature": "EventBroadcast eventBroadcast(TelemetryProperties properties)",
+        "returns": "EventBroadcast"
+      },
+      {
+        "signature": "EventLogService eventLogService(EventLogRepository repository, EventBroadcast broadcast, AuditTrail auditTrail, StepLog stepLog, MeterRegistry meterRegistry)",
+        "returns": "EventLogService"
+      },
+      {
+        "signature": "IntakeService intakeService(TelemetryProperties properties, AuditTrail auditTrail, StepLog stepLog, MeterRegistry meterRegistry)",
+        "returns": "IntakeService"
+      },
+      {
+        "signature": "CorrelationWebFilter correlationWebFilter()",
+        "returns": "CorrelationWebFilter"
+      },
+      {
+        "signature": "TelemetryIngestController telemetryIngestController(IntakeService intakeService)",
+        "returns": "TelemetryIngestController"
+      },
+      {
+        "signature": "Disposable telemetryPipeline(TelemetryProperties properties, IntakeService intakeService, ValidationService validationService, ReorderingService reorderingService, EventLogService eventLogService)",
+        "returns": "Disposable"
       }
     ]
   }

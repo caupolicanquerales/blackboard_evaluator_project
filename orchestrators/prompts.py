@@ -416,7 +416,7 @@ Follow these steps exactly, once per domain:
    - dependsOn: ids of earlier tasks. Stage 1 depends on the stage 0 scaffold of the same project; stage 2 depends
      on the matching stage 1 task; stage 3 depends on the matching stage 2 task.
    - project: the domain slug <slug>; every task of this domain uses the same project.
-   - path: path relative to that domain's project root; the file the agent must create or modify.
+   - path: path relative to that domain's project root; the file the agent must create or modify. For a stage 1 TEST task this is the TEST file the tester creates (a separate test artifact, never the production file of the unit under test, and never the paired stage 2 task's path - the emit gate refuses the collision: a @Test class written at a production path lands outside the test classpath and the coder's weave overwrites the frozen contract).
    - layer: one of root, domain, application, infrastructure, interface, shared, features.
    - feature: required only when layer is "features"; otherwise null.
    - export: the primary type, class, or symbol name.
@@ -453,7 +453,14 @@ Follow these steps exactly, once per domain:
      contradict. When any intent assigns such values, a CONFIG UNIT whose `path` is the
      stack's runtime configuration artifact (application.yml / config.ts / settings.py per
      the tech-stack skill) MUST be scheduled carrying the seed's literal values - without
-     it every runtime default is fiction (emit refuses).
+     it every runtime default is fiction (emit refuses). Format rule (plan rule (v)): the
+     tabled KEY/VALUE pairs are SEMANTIC PROPERTY PATHS - lookup names, not file layout;
+     the artifact is serialized in the NATIVE FORM OF ITS KIND (structured-document kinds
+     nest; flat key-value kinds spell dotted keys with their assignment token - the shape
+     comes from the tech-stack skill). Never demand or emit a flattened dotted-key list
+     inside a structured document: that is one kind's syntax smuggled into another's
+     file, and the assembly gate re-serializes it back (same keys, same values, no test
+     edits).
    - Duty ownership: a file artifact named in an intent (config, migration, manifest...)
      must be that unit's own `path` or another task's `path`. "Also provide <other file>"
      inside an intent is prose, not a plan - the engine cannot weave two files from one unit.
@@ -483,7 +490,33 @@ Follow these steps exactly, once per domain:
      portability is a plan-time decision, never relitigated at the assembly gate against the
      config unit's own frozen test; a rule-implementing service is reachable in the pin graph
      by a consumer unit (the
-     wiring unit's factory pin proves production, never consumption).
+     wiring unit's factory pin proves production, never consumption); a MAPPED inbound
+     handler names the ONE registration mechanism its framework can actually execute - the
+     stack skill's handler marker on its own class (wiring supplies collaborators), or a
+     functional router bean owned by the wiring unit - never a demand that no marker may
+     appear while the factory alone registers it: an unmarked handler is constructed, never
+     mapped, and the green app answers 404 on its own endpoint (the emit gate refuses the
+     pair for the planned language). THREE MORE, BORN FROM
+     THE 2026-11-16 PART III INSPECTION (G2/G3/G4 - each was a plan that satisfied every rule
+     and shipped a silent gap):
+   - (s) DEDUP + CORRECTIONS = NAME THE VALUE AXIS: once an at-least-once inbound chain over
+     an append-only history names its dedup identity (rule (q)) AND the vocabulary speaks of
+     corrections/backfills, some contract sentence must state whether the mutable payload is
+     part of that identity or excluded - and if excluded, what separates a retry (no-op) from
+     a correction (revision appended): comparison, client-supplied version, correction flag.
+     Table BOTH resend classes as test duties of the receiving unit. A value-excluding identity
+     with no discriminator reclassifies every correction as a duplicate in silence.
+   - (t) PROMISED MECHANISM = SCHEDULED DUTY: if the strategy's observability wording promises
+     correlation (or any floor surface) "via <mechanism>", a unit must declare the duty that
+     INSTALLS the mechanism (dependency + enablement at wiring/boot, the concrete shape from
+     the active tech-stack skill, written with the strategy's own token). If the plan will not
+     install it, amend the strategy first - the emit gate refuses the mismatch, and a negated
+     mention ("no <mechanism> is used") is detected as the divergence, not as the duty.
+   - (u) NO ACKNOWLEDGED OUTCOME UNMETERED: every strategy step log pairs with a metric (or an
+     explicit `uncounted_steps` reason), and every failure/drop/rejection/overflow outcome
+     spelled in tabled `semantics` pairs with a counting meter in the floor, claimed by its
+     owning unit (or a declared `uncounted_failures` posture). Audited-but-uncounted failures
+     are how a losing pipeline reports a healthy dashboard.
    - Prose may never be the only place a signature exists: every method an intent describes
      must also appear in that unit's ast_hints.methods, spelled identically, so prose and
      table can never disagree.

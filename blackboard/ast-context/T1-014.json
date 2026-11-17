@@ -3,141 +3,69 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "TelemetryProperties",
+    "type": "SinkEventBroadcast",
     "constructors": [
       [
-        "WINDOW",
-        "10",
-        "20",
-        "30",
-        "RETRY",
-        "boundaries"
-      ],
-      [
-        "WINDOW",
-        "1",
-        "1",
-        "1",
-        "RETRY",
-        "List.of()"
-      ],
-      [
-        "Duration.ZERO",
-        "1",
-        "1",
-        "1",
-        "RETRY",
-        "List.of()"
-      ],
-      [
-        "Duration.ofSeconds(-1)",
-        "1",
-        "1",
-        "1",
-        "RETRY",
-        "List.of()"
-      ],
-      [
-        "WINDOW",
-        "0",
-        "1",
-        "1",
-        "RETRY",
-        "List.of()"
-      ],
-      [
-        "WINDOW",
-        "1",
-        "0",
-        "1",
-        "RETRY",
-        "List.of()"
-      ],
-      [
-        "WINDOW",
-        "1",
-        "1",
-        "0",
-        "RETRY",
-        "List.of()"
-      ],
-      [
-        "WINDOW",
-        "1",
-        "1",
-        "1",
-        "Duration.ZERO",
-        "List.of()"
-      ],
-      [
-        "WINDOW",
-        "1",
-        "1",
-        "1",
-        "Duration.ofMillis(-1)",
-        "List.of()"
+        "new TelemetryProperties(60, capacity, 30, 220, 0, 2000, 0, 200, 0)"
       ]
     ],
     "static_calls": [],
     "calls": [
       {
-        "receiver": "props",
-        "method": "reorderWindow",
+        "receiver": "broadcast",
+        "method": "stream",
         "args": []
       },
       {
-        "receiver": "props",
-        "method": "reorderBufferCapacity",
-        "args": []
+        "receiver": "broadcast",
+        "method": "publish",
+        "args": [
+          "first"
+        ]
       },
       {
-        "receiver": "props",
-        "method": "validatedStreamCapacity",
-        "args": []
+        "receiver": "broadcast",
+        "method": "publish",
+        "args": [
+          "second"
+        ]
       },
       {
-        "receiver": "props",
-        "method": "broadcastCapacity",
-        "args": []
+        "receiver": "broadcast",
+        "method": "publish",
+        "args": [
+          "record(1)"
+        ]
       },
       {
-        "receiver": "props",
-        "method": "emitRetryTimeout",
-        "args": []
+        "receiver": "broadcast",
+        "method": "publish",
+        "args": [
+          "record(2)"
+        ]
       },
       {
-        "receiver": "props",
-        "method": "boundaries",
-        "args": []
+        "receiver": "broadcast",
+        "method": "publish",
+        "args": [
+          "record(3)"
+        ]
       }
     ],
     "verified": [],
     "usage_lines": [
-      "class TelemetryPropertiesTest {",
-      "private static TelemetryProperties valid(List<SensorMetricBoundary> boundaries) {",
-      "return new TelemetryProperties(WINDOW, 10, 20, 30, RETRY, boundaries);",
-      "TelemetryProperties props = valid(boundaries);",
-      "assertThat(props.reorderWindow()).isEqualTo(WINDOW);",
-      "assertThat(props.reorderBufferCapacity()).isEqualTo(10);",
-      "assertThat(props.validatedStreamCapacity()).isEqualTo(20);",
-      "assertThat(props.broadcastCapacity()).isEqualTo(30);",
-      "assertThat(props.emitRetryTimeout()).isEqualTo(RETRY);",
-      "assertThat(props.boundaries()).containsExactlyElementsOf(boundaries);",
-      "TelemetryProperties props = new TelemetryProperties(WINDOW, 1, 1, 1, RETRY, List.of());",
-      "assertThat(props.reorderBufferCapacity()).isEqualTo(1);",
-      "assertThat(props.validatedStreamCapacity()).isEqualTo(1);",
-      "assertThat(props.broadcastCapacity()).isEqualTo(1);",
-      "assertThatThrownBy(() -> new TelemetryProperties(Duration.ZERO, 1, 1, 1, RETRY, List.of()))",
-      "assertThatThrownBy(() -> new TelemetryProperties(Duration.ofSeconds(-1), 1, 1, 1, RETRY, List.of()))",
-      "assertThatThrownBy(() -> new TelemetryProperties(WINDOW, 0, 1, 1, RETRY, List.of()))",
-      "assertThatThrownBy(() -> new TelemetryProperties(WINDOW, 1, 0, 1, RETRY, List.of()))",
-      "assertThatThrownBy(() -> new TelemetryProperties(WINDOW, 1, 1, 0, RETRY, List.of()))",
-      "assertThatThrownBy(() -> new TelemetryProperties(WINDOW, 1, 1, 1, Duration.ZERO, List.of()))",
-      "assertThatThrownBy(() -> new TelemetryProperties(WINDOW, 1, 1, 1, Duration.ofMillis(-1), List.of()))",
-      "TelemetryProperties props = valid(List.of(boundary()));",
-      "assertThatThrownBy(() -> props.boundaries().add(boundary()))",
-      "TelemetryProperties props = valid(source);",
-      "assertThat(props.boundaries()).hasSize(1);"
+      "class SinkEventBroadcastTest {",
+      "private static SinkEventBroadcast broadcast(int capacity) {",
+      "return new SinkEventBroadcast(",
+      "SinkEventBroadcast broadcast = broadcast(4);",
+      "StepVerifier.create(broadcast.stream().take(2))",
+      "broadcast.publish(first);",
+      "broadcast.publish(second);",
+      "assertThat(broadcast(2).publish(record(1))).isTrue();",
+      "SinkEventBroadcast broadcast = broadcast(2);",
+      "broadcast.publish(record(1));",
+      "broadcast.publish(record(2));",
+      "assertThat(broadcast.publish(record(3))).isFalse();"
     ]
   },
   "stderr": "",

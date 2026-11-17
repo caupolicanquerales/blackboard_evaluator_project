@@ -1,27 +1,55 @@
 {
   "id": "T2-018",
   "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/blackboard/telemetry/ingestion/application/ValidatedSampleStream.java",
-  "export": "ValidatedSampleStream",
-  "kind": "interface",
-  "method": "publish",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/intake/api/TelemetryIngestController.java",
+  "export": "TelemetryIngestController",
+  "kind": "class",
+  "method": "ingest",
   "language": "java",
-  "framework": "springboot",
+  "framework": "spring-boot",
   "skill": "java-springboot",
-  "signature": "Mono<Void> publish(ValidatedSampleEvent event);",
-  "returns": "Mono<Void>",
-  "body": "",
+  "signature": "public Mono<ResponseEntity<TelemetryIngestController.IngressAck>> ingest(@Valid @RequestBody TelemetryIngestController.IngressPacketDto packet)",
+  "returns": "Mono<ResponseEntity<TelemetryIngestController.IngressAck>>",
+  "body": "return Mono.deferContextual(context -> {\n    String requestId = context.getOrDefault(CorrelationWebFilter.CONTEXT_KEY, \"unknown\");\n    List<TelemetrySample> samples = packet.samples().stream()\n        .map(sample -> new TelemetrySample(packet.deviceId(), sample.metric(), sample.tDevice(), Instant.EPOCH, sample.value(), \"PENDING\", requestId))\n        .toList();\n    return intakeService.receive(samples);\n}).map(accepted -> ResponseEntity.status(HttpStatus.ACCEPTED).body(new IngressAck(accepted)));",
   "imports": [
-    "reactor.core.publisher.Flux",
+    "com.pulsestream.telemetry.intake.application.IntakeService",
+    "com.pulsestream.telemetry.validation.domain.TelemetrySample",
+    "jakarta.validation.Valid",
+    "jakarta.validation.constraints.NotBlank",
+    "jakarta.validation.constraints.NotEmpty",
+    "jakarta.validation.constraints.NotNull",
+    "java.time.Instant",
+    "java.util.List",
+    "org.springframework.http.HttpStatus",
+    "org.springframework.http.MediaType",
+    "org.springframework.http.ProblemDetail",
+    "org.springframework.http.ResponseEntity",
+    "org.springframework.web.bind.annotation.ExceptionHandler",
+    "org.springframework.web.bind.annotation.PostMapping",
+    "org.springframework.web.bind.annotation.RequestBody",
+    "org.springframework.web.bind.annotation.RequestMapping",
+    "org.springframework.web.bind.annotation.ResponseBody",
+    "org.springframework.web.bind.support.WebExchangeBindException",
     "reactor.core.publisher.Mono",
-    "com.blackboard.telemetry.ingestion.domain.ValidatedSampleEvent"
+    "com.pulsestream.telemetry.intake.api.CorrelationWebFilter"
+  ],
+  "annotations": [
+    "RequestMapping(\"/api/v1/telemetry\")"
+  ],
+  "methodAnnotations": [
+    "PostMapping(\"/packets\")",
+    "ResponseBody"
   ],
   "members": [
-    "Mono<Void> publish(ValidatedSampleEvent event);",
-    "Flux<ValidatedSampleEvent> events();"
+    "private final IntakeService intakeService",
+    "public TelemetryIngestController(IntakeService intakeService) { this.intakeService = intakeService; }",
+    "@ExceptionHandler(WebExchangeBindException.class) @ResponseBody public ProblemDetail handleValidation(WebExchangeBindException exception) { ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, \"Invalid telemetry packet\"); problem.setProperty(\"errors\", exception.getFieldErrors().stream().map(error -> error.getField() + \": \" + error.getDefaultMessage()).toList()); return problem; }",
+    "public record IngressPacketDto(@NotBlank String deviceId, @NotEmpty @Valid List<SampleDto> samples) { }",
+    "public record SampleDto(@NotBlank String metric, @NotNull Instant tDevice, double value) { }",
+    "public record IngressAck(int accepted) { }"
   ],
   "missing": [],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-16T20:18:07.428019+00:00"
+  "recorded_at": "2026-11-17T15:45:35.948171+00:00"
 }

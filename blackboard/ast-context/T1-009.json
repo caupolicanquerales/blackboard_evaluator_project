@@ -3,48 +3,78 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "HistoryEventType",
-    "constructors": [],
-    "static_calls": [
-      {
-        "method": "values",
-        "args": []
-      },
-      {
-        "method": "valueOf",
-        "args": [
-          "type.name()"
-        ]
-      },
-      {
-        "method": "valueOf",
-        "args": [
-          "\"SAMPLE_DELETED\""
-        ]
-      },
-      {
-        "method": "valueOf",
-        "args": [
-          "null"
-        ]
-      }
+    "type": "ReorderingService",
+    "constructors": [
+      [
+        "props",
+        "stepLog",
+        "meters"
+      ]
     ],
+    "static_calls": [],
     "calls": [
       {
-        "receiver": "type",
-        "method": "name",
-        "args": []
+        "receiver": "service",
+        "method": "reorderWindow",
+        "args": [
+          "List.of(sample(\"a\", 3, 4), sample(\"b\", 1, 4), sample(\"c\", 2, 4))"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "reorderWindow",
+        "args": [
+          "List.of(sample(\"first\", 1, 2), sample(\"second\", 1, 2))"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "reorderWindow",
+        "args": [
+          "List.of()"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "reorderWindow",
+        "args": [
+          "List.of(sample(\"a\", 10, 11), sample(\"b\", 5, 11))"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "reorderWindow",
+        "args": [
+          "List.of(sample(\"late\", 0, 120))"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "reorderWindow",
+        "args": [
+          "List.of(sample(\"a\", 1, 2))"
+        ]
+      },
+      {
+        "receiver": "service",
+        "method": "reorderWindow",
+        "args": [
+          "List.of(sample(\"a\", 1, 2), sample(\"b\", 2, 3))"
+        ]
       }
     ],
     "verified": [],
     "usage_lines": [
-      "class HistoryEventTypeTest {",
-      "HistoryEventType[] values = HistoryEventType.values();",
-      "@EnumSource(HistoryEventType.class)",
-      "void valueOf_constantName_returnsSameConstant(HistoryEventType type) {",
-      "assertThat(HistoryEventType.valueOf(type.name())).isSameAs(type);",
-      "assertThatThrownBy(() -> HistoryEventType.valueOf(\"SAMPLE_DELETED\"))",
-      "assertThatThrownBy(() -> HistoryEventType.valueOf(null))"
+      "class ReorderingServiceTest {",
+      "private ReorderingService service;",
+      "service = new ReorderingService(props, stepLog, meters);",
+      "var result = service.reorderWindow(List.of(sample(\"a\", 3, 4), sample(\"b\", 1, 4), sample(\"c\", 2, 4)));",
+      "var result = service.reorderWindow(List.of(sample(\"first\", 1, 2), sample(\"second\", 1, 2)));",
+      "var result = service.reorderWindow(List.of());",
+      "service.reorderWindow(List.of(sample(\"a\", 10, 11), sample(\"b\", 5, 11)));",
+      "var result = service.reorderWindow(List.of(sample(\"late\", 0, 120)));",
+      "service.reorderWindow(List.of(sample(\"a\", 1, 2)));",
+      "service.reorderWindow(List.of(sample(\"a\", 1, 2), sample(\"b\", 2, 3)));"
     ]
   },
   "stderr": "",

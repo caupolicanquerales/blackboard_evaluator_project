@@ -4,59 +4,50 @@
   "stage": 2,
   "dependsOn": [
     "T1-014",
-    "T2-006"
+    "T2-002",
+    "T2-010",
+    "T2-013",
+    "T0-001"
   ],
-  "path": "src/main/java/com/blackboard/telemetry/shared/config/TelemetryProperties.java",
+  "path": "src/main/java/com/pulsestream/telemetry/eventlog/infrastructure/SinkEventBroadcast.java",
   "kind": "code",
-  "layer": "shared",
+  "layer": "infrastructure",
   "feature": null,
-  "export": "TelemetryProperties",
+  "export": "SinkEventBroadcast",
+  "intent": "Implement SinkEventBroadcast exactly as tabled. EventBroadcast implemented with a Reactor Sinks.many().multicast().onBackpressureBuffer(bufferCapacity, false) sink, capacity from TelemetryProperties. publish serializes emissions (synchronized) and returns true only when tryEmitNext succeeds; any other emit result returns false (never throws, never blocks). stream returns sink.asFlux().",
   "project": "telemetry-ingestion-processing",
-  "intent": "Implement TelemetryProperties (Java 21, Spring Boot 3, WebFlux/Reactor/R2DBC, constructor injection, no blocking calls) so that the frozen test passes, providing exactly the ast_hints table and nothing improvised. Unit contract: Externalized operational values of context Telemetry Ingestion / Stream Processing as an immutable record bound by Spring configuration properties with prefix telemetry (constructor binding, kebab-case keys: reorder-window, reorder-buffer-capacity, validated-stream-capacity, broadcast-capacity, emit-retry-timeout, boundaries). The values live in src/main/resources/application.yml (ApplicationYml unit); no default literal in code. It is registered ONLY by the wiring unit TelemetryConfiguration through @EnableConfigurationProperties (no @Component here).",
   "ast_hints": {
-    "package": "com.blackboard.telemetry.shared.config",
-    "implements": [],
+    "package": "com.pulsestream.telemetry.eventlog.infrastructure",
+    "implements": [
+      "EventBroadcast"
+    ],
     "dependencies": [
       {
-        "type": "SensorMetricBoundary",
-        "task_id": "T2-006"
+        "type": "TelemetryProperties",
+        "task_id": "T2-002"
+      },
+      {
+        "type": "EventBroadcast",
+        "task_id": "T2-013"
+      },
+      {
+        "type": "EventRecord",
+        "task_id": "T2-010"
       }
     ],
     "methods": [
       {
-        "signature": "TelemetryProperties(Duration reorderWindow, int reorderBufferCapacity, int validatedStreamCapacity, int broadcastCapacity, Duration emitRetryTimeout, List<SensorMetricBoundary> boundaries)",
-        "returns": "",
-        "semantics": "reorderWindow > 0, all capacities >= 1, emitRetryTimeout > 0, boundaries copied unmodifiable; violations throw IllegalArgumentException."
+        "signature": "SinkEventBroadcast(TelemetryProperties properties)",
+        "returns": ""
       },
       {
-        "signature": "Duration reorderWindow()",
-        "returns": "Duration",
-        "semantics": "Backfill Reorder Window, positive."
+        "signature": "boolean publish(EventRecord record)",
+        "returns": "boolean",
+        "semantics": "true accepted; false refused (overflow) and counted by the caller in telemetry.pipeline.dropped{stage=broadcast}"
       },
       {
-        "signature": "int reorderBufferCapacity()",
-        "returns": "int",
-        "semantics": "Max samples read for one window, >= 1."
-      },
-      {
-        "signature": "int validatedStreamCapacity()",
-        "returns": "int",
-        "semantics": "Bound of the validated sample stream buffer, >= 1."
-      },
-      {
-        "signature": "int broadcastCapacity()",
-        "returns": "int",
-        "semantics": "Bound of the downstream broadcast replay buffer, >= 1."
-      },
-      {
-        "signature": "Duration emitRetryTimeout()",
-        "returns": "Duration",
-        "semantics": "Maximum bounded busy-loop time for a concurrent sink emit, positive."
-      },
-      {
-        "signature": "List<SensorMetricBoundary> boundaries()",
-        "returns": "List<SensorMetricBoundary>",
-        "semantics": "Unmodifiable."
+        "signature": "Flux<EventRecord> stream()",
+        "returns": "Flux<EventRecord>"
       }
     ]
   }

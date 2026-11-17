@@ -3,128 +3,20 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "SensorMetricBoundary",
+    "type": "StepLog",
     "constructors": [
-      [
-        "MetricKind.HEART_RATE",
-        "30.0",
-        "220.0",
-        "false",
-        "true"
-      ],
-      [
-        "MetricKind.SWIM_PACE",
-        "10.0",
-        "200.0",
-        "true",
-        "true"
-      ],
-      [
-        "null",
-        "0.0",
-        "1.0",
-        "false",
-        "true"
-      ],
-      [
-        "MetricKind.POWER",
-        "10.0",
-        "5.0",
-        "false",
-        "true"
-      ],
-      [
-        "MetricKind.POWER",
-        "5.0",
-        "5.0",
-        "false",
-        "true"
-      ],
-      [
-        "MetricKind.HEART_RATE",
-        "30.0",
-        "220.0",
-        "false",
-        "false"
-      ]
+      []
     ],
     "static_calls": [],
-    "calls": [
-      {
-        "receiver": "boundary",
-        "method": "metric",
-        "args": []
-      },
-      {
-        "receiver": "boundary",
-        "method": "min",
-        "args": []
-      },
-      {
-        "receiver": "boundary",
-        "method": "max",
-        "args": []
-      },
-      {
-        "receiver": "boundary",
-        "method": "minExclusive",
-        "args": []
-      },
-      {
-        "receiver": "boundary",
-        "method": "enabled",
-        "args": []
-      },
-      {
-        "receiver": "boundary",
-        "method": "accepts",
-        "args": [
-          "5.0"
-        ]
-      },
-      {
-        "receiver": "boundary",
-        "method": "accepts",
-        "args": [
-          "value"
-        ]
-      },
-      {
-        "receiver": "boundary",
-        "method": "accepts",
-        "args": [
-          "100000.0"
-        ]
-      },
-      {
-        "receiver": "boundary",
-        "method": "accepts",
-        "args": [
-          "-5.0"
-        ]
-      }
-    ],
+    "calls": [],
     "verified": [],
     "usage_lines": [
-      "class SensorMetricBoundaryTest {",
-      "private static SensorMetricBoundary heartRate() {",
-      "return new SensorMetricBoundary(MetricKind.HEART_RATE, 30.0, 220.0, false, true);",
-      "SensorMetricBoundary boundary = new SensorMetricBoundary(MetricKind.SWIM_PACE, 10.0, 200.0, true, true);",
-      "assertThat(boundary.metric()).isEqualTo(MetricKind.SWIM_PACE);",
-      "assertThat(boundary.min()).isEqualTo(10.0);",
-      "assertThat(boundary.max()).isEqualTo(200.0);",
-      "assertThat(boundary.minExclusive()).isTrue();",
-      "assertThat(boundary.enabled()).isTrue();",
-      "assertThatThrownBy(() -> new SensorMetricBoundary(null, 0.0, 1.0, false, true))",
-      "assertThatThrownBy(() -> new SensorMetricBoundary(MetricKind.POWER, 10.0, 5.0, false, true))",
-      "SensorMetricBoundary boundary = new SensorMetricBoundary(MetricKind.POWER, 5.0, 5.0, false, true);",
-      "assertThat(boundary.accepts(5.0)).isTrue();",
-      "assertThat(heartRate().accepts(value)).isEqualTo(expected);",
-      "SensorMetricBoundary boundary = new SensorMetricBoundary(MetricKind.SWIM_PACE, 10.0, 200.0, true, true);",
-      "assertThat(boundary.accepts(value)).isEqualTo(expected);",
-      "SensorMetricBoundary boundary = new SensorMetricBoundary(MetricKind.HEART_RATE, 30.0, 220.0, false, false);",
-      "assertThat(boundary.accepts(100000.0)).isTrue();",
-      "assertThat(boundary.accepts(-5.0)).isTrue();"
+      "class StepLogTest {",
+      "logger = (Logger) LoggerFactory.getLogger(StepLog.class);",
+      "new StepLog().emit(\"ingest-received\", \"corr-1\");",
+      "new StepLog().emit(\"ingest-received\", \"corr-1\");",
+      "new StepLog().emit(\"ingest-received\", \"corr-1\");",
+      "new StepLog().emit(\"ingest-received\", \"corr-1\");"
     ]
   },
   "stderr": "",

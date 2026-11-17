@@ -1,19 +1,40 @@
 {
   "id": "T2-015",
   "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/resources/application.yml",
-  "export": "ApplicationYml",
-  "kind": "class",
-  "method": "ApplicationYml",
-  "language": "yaml",
-  "framework": "spring-boot",
-  "skill": "java-standard-best-practices",
-  "signature": "ApplicationYml",
-  "returns": "void",
-  "body": "spring.application.name: telemetry-ingestion-processing\nspring.r2dbc.url: ${TELEMETRY_R2DBC_URL}\nspring.r2dbc.username: ${TELEMETRY_DB_USER}\nspring.r2dbc.password: ${TELEMETRY_DB_PASSWORD}\nspring.flyway.enabled: true\nspring.flyway.url: ${TELEMETRY_JDBC_URL}\nspring.flyway.user: ${TELEMETRY_DB_USER}\nspring.flyway.password: ${TELEMETRY_DB_PASSWORD}\nspring.flyway.locations: filesystem:db/migrations\ntelemetry.reorder-window: PT60S\ntelemetry.reorder-buffer-capacity: 4096\ntelemetry.validated-stream-capacity: 1024\ntelemetry.broadcast-capacity: 1024\ntelemetry.emit-retry-timeout: PT0.1S\ntelemetry.boundaries[0].metric: HEART_RATE\ntelemetry.boundaries[0].min: 30\ntelemetry.boundaries[0].max: 240\ntelemetry.boundaries[0].min-exclusive: false\ntelemetry.boundaries[0].enabled: true\ntelemetry.boundaries[1].metric: POWER\ntelemetry.boundaries[1].min: 0\ntelemetry.boundaries[1].max: 2500\ntelemetry.boundaries[1].min-exclusive: false\ntelemetry.boundaries[1].enabled: true\ntelemetry.boundaries[2].metric: CADENCE\ntelemetry.boundaries[2].min: 0\ntelemetry.boundaries[2].max: 220\ntelemetry.boundaries[2].min-exclusive: false\ntelemetry.boundaries[2].enabled: true\ntelemetry.boundaries[3].metric: SWIM_PACE\ntelemetry.boundaries[3].min: 45\ntelemetry.boundaries[3].max: 100000\ntelemetry.boundaries[3].min-exclusive: true\ntelemetry.boundaries[3].enabled: true\ntelemetry.boundaries[4].metric: GROUND_CONTACT_TIME\ntelemetry.boundaries[4].min: 0\ntelemetry.boundaries[4].max: 0\ntelemetry.boundaries[4].min-exclusive: false\ntelemetry.boundaries[4].enabled: false\ntelemetry.boundaries[5].metric: RESPIRATION\ntelemetry.boundaries[5].min: 0\ntelemetry.boundaries[5].max: 0\ntelemetry.boundaries[5].min-exclusive: false\ntelemetry.boundaries[5].enabled: false\ntelemetry.boundaries[6].metric: SWIM_STROKE\ntelemetry.boundaries[6].min: 0\ntelemetry.boundaries[6].max: 0\ntelemetry.boundaries[6].min-exclusive: false\ntelemetry.boundaries[6].enabled: false\nlogging.level.root: INFO\nlogging.level.com.blackboard.telemetry: INFO\nlogging.file.name: logs/telemetry-ingestion-processing.log\nlogging.structured.format.file: ecs\nlogging.logback.rollingpolicy.max-file-size: 10MB\nlogging.logback.rollingpolicy.max-history: 7\nmanagement.endpoints.web.exposure.include: health,metrics\n---\nspring.config.activate.on-profile: test\nspring.r2dbc.url: r2dbc:h2:mem:///telemetry;DB_CLOSE_DELAY=-1;NON_KEYWORDS=VALUE\nspring.r2dbc.username: sa\nspring.r2dbc.password: ''\nspring.flyway.enabled: true\nspring.flyway.url: jdbc:h2:mem:telemetry;DB_CLOSE_DELAY=-1;NON_KEYWORDS=VALUE\nspring.flyway.user: sa\nspring.flyway.password: ''\nspring.flyway.locations: filesystem:db/migrations\nlogging.file.name: target/test-logs/telemetry.log\n",
-  "imports": [],
+  "targetFile": "src/main/java/com/pulsestream/telemetry/eventlog/application/EventLogService.java",
+  "export": "EventLogService",
+  "method": "append",
+  "language": "java",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "signature": "Mono<EventRecord> append(TelemetrySample sample)",
+  "returns": "Mono<EventRecord>",
+  "body": "return repository.append(sample)\n        .flatMap(record -> {\n            boolean revision = EventRecord.KIND_REVISION.equals(record.kind());\n            meterRegistry.counter(\"telemetry.eventlog.appended\", \"kind\", revision ? \"revision\" : \"record\").increment();\n            stepLog.emit(revision ? \"eventlog.revision.appended\" : \"eventlog.record.appended\", sample.correlationId());\n            if (broadcast.publish(record)) {\n                stepLog.emit(\"eventlog.broadcast.published\", sample.correlationId());\n            } else {\n                meterRegistry.counter(\"telemetry.pipeline.dropped\", \"stage\", \"broadcast\").increment();\n            }\n            return auditTrail.record(new AuditEntry(\"eventlog\", \"append\", \"success\", Instant.now(), sample.correlationId()))\n                    .thenReturn(record);\n        })\n        .onErrorResume(error -> {\n            meterRegistry.counter(\"telemetry.pipeline.dropped\", \"stage\", \"eventlog\").increment();\n            return auditTrail.record(new AuditEntry(\"eventlog\", \"append\", \"failure\", Instant.now(), sample.correlationId()))\n                    .then(Mono.<EventRecord>empty());\n        });",
+  "imports": [
+    "com.pulsestream.telemetry.eventlog.domain.EventRecord",
+    "com.pulsestream.telemetry.validation.domain.TelemetrySample",
+    "com.pulsestream.telemetry.shared.observability.AuditEntry",
+    "com.pulsestream.telemetry.shared.observability.AuditTrail",
+    "com.pulsestream.telemetry.shared.observability.StepLog",
+    "io.micrometer.core.instrument.MeterRegistry",
+    "java.time.Instant",
+    "reactor.core.publisher.Mono",
+    "org.springframework.stereotype.Service"
+  ],
   "missing": [],
+  "kind": "class",
+  "annotations": [
+    "Service"
+  ],
+  "members": [
+    "private final EventLogRepository repository",
+    "private final EventBroadcast broadcast",
+    "private final AuditTrail auditTrail",
+    "private final StepLog stepLog",
+    "private final MeterRegistry meterRegistry",
+    "public EventLogService(EventLogRepository repository, EventBroadcast broadcast, AuditTrail auditTrail, StepLog stepLog, MeterRegistry meterRegistry) {\n    this.repository = repository;\n    this.broadcast = broadcast;\n    this.auditTrail = auditTrail;\n    this.stepLog = stepLog;\n    this.meterRegistry = meterRegistry;\n}"
+  ],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-16T21:58:05.229002+00:00"
+  "recorded_at": "2026-11-17T15:29:57.386678+00:00"
 }

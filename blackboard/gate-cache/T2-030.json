@@ -1,1 +1,0 @@
-{"fingerprint": "{\"memo_version\": 10, \"payload\": 1794860022615477338, \"tree\": \"b48bad86af347f37\"}", "reason": null, "result": {"status": "passed", "exit_code": 0, "missing_symbols": [], "missing_packages": [], "failures": [], "counts": {"run": 8, "failures": 0, "errors": 0}, "classes": {"com.blackboard.telemetry.ingestion.api.IngestionControllerTest": "passed"}}}

@@ -4,39 +4,50 @@
   "stage": 2,
   "dependsOn": [
     "T1-007",
-    "T2-004"
+    "T2-004",
+    "T2-005",
+    "T0-001",
+    "T0-003"
   ],
-  "path": "src/main/java/com/blackboard/telemetry/ingestion/domain/ValidatedSampleEvent.java",
+  "path": "src/main/java/com/pulsestream/telemetry/eventlog/infrastructure/R2dbcAuditTrail.java",
   "kind": "code",
-  "layer": "domain",
+  "layer": "infrastructure",
   "feature": null,
-  "export": "ValidatedSampleEvent",
+  "export": "R2dbcAuditTrail",
+  "intent": "Implement R2dbcAuditTrail exactly as tabled. R2DBC adapter of AuditTrail for context Telemetry Event Log: inserts one row into append-only audit_trail (actor, action, outcome, occurred_at, correlation_id); never updates or deletes. On a database failure it increments counter telemetry.pipeline.dropped with tag stage=audit and completes empty (on_failure: swallowed and counted; on_success: row durable).",
   "project": "telemetry-ingestion-processing",
-  "intent": "Implement ValidatedSampleEvent (Java 21, Spring Boot 3, WebFlux/Reactor/R2DBC, constructor injection, no blocking calls) so that the frozen test passes, providing exactly the ast_hints table and nothing improvised. Unit contract: Context Telemetry Ingestion & Validation. Published-language record carrying both TelemetrySampleValidated (status VALID) and TelemetrySampleValidationFailed (status VALIDATION_FAILED): one type, discriminated by the sample status. Never carries an UNVALIDATED sample.",
   "ast_hints": {
-    "package": "com.blackboard.telemetry.ingestion.domain",
-    "implements": [],
+    "package": "com.pulsestream.telemetry.eventlog.infrastructure",
+    "implements": [
+      "AuditTrail"
+    ],
     "dependencies": [
       {
-        "type": "TelemetrySample",
+        "type": "org.springframework.r2dbc.core.DatabaseClient",
+        "task_id": "T0-001"
+      },
+      {
+        "type": "io.micrometer.core.instrument.MeterRegistry",
+        "task_id": "T0-001"
+      },
+      {
+        "type": "AuditTrail",
+        "task_id": "T2-005"
+      },
+      {
+        "type": "AuditEntry",
         "task_id": "T2-004"
       }
     ],
     "methods": [
       {
-        "signature": "ValidatedSampleEvent(TelemetrySample sample, String correlationId)",
-        "returns": "",
-        "semantics": "Null rejected (NullPointerException); sample.status() must be VALID or VALIDATION_FAILED (IllegalArgumentException for UNVALIDATED); correlationId non-blank."
+        "signature": "R2dbcAuditTrail(DatabaseClient databaseClient, MeterRegistry meterRegistry)",
+        "returns": ""
       },
       {
-        "signature": "TelemetrySample sample()",
-        "returns": "TelemetrySample",
-        "semantics": "Never null; status is VALID or VALIDATION_FAILED."
-      },
-      {
-        "signature": "String correlationId()",
-        "returns": "String",
-        "semantics": "The requestId of the originating request; never blank."
+        "signature": "Mono<Void> record(AuditEntry entry)",
+        "returns": "Mono<Void>",
+        "semantics": "insert failure: counted in telemetry.pipeline.dropped{stage=audit}, completes empty"
       }
     ]
   }

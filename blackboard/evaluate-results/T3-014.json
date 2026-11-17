@@ -1,22 +1,23 @@
 {
   "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/blackboard/telemetry/shared/config/TelemetryProperties.java",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/eventlog/infrastructure/SinkEventBroadcast.java",
   "stack": "java-springboot3",
   "skill": "java-springboot3",
-  "summary": "Removed redundant explicit boundaries() accessor (identical to the record's implicit one); validation, signature and binding unchanged.",
+  "summary": "Moved fields above constructor and reused capacity local field in sink construction; kept buffered-count guard because Reactor's pre-subscriber buffer does not reject at capacity.",
   "findings": [
-    "Compact constructor validation is repetitive but kept for behavior/message parity with tests",
-    "No secrets, SQL, blocking calls or default literals found"
+    "publish keeps a manual 'buffered' counter (green-phase workaround): Reactor's multicast onBackpressureBuffer does not return a failure at capacity without subscribers, and the frozen test publish_boundedBufferFullWithoutSubscriber_returnsFalse requires false. Cannot be removed without weakening the contract."
   ],
   "changes": [
-    "Removed redundant boundaries() accessor override"
+    "Declared fields before constructor; constructor reuses this.capacity."
   ],
-  "reverts": [],
+  "reverts": [
+    "Removing buffered/capacity guard made publish_boundedBufferFullWithoutSubscriber_returnsFalse fail; reverted."
+  ],
   "final_test": {
-    "command": "./mvnw -Dtest=TelemetryPropertiesTest test",
     "status": "passed",
+    "command": "./mvnw -Dtest=SinkEventBroadcastTest test",
     "counts": {
-      "run": 11,
+      "run": 3,
       "failures": 0,
       "errors": 0
     }
@@ -24,14 +25,14 @@
   "task_id": "T3-014",
   "stage": 3,
   "executed": true,
-  "recorded_at": "2026-11-16T21:49:34.078902+00:00",
+  "recorded_at": "2026-11-17T15:48:41.540090+00:00",
   "engine_diff": [
     {
-      "file": "src/main/java/com/blackboard/telemetry/shared/config/TelemetryProperties.java",
-      "added": 0,
-      "removed": 4,
+      "file": "src/main/java/com/pulsestream/telemetry/eventlog/infrastructure/SinkEventBroadcast.java",
+      "added": 3,
+      "removed": 5,
       "capped": false,
-      "patch": "--- a/src/main/java/com/blackboard/telemetry/shared/config/TelemetryProperties.java\n+++ b/src/main/java/com/blackboard/telemetry/shared/config/TelemetryProperties.java\n@@ -30,8 +30,4 @@\n         }\n         boundaries = List.copyOf(boundaries);\n     }\n-\n-    public List<SensorMetricBoundary> boundaries() {\n-        return boundaries;\n-    }\n }"
+      "patch": "--- a/src/main/java/com/pulsestream/telemetry/eventlog/infrastructure/SinkEventBroadcast.java\n+++ b/src/main/java/com/pulsestream/telemetry/eventlog/infrastructure/SinkEventBroadcast.java\n@@ -9,10 +9,12 @@\n public class SinkEventBroadcast implements EventBroadcast {\n \n     private final Sinks.Many<EventRecord> sink;\n+    private final int capacity;\n+    private int buffered;\n \n     public SinkEventBroadcast(TelemetryProperties properties) {\n         this.capacity = properties.bufferCapacity();\n-        this.sink = Sinks.many().multicast().onBackpressureBuffer(properties.bufferCapacity(), false);\n+        this.sink = Sinks.many().multicast().onBackpressureBuffer(capacity, false);\n     }\n \n     @Override\n@@ -32,8 +34,4 @@\n         }\n         return accepted;\n     }\n-\n-    private final int capacity;\n-\n-    private int buffered;\n }"
     }
   ],
   "engine_diff_files": 1

@@ -5,11 +5,11 @@
   "dependsOn": [
     "T2-019"
   ],
-  "path": "src/main/java/com/blackboard/telemetry/history/application/TelemetryHistoryRepository.java",
+  "path": "src/main/java/com/pulsestream/telemetry/shared/config/PipelineConfiguration.java",
   "kind": "refactor",
-  "layer": "application",
+  "layer": "infrastructure",
   "feature": null,
-  "export": "TelemetryHistoryRepository",
-  "project": "telemetry-ingestion-processing",
-  "intent": "Inspect and refactor TelemetryHistoryRepository without changing the ast_hints surface or the tests' behavior (never seal or finalize a type another unit stubs; no magic numbers, no blocking calls, no raw logger calls beyond the claimed step logs). Unit contract: Context Telemetry Stream Processing & History. Outbound port of the append-only raw history. Dedup identity is the natural identity (deviceId, metric, tDevice) owned here; rows and revisions are never updated or deleted; first revision number is 1 (single owner of that fact). Imports only reactor, java.*, and domain types."
+  "export": "PipelineConfiguration",
+  "intent": "Inspect and refactor PipelineConfiguration without changing its tabled contract or the frozen tests; keep it consistent with: Single wiring factory (@Configuration with @EnableConfigurationProperties(the TelemetryProperties instance method class)) and the ONLY registration mechanism: every bean below is a factory @Bean method, no unit self-registers. The @SpringBootApplication composition root already lives in the base package com.pulsestream.telemetry (scaffold, no second boot class); component scanning of the base package covers this class. Providers: StepLog, ValidationService, ReorderingService, AuditTrail (R2dbcAuditTrail), EventLogRepository (R2dbcEventLogRepository), EventBroadcast (SinkEventBroadcast), EventLogService, IntakeService, CorrelationWebFilter (installs the contextWrite correlation filter), TelemetryIngestController. telemetryPipeline provides the lifecycle-managed Disposable (destroyMethod dispose) that subscribes: stream() of the intake service -> map via validate() -> buffer by Duration.ofSeconds(reorderWindowSeconds) -> map via reorderWindow() -> flatMapIterable -> concatMap via append(); this is the consumer of every rule service. The out-of-process consumer of the EventBroadcast instance method stream() is declared in the strategy.",
+  "project": "telemetry-ingestion-processing"
 }

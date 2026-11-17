@@ -3,58 +3,18 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "MetricKind",
+    "type": "yml",
     "constructors": [],
-    "static_calls": [
-      {
-        "method": "values",
-        "args": []
-      },
-      {
-        "method": "valueOf",
-        "args": [
-          "name"
-        ]
-      },
-      {
-        "method": "valueOf",
-        "args": [
-          "\"SPEED\""
-        ]
-      },
-      {
-        "method": "valueOf",
-        "args": [
-          "\"power\""
-        ]
-      },
-      {
-        "method": "valueOf",
-        "args": [
-          "null"
-        ]
-      }
-    ],
-    "calls": [
-      {
-        "receiver": "result",
-        "method": "name",
-        "args": []
-      }
-    ],
+    "static_calls": [],
+    "calls": [],
     "verified": [],
     "usage_lines": [
-      "class MetricKindTest {",
-      "MetricKind[] result = MetricKind.values();",
-      "assertThat(result).containsExactly(",
-      "MetricKind.HEART_RATE, MetricKind.POWER, MetricKind.CADENCE, MetricKind.SWIM_PACE,",
-      "MetricKind.GROUND_CONTACT_TIME, MetricKind.RESPIRATION, MetricKind.SWIM_STROKE);",
-      "assertThat(MetricKind.values()).hasSize(7);",
-      "MetricKind result = MetricKind.valueOf(name);",
-      "assertThat(result.name()).isEqualTo(name);",
-      "assertThatThrownBy(() -> MetricKind.valueOf(\"SPEED\")).isInstanceOf(IllegalArgumentException.class);",
-      "assertThatThrownBy(() -> MetricKind.valueOf(\"power\")).isInstanceOf(IllegalArgumentException.class);",
-      "assertThatThrownBy(() -> MetricKind.valueOf(null)).isInstanceOf(NullPointerException.class);"
+      "documents = new YamlPropertySourceLoader().load(\"application\", new ClassPathResource(\"application.yml\"));",
+      "void yml_tabledPath_hasTabledLiteral(String path, String expected) {",
+      "void yml_document_isSingleDocument() {",
+      "void yml_flywayLocation_startsWithClasspathPrefix() {",
+      "void yml_document_isNestedWithNoDottedTopLevelKey() throws IOException {",
+      "var resource = new ClassPathResource(\"application.yml\");"
     ]
   },
   "stderr": "",

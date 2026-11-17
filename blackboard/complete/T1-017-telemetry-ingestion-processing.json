@@ -5,32 +5,23 @@
   "dependsOn": [
     "T0-001"
   ],
-  "path": "src/test/java/com/blackboard/telemetry/shared/observability/CorrelationContextTest.java",
+  "path": "src/test/java/com/pulsestream/telemetry/intake/api/CorrelationWebFilterTest.java",
   "kind": "test",
-  "layer": "shared",
+  "layer": "interface",
   "feature": null,
-  "export": "CorrelationContext",
+  "export": "CorrelationWebFilter",
+  "intent": "Write the test for CorrelationWebFilter (context telemetry-ingestion-processing) at the test file path; the unit under test lives at src/main/java/com/pulsestream/telemetry/intake/api/CorrelationWebFilter.java. Assert only against the tabled surface. Single correlation middleware. Adopts the inbound X-Request-Id header or generates a UUID, echoes it in the X-Request-Id response header, and installs correlation by contextWrite of key requestId into the Reactor Context of the downstream chain (public constants CONTEXT_KEY=\"requestId\", HEADER=\"X-Request-Id\"). Correlation lives in the Reactor Context and as an explicit field of every audit record; no other propagation mechanism is installed. TEST DUTIES: Use MockServerWebExchange with a chain that reads the Reactor Context: header adopted when present, UUID generated when absent, response header echoed, context key requestId readable downstream.",
   "project": "telemetry-ingestion-processing",
-  "intent": "Write JUnit 5 + AssertJ tests (reactor-test StepVerifier for Mono/Flux, Mockito for collaborators, no external services, no Thread.sleep) for CorrelationContext. Assert ONLY against the ast_hints method table; at least one given/when/then case per table method and per branch. Unit contract: Shared static-only holder (all members bound static in the table) that is the single owner of the correlation key literals requestId, the header X-Request-Id and the absent marker UNCORRELATED. Correlation lives in the Reactor Context and in the audit record's correlationId field; no MDC and no context-propagation library is used, so log lines do not carry the id (declared).",
   "ast_hints": {
-    "package": "com.blackboard.telemetry.shared.observability",
-    "implements": [],
+    "package": "com.pulsestream.telemetry.intake.api",
+    "implements": [
+      "WebFilter"
+    ],
     "dependencies": [],
     "methods": [
       {
-        "signature": "static String contextKey()",
-        "returns": "String",
-        "semantics": "Returns exactly requestId, the Reactor Context key and audit correlation key."
-      },
-      {
-        "signature": "static Mono<String> current()",
-        "returns": "Mono<String>",
-        "semantics": "Emits the requestId from the subscriber's Reactor Context; emits UNCORRELATED when the key is absent. Never empty, never errors."
-      },
-      {
-        "signature": "static String headerName()",
-        "returns": "String",
-        "semantics": "Returns exactly X-Request-Id, the HTTP header carrying the requestId."
+        "signature": "Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain)",
+        "returns": "Mono<Void>"
       }
     ]
   }

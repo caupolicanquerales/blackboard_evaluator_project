@@ -4,34 +4,44 @@
   "stage": 2,
   "dependsOn": [
     "T1-018",
-    "T2-007"
+    "T2-003",
+    "T2-016",
+    "T0-001",
+    "T0-002",
+    "T0-003"
   ],
-  "path": "src/main/java/com/blackboard/telemetry/ingestion/application/ValidatedSampleStream.java",
+  "path": "src/main/java/com/pulsestream/telemetry/intake/api/TelemetryIngestController.java",
   "kind": "code",
-  "layer": "application",
+  "layer": "interface",
   "feature": null,
-  "export": "ValidatedSampleStream",
+  "export": "TelemetryIngestController",
+  "intent": "Implement TelemetryIngestController exactly as tabled. Device ingestion endpoint of Telemetry Intake: POST /api/v1/telemetry/packets accepting ONE JSON object (IngressPacketDto) per request. Declared as a handler via class-level @Controller + @RequestMapping with @ResponseBody methods (the controller marker is REQUIRED: WebFlux maps only annotated classes - a marker-less bean is constructed but serves 404; component-scan registration is authoritative, the wiring factory same-name @Bean yields to it and must not duplicate the mapping). Nested public records: IngressPacketDto(String deviceId, List<SampleDto> samples), SampleDto(String metric, Instant tDevice, double value), IngressAck(int accepted). DTO validation is activated by @Valid on the parameter with @NotBlank deviceId, @NotEmpty samples, @NotBlank metric, and tDevice required. ingest reads requestId from the Reactor Context (Mono.deferContextual, fallback \"unknown\"), maps samples to TelemetrySample (status PENDING, placeholder tIngress Instant.EPOCH, correlationId = requestId), calls the IntakeService instance method receive and answers 202 with IngressAck(accepted). handleValidation is an @ExceptionHandler for WebExchangeBindException returning a 400 ProblemDetail (application/problem+json). DTO shapes stay in this interface layer; the application port speaks domain types only.",
   "project": "telemetry-ingestion-processing",
-  "intent": "Implement ValidatedSampleStream (Java 21, Spring Boot 3, WebFlux/Reactor/R2DBC, constructor injection, no blocking calls) so that the frozen test passes, providing exactly the ast_hints table and nothing improvised. Unit contract: Context Telemetry Ingestion & Validation. Outbound port of the bounded, backpressure-aware validated sample event stream (customer-supplier link to History). Overflow posture is ERROR with a declared reason; consumer is the pipeline subscription (PipelineSubscriber). Imports only reactor and java.*.",
   "ast_hints": {
-    "package": "com.blackboard.telemetry.ingestion.application",
+    "package": "com.pulsestream.telemetry.intake.api",
     "implements": [],
     "dependencies": [
       {
-        "type": "ValidatedSampleEvent",
-        "task_id": "T2-007"
+        "type": "IntakeService",
+        "task_id": "T2-016"
+      },
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-003"
       }
     ],
     "methods": [
       {
-        "signature": "Mono<Void> publish(ValidatedSampleEvent event)",
-        "returns": "Mono<Void>",
-        "semantics": "Completes when the event is accepted by the bounded buffer; emits IllegalStateException when the buffer is full (overflow posture ERROR) - the false path is an error, never a silent drop."
+        "signature": "TelemetryIngestController(IntakeService intakeService)",
+        "returns": ""
       },
       {
-        "signature": "Flux<ValidatedSampleEvent> events()",
-        "returns": "Flux<ValidatedSampleEvent>",
-        "semantics": "Hot fan-out of published events, consumed by PipelineSubscriber."
+        "signature": "Mono<ResponseEntity<TelemetryIngestController.IngressAck>> ingest(TelemetryIngestController.IngressPacketDto packet)",
+        "returns": "Mono<ResponseEntity<TelemetryIngestController.IngressAck>>"
+      },
+      {
+        "signature": "ProblemDetail handleValidation(WebExchangeBindException exception)",
+        "returns": "ProblemDetail"
       }
     ]
   }

@@ -5,11 +5,11 @@
   "dependsOn": [
     "T2-013"
   ],
-  "path": "src/main/java/com/blackboard/telemetry/shared/audit/AuditTrail.java",
+  "path": "src/main/java/com/pulsestream/telemetry/eventlog/application/EventBroadcast.java",
   "kind": "refactor",
   "layer": "application",
   "feature": null,
-  "export": "AuditTrail",
-  "project": "telemetry-ingestion-processing",
-  "intent": "Inspect and refactor AuditTrail without changing the ast_hints surface or the tests' behavior (never seal or finalize a type another unit stubs; no magic numbers, no blocking calls, no raw logger calls beyond the claimed step logs). Unit contract: Shared outbound port for the append-only audit trail. record(entry) appends one entry and completes when durable; storage errors are emitted as error signals (never swallowed). Imports only reactor and java.*. Append-only: no update or delete operation exists."
+  "export": "EventBroadcast",
+  "intent": "Inspect and refactor EventBroadcast without changing its tabled contract or the frozen tests; keep it consistent with: Backpressure-aware, versioned append-only event stream port to downstream analytics. The consumer is out of process (boundary declared in the execution strategy). publish returns true when the record was accepted into the bounded stream (on_true: broadcast succeeded) and false when it was refused because the bounded buffer is full or the sink rejected it (on_false: record dropped from the broadcast only; the caller counts telemetry.pipeline.dropped stage=broadcast). stream exposes the broadcast Flux.",
+  "project": "telemetry-ingestion-processing"
 }

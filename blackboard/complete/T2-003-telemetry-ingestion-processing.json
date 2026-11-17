@@ -3,27 +3,60 @@
   "targetAgent": "agent-coder",
   "stage": 2,
   "dependsOn": [
-    "T1-003"
+    "T1-003",
+    "T0-001"
   ],
-  "path": "src/main/java/com/blackboard/telemetry/ingestion/domain/SourceKind.java",
+  "path": "src/main/java/com/pulsestream/telemetry/validation/domain/TelemetrySample.java",
   "kind": "code",
   "layer": "domain",
   "feature": null,
-  "export": "SourceKind",
+  "export": "TelemetrySample",
+  "intent": "Implement TelemetrySample exactly as tabled. Telemetry Sample value record: one 1Hz data point. Components: deviceId, metric (one of heart_rate, power, cadence, ground_contact_time, respiration, swim_stroke, swim_pace), tDevice (device timestamp, the only chronological ordering key), tIngress (arrival time, never an ordering key), value, status (PENDING before validation, VALID, or VALIDATION_FAILED; the payload is kept when invalid), correlationId (explicit carriage of the request correlation id through the pipeline). Immutable: withStatus and withIngress return a copy with only that component replaced. Public String constants STATUS_PENDING=\"PENDING\", STATUS_VALID=\"VALID\", STATUS_VALIDATION_FAILED=\"VALIDATION_FAILED\".",
   "project": "telemetry-ingestion-processing",
-  "intent": "Implement SourceKind (Java 21, Spring Boot 3, WebFlux/Reactor/R2DBC, constructor injection, no blocking calls) so that the frozen test passes, providing exactly the ast_hints table and nothing improvised. Unit contract: Context Telemetry Ingestion & Validation. Enum of the bounded origins of an Ingress Packet, constants exactly: EDGE_DEVICE, BIKE_COMPUTER, SMART_WEARABLE. Used as the bounded metric tag source_kind; single owner of these names.",
   "ast_hints": {
-    "package": "com.blackboard.telemetry.ingestion.domain",
+    "package": "com.pulsestream.telemetry.validation.domain",
     "implements": [],
     "dependencies": [],
     "methods": [
       {
-        "signature": "static SourceKind valueOf(String name)",
-        "returns": "SourceKind"
+        "signature": "TelemetrySample(String deviceId, String metric, Instant tDevice, Instant tIngress, double value, String status, String correlationId)",
+        "returns": ""
       },
       {
-        "signature": "static SourceKind[] values()",
-        "returns": "SourceKind[]"
+        "signature": "String deviceId()",
+        "returns": "String"
+      },
+      {
+        "signature": "String metric()",
+        "returns": "String"
+      },
+      {
+        "signature": "Instant tDevice()",
+        "returns": "Instant"
+      },
+      {
+        "signature": "Instant tIngress()",
+        "returns": "Instant"
+      },
+      {
+        "signature": "double value()",
+        "returns": "double"
+      },
+      {
+        "signature": "String status()",
+        "returns": "String"
+      },
+      {
+        "signature": "String correlationId()",
+        "returns": "String"
+      },
+      {
+        "signature": "TelemetrySample withStatus(String status)",
+        "returns": "TelemetrySample"
+      },
+      {
+        "signature": "TelemetrySample withIngress(Instant tIngress)",
+        "returns": "TelemetrySample"
       }
     ]
   }

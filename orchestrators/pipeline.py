@@ -74,9 +74,19 @@ def build_parser(description):
 
 
 def _migration_files(slug):
-    """True when the database architect left real migration scripts on disk."""
-    migrations = workspace.project_root_for(slug) / "db" / "migrations"
-    return migrations.is_dir() and any(f.is_file() for f in migrations.rglob("*"))
+    """True when the database architect left real migration scripts on disk.
+
+    The location is the one the ACTIVE STACK SKILL names as runtime-loaded (Spring:
+    src/main/resources/db/migration; generic: db/migrations at the module root) -
+    keyed by the migration filename, not one hardcoded folder: a check that only
+    accepts the module root would fatal a plan that correctly packaged its schema,
+    the same gate-vs-skill collision as the 2026-11-16 N8 pair (2026-11-17: the
+    literal folder check quietly endorsed scripts the runtime never loads).
+    """
+    root = workspace.project_root_for(slug)
+    if not root.is_dir():
+        return False
+    return any(root.rglob("V*__*.sql"))
 
 
 def _database_reason(slug):

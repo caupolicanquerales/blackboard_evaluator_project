@@ -1,30 +1,36 @@
 {
   "id": "T2-012",
   "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/blackboard/telemetry/shared/audit/AuditEntry.java",
-  "export": "AuditEntry",
-  "method": "AuditEntry",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/eventlog/infrastructure/R2dbcEventLogRepository.java",
+  "export": "R2dbcEventLogRepository",
+  "method": "append",
   "language": "java",
   "framework": "springboot",
   "skill": "java-springboot",
-  "kind": "record",
-  "signature": "public AuditEntry(String actor, AuditAction action, String outcome, Instant timestamp, String correlationId)",
-  "returns": "void",
-  "body": "Objects.requireNonNull(actor, \"actor\");\nObjects.requireNonNull(action, \"action\");\nObjects.requireNonNull(outcome, \"outcome\");\nObjects.requireNonNull(timestamp, \"timestamp\");\nObjects.requireNonNull(correlationId, \"correlationId\");\nif (actor.isBlank()) {\n    throw new IllegalArgumentException(\"actor must not be blank\");\n}\nif (correlationId.isBlank()) {\n    throw new IllegalArgumentException(\"correlationId must not be blank\");\n}\nif (!outcome.equals(\"SUCCESS\") && !outcome.equals(\"FAILURE\")) {\n    throw new IllegalArgumentException(\"outcome must be SUCCESS or FAILURE\");\n}\nthis.actor = actor;\nthis.action = action;\nthis.outcome = outcome;\nthis.timestamp = timestamp;\nthis.correlationId = correlationId;",
+  "signature": "public Mono<EventRecord> append(TelemetrySample sample)",
+  "returns": "Mono<EventRecord>",
+  "body": "OffsetDateTime deviceTime = OffsetDateTime.ofInstant(sample.tDevice(), ZoneOffset.UTC);\nOffsetDateTime ingressTime = OffsetDateTime.ofInstant(sample.tIngress(), ZoneOffset.UTC);\nreturn databaseClient.sql(\"SELECT COALESCE(MAX(revision), 0) AS max_revision FROM telemetry_record WHERE device_id = :deviceId AND metric = :metric AND t_device = :deviceTime\")\n        .bind(\"deviceId\", sample.deviceId())\n        .bind(\"metric\", sample.metric())\n        .bind(\"deviceTime\", deviceTime)\n        .map(row -> row.get(\"max_revision\", Number.class).intValue())\n        .one()\n        .defaultIfEmpty(0)\n        .flatMap(maxRevision -> {\n            int revision = maxRevision + 1;\n            String kind = revision == 1 ? EventRecord.KIND_RECORD : EventRecord.KIND_REVISION;\n            return databaseClient.sql(\"INSERT INTO telemetry_record (device_id, metric, t_device, revision, t_ingress, sample_value, validation_status) VALUES (:deviceId, :metric, :deviceTime, :revision, :ingressTime, :sampleValue, :validationStatus)\")\n                    .bind(\"deviceId\", sample.deviceId())\n                    .bind(\"metric\", sample.metric())\n                    .bind(\"deviceTime\", deviceTime)\n                    .bind(\"revision\", revision)\n                    .bind(\"ingressTime\", ingressTime)\n                    .bind(\"sampleValue\", sample.value())\n                    .bind(\"validationStatus\", sample.status())\n                    .fetch()\n                    .rowsUpdated()\n                    .thenReturn(new EventRecord(sample, revision, kind));\n        });",
   "imports": [
+    "com.pulsestream.telemetry.eventlog.application.EventLogRepository",
+    "com.pulsestream.telemetry.eventlog.domain.EventRecord",
+    "com.pulsestream.telemetry.validation.domain.TelemetrySample",
     "java.time.Instant",
-    "java.util.Objects",
-    "com.blackboard.telemetry.shared.audit.AuditAction"
+    "java.time.OffsetDateTime",
+    "java.time.ZoneOffset",
+    "org.springframework.r2dbc.core.DatabaseClient",
+    "reactor.core.publisher.Mono"
   ],
   "missing": [],
+  "kind": "class",
+  "implements": [
+    "EventLogRepository"
+  ],
   "members": [
-    "String actor",
-    "AuditAction action",
-    "String outcome",
-    "Instant timestamp",
-    "String correlationId"
+    "private final DatabaseClient databaseClient;",
+    "public R2dbcEventLogRepository(DatabaseClient databaseClient) { this.databaseClient = databaseClient; }",
+    "@Override public Mono<EventRecord> findLatest(String deviceId, String metric, Instant tDevice) { return databaseClient.sql(\"SELECT revision, t_ingress, sample_value, validation_status FROM telemetry_record WHERE device_id = :deviceId AND metric = :metric AND t_device = :deviceTime ORDER BY revision DESC LIMIT 1\").bind(\"deviceId\", deviceId).bind(\"metric\", metric).bind(\"deviceTime\", OffsetDateTime.ofInstant(tDevice, ZoneOffset.UTC)).map(row -> { int revision = row.get(\"revision\", Number.class).intValue(); TelemetrySample stored = new TelemetrySample(deviceId, metric, tDevice, row.get(\"t_ingress\", OffsetDateTime.class).toInstant(), row.get(\"sample_value\", Number.class).doubleValue(), row.get(\"validation_status\", String.class), \"\"); return new EventRecord(stored, revision, revision == 1 ? EventRecord.KIND_RECORD : EventRecord.KIND_REVISION); }).one(); }"
   ],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-16T21:35:07.436396+00:00"
+  "recorded_at": "2026-11-17T15:43:41.068029+00:00"
 }

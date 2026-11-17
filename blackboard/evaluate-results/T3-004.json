@@ -1,21 +1,26 @@
 {
   "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/blackboard/telemetry/ingestion/domain/TelemetrySample.java",
-  "stack": "java-springboot",
-  "skill": "java-springboot",
-  "summary": "Audit CLEAN: framework-free immutable record, invariants owned in canonical constructor, withStatus preserves value; no duplicates, hacks, magic numbers or unsafe sinks.",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/shared/observability/AuditEntry.java",
+  "stack": "java-springboot3",
+  "skill": "java-springboot3",
+  "summary": "CLEAN: AuditEntry is a framework-free immutable record with the five contract fields; no duplicates, hacks, or sinks. No edits.",
   "findings": [],
   "changes": [],
   "reverts": [],
   "final_test": {
     "status": "passed",
-    "source": "gate-cache/T2-004.json",
-    "command": "./mvnw -Dtest=TelemetrySampleTest test"
+    "exit_code": 0,
+    "counts": {
+      "run": 3,
+      "failures": 0,
+      "errors": 0
+    },
+    "source": "gate-cache/T2-004"
   },
   "task_id": "T3-004",
   "stage": 3,
   "executed": true,
-  "recorded_at": "2026-11-16T21:45:14.364490+00:00",
+  "recorded_at": "2026-11-17T16:33:13.617037+00:00",
   "engine_diff": [],
   "engine_diff_files": 0
 }

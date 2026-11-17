@@ -3,89 +3,37 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "IngressPacket",
-    "constructors": [
-      [
-        "\"dev-1\"",
-        "SourceKind.EDGE_DEVICE",
-        "List.of(s)"
-      ],
-      [
-        "null",
-        "SourceKind.EDGE_DEVICE",
-        "samples"
-      ],
-      [
-        "\"dev-1\"",
-        "null",
-        "samples"
-      ],
-      [
-        "\"dev-1\"",
-        "SourceKind.BIKE_COMPUTER",
-        "null"
-      ],
-      [
-        "blank",
-        "SourceKind.SMART_WEARABLE",
-        "samples"
-      ],
-      [
-        "\"dev-1\"",
-        "SourceKind.EDGE_DEVICE",
-        "List.of()"
-      ],
-      [
-        "\"dev-1\"",
-        "SourceKind.EDGE_DEVICE",
-        "List.of(sample())"
-      ],
-      [
-        "\"dev-1\"",
-        "SourceKind.EDGE_DEVICE",
-        "source"
-      ]
-    ],
+    "type": "AuditTrail",
+    "constructors": [],
     "static_calls": [],
     "calls": [
       {
-        "receiver": "p",
-        "method": "deviceId",
-        "args": []
+        "receiver": "trail",
+        "method": "record",
+        "args": [
+          "ENTRY"
+        ],
+        "stubbed_to": "Mono.empty()"
       },
       {
-        "receiver": "p",
-        "method": "sourceKind",
-        "args": []
-      },
-      {
-        "receiver": "p",
-        "method": "samples",
-        "args": []
-      },
-      {
-        "receiver": "p",
-        "method": "samples",
-        "args": [],
-        "returns": "List<TelemetrySample>"
+        "receiver": "trail",
+        "method": "record",
+        "args": [
+          "ENTRY"
+        ]
       }
     ],
-    "verified": [],
+    "verified": [
+      "record"
+    ],
     "usage_lines": [
-      "class IngressPacketTest {",
-      "IngressPacket p = new IngressPacket(\"dev-1\", SourceKind.EDGE_DEVICE, List.of(s));",
-      "assertThat(p.deviceId()).isEqualTo(\"dev-1\");",
-      "assertThat(p.sourceKind()).isEqualTo(SourceKind.EDGE_DEVICE);",
-      "assertThat(p.samples()).containsExactly(s);",
-      "assertThatThrownBy(() -> new IngressPacket(null, SourceKind.EDGE_DEVICE, samples))",
-      "assertThatThrownBy(() -> new IngressPacket(\"dev-1\", null, samples))",
-      "assertThatThrownBy(() -> new IngressPacket(\"dev-1\", SourceKind.BIKE_COMPUTER, null))",
-      "assertThatThrownBy(() -> new IngressPacket(blank, SourceKind.SMART_WEARABLE, samples))",
-      "assertThatThrownBy(() -> new IngressPacket(\"dev-1\", SourceKind.EDGE_DEVICE, List.of()))",
-      "IngressPacket p = new IngressPacket(\"dev-1\", SourceKind.EDGE_DEVICE, List.of(sample()));",
-      "List<TelemetrySample> result = p.samples();",
-      "IngressPacket p = new IngressPacket(\"dev-1\", SourceKind.EDGE_DEVICE, source);",
-      "assertThat(p.samples()).hasSize(1);"
+      "class AuditTrailTest {",
+      "Method[] methods = AuditTrail.class.getDeclaredMethods();",
+      "assertThat(AuditTrail.class.isInterface()).isTrue();",
+      "AuditTrail trail = mock(AuditTrail.class);",
+      "when(trail.record(ENTRY)).thenReturn(Mono.empty());",
+      "StepVerifier.create(trail.record(ENTRY)).verifyComplete();",
+      "verify(trail).record(ENTRY);"
     ]
   },
   "stderr": "",

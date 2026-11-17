@@ -1,1 +1,1 @@
-src/main/java/com/blackboard/telemetry/ingestion/domain/ValidatedSampleEvent.java
+src/main/java/com/pulsestream/telemetry/eventlog/infrastructure/R2dbcAuditTrail.java

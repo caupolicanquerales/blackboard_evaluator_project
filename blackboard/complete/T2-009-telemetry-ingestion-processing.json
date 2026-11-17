@@ -1,29 +1,57 @@
 {
+  "observability": {
+    "step_logs": [
+      "reordering.window.flushed",
+      "reordering.backfill.applied"
+    ]
+  },
   "id": "T2-009",
   "targetAgent": "agent-coder",
   "stage": 2,
   "dependsOn": [
-    "T1-009"
+    "T1-009",
+    "T2-002",
+    "T2-003",
+    "T2-006",
+    "T0-001"
   ],
-  "path": "src/main/java/com/blackboard/telemetry/history/domain/HistoryEventType.java",
+  "path": "src/main/java/com/pulsestream/telemetry/reordering/application/ReorderingService.java",
   "kind": "code",
-  "layer": "domain",
+  "layer": "application",
   "feature": null,
-  "export": "HistoryEventType",
+  "export": "ReorderingService",
+  "intent": "Implement ReorderingService exactly as tabled. Backfill Reordering rule owner. reorderWindow receives the samples collected in one reorder window (the wiring unit buffers the stream by reorderWindowSeconds from TelemetryProperties and calls reorderWindow once per window, including the final partial window) and returns them sorted ascending by tDevice (stable; never by tIngress). A sample whose tDevice is earlier than an already-seen tDevice in its window is a backfill: counter telemetry.reordering.late tag kind=in_window, step log reordering.backfill.applied. A sample whose tIngress minus tDevice exceeds reorderWindowSeconds is still returned (appended later as an Event Revision) and counted telemetry.reordering.late tag kind=beyond_window. Each non-empty window records timer telemetry.pipeline.latency tag stage=reordering and emits step log reordering.window.flushed (via StepLog emit). An empty window returns an empty list with no meters or logs. observability.step_logs = [\"reordering.window.flushed\", \"reordering.backfill.applied\"]",
   "project": "telemetry-ingestion-processing",
-  "intent": "Implement HistoryEventType (Java 21, Spring Boot 3, WebFlux/Reactor/R2DBC, constructor injection, no blocking calls) so that the frozen test passes, providing exactly the ast_hints table and nothing improvised. Unit contract: Context Telemetry Stream Processing & History. Enum of broadcast event kinds, constants exactly: SAMPLE_BACKFILLED, REVISION_APPENDED, WINDOW_BUFFERED (published-language events TelemetrySampleBackfilled, TelemetryRevisionAppended, TelemetryWindowBuffered).",
   "ast_hints": {
-    "package": "com.blackboard.telemetry.history.domain",
+    "package": "com.pulsestream.telemetry.reordering.application",
     "implements": [],
-    "dependencies": [],
-    "methods": [
+    "dependencies": [
       {
-        "signature": "static HistoryEventType valueOf(String name)",
-        "returns": "HistoryEventType"
+        "type": "TelemetryProperties",
+        "task_id": "T2-002"
       },
       {
-        "signature": "static HistoryEventType[] values()",
-        "returns": "HistoryEventType[]"
+        "type": "TelemetrySample",
+        "task_id": "T2-003"
+      },
+      {
+        "type": "StepLog",
+        "task_id": "T2-006"
+      },
+      {
+        "type": "io.micrometer.core.instrument.MeterRegistry",
+        "task_id": "T0-001"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "ReorderingService(TelemetryProperties properties, StepLog stepLog, MeterRegistry meterRegistry)",
+        "returns": ""
+      },
+      {
+        "signature": "List<TelemetrySample> reorderWindow(List<TelemetrySample> window)",
+        "returns": "List<TelemetrySample>",
+        "semantics": "beyond window: kept and counted in telemetry.reordering.late{kind=beyond_window}"
       }
     ]
   }

@@ -201,3 +201,134 @@ frozen test and the seed both name device classes) — 7 literals corrected to t
 enum's own values; the slice then went 8/8 green and the units replay-closed at
 zero billed sessions. Day totals across all three drains: ~250 sessions for 257
 units, every tooling-caused red closed at zero bill after its root fix.
+
+## Post-drain (closed 2026-11-17, 11:18): PART III residuals G2/G3/G4 fixed at the ROOT — plan rules (s), (t), (u)
+
+Method (standing): the evening inspection of the third drain's artifact named four
+residuals; G1 was already closed the same day by plan rule (r) (item #12 — a
+re-emitted plan cannot reproduce the pair). G2/G3/G4 were factory gaps, not tree
+gaps, so the fix went to the skills/emit tier only: ZERO edits to the delivered
+artifact (its frozen tests and README stay as delivered; the residuals remain
+truthfully disclosed there as known limitations). Doctrine honored throughout:
+the architect tier stays stack-agnostic — the new rules speak of identity axes,
+mechanism tokens and counting meters and carry the STRATEGY'S OWN WORDS into the
+plan's duties; every concrete name (`io.micrometer:context-propagation`,
+`Hooks.enableAutomaticContextPropagation()`, Micrometer counters) lives only in
+the tech-stack skills.
+
+14. **(s) — the correction axis (G2).** The morning's rule (q) was HONORED by the
+    third drain and that is exactly how the residual died: a natural identity that
+    EXCLUDES the value reclassifies every value-correction as a duplicate no-op,
+    while the seed says "corrections append new event revisions". The root cause
+    sat two tiers upstream: the boundary file carried the corrections question as
+    `Open question`/low-confidence `Ambiguity`, and `domain-driven-architecture`
+    said "open questions recorded, never silently decided" with no operational
+    meaning — decomposition answered the question by omission and no file on the
+    board ever said so. FIX, three tiers: `task-decomposition-dag` plan-validity
+    (s) — where the chain dedups inbound over a correcting append-only history, a
+    contract sentence must state the VALUE-AXIS decision (identity excludes the
+    payload + named discriminator: comparison / client-supplied version /
+    correction flag, or includes it with the duplicate-payload posture declared),
+    with BOTH resend classes tabled as test duties; machine core in the emit
+    validator (correction vocabulary + dedup posture + no axis sentence = refusal);
+    `domain-boundary-discovery` step 7 must now ASK THE AXIS QUESTION in the
+    identity ambiguity itself, and `domain-driven-architecture` operationalizes
+    "never silently decided" (a question some unit operationalizes is decided by
+    omission - promote it to an explicit Assumption before decomposing). The
+    range-less-metrics companion of G2 (the three honest `enabled:false` floors) is
+    NOT a defect - it is the fidelity rule doing its job; the delta is discovery
+    now INVENTORIES those gaps as one operator-facing decision list instead of a
+    thrice-repeated silent surprise. Pins: **Y1/Y1b**.
+15. **(t) — a promised mechanism is a scheduled duty (G3).** The strategy promised
+    correlation "propagated to log lines via context-propagation"; the plan tabled
+    the opposite in a unit intent ("no context-propagation library is used") — a
+    KNOWN divergence once the records are read, invisible to every gate because
+    nothing compared a promise to a duty. The day's stack-skill warning (the
+    morning java-springboot3 REACTIVE MDC clause) guided the coder tier but had no
+    architect-tier counterpart: java-reactive-patterns, the skill the ARCHITECT
+    loads for reactive plans, carried no context-propagation clause at all.
+    FIX: plan-validity (t) refuses the mismatch at emit — the strategy's own
+    mechanism token must appear ADJACENT and UNNEGATED in some stage-2 unit's
+    install duty (dependency + enablement at wiring/boot); an honest plan that
+    will not install the mechanism amends the strategy first (the rule refuses the
+    disagreement, not the choice). Machine core is stack-neutral BY CONSTRUCTION:
+    it extracts the token from the strategy and searches the plan — no library is
+    ever named at this tier. The concrete half shipped where it belongs: NEW
+    "Correlation across event-loop hops" section in java-reactive-patterns (POM
+    dependency + `Hooks.enableAutomaticContextPropagation()` + `contextWrite` as
+    a named duty). Discovery during implementation worth recording: the naive
+    "all mechanism words appear somewhere" matcher passed on v9's own board — the
+    negation-aware matcher was written BECAUSE the live artifact's intent
+    contained the refused sentence verbatim. Pins: **Y2/Y2b/Y2c** (c = the
+    negated-mention class).
+16. **(u) — no acknowledged outcome is unmetered (G4).** The morning's floor gate
+    checked that PROMISED meters are claimed; G4 showed the floor itself can be
+    promised incompletely: v9's metrics listed received/validated/reordered/
+    appended/latency — no broadcast meter, no window meter, no drop counter — and
+    the subscriber's `onErrorResume(Mono.empty())` after the FAILED audit was
+    therefore "compliant" while a losing pipeline reported a healthy dashboard.
+    FIX: floor completeness law, both layers refused at emit: (i) every strategy
+    step log pairs with a metric (name/tag token overlap) or an explicit
+    `uncounted_steps` entry WITH ITS REASON; (ii) every failure/drop/rejection/
+    overflow outcome contracted in tabled `semantics` pairs with a counting meter
+    in the floor, an owning unit's meter claim, or a declared `uncounted_failures`
+    posture — audited-but-uncounted is now a refusal class, exemptions stay
+    operator-decision-shaped, never silent. Stack tier: java-reactive-patterns
+    backpressure section now spells the concrete shape (DROP_OLDEST /
+    FAIL_OVERFLOW / subscriber-swallow ⇒ paired Micrometer counter with bounded
+    tags, claimed by the same task). Pins: **Y3/Y3b/Y3c + Y4/Y4b/Y4c**.
+
+Verification (live-fire on the artifact that revealed the rules — the same method
+as III.2's grading of (k)–(r), READ-ONLY, zero billed sessions, zero board
+mutations): a direct `plan_consistency` run over the delivered v9 board's 102 task
+records + strategy now emits exactly the residuals: (s) fires for G2, (t) fires
+for G3 (naming the strategy's own segment and token), (u) fires twice for G4 (the
+two uncounted steps + the FAILED-audit semantics without a counter). Gauntlet:
+engine decisions **162/162** (11 new Y pins over the 151 pre-existing), skill scripts
+**53/53**. Fixture honesty, disclosed: three pre-existing gauntlet strategies
+carried placeholder floors whose meters never paired with their own step logs
+(`x done`/`pkts`) - rule (u) refused the PLACEHOLDERS, proving it fires, and the
+fixtures gained the pairing meters (`packets.received`, `stock.reserved`,
+`jobs.done`); no pin's asserted behavior changed. Rule letters shipped tonight
+join the ledger: plan rules (s)/(t)/(u); prompts/agent-digest mirrors
+(both agent tiers) and README §Plan-time contracts updated the same pass; the
+README enumeration also corrected a now-stale claim that migration-location
+portability is an assembly-gate probe - per item #12 it is EMIT-only.
+
+17. **(2026-11-17, 11:35) — OPERATOR EDIT, DISCLOSED: the delivered `application.yml`
+    re-serialized to native nested YAML; plan rule (v) shipped.** The operator's fifth
+    drain finding was format-level: the delivered config document spelled every fact as
+    a FLAT DOTTED KEY (`spring.r2dbc.url: ${VAR}`, `telemetry.boundaries[0].metric:
+    HEART_RATE`) - the properties vocabulary written into a YAML file. Root cause was
+    NOT a coder improvisation: the config unit's own intent demanded "FLAT dotted-key
+    style (never mix nested mappings)", copied verbatim from the java-springboot3 stack
+    skill's "flat dotted keys are this repo's single canonical form" clause - a pinned
+    decision whose stated REASONING was itself wrong twice over (dotted LEAF keys ARE
+    expressible nested, as one key at their level; list-of-objects config has a real
+    YAML SEQUENCE form). The values were never the problem: the runtime loader flattens
+    nested and flat spellings to identical property paths, and the tester contract had
+    pinned `ApplicationYmlTest` to that loader - so the file could be fixed under the
+    suite's own eyes. FIX, three tiers: (a) TREE (operator edit, disclosed, values
+    byte-equivalent - including the disclosed G1 `filesystem:` line, which was NOT
+    silently repaired): re-serialized to nested mappings + a real 7-entry sequence;
+    proof: fresh offline `./mvnw -o test` = **258/258 green, 33 classes, zero test
+    edits** + boot smoke started in-context. (b) STACK skill: java-springboot3's clause
+    REPLACED by "CONFIG FORMAT FOLLOWS THE ARTIFACT KIND" (structured kinds nest; flat
+    key-value kinds spell dotted keys; dotted leaf = one key at its level; sequences for
+    list config; never one kind's syntax inside another's file), the false "only
+    expressible flat" myth struck out; the coder skill gained a Non-code payloads
+    section (a plan's KEY/VALUE table is a semantic path list, not a file layout); the
+    tester skill now states the oracle reads property PATHS, never serialization shape
+    (that is what made (a) legal); the assembly skill teaches the assembler the
+    re-serialize-never-reVALUE recipe. (c) MACHINE HALF: assembly probe
+    `_config_format_problems` (root-level dotted keys in .yml/.yaml = flagged;
+    .properties files are native-flat and never touched), wired into `detect()`,
+    opt-in per STACKS row (`config_doc_globs`); pins **X8/X8b/X8c/X8d**. Doctrine note:
+    (v) is the ARGUED exception to the T4 livelock rule - (r) is EMIT-only because it
+    moves VALUES against a frozen string; (v) lives at the delivered gate precisely
+    because it moves only SHAPE: same keys, same values, no test can see it (a test
+    that could see it would itself violate the loader rule). Gauntlet after the whole
+    pass: **166/166** engine decisions, **53/53** skill scripts; the delivered tree
+    passes the full `assembly.detect` with zero problems; agnostic tier unchanged in
+    character - (v) speaks of file KINDS and serialization forms, never of Spring,
+    Flyway or YAML-by-name at the architect level beyond the kind taxonomy.

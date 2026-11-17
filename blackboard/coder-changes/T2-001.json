@@ -1,28 +1,18 @@
 {
   "id": "T2-001",
   "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/blackboard/telemetry/ingestion/domain/MetricKind.java",
-  "export": "MetricKind",
-  "method": "valueOf",
-  "language": "java",
+  "targetFile": "src/main/resources/application.yml",
+  "export": "application.yml",
+  "method": "application.yml",
+  "language": "yaml",
   "framework": "springboot",
   "skill": "java-springboot",
-  "kind": "enum",
-  "signature": "static MetricKind valueOf(String name)",
-  "returns": "MetricKind",
-  "body": "",
+  "signature": "application.yml",
+  "returns": "void",
+  "body": "telemetry:\n  reorder-window-seconds: 60\n  buffer-capacity: 1024\n  heart-rate-min: 30\n  heart-rate-max: 240\n  power-min: 0\n  power-max: 2500\n  cadence-min: 0\n  cadence-max: 220\n  swim-pace-min-exclusive: 45\nspring:\n  application:\n    name: telemetry-ingestion-processing\n  r2dbc:\n    url: \"r2dbc:h2:mem:///telemetry;DB_CLOSE_DELAY=-1\"\n    username: \"sa\"\n    password: \"\"\n  flyway:\n    enabled: true\n    url: \"jdbc:h2:mem:telemetry;DB_CLOSE_DELAY=-1;MODE=PostgreSQL\"\n    user: \"sa\"\n    password: \"\"\n    locations: \"classpath:db/migration\"\nlogging:\n  structured:\n    format:\n      file: \"ecs\"\n  file:\n    name: \"logs/telemetry-ingestion-processing.log\"\n  logback:\n    rollingpolicy:\n      max-file-size: \"10MB\"\n      max-history: 14\n  level:\n    com.pulsestream.telemetry: \"INFO\"\nmanagement:\n  endpoints:\n    web:\n      exposure:\n        include: \"health,metrics\"\n",
   "imports": [],
-  "members": [
-    "HEART_RATE",
-    "POWER",
-    "CADENCE",
-    "SWIM_PACE",
-    "GROUND_CONTACT_TIME",
-    "RESPIRATION",
-    "SWIM_STROKE"
-  ],
   "missing": [],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-16T20:13:42.361325+00:00"
+  "recorded_at": "2026-11-17T16:36:49.799585+00:00"
 }

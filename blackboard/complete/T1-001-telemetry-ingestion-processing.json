@@ -3,28 +3,22 @@
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
-    "T0-001"
+    "T0-001",
+    "T0-002",
+    "T0-003",
+    "T0-004"
   ],
-  "path": "src/test/java/com/blackboard/telemetry/ingestion/domain/MetricKindTest.java",
+  "path": "src/test/java/com/pulsestream/telemetry/shared/config/ApplicationYmlConfigTest.java",
   "kind": "test",
-  "layer": "domain",
+  "layer": "root",
   "feature": null,
-  "export": "MetricKind",
+  "export": "application.yml",
+  "intent": "Write the test for application.yml (context telemetry-ingestion-processing) at the test file path; the unit under test lives at src/main/resources/application.yml. Assert only against the tabled surface. Context telemetry-ingestion-processing runtime configuration artifact, ONE YAML document (no profiles), serialized as nested YAML mappings (never flat dotted keys). Semantic property paths and literal values: telemetry.reorder-window-seconds=60; telemetry.buffer-capacity=1024; telemetry.heart-rate-min=30; telemetry.heart-rate-max=240; telemetry.power-min=0; telemetry.power-max=2500; telemetry.cadence-min=0; telemetry.cadence-max=220; telemetry.swim-pace-min-exclusive=45; spring.application.name=telemetry-ingestion-processing; spring.r2dbc.url=r2dbc:h2:mem:///telemetry;DB_CLOSE_DELAY=-1; spring.r2dbc.username=sa; spring.r2dbc.password=empty string; spring.flyway.enabled=true; spring.flyway.url=jdbc:h2:mem:telemetry;DB_CLOSE_DELAY=-1;MODE=PostgreSQL (a distinct JDBC url key from the R2DBC url); spring.flyway.user=sa; spring.flyway.password=empty string; spring.flyway.locations=classpath:db/migration (packaged form; migration scripts V1/V2 are packaged under src/main/resources/db/migration); logging.structured.format.file=ecs; logging.file.name=logs/telemetry-ingestion-processing.log; logging.logback.rollingpolicy.max-file-size=10MB; logging.logback.rollingpolicy.max-history=14; logging.level.com.pulsestream.telemetry=INFO; management.endpoints.web.exposure.include=health,metrics. This is the only owner of these literals; consumers read them through TelemetryProperties. The application boots with no external log or metrics tool present. TEST DUTIES: Parse the packaged application.yml and assert every tabled path and literal value through nested lookups, assert the document is nested (no top-level key containing a dot), and assert the Flyway location starts with classpath:. Add one @SpringBootTest asserting the context loads on the embedded H2 with Flyway applied.",
   "project": "telemetry-ingestion-processing",
-  "intent": "Write JUnit 5 + AssertJ tests (reactor-test StepVerifier for Mono/Flux, Mockito for collaborators, no external services, no Thread.sleep) for MetricKind. Assert ONLY against the ast_hints method table; at least one given/when/then case per table method and per branch. Unit contract: Context Telemetry Ingestion & Validation. Enum of the telemetry metrics a Telemetry Sample can carry, constants exactly: HEART_RATE, POWER, CADENCE, SWIM_PACE, GROUND_CONTACT_TIME, RESPIRATION, SWIM_STROKE. Pure domain type, no framework imports. It is the single owner of the metric vocabulary; every other unit pins it and never re-spells metric names.",
   "ast_hints": {
-    "package": "com.blackboard.telemetry.ingestion.domain",
+    "package": "com.pulsestream.telemetry",
     "implements": [],
     "dependencies": [],
-    "methods": [
-      {
-        "signature": "static MetricKind valueOf(String name)",
-        "returns": "MetricKind"
-      },
-      {
-        "signature": "static MetricKind[] values()",
-        "returns": "MetricKind[]"
-      }
-    ]
+    "methods": []
   }
 }

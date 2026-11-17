@@ -1,29 +1,25 @@
 {
   "id": "T2-006",
   "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/blackboard/telemetry/ingestion/domain/SensorMetricBoundary.java",
-  "export": "SensorMetricBoundary",
-  "kind": "record",
-  "method": "accepts",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/shared/observability/StepLog.java",
+  "export": "StepLog",
+  "method": "emit",
   "language": "java",
   "framework": "springboot",
   "skill": "java-springboot",
-  "signature": "boolean accepts(double value)",
-  "returns": "boolean",
-  "body": "if (!enabled) {\n    return true;\n}\nboolean aboveMin = minExclusive ? value > min : value >= min;\nreturn aboveMin && value <= max;",
+  "signature": "void emit(String step, String correlationId)",
+  "returns": "void",
+  "body": "LOGGER.atInfo().addKeyValue(\"step\", step).addKeyValue(\"correlationId\", correlationId).log(\"step\");",
   "imports": [
-    "java.util.Objects"
-  ],
-  "members": [
-    "MetricKind metric",
-    "double min",
-    "double max",
-    "boolean minExclusive",
-    "boolean enabled",
-    "public SensorMetricBoundary { Objects.requireNonNull(metric, \"metric must not be null\"); if (min > max) { throw new IllegalArgumentException(\"min must be <= max\"); } }"
+    "org.slf4j.Logger",
+    "org.slf4j.LoggerFactory"
   ],
   "missing": [],
+  "kind": "class",
+  "members": [
+    "private static final Logger LOGGER = LoggerFactory.getLogger(StepLog.class);"
+  ],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-16T20:14:59.469647+00:00"
+  "recorded_at": "2026-11-17T15:33:49.312585+00:00"
 }

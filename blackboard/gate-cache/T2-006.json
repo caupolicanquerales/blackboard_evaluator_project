@@ -1,1 +1,1 @@
-{"fingerprint": "{\"memo_version\": 10, \"payload\": 1794860099469841823, \"tree\": \"0df2b1de65263342\"}", "reason": null, "result": {"status": "passed", "counts": {"run": 242, "failures": 51, "errors": 3}}}
+{"fingerprint": "{\"memo_version\": 10, \"payload\": 1794929629312779460, \"tree\": \"ed7bf8c199d9fd71\"}", "reason": null, "result": {"status": "passed", "exit_code": 0, "missing_symbols": [], "missing_packages": [], "failures": [], "counts": {"run": 4, "failures": 0, "errors": 0}, "classes": {"com.pulsestream.telemetry.shared.observability.StepLogTest": "passed"}}}

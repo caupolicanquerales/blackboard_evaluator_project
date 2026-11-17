@@ -5,11 +5,11 @@
   "dependsOn": [
     "T0-001"
   ],
-  "path": "db/migrations/application-db.yml",
+  "path": "db/migrations/flyway-config.md",
   "kind": "bootstrap",
   "layer": "root",
   "feature": null,
-  "export": "application-db",
-  "intent": "Configuration profile: PostgreSQL 16 spring.r2dbc and spring.flyway properties (migration location filesystem:db/migrations, separate JDBC url) in the application-db config fragment for context telemetry-ingestion-processing.",
+  "export": "flyway-config",
+  "intent": "Configuration profile: flyway-config documents spring.flyway keys and distinct R2DBC/JDBC url keys for the runtime config (Flyway + Spring Data R2DBC, Boot 3) of context telemetry-ingestion-processing.",
   "project": "telemetry-ingestion-processing"
 }

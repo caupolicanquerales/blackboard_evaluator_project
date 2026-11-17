@@ -10,6 +10,6 @@
   "layer": "root",
   "feature": null,
   "export": "backup-recovery",
-  "intent": "Backup/recovery: PostgreSQL 16 base snapshots plus WAL point-in-time recovery for append-only history of context telemetry-ingestion-processing; replay of revisions rebuilds derived views.",
+  "intent": "Backup/recovery: backup-recovery describes operator PITR backups and append-only replay for the PostgreSQL-compatible store (Flyway-managed) of context telemetry-ingestion-processing.",
   "project": "telemetry-ingestion-processing"
 }

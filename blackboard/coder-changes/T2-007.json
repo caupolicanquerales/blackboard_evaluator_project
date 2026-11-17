@@ -1,25 +1,35 @@
 {
   "id": "T2-007",
   "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/blackboard/telemetry/ingestion/domain/ValidatedSampleEvent.java",
-  "export": "ValidatedSampleEvent",
-  "method": "ValidatedSampleEvent",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/eventlog/infrastructure/R2dbcAuditTrail.java",
+  "export": "R2dbcAuditTrail",
+  "method": "record",
   "language": "java",
   "framework": "springboot",
   "skill": "java-springboot",
-  "signature": "public ValidatedSampleEvent(TelemetrySample sample, String correlationId)",
-  "returns": "void",
-  "body": "Objects.requireNonNull(sample, \"sample\");\nObjects.requireNonNull(correlationId, \"correlationId\");\nif (sample.status() == ValidationStatus.UNVALIDATED) {\n    throw new IllegalArgumentException(\"sample must be validated\");\n}\nif (correlationId.isBlank()) {\n    throw new IllegalArgumentException(\"correlationId must not be blank\");\n}\nthis.sample = sample;\nthis.correlationId = correlationId;",
+  "signature": "public Mono<Void> record(AuditEntry entry)",
+  "returns": "Mono<Void>",
+  "body": "return Mono.defer(() -> databaseClient.sql(\"INSERT INTO audit_trail (actor, action, outcome, occurred_at, correlation_id) VALUES (:actor, :action, :outcome, :occurredAt, :correlationId)\")\n        .bind(\"actor\", entry.actor())\n        .bind(\"action\", entry.action())\n        .bind(\"outcome\", entry.outcome())\n        .bind(\"occurredAt\", OffsetDateTime.ofInstant(entry.timestamp(), ZoneOffset.UTC))\n        .bind(\"correlationId\", entry.correlationId())\n        .fetch()\n        .rowsUpdated()\n        .then())\n        .onErrorResume(error -> {\n            meterRegistry.counter(\"telemetry.pipeline.dropped\", \"stage\", \"audit\").increment();\n            return Mono.empty();\n        });",
   "imports": [
-    "java.util.Objects"
+    "com.pulsestream.telemetry.shared.observability.AuditEntry",
+    "com.pulsestream.telemetry.shared.observability.AuditTrail",
+    "io.micrometer.core.instrument.MeterRegistry",
+    "java.time.OffsetDateTime",
+    "java.time.ZoneOffset",
+    "org.springframework.r2dbc.core.DatabaseClient",
+    "reactor.core.publisher.Mono"
   ],
   "missing": [],
-  "kind": "record",
+  "kind": "class",
+  "implements": [
+    "AuditTrail"
+  ],
   "members": [
-    "TelemetrySample sample",
-    "String correlationId"
+    "private final DatabaseClient databaseClient;",
+    "private final MeterRegistry meterRegistry;",
+    "public R2dbcAuditTrail(DatabaseClient databaseClient, MeterRegistry meterRegistry) { this.databaseClient = databaseClient; this.meterRegistry = meterRegistry; }"
   ],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-16T21:23:49.872483+00:00"
+  "recorded_at": "2026-11-17T15:38:26.218460+00:00"
 }

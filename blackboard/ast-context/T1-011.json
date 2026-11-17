@@ -3,54 +3,16 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "AuditAction",
+    "type": "EventLogRepository",
     "constructors": [],
-    "static_calls": [
-      {
-        "method": "values",
-        "args": []
-      },
-      {
-        "method": "valueOf",
-        "args": [
-          "action.name()"
-        ]
-      },
-      {
-        "method": "valueOf",
-        "args": [
-          "\"UNKNOWN_ACTION\""
-        ]
-      },
-      {
-        "method": "valueOf",
-        "args": [
-          "null"
-        ]
-      }
-    ],
-    "calls": [
-      {
-        "receiver": "action",
-        "method": "name",
-        "args": []
-      }
-    ],
+    "static_calls": [],
+    "calls": [],
     "verified": [],
     "usage_lines": [
-      "class AuditActionTest {",
-      "AuditAction[] result = AuditAction.values();",
-      "assertThat(result).containsExactly(",
-      "AuditAction.INGEST_PACKET,",
-      "AuditAction.VALIDATE_SAMPLE,",
-      "AuditAction.APPEND_REVISION,",
-      "AuditAction.BROADCAST_WINDOW);",
-      "@EnumSource(AuditAction.class)",
-      "void valueOf_constantName_returnsSameConstant(AuditAction action) {",
-      "AuditAction result = AuditAction.valueOf(action.name());",
-      "assertThat(result).isSameAs(action);",
-      "assertThatThrownBy(() -> AuditAction.valueOf(\"UNKNOWN_ACTION\"))",
-      "assertThatThrownBy(() -> AuditAction.valueOf(null))"
+      "class EventLogRepositoryTest {",
+      "Method method = EventLogRepository.class.getMethod(\"append\", TelemetrySample.class);",
+      "Method method = EventLogRepository.class.getMethod(\"findLatest\", String.class, String.class, Instant.class);",
+      "Method method = EventLogRepository.class.getMethod(\"append\", TelemetrySample.class);"
     ]
   },
   "stderr": "",

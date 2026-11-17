@@ -61,6 +61,13 @@ STACKS = {
         "locations_props_globs": ("src/main/resources/application*.yml",
                                   "src/main/resources/application*.yaml",
                                   "src/main/resources/application*.properties"),
+        # plan rule (v) machine half: the STRUCTURED-DOCUMENT kinds among the config
+        # files (YAML-family) - their root-level lines must be namespaces, not flat
+        # dotted property paths. .properties files are legitimately flat and stay out.
+        "config_doc_globs": ("src/main/resources/application*.yml",
+                             "src/main/resources/application*.yaml",
+                             "src/test/resources/application*.yml",
+                             "src/test/resources/application*.yaml"),
         "classpath_roots": ("src/main/resources",),
         "schema_hint": "add a migration runner (flyway/liquibase) or spring.sql.init.schema-locations",
         # seed-002 rerun F3: the VACUOUS boot. A composition root that cannot see the
@@ -436,6 +443,31 @@ def _request_path_problems(service_root: Path, stack: str) -> list:
             "assert durable rows for valid AND invalid payloads)"]
 
 
+def _test_witnesses(service_root: Path) -> str:
+    """Concatenated delivered-test text: the witness surface for 'a pinned value is a
+    decision, not fiction' exemptions (2026-11-17: the config unit's frozen test asserted
+    the base-document H2 URL verbatim while the assembly probe ordered the assembler to
+    remove it - the VALUE twin of the 2026-11-16 N8 location collision; the assembler
+    broke the frozen contract and the terminal suite gate reopened the owner to undo it).
+    Bounded read: test trees are small; a huge one simply witnesses nothing."""
+    chunks = []
+    total = 0
+    for f in service_root.rglob("*"):
+        try:
+            if not f.is_file() or "/test/" not in str(f).replace("\\", "/"):
+                continue
+            if f.suffix.lower() not in (".java", ".kt", ".groovy", ".ts", ".js", ".py", ".go"):
+                continue
+            size = f.stat().st_size
+            if size > 256_000 or total + size > 4_000_000:
+                continue
+            total += size
+            chunks.append(_read(f))
+        except OSError:
+            continue
+    return "\n".join(chunks)
+
+
 def _base_config_problems(service_root: Path, stack: str) -> list:
     """Embedded-substitute discipline in the BASE configuration document (second-drain
     N3): a substitute datasource spelled as a LITERAL base value is production wiring
@@ -446,13 +478,18 @@ def _base_config_problems(service_root: Path, stack: str) -> list:
     config unit's FROZEN test pins the location string it was planned with, so a
     second gate demanding a different value at assembly time asks the assembler to
     break a contract it may not touch: two gates, one truth, enforced where the agent
-    can still fix it. Row-data vocabulary; profile segments (after `---`) are exempt -
-    the substitute belongs exactly there."""
+    can still fix it. The SAME doctrine governs substitute VALUES (2026-11-17): when a
+    delivered test asserts the exact base value verbatim, the plan and its contract
+    DECIDED the embedded-default posture (boot offline without env vars) - it is a
+    disclosed decision, not fiction, and this probe goes silent for that line.
+    Row-data vocabulary; profile segments (after `---`) are exempt - the substitute
+    belongs exactly there."""
     row = STACKS.get(stack) or {}
     globs = tuple(row.get("base_config_globs") or ())
     schemes = tuple(s.lower() for s in (row.get("substitute_value_markers") or ()))
     problems = []
     if globs and schemes:
+        witnesses = ""
         for pattern in globs:
             for f in service_root.glob(pattern):
                 if not f.is_file():
@@ -465,13 +502,76 @@ def _base_config_problems(service_root: Path, stack: str) -> list:
                         continue
                     if not re.search(r"(url|jdbc|r2dbc|host|address)", low):
                         continue
+                    quoted = re.search(r"['\"]([^'\"]+)['\"]", line)
+                    if quoted:
+                        value = quoted.group(1)
+                    else:
+                        parts = line.split(":", 1)
+                        value = parts[1].strip() if len(parts) > 1 else ""
+                    inner = re.sub(r"^\$\{[^:}]+:", "", value).rstrip("}")
+                    if len(value) >= 8 or len(inner) >= 8:
+                        if not witnesses:
+                            witnesses = _test_witnesses(service_root)
+                        if (len(value) >= 8 and value in witnesses) or \
+                                (len(inner) >= 8 and inner in witnesses):
+                            continue  # the frozen suite pins this exact base value:
+                                      # a decided posture, never relitigated here
                     problems.append(
                         f"{f.name}: base document carries the embedded substitute "
                         f"({line.strip()[:90]}) - production fiction whether spelled as a "
                         "literal default or inside a ${VAR:h2://...} fallback: the base "
                         "value must be a bare ${...} placeholder (or the production "
                         "store the description names), and the substitute reaches the "
-                        "boot ONLY through the test-profile document + activation route")
+                        "boot ONLY through the test-profile document + activation route "
+                        "UNLESS a delivered test pins this exact value (then the posture "
+                        "is planned and disclosed: leave it)")
+    return problems
+
+
+def _config_format_problems(service_root: Path, stack: str) -> list:
+    """Plan rule (v), delivered-time machine half (2026-11-16 tree finding, fixed
+    2026-11-17): a structured configuration document (YAML-family) spelled as a flat
+    list of dotted property keys is the PROPERTIES form smuggled into YAML - the
+    runtime binder accepts it (loaders flatten nested and flat spellings to identical
+    property paths) but the file no longer carries the format its KIND defines, and a
+    human reader reports it as a bug. FORMAT CARRIES NO VALUES: re-serialization is
+    therefore the ARGUED exception to the (r) "never relitigate at a delivered gate"
+    doctrine - (r) demanded a different VALUE against a frozen string, this demands a
+    different SHAPE: same keys, same values, no test edits (the tester contract pins
+    config oracles to the runtime loader, which flattens both forms; a test that could
+    see the difference would itself violate that contract). Text-shape detection only,
+    opt-in per stack row (`config_doc_globs`); never a value rule."""
+    row = STACKS.get(stack) or {}
+    globs = tuple(row.get("config_doc_globs") or ())
+    problems = []
+    # a root-level (unindented) assignment whose KEY contains dots: in a native
+    # nested document root keys are NAMESPACES (spring:, telemetry:); a dotted root
+    # key = a flattened property path (index segments like `boundaries[0]` included).
+    # Comments, sequence items, '---' and indented (nested) lines are skipped; URLs in
+    # values never reach the key position ([^\s:=]+ stops at the first separator).
+    root_key = re.compile(r"^([^\s:=]+)[ ]*[:=]")
+    for pattern in globs:
+        for f in service_root.glob(pattern):
+            if not f.is_file():
+                continue
+            offenders = []
+            for ln in _read(f).splitlines():
+                if ln.startswith(("#", " ", "\t", "---", "-")):
+                    continue
+                key = root_key.match(ln)
+                if key and "." in key.group(1):
+                    offenders.append(ln)
+            if offenders:
+                problems.append(
+                    f"{f.name}: structured configuration document spells {len(offenders)} "
+                    f"FLAT dotted property keys at root level "
+                    f"(e.g. '{offenders[0].strip()[:90]}') - the properties form "
+                    "smuggled into a YAML document. Re-SERIALIZE (never re-VALUE): "
+                    "nested mappings and sequences, same keys, same values, leaf "
+                    "segments that contain dots stay one key at their nesting level; "
+                    "the runtime loader flattens both spellings to identical property "
+                    "paths, so bind and every test stay green - do NOT edit any test "
+                    "or any value")
     return problems
 
 
@@ -500,7 +600,8 @@ def detect(service_root: Path):
             + _coverage_problems(service_root, found["stack"]) \
             + _schema_problems(service_root, found["stack"]) \
             + _request_path_problems(service_root, found["stack"]) \
-            + _base_config_problems(service_root, found["stack"])
+            + _base_config_problems(service_root, found["stack"]) \
+            + _config_format_problems(service_root, found["stack"])
         return found
     return None
 

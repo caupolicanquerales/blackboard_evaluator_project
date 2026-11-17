@@ -1,25 +1,32 @@
 {
   "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/blackboard/telemetry/shared/observability/CorrelationContext.java",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/intake/api/CorrelationWebFilter.java",
   "stack": "java-springboot3",
   "skill": "java-springboot3",
-  "summary": "Audit clean: static-only holder with private constructor, single owner of requestId/X-Request-Id/UNCORRELATED, non-blocking Reactor Context lookup, no logging, no hacks. No edits.",
-  "findings": [],
+  "summary": "CLEAN: single correlation filter, adopts/generates X-Request-Id, echoes header, contextWrite only; no hacks, no other propagation.",
+  "findings": [
+    "filter() lacks @Override (cosmetic; left unchanged)"
+  ],
   "changes": [],
   "reverts": [],
   "final_test": {
     "status": "passed",
-    "source": "gate-cache/T2-017",
+    "exit_code": 0,
     "counts": {
-      "run": 242,
+      "run": 3,
       "failures": 0,
-      "errors": 2
-    }
+      "errors": 0
+    },
+    "classes": {
+      "com.pulsestream.telemetry.intake.api.CorrelationWebFilterTest": "passed"
+    },
+    "source": "gate-cache/T2-017.json"
   },
+  "verdict": "CLEAN",
   "task_id": "T3-017",
   "stage": 3,
   "executed": true,
-  "recorded_at": "2026-11-16T21:49:55.892942+00:00",
+  "recorded_at": "2026-11-17T15:49:02.258696+00:00",
   "engine_diff": [],
   "engine_diff_files": 0
 }

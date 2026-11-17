@@ -914,7 +914,8 @@ check("U3 re-emitting an id SUPERSEDES its zombie quarantine record (one id, one
         "audit_trail": {"record_fields": ["actor", "action", "outcome", "timestamp",
                                           "correlationId"],
                         "port": "AuditTrail.record(AuditEntry)"},
-        "metrics": [{"name": "orders.accepted", "type": "counter", "tags": ["outcome"]}],
+        "metrics": [{"name": "orders.accepted", "type": "counter", "tags": ["outcome"]},
+                    {"name": "stock.reserved", "type": "counter", "tags": []}],
         "export": {"logs": "structured ecs file sink", "metrics": "scrape endpoint",
                    "dependency_rule": "boot passes with the collector absent"}}}))
 sl_hints = {"package": "com.demo.sl", "implements": [], "dependencies": [],
@@ -952,7 +953,10 @@ check("V5 projects WITHOUT a promised step-log surface skip the rule (legacy-saf
 # The floor check must STILL fire on a stage-0-only emit; only the claim layer waits.
 FULL_FLOOR = {"correlation_key": "cid", "step_logs": ["packet received (IngressPacket)"],
               "audit_trail": {"port": "Audit.record(A)"},
-              "metrics": [{"name": "pkts", "type": "counter", "tags": []}],
+              "metrics": [{"name": "packets.received", "type": "counter", "tags": []},
+                          # placeholder counter so floors that swap in the generic
+                          # "x done" step stay paired under rule (u) layer 1
+                          {"name": "jobs.done", "type": "counter", "tags": []}],
               "export": {"logs": "ecs file sink"}}
 (ROOT / "blackboard" / "complete" / "execution-strategy-phase.json").write_text(
     json.dumps({"slug": "phase", "observability": FULL_FLOOR}))
@@ -1412,6 +1416,21 @@ check("X5 the base document pinning the embedded substitute LITERALLY is REFUSED
 check("X5b placeholder base + substitute isolated in the profile document ACCEPTS",
       not _asm._base_config_problems(xs, "java-springboot"))
 (xs / "src" / "main" / "resources" / "application.yml").write_text(
+    "spring:\n  r2dbc:\n    url: r2dbc:h2:mem:///xsdb\n")
+(xs / "src" / "test" / "java" / "com" / "a" / "ConfigPinTest.java").write_text(
+    "package com.a;\nclass ConfigPinTest {\n  void baseUrl() {\n"
+    "    assertThat(url).isEqualTo(\"r2dbc:h2:mem:///xsdb\");\n  }\n}\n")
+check("X5d the substitute probe goes SILENT when a delivered test pins the exact base "
+      "value: the plan decided the embedded-default posture and the contract witnesses "
+      "it (2026-11-17: the assembler obeyed the probe, broke the config unit's frozen "
+      "test, and the terminal suite gate reopened the owner to undo it - the VALUE "
+      "twin of the N8 location collision)",
+      not _asm._base_config_problems(xs, "java-springboot"))
+(xs / "src" / "test" / "java" / "com" / "a" / "ConfigPinTest.java").unlink()
+check("X5e without the witness test the literal base substitute is REFUSED again "
+      "(the exemption cannot be conjured by unrelated files)",
+      bool(_asm._base_config_problems(xs, "java-springboot")))
+(xs / "src" / "main" / "resources" / "application.yml").write_text(
     "spring:\n  flyway:\n    locations: filesystem:db/migrations\n  r2dbc:\n"
     "    url: ${DB_URL}\n")
 (xs / "db" / "migrations").mkdir(parents=True)
@@ -1472,6 +1491,288 @@ check("X7 a red class whose owner is QUARANTINED reads as 'the quarantine alread
       _wg_reopen == [] and "owner T2-954 is quarantined" in _buf7.getvalue(),
       f"{_wg_reopen} {_buf7.getvalue()[-220:]}")
 workspace.project_root_for = _orig_root_for
+
+# X8: plan rule (v) delivered machine half - structured config documents carry their
+# kind's NATIVE shape; flat dotted property keys inside a .yml are the properties
+# vocabulary smuggled into YAML (2026-11-16 tree finding: boot-green, test-green,
+# and reported as a bug by a human reader). FORMAT CARRIES NO VALUES, so the probe
+# demands re-serialization at the gate where the assembler can act - the argued
+# exception to (r)'s frozen-value doctrine.
+check("X8 the config-format probe keeps the nested-shape delivered document clean",
+      not _asm._config_format_problems(xs, "java-springboot"))
+(xs / "src" / "main" / "resources" / "application.yml").write_text(
+    "spring.flyway.locations: filesystem:db/migrations\nspring.r2dbc.url: ${DB_URL}\n"
+    "telemetry.boundaries[0].metric: HEART_RATE\n")
+rc_x8 = _asm._config_format_problems(xs, "java-springboot")
+check("X8b a flat dotted-key YAML document is FLAGGED for re-serialization "
+      "(root-level dotted keys = flattened property paths, e.g. 'telemetry."
+      "boundaries[0].metric')",
+      bool(rc_x8) and "Re-SERIALIZE" in str(rc_x8), str(rc_x8)[:200])
+(xs / "src" / "main" / "resources" / "application.yml").write_text(
+    "spring:\n  flyway:\n    locations: filesystem:db/migrations\n  r2dbc:\n"
+    "    url: ${DB_URL}\ntelemetry:\n  boundaries:\n    - metric: HEART_RATE\n")
+check("X8c the re-serialized document (identical keys, identical values, nested "
+      "shape + real SEQUENCE) passes - this is the exact fix the probe demands",
+      not _asm._config_format_problems(xs, "java-springboot"))
+(xs / "src" / "main" / "resources" / "application.properties").write_text(
+    "spring.application.name=demo\nspring.flyway.locations=filesystem:db/migrations\n")
+check("X8d flat dotted keys in a PROPERTIES artifact are their kind's native form - "
+      "the probe never touches them",
+      not _asm._config_format_problems(xs, "java-springboot"))
+
+# --- Y. the three refusal classes born from the 2026-11-16 EVENING inspection
+#    (PART III G2/G3/G4). Each Y-refusal reproduces, from plan records alone, one of
+#    the three residuals the third drain shipped GREEN - the same probe over the real
+#    v9 board names all four findings; these pins lock the machine cores.
+# Y1/Y1b: (s) a deduped chain over a CORRECTING history must state the value axis.
+y1_units = [
+    gtask("T1-960", "com.x.CorStore", 1, project="ax",
+          path="src/test/java/x/CorStoreTest.java",
+          intent="assert the store dedups redelivered samples", hints=xu_hints),
+    gtask("T2-960", "com.x.CorStore", 2, deps=("T1-960",), project="ax",
+          path="src/main/java/x/CorStore.java",
+          intent="append-only revision store; corrections append a new revision; dedup by "
+                 "the natural identity (device, metric, t_device); nextRevision per delivery",
+          hints=xu_hints),
+    gtask("T1-961", "com.x.CorFront", 1, project="ax",
+          path="src/test/java/x/CorFrontTest.java",
+          intent="assert the POST handler", hints=xu_hints),
+    gtask("T2-961", "com.x.CorFront", 2, deps=("T1-961", "T2-960"), project="ax",
+          path="src/main/java/x/CorFront.java",
+          intent="@PostMapping /api/ingest request body handling", hints=xu_hints),
+    gtask("T1-962", "com.x.CorSlice", 1, project="ax",
+          path="src/test/java/x/CorSliceTest.java",
+          intent="end-to-end request-path slice for the ingress chain", hints=xu_hints),
+    gtask("T2-962", "com.x.CorSliceSupport", 2, deps=("T1-962",), project="ax",
+          path="src/main/java/x/CorSliceSupport.java",
+          intent="test support for the integration slice", hints=xu_hints),
+]
+rc_y = emit(y1_units)
+check("Y1 (s) a deduped chain whose history SPEAKS of corrections is REFUSED while no "
+      "contract states the value axis (PART III G2: UNIQUE(device,metric,t_device) "
+      "reclassified every value-correction as a duplicate no-op, suite green)",
+      bool(rc_y) and "VALUE-AXIS" in str(rc_y), str(rc_y)[:250])
+y1_fixed = [dict(u) for u in y1_units]
+y1_fixed[1]["intent"] = (
+    "append-only revision store; corrections append a new revision; dedup by the natural "
+    "identity (device, metric, t_device) - the identity EXCLUDES the value, so a "
+    "retry-vs-correction discriminator is required: the payload comparison duty rewrites "
+    "a same-identity new-value resend as a revision append and never as a no-op; nextRevision "
+    "per delivery")
+rc_y = emit(y1_fixed)
+check("Y1b the chain ACCEPTS once the receiving store contract states the VALUE-AXIS "
+      "decision beside the identity (excluded + payload-comparison discriminator)",
+      rc_y is None, str(rc_y)[:250])
+
+# Y2/Y2b/Y2c: (t) a strategy-promised mechanism needs a scheduled, UNNEGATED install duty.
+(ROOT / "blackboard" / "complete" / "execution-strategy-mech.json").write_text(json.dumps(
+    {"slug": "mech", "observability": {
+        "correlation_key": "requestId carried in the async context and propagated to log "
+                           "lines via context-propagation",
+        "step_logs": ["packet received"],
+        "audit_trail": {"record_fields": ["actor", "action", "outcome", "timestamp"]},
+        "metrics": [{"name": "packets.received", "type": "counter", "tags": []}],
+        "export": {"logs": "structured file sink"}}}))
+mech_hints = {"package": "com.mech", "implements": [], "dependencies": [],
+              "methods": [{"signature": "ingest(P p)", "returns": "void"}]}
+mech_claimer = dict(gtask("T2-963", "com.mech.Ingress", 2, project="mech", hints=mech_hints))
+mech_claimer["observability"] = {"step_logs": ["packet received"]}
+rc_y = emit([mech_claimer])
+check("Y2 (t) a strategy promising correlation 'via <mechanism>' with NO unit scheduling "
+      "the install duty is REFUSED (PART III G3: promise and plan disagreed, every gate "
+      "green because nothing compares a promise to a duty)",
+      bool(rc_y) and "INSTALLS the mechanism" in str(rc_y), str(rc_y)[:250])
+mech_wiring = gtask("T2-964", "com.mech.Wiring", 2, project="mech",
+                    intent="wiring unit: add the context-propagation dependency and enable "
+                           "automatic context-propagation at boot", hints=mech_hints)
+rc_y = emit([mech_claimer, mech_wiring])
+check("Y2b the batch ACCEPTS once a unit declares the install duty with the strategy's own "
+      "mechanism token", rc_y is None, str(rc_y)[:250])
+mech_negated = gtask("T2-965", "com.mech.Manual", 2, project="mech",
+                     intent="correlation via manual argument passing: no context-propagation "
+                            "library is used, log lines carry the key only when hand-passed",
+                     hints=mech_hints)
+for _f in settings.QUEUE_DIR.glob("*-mech.json"):
+    _f.unlink()  # the claim/duty layers read the whole board: clear Y2b's accepted tasks
+mech_claimer2 = dict(mech_claimer, id="T2-970")
+rc_y = emit([mech_claimer2, mech_negated])
+check("Y2c a NEGATED mention of the mechanism is the divergence, not the duty (the exact "
+      "'no context-propagation library is used' sentence the v9 plan tabled)",
+      bool(rc_y) and "INSTALLS the mechanism" in str(rc_y), str(rc_y)[:250])
+
+# Y3/Y3b/Y3c: (u) layer 1 - every promised boundary crossing is counted or exempted.
+(ROOT / "blackboard" / "complete" / "execution-strategy-flr.json").write_text(json.dumps(
+    {"slug": "flr", "observability": {
+        "correlation_key": "cid",
+        "step_logs": ["order accepted", "stock reserved", "shipment broadcast downstream"],
+        "audit_trail": {"record_fields": ["actor", "action", "outcome", "timestamp"]},
+        "metrics": [{"name": "orders.accepted", "type": "counter", "tags": ["outcome"]},
+                    {"name": "stock.reserved", "type": "counter", "tags": []}],
+        "export": {"logs": "structured file sink"}}}))
+flr_task = dict(gtask("T2-966", "com.f.Service", 2, project="flr", hints=mech_hints))
+flr_task["observability"] = {"step_logs": ["order accepted", "stock reserved",
+                                           "shipment broadcast downstream"]}
+rc_y = emit([flr_task])
+check("Y3 (u) a strategy step log with no metric pairing ('shipment broadcast downstream') "
+      "is REFUSED (PART III G4: the broadcast/windowed boundaries were logged, never counted "
+      "- the floor looked complete because it only checked claims of what it promised)",
+      bool(rc_y) and "broadcast" in str(rc_y) and "nobody" in str(rc_y), str(rc_y)[:250])
+flr_fixed = json.loads((ROOT / "blackboard" / "complete"
+                        / "execution-strategy-flr.json").read_text())
+flr_fixed["observability"]["metrics"].append(
+    {"name": "shipments.broadcast", "type": "counter", "tags": []})
+(ROOT / "blackboard" / "complete" / "execution-strategy-flr.json").write_text(
+    json.dumps(flr_fixed))
+rc_y = emit([flr_task])
+check("Y3b the floor ACCEPTS once a counter pairs with every promised step "
+      "(name-token overlap: shipments.broadcast <-> 'shipment broadcast downstream')",
+      rc_y is None, str(rc_y)[:250])
+flr_exempt = json.loads((ROOT / "blackboard" / "complete"
+                         / "execution-strategy-flr.json").read_text())
+del flr_exempt["observability"]["metrics"][-1]
+flr_exempt["observability"]["uncounted_steps"] = [
+    {"step": "shipment broadcast downstream", "reason": "bounded by the replay sink's own "
+     "waterfall metric owned by the platform exporter"}]
+(ROOT / "blackboard" / "complete" / "execution-strategy-flr.json").write_text(
+    json.dumps(flr_exempt))
+for _f in settings.QUEUE_DIR.glob("*-flr.json"):
+    _f.unlink()  # clear Y3b's accepted task so its claims do not double with Y3c's
+flr_task2 = dict(flr_task, id="T2-971")
+rc_y = emit([flr_task2])
+check("Y3c an explicit `uncounted_steps` entry with its reason exempts the step "
+      "(the honest posture becomes a recorded decision, not a silent hole)",
+      rc_y is None, str(rc_y)[:250])
+
+# Y4/Y4b/Y4c: (u) layer 2 - no contracted failure outcome is unmetered.
+(ROOT / "blackboard" / "complete" / "execution-strategy-flm.json").write_text(json.dumps(
+    {"slug": "flm", "observability": {
+        "correlation_key": "cid",
+        "step_logs": ["event enqueued"],
+        "audit_trail": {"record_fields": ["actor", "action", "outcome", "timestamp"]},
+        "metrics": [{"name": "events.enqueued", "type": "counter", "tags": ["outcome"]}],
+        "export": {"logs": "structured file sink"}}}))
+flm_hints = {"package": "com.flm", "implements": [], "dependencies": [],
+             "methods": [{"signature": "publish(E e)", "returns": "boolean",
+                          "semantics": "TRUE=event enqueued; FALSE=event dropped after "
+                                       "the FAILED audit (the subscriber keeps running)"}]}
+flm_task = dict(gtask("T2-967", "com.flm.Publisher", 2, project="flm", hints=flm_hints))
+flm_task["observability"] = {"step_logs": ["event enqueued"]}
+rc_y = emit([flm_task])
+check("Y4 (u) a tabled FALSE='dropped after the FAILED audit' signal with no counting "
+      "meter is REFUSED (PART III G4: audited-but-uncounted failures - the losing pipeline "
+      "that reports a healthy dashboard)",
+      bool(rc_y) and "uncounted" in str(rc_y), str(rc_y)[:250])
+flm_metered = json.loads((ROOT / "blackboard" / "complete"
+                          / "execution-strategy-flm.json").read_text())
+flm_metered["observability"]["metrics"].append(
+    {"name": "events.dropped", "type": "counter", "tags": ["stage"]})
+(ROOT / "blackboard" / "complete" / "execution-strategy-flm.json").write_text(
+    json.dumps(flm_metered))
+rc_y = emit([flm_task])
+check("Y4b the plan ACCEPTS once the floor carries the paired drop counter "
+      "(telemetry.pipeline.dropped{stage}'s abstract shape: events.dropped{stage})",
+      rc_y is None, str(rc_y)[:250])
+flm_posture = json.loads((ROOT / "blackboard" / "complete"
+                          / "execution-strategy-flm.json").read_text())
+del flm_posture["observability"]["metrics"][-1]
+flm_posture["observability"]["uncounted_failures"] = (
+    "per-event drops continue to be audit-only: accepted posture, the audit table is the "
+    "operator surface, reason recorded with the owner sign-off")
+(ROOT / "blackboard" / "complete" / "execution-strategy-flm.json").write_text(
+    json.dumps(flm_posture))
+for _f in settings.QUEUE_DIR.glob("*-flm.json"):
+    _f.unlink()  # clear Y4b's accepted task before the posture variant re-emits
+flm_posture_task = dict(flm_task, id="T2-972")
+rc_y = emit([flm_posture_task])
+check("Y4c a declared `uncounted_failures` posture ACCEPTS - the silence becomes a "
+      "decision on the board", rc_y is None, str(rc_y)[:250])
+
+# Z1/Z1b/Z1c: (w) a stage-1 test task owns a TEST file. 2026-11-17 drain: the architect
+# emitted EVERY tester task with the paired production unit's path; the tester - bound to
+# "ONE unit test at task `path`" / "Only `path` writable" - wrote @Test classes into
+# src/main/java, where JUnit/AssertJ/Mockito/reactor-test are invisible to the main
+# classpath; the import-closure guard killed the drain at the first red close-out.
+z_hints = {"package": "com.z", "implements": [], "dependencies": [],
+           "methods": [{"signature": "ping()", "returns": "void"}]}
+z_t1 = gtask("T1-983", "Ping", 1, project="zw", path="src/main/java/z/Ping.java",
+             hints=z_hints)
+z_t2 = gtask("T2-983", "Ping", 2, deps=("T1-983",), project="zw",
+             path="src/main/java/z/Ping.java", hints=z_hints)
+rc_z = emit([z_t1, z_t2])
+check("Z1 (w) a stage-1 test task whose path IS the paired unit's production file is "
+      "REFUSED at emit (one file cannot hold the frozen test and the woven unit)",
+      bool(rc_z) and "stage-1 test path" in str(rc_z), str(rc_z)[:250])
+z_test = gtask("T1-984", "Ping", 1, project="zw", path="src/test/java/z/PingTest.java",
+               hints=z_hints)
+z_impl = gtask("T2-984", "Ping", 2, deps=("T1-984",), project="zw",
+               path="src/main/java/z/Ping.java", hints=z_hints)
+rc_z = emit([z_test, z_impl])
+check("Z1b the pair ACCEPTS once the test task owns its own test artifact (the "
+      "src/test/java convention every previous drain used)",
+      rc_z is None, str(rc_z)[:250])
+z_owner = gtask("T2-985", "Ping", 2, project="zx", path="src/main/java/z/Ping.java",
+                hints=z_hints)
+z_leech = gtask("T1-985", "Pong", 1, project="zx", path="src/main/java/z/Ping.java",
+                hints=z_hints)
+for _f in settings.QUEUE_DIR.glob("*-zx.json"):
+    _f.unlink()  # the pair of ids below reuses them; start the foreign-path case clean
+rc_z = emit([z_owner, z_leech])
+check("Z1c the rule is board-wide, not pair-local: a test task aimed at ANOTHER unit's "
+      "production file is REFUSED too (foreign-file tests are the same poison)",
+      bool(rc_z) and "T1-985" in str(rc_z), str(rc_z)[:250])
+
+# Z2/Z2b/Z2c: (x) a mapped inbound handler must name a registration its framework can
+# execute (2026-11-17 drain: the controller intent pinned "no scanning-registration
+# annotation: registered only by the wiring factory" - WebFlux's isHandler accepts only
+# @Controller classes (bytecode-verified), so the bean existed, boot was green and every
+# request answered 404; only the e2e slice caught it).
+(ROOT / "blackboard" / "complete" / "execution-strategy-z2.json").write_text(json.dumps(
+    {"slug": "z2", "tech_stack": {"language": "Java 21"}, "observability": {
+        "correlation_key": "cid",
+        "step_logs": ["probe accepted"],
+        "audit_trail": {"record_fields": ["actor", "action", "outcome", "timestamp"]},
+        "metrics": [{"name": "probes.accepted", "type": "counter", "tags": []}],
+        "export": {"logs": "structured file sink"}}}))
+z2_hints = {"package": "com.z2", "implements": [], "dependencies": [],
+            "methods": [{"signature": "accept(P p)", "returns": "void"}]}
+z2_tester = gtask("T1-988", "ProbeController", 1, project="z2",
+                  path="src/test/java/z2/ProbeControllerTest.java", hints=z2_hints)
+z2_slice = gtask("T1-989", "EntrySlice", 1, project="z2",
+                 path="src/test/java/z2/EntrySliceTest.java", hints=z2_hints,
+                 intent="end-to-end request-path slice driving POST /api/v1/probe and "
+                        "asserting the durable row")
+z2_pojo = dict(gtask("T2-988", "ProbeController", 2, deps=("T1-988",), project="z2",
+                     hints=z2_hints,
+                     intent="POST /api/v1/probe endpoint handler. Declared via class-level "
+                            "@RequestMapping with @ResponseBody methods and no scanning-"
+                            "registration annotation: it is registered only by the wiring factory."),
+               layer="interface")
+z2_pojo["observability"] = {"step_logs": ["probe accepted"]}
+rc_z = emit([z2_tester, z2_slice, z2_pojo])
+check("Z2 (x) an inbound HANDLER unit forbidding the stack's marker while crediting the "
+      "factory alone is REFUSED (the green boot answering 404 on its own endpoint)",
+      bool(rc_z) and "404" in str(rc_z), str(rc_z)[:250])
+z2_marked = dict(z2_pojo, id="T2-989", dependsOn=["T1-990"],
+                 intent="POST /api/v1/probe endpoint handler. Class-level @Controller + "
+                        "@RequestMapping with @ResponseBody methods: it self-registers "
+                        "through the marker (WebFlux maps only annotated classes); the "
+                        "wiring unit supplies its collaborators and never re-produces it.")
+z2_tester2 = dict(z2_tester, id="T1-990")
+z2_slice2 = dict(z2_slice, id="T1-991")
+rc_z = emit([z2_tester2, z2_slice2, z2_marked])
+check("Z2b the batch ACCEPTS once the handler names its marker registration",
+      rc_z is None, str(rc_z)[:250])
+z2f_tester = gtask("T1-992", "RequestAdmissionFilter", 1, project="z2",
+                   path="src/test/java/z2/RequestAdmissionFilterTest.java", hints=z2_hints)
+z2_filter = gtask("T2-990", "RequestAdmissionFilter", 2, deps=("T1-992",), project="z2",
+                  hints=z2_hints,
+                  intent="WebFilter adopting the inbound request header into the Reactor "
+                         "Context. No stereotype: it is registered only by the wiring "
+                         "factory as a filter bean.")
+rc_z = emit([z2f_tester, z2_filter])
+check("Z2c the rule exempts NON-handler components: a factory-built WebFilter never needs "
+      "the handler marker - refusing it would be the (r)-style gate-vs-gate trap",
+      rc_z is None, str(rc_z)[:250])
 
 bad_names = [n for n, c in CHECKS if not c]
 print(f"\nENGINE-DECISIONS SUITE: {len(CHECKS) - len(bad_names)}/{len(CHECKS)}")

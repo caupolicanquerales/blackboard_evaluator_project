@@ -2,64 +2,83 @@
   "schema_version": "1.0",
   "report_type": "context-map",
   "metadata": {
-    "generated_at": "2026-11-16T16:45:00-03:00",
+    "generated_at": "2026-11-17T11:55:00-03:00",
     "agent": "domain-context-mapping",
     "source_report": "blackboard/domain"
   },
   "context_map": [
     {
       "upstream": "external",
-      "downstream": "Telemetry Ingestion & Validation",
-      "relationship": "Anticorruption layer",
-      "direction": "external -> Telemetry Ingestion & Validation",
-      "exchanged_information": "Ingress Packets with Telemetry Samples from edge devices, bike computers, wearables; device-initiated, immediate, under backpressure.",
-      "boundary_protection": "Validation context translates heterogeneous device payloads into Telemetry Samples and tags VALIDATION_FAILED; device-specific formats never leak downstream."
+      "downstream": "Telemetry Intake",
+      "relationship": "Open host service / published language",
+      "direction": "external -> Telemetry Intake",
+      "exchanged_information": "Raw device transmissions carrying Telemetry Samples; initiated by devices; immediate, backpressure-governed.",
+      "boundary_protection": "Intake exposes one stable device-facing contract for many device types; device-specific formats never leak past Intake; Ingress Packet is the only internal form."
     },
     {
-      "upstream": "Telemetry Ingestion & Validation",
-      "downstream": "Telemetry Stream Processing & History",
+      "upstream": "Telemetry Intake",
+      "downstream": "Telemetry Validation",
       "relationship": "Customer-supplier",
-      "direction": "Telemetry Ingestion & Validation -> Telemetry Stream Processing & History",
-      "exchanged_information": "Events TelemetrySampleValidated and TelemetrySampleValidationFailed carrying Telemetry Sample with validation status and t_device; published by Validation, consumed by History.",
-      "boundary_protection": "Only the two named events cross; Sensor Metric Boundary definitions and intake/backpressure internals stay private; History never re-validates and never drops failed samples."
+      "direction": "Telemetry Intake -> Telemetry Validation",
+      "exchanged_information": "IngressPacketReceived: Ingress Packet with samples and t_ingress; stream-driven, immediate with backpressure.",
+      "boundary_protection": "Only the event crosses; backpressure/transport internals stay in Intake; Validation negotiates required packet fields."
     },
     {
-      "upstream": "Telemetry Stream Processing & History",
+      "upstream": "Telemetry Validation",
+      "downstream": "Backfill Reordering",
+      "relationship": "Customer-supplier",
+      "direction": "Telemetry Validation -> Backfill Reordering",
+      "exchanged_information": "TelemetrySampleValidated / TelemetrySampleValidationFailed: sample with t_device and validation status; eventual, streaming.",
+      "boundary_protection": "Sensor Metric Boundary rules never leak; Reordering only reads the status flag and orders by t_device, never t_ingress; failed samples are passed, not dropped."
+    },
+    {
+      "upstream": "Backfill Reordering",
+      "downstream": "Telemetry Event Log",
+      "relationship": "Customer-supplier",
+      "direction": "Backfill Reordering -> Telemetry Event Log",
+      "exchanged_information": "TelemetryWindowReordered / TelemetryBackfillApplied: chronologically ordered samples and backfill frames; eventual.",
+      "boundary_protection": "Window buffers and reorder internals stay private; Log treats backfills as appended Event Revisions, never mutations."
+    },
+    {
+      "upstream": "Telemetry Event Log",
       "downstream": "external",
       "relationship": "Open host service / published language",
-      "direction": "Telemetry Stream Processing & History -> external",
-      "exchanged_information": "TelemetrySampleBackfilled, TelemetryRevisionAppended, TelemetryWindowBuffered to downstream streaming analytics (PulseStream Engine).",
-      "boundary_protection": "Versioned event contract with backpressure-aware broadcast; raw history storage and reorder window internals are not exposed."
+      "direction": "Telemetry Event Log -> external (downstream analytics event streams)",
+      "exchanged_information": "TelemetryRecordAppended / TelemetryRevisionAppended; eventual, backpressure-aware broadcast.",
+      "boundary_protection": "Versioned, append-only event contract for many consumers; storage internals never exposed; consumers cannot write back."
     }
   ],
   "cross_boundary_flows": [
     {
-      "business_process": "Sample ingestion to validated stream",
+      "business_process": "Ingest and persist a 1Hz telemetry sample",
       "contexts_involved": [
         "external",
-        "Telemetry Ingestion & Validation",
-        "Telemetry Stream Processing & History"
+        "Telemetry Intake",
+        "Telemetry Validation",
+        "Backfill Reordering",
+        "Telemetry Event Log"
       ],
       "consistency_expectation": "eventual",
-      "notes": "Retry with idempotent consumption. AMBIGUITY/FLAG: delivery posture and dedup identity (device, metric, t_device) unspecified; assumed owned by History pending discovery answer."
+      "notes": "Reactive stream with backpressure end to end; consumers must be idempotent. FLAG: delivery posture/dedup identity (retry vs Event Revision) undecided between Intake and Event Log; return to discovery."
     },
     {
-      "business_process": "Out-of-order backfill and revision",
+      "business_process": "Backfill late or out-of-order packets",
       "contexts_involved": [
-        "Telemetry Ingestion & Validation",
-        "Telemetry Stream Processing & History"
+        "Telemetry Validation",
+        "Backfill Reordering",
+        "Telemetry Event Log"
       ],
       "consistency_expectation": "eventual",
-      "notes": "Samples delayed up to 60s reordered by t_device; later packets assumed Event Revision (unspecified). No invariant has 0 or 2 owners. No coupling cycles."
+      "notes": "Within 60s window reordered by t_device, appended as revisions. FLAG: samples later than 60s unspecified. FLAG: ranges missing for ground contact time, respiration, swim stroke; swim pace has no upper bound. Context chain is acyclic; no coupling cycles."
     },
     {
-      "business_process": "Windowed broadcast to streaming analytics",
+      "business_process": "Broadcast appended telemetry to downstream analytics",
       "contexts_involved": [
-        "Telemetry Stream Processing & History",
+        "Telemetry Event Log",
         "external"
       ],
       "consistency_expectation": "eventual",
-      "notes": "Backpressure-aware; consumers are outside slice, so consumes unmatched on their side."
+      "notes": "Broadcast placement in Event Log is a low-confidence assumption; may become its own context."
     }
   ]
 }

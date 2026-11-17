@@ -3,53 +3,58 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "ValidationStatus",
+    "type": "TelemetryProperties",
     "constructors": [],
-    "static_calls": [
+    "static_calls": [],
+    "calls": [
       {
-        "method": "values",
+        "receiver": "p",
+        "method": "heartRateMin",
         "args": []
       },
       {
-        "method": "valueOf",
-        "args": [
-          "status.name()"
-        ]
+        "receiver": "p",
+        "method": "heartRateMax",
+        "args": []
       },
       {
-        "method": "valueOf",
-        "args": [
-          "\"DROPPED\""
-        ]
+        "receiver": "p",
+        "method": "powerMin",
+        "args": []
       },
       {
-        "method": "valueOf",
-        "args": [
-          "null"
-        ]
-      }
-    ],
-    "calls": [
+        "receiver": "p",
+        "method": "powerMax",
+        "args": []
+      },
       {
-        "receiver": "status",
-        "method": "name",
+        "receiver": "p",
+        "method": "cadenceMin",
+        "args": []
+      },
+      {
+        "receiver": "p",
+        "method": "cadenceMax",
         "args": []
       }
     ],
     "verified": [],
     "usage_lines": [
-      "class ValidationStatusTest {",
-      "ValidationStatus[] result = ValidationStatus.values();",
-      "assertThat(result).containsExactly(",
-      "ValidationStatus.UNVALIDATED,",
-      "ValidationStatus.VALID,",
-      "ValidationStatus.VALIDATION_FAILED);",
-      "@EnumSource(ValidationStatus.class)",
-      "void valueOf_constantName_returnsSameConstant(ValidationStatus status) {",
-      "ValidationStatus result = ValidationStatus.valueOf(status.name());",
-      "assertThat(result).isSameAs(status);",
-      "assertThatThrownBy(() -> ValidationStatus.valueOf(\"DROPPED\"))",
-      "assertThatThrownBy(() -> ValidationStatus.valueOf(null))"
+      "class TelemetryPropertiesTest {",
+      "private static TelemetryProperties bind() {",
+      ".bind(\"telemetry\", TelemetryProperties.class).get();",
+      "assertThat(bind().reorderWindowSeconds()).isEqualTo(60L);",
+      "assertThat(bind().bufferCapacity()).isEqualTo(128);",
+      "TelemetryProperties p = bind();",
+      "assertThat(p.heartRateMin()).isEqualTo(30.0);",
+      "assertThat(p.heartRateMax()).isEqualTo(240.0);",
+      "TelemetryProperties p = bind();",
+      "assertThat(p.powerMin()).isEqualTo(1.0);",
+      "assertThat(p.powerMax()).isEqualTo(2500.0);",
+      "TelemetryProperties p = bind();",
+      "assertThat(p.cadenceMin()).isEqualTo(2.0);",
+      "assertThat(p.cadenceMax()).isEqualTo(220.0);",
+      "assertThat(bind().swimPaceMinExclusive()).isEqualTo(45.5);"
     ]
   },
   "stderr": "",

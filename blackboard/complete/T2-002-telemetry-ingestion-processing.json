@@ -3,27 +3,60 @@
   "targetAgent": "agent-coder",
   "stage": 2,
   "dependsOn": [
-    "T1-002"
+    "T1-002",
+    "T0-001"
   ],
-  "path": "src/main/java/com/blackboard/telemetry/ingestion/domain/ValidationStatus.java",
+  "path": "src/main/java/com/pulsestream/telemetry/shared/config/TelemetryProperties.java",
   "kind": "code",
-  "layer": "domain",
+  "layer": "shared",
   "feature": null,
-  "export": "ValidationStatus",
+  "export": "TelemetryProperties",
+  "intent": "Implement TelemetryProperties exactly as tabled. Immutable record bound from the telemetry.* prefix of application.yml via @ConfigurationProperties (kebab-case keys map to the camelCase components). Carries the externalized operational values: reorder window seconds, buffer capacity, and Sensor Metric Boundaries (heart rate, power, cadence min/max, swim pace exclusive lower bound). No defaults or fallback literals in code; values come only from the config unit.",
   "project": "telemetry-ingestion-processing",
-  "intent": "Implement ValidationStatus (Java 21, Spring Boot 3, WebFlux/Reactor/R2DBC, constructor injection, no blocking calls) so that the frozen test passes, providing exactly the ast_hints table and nothing improvised. Unit contract: Context Telemetry Ingestion & Validation. Enum of a Telemetry Sample validation status, constants exactly: UNVALIDATED (initial state before boundary validation), VALID, VALIDATION_FAILED (sample violated its Sensor Metric Boundary; the payload is never dropped). Single owner of these names; consumers pin it.",
   "ast_hints": {
-    "package": "com.blackboard.telemetry.ingestion.domain",
+    "package": "com.pulsestream.telemetry.shared.config",
     "implements": [],
     "dependencies": [],
     "methods": [
       {
-        "signature": "static ValidationStatus valueOf(String name)",
-        "returns": "ValidationStatus"
+        "signature": "TelemetryProperties(long reorderWindowSeconds, int bufferCapacity, double heartRateMin, double heartRateMax, double powerMin, double powerMax, double cadenceMin, double cadenceMax, double swimPaceMinExclusive)",
+        "returns": ""
       },
       {
-        "signature": "static ValidationStatus[] values()",
-        "returns": "ValidationStatus[]"
+        "signature": "long reorderWindowSeconds()",
+        "returns": "long"
+      },
+      {
+        "signature": "int bufferCapacity()",
+        "returns": "int"
+      },
+      {
+        "signature": "double heartRateMin()",
+        "returns": "double"
+      },
+      {
+        "signature": "double heartRateMax()",
+        "returns": "double"
+      },
+      {
+        "signature": "double powerMin()",
+        "returns": "double"
+      },
+      {
+        "signature": "double powerMax()",
+        "returns": "double"
+      },
+      {
+        "signature": "double cadenceMin()",
+        "returns": "double"
+      },
+      {
+        "signature": "double cadenceMax()",
+        "returns": "double"
+      },
+      {
+        "signature": "double swimPaceMinExclusive()",
+        "returns": "double"
       }
     ]
   }

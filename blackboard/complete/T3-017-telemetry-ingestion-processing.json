@@ -5,11 +5,11 @@
   "dependsOn": [
     "T2-017"
   ],
-  "path": "src/main/java/com/blackboard/telemetry/shared/observability/CorrelationContext.java",
+  "path": "src/main/java/com/pulsestream/telemetry/intake/api/CorrelationWebFilter.java",
   "kind": "refactor",
-  "layer": "shared",
+  "layer": "interface",
   "feature": null,
-  "export": "CorrelationContext",
-  "project": "telemetry-ingestion-processing",
-  "intent": "Inspect and refactor CorrelationContext without changing the ast_hints surface or the tests' behavior (never seal or finalize a type another unit stubs; no magic numbers, no blocking calls, no raw logger calls beyond the claimed step logs). Unit contract: Shared static-only holder (all members bound static in the table) that is the single owner of the correlation key literals requestId, the header X-Request-Id and the absent marker UNCORRELATED. Correlation lives in the Reactor Context and in the audit record's correlationId field; no MDC and no context-propagation library is used, so log lines do not carry the id (declared)."
+  "export": "CorrelationWebFilter",
+  "intent": "Inspect and refactor CorrelationWebFilter without changing its tabled contract or the frozen tests; keep it consistent with: Single correlation middleware. Adopts the inbound X-Request-Id header or generates a UUID, echoes it in the X-Request-Id response header, and installs correlation by contextWrite of key requestId into the Reactor Context of the downstream chain (public constants CONTEXT_KEY=\"requestId\", HEADER=\"X-Request-Id\"). Correlation lives in the Reactor Context and as an explicit field of every audit record; no other propagation mechanism is installed.",
+  "project": "telemetry-ingestion-processing"
 }

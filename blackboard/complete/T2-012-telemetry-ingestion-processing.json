@@ -4,54 +4,54 @@
   "stage": 2,
   "dependsOn": [
     "T1-012",
-    "T2-011"
+    "T2-003",
+    "T2-010",
+    "T2-011",
+    "T0-001",
+    "T0-002"
   ],
-  "path": "src/main/java/com/blackboard/telemetry/shared/audit/AuditEntry.java",
+  "path": "src/main/java/com/pulsestream/telemetry/eventlog/infrastructure/R2dbcEventLogRepository.java",
   "kind": "code",
-  "layer": "domain",
+  "layer": "infrastructure",
   "feature": null,
-  "export": "AuditEntry",
+  "export": "R2dbcEventLogRepository",
+  "intent": "Implement R2dbcEventLogRepository exactly as tabled. R2DBC adapter of EventLogRepository over table telemetry_record (columns exactly as declared in migration V1, keyed by device_id, metric, t_device, revision). Strictly append-only: only INSERT and SELECT statements, revision computed from the stored maximum for the key; corrections and backfills insert a new revision and never touch earlier rows.",
   "project": "telemetry-ingestion-processing",
-  "intent": "Implement AuditEntry (Java 21, Spring Boot 3, WebFlux/Reactor/R2DBC, constructor injection, no blocking calls) so that the frozen test passes, providing exactly the ast_hints table and nothing improvised. Unit contract: Shared audit trail record: actor, action, outcome (SUCCESS|FAILURE), timestamp, correlationId (the requestId). Immutable record; the outcome literals SUCCESS and FAILURE are owned here and consumers pin this unit.",
   "ast_hints": {
-    "package": "com.blackboard.telemetry.shared.audit",
-    "implements": [],
+    "package": "com.pulsestream.telemetry.eventlog.infrastructure",
+    "implements": [
+      "EventLogRepository"
+    ],
     "dependencies": [
       {
-        "type": "AuditAction",
+        "type": "org.springframework.r2dbc.core.DatabaseClient",
+        "task_id": "T0-001"
+      },
+      {
+        "type": "EventLogRepository",
         "task_id": "T2-011"
+      },
+      {
+        "type": "EventRecord",
+        "task_id": "T2-010"
+      },
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-003"
       }
     ],
     "methods": [
       {
-        "signature": "AuditEntry(String actor, AuditAction action, String outcome, Instant timestamp, String correlationId)",
-        "returns": "",
-        "semantics": "Null rejected (NullPointerException); actor and correlationId non-blank; outcome is exactly SUCCESS or FAILURE (IllegalArgumentException otherwise)."
+        "signature": "R2dbcEventLogRepository(DatabaseClient databaseClient)",
+        "returns": ""
       },
       {
-        "signature": "String actor()",
-        "returns": "String",
-        "semantics": "Never blank."
+        "signature": "Mono<EventRecord> append(TelemetrySample sample)",
+        "returns": "Mono<EventRecord>"
       },
       {
-        "signature": "AuditAction action()",
-        "returns": "AuditAction",
-        "semantics": "Never null."
-      },
-      {
-        "signature": "String outcome()",
-        "returns": "String",
-        "semantics": "SUCCESS or FAILURE."
-      },
-      {
-        "signature": "Instant timestamp()",
-        "returns": "Instant",
-        "semantics": "Never null."
-      },
-      {
-        "signature": "String correlationId()",
-        "returns": "String",
-        "semantics": "The requestId; never blank."
+        "signature": "Mono<EventRecord> findLatest(String deviceId, String metric, Instant tDevice)",
+        "returns": "Mono<EventRecord>"
       }
     ]
   }

@@ -5,11 +5,11 @@
   "dependsOn": [
     "T2-014"
   ],
-  "path": "src/main/java/com/blackboard/telemetry/shared/config/TelemetryProperties.java",
+  "path": "src/main/java/com/pulsestream/telemetry/eventlog/infrastructure/SinkEventBroadcast.java",
   "kind": "refactor",
-  "layer": "shared",
+  "layer": "infrastructure",
   "feature": null,
-  "export": "TelemetryProperties",
-  "project": "telemetry-ingestion-processing",
-  "intent": "Inspect and refactor TelemetryProperties without changing the ast_hints surface or the tests' behavior (never seal or finalize a type another unit stubs; no magic numbers, no blocking calls, no raw logger calls beyond the claimed step logs). Unit contract: Externalized operational values of context Telemetry Ingestion / Stream Processing as an immutable record bound by Spring configuration properties with prefix telemetry (constructor binding, kebab-case keys: reorder-window, reorder-buffer-capacity, validated-stream-capacity, broadcast-capacity, emit-retry-timeout, boundaries). The values live in src/main/resources/application.yml (ApplicationYml unit); no default literal in code. It is registered ONLY by the wiring unit TelemetryConfiguration through @EnableConfigurationProperties (no @Component here)."
+  "export": "SinkEventBroadcast",
+  "intent": "Inspect and refactor SinkEventBroadcast without changing its tabled contract or the frozen tests; keep it consistent with: EventBroadcast implemented with a Reactor Sinks.many().multicast().onBackpressureBuffer(bufferCapacity, false) sink, capacity from TelemetryProperties. publish serializes emissions (synchronized) and returns true only when tryEmitNext succeeds; any other emit result returns false (never throws, never blocks). stream returns sink.asFlux().",
+  "project": "telemetry-ingestion-processing"
 }

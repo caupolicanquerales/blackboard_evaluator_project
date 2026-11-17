@@ -1,37 +1,35 @@
 {
   "id": "T2-014",
   "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/blackboard/telemetry/shared/config/TelemetryProperties.java",
-  "export": "TelemetryProperties",
-  "kind": "record",
-  "method": "boundaries",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/eventlog/infrastructure/SinkEventBroadcast.java",
+  "export": "SinkEventBroadcast",
+  "kind": "class",
+  "method": "publish",
   "language": "java",
-  "framework": "springboot3",
-  "skill": "java-springboot3",
-  "signature": "public List<SensorMetricBoundary> boundaries()",
-  "returns": "List<SensorMetricBoundary>",
-  "body": "return boundaries;",
-  "members": [
-    "Duration reorderWindow",
-    "int reorderBufferCapacity",
-    "int validatedStreamCapacity",
-    "int broadcastCapacity",
-    "Duration emitRetryTimeout",
-    "List<SensorMetricBoundary> boundaries",
-    "public TelemetryProperties {\n    Objects.requireNonNull(reorderWindow, \"reorderWindow\");\n    Objects.requireNonNull(emitRetryTimeout, \"emitRetryTimeout\");\n    Objects.requireNonNull(boundaries, \"boundaries\");\n    if (reorderWindow.isZero() || reorderWindow.isNegative()) {\n        throw new IllegalArgumentException(\"reorderWindow must be positive\");\n    }\n    if (reorderBufferCapacity < 1) {\n        throw new IllegalArgumentException(\"reorderBufferCapacity must be >= 1\");\n    }\n    if (validatedStreamCapacity < 1) {\n        throw new IllegalArgumentException(\"validatedStreamCapacity must be >= 1\");\n    }\n    if (broadcastCapacity < 1) {\n        throw new IllegalArgumentException(\"broadcastCapacity must be >= 1\");\n    }\n    if (emitRetryTimeout.isZero() || emitRetryTimeout.isNegative()) {\n        throw new IllegalArgumentException(\"emitRetryTimeout must be positive\");\n    }\n    boundaries = List.copyOf(boundaries);\n}"
-  ],
-  "annotations": [
-    "ConfigurationProperties(prefix = \"telemetry\")"
-  ],
+  "framework": "spring-boot",
+  "skill": "java-springboot",
+  "signature": "public synchronized boolean publish(EventRecord record)",
+  "returns": "boolean",
+  "body": "if (sink.currentSubscriberCount() > 0) {\n    buffered = 0;\n} else if (buffered >= capacity) {\n    return false;\n}\nboolean accepted = sink.tryEmitNext(record) == Sinks.EmitResult.OK;\nif (accepted && sink.currentSubscriberCount() == 0) {\n    buffered++;\n}\nreturn accepted;",
   "imports": [
-    "org.springframework.boot.context.properties.ConfigurationProperties",
-    "com.blackboard.telemetry.ingestion.domain.SensorMetricBoundary",
-    "java.time.Duration",
-    "java.util.List",
-    "java.util.Objects"
+    "com.pulsestream.telemetry.eventlog.application.EventBroadcast",
+    "com.pulsestream.telemetry.eventlog.domain.EventRecord",
+    "com.pulsestream.telemetry.shared.config.TelemetryProperties",
+    "reactor.core.publisher.Flux",
+    "reactor.core.publisher.Sinks"
+  ],
+  "implements": [
+    "EventBroadcast"
+  ],
+  "members": [
+    "private final Sinks.Many<EventRecord> sink",
+    "private final int capacity",
+    "private int buffered",
+    "public SinkEventBroadcast(TelemetryProperties properties) { this.capacity = properties.bufferCapacity(); this.sink = Sinks.many().multicast().onBackpressureBuffer(properties.bufferCapacity(), false); }",
+    "@Override public Flux<EventRecord> stream() { return sink.asFlux(); }"
   ],
   "missing": [],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-16T21:02:48.413939+00:00"
+  "recorded_at": "2026-11-17T15:44:39.075699+00:00"
 }

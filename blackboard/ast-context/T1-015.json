@@ -3,13 +3,38 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "ApplicationYml",
-    "constructors": [],
+    "type": "EventLogService",
+    "constructors": [
+      [
+        "repository",
+        "broadcast",
+        "auditTrail",
+        "stepLog",
+        "registry"
+      ]
+    ],
     "static_calls": [],
-    "calls": [],
+    "calls": [
+      {
+        "receiver": "service",
+        "method": "append",
+        "args": [
+          "sample"
+        ]
+      }
+    ],
     "verified": [],
     "usage_lines": [
-      "class ApplicationYmlTest {"
+      "class EventLogServiceTest {",
+      "private EventLogService service;",
+      "service = new EventLogService(repository, broadcast, auditTrail, stepLog, registry);",
+      "StepVerifier.create(service.append(sample)).expectNext(record).verifyComplete();",
+      "StepVerifier.create(service.append(sample)).expectNext(record).verifyComplete();",
+      "StepVerifier.create(service.append(sample)).expectNext(record).verifyComplete();",
+      "StepVerifier.create(service.append(sample)).expectNext(record).verifyComplete();",
+      "StepVerifier.create(service.append(sample)).expectNext(record).verifyComplete();",
+      "StepVerifier.create(service.append(sample)).verifyComplete();",
+      "StepVerifier.create(service.append(sample)).verifyComplete();"
     ]
   },
   "stderr": "",

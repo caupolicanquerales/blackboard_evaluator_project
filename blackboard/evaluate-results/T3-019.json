@@ -1,25 +1,28 @@
 {
   "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/blackboard/telemetry/history/application/TelemetryHistoryRepository.java",
-  "stack": "java-springboot3-reactor",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/shared/config/PipelineConfiguration.java",
+  "stack": "java-springboot3",
   "skill": "java-springboot3",
-  "summary": "Pure outbound port interface; imports only reactor, java.time and domain types; no logic, no framework, no magic numbers. No edits needed.",
-  "findings": [],
+  "summary": "CLEAN: single @Configuration factory with factory @Bean methods only; matches the tabled contract. No edits.",
+  "findings": [
+    "Pipeline subscribe swallows errors (onErrorResume to empty, no-op error consumer): intentional keep-alive of the long-lived subscription per contract; dropped records are audited downstream. Left unchanged to preserve behavior."
+  ],
   "changes": [],
   "reverts": [],
   "final_test": {
     "status": "passed",
-    "source": "gate-cache/T2-019.json",
+    "command": "./mvnw -q -o -Dtest=PipelineConfigurationTest test",
     "counts": {
-      "run": 242,
-      "failures": 42,
-      "errors": 3
-    }
+      "run": 131,
+      "failures": 0,
+      "errors": 0
+    },
+    "source": "blackboard/gate-cache/T2-019.json"
   },
   "task_id": "T3-019",
   "stage": 3,
   "executed": true,
-  "recorded_at": "2026-11-16T21:38:05.780910+00:00",
+  "recorded_at": "2026-11-17T16:32:39.974295+00:00",
   "engine_diff": [],
   "engine_diff_files": 0
 }

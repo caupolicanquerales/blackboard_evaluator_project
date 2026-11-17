@@ -3,81 +3,64 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "TelemetryMeters",
+    "type": "IntakeService",
     "constructors": [
       [
-        "registry"
+        "props",
+        "auditTrail",
+        "stepLog",
+        "meters"
       ]
     ],
     "static_calls": [],
     "calls": [
       {
-        "receiver": "meters",
-        "method": "packetReceived",
+        "receiver": "service",
+        "method": "stream",
+        "args": []
+      },
+      {
+        "receiver": "service",
+        "method": "receive",
         "args": [
-          "kind"
+          "List.of(sample(\"c1\"))"
         ]
       },
       {
-        "receiver": "meters",
-        "method": "sampleValidated",
+        "receiver": "service",
+        "method": "receive",
         "args": [
-          "metric",
-          "status"
+          "List.of(sample(\"c1\"), sample(\"c1\"))"
         ]
       },
       {
-        "receiver": "meters",
-        "method": "sampleReordered",
+        "receiver": "service",
+        "method": "receive",
         "args": [
-          "metric"
-        ]
-      },
-      {
-        "receiver": "meters",
-        "method": "revisionAppended",
-        "args": [
-          "reason"
-        ]
-      },
-      {
-        "receiver": "meters",
-        "method": "recordLatency",
-        "args": [
-          "\"validate\"",
-          "Duration.ofMillis(5)"
-        ]
-      },
-      {
-        "receiver": "meters",
-        "method": "recordLatency",
-        "args": [
-          "\"history\"",
-          "Duration.ofMillis(7)"
-        ]
-      },
-      {
-        "receiver": "meters",
-        "method": "recordLatency",
-        "args": [
-          "\"other\"",
-          "Duration.ofMillis(1)"
-        ]
+          "List.of(sample(\"c1\"), sample(\"c1\"), sample(\"c1\"))"
+        ],
+        "returns": "Integer"
       }
     ],
     "verified": [],
     "usage_lines": [
-      "class TelemetryMetersTest {",
-      "private TelemetryMeters meters;",
-      "meters = new TelemetryMeters(registry);",
-      "meters.packetReceived(kind);",
-      "meters.sampleValidated(metric, status);",
-      "meters.sampleValidated(metric, status);",
-      "meters.sampleReordered(metric);",
-      "meters.revisionAppended(reason);",
-      "meters.recordLatency(\"validate\", Duration.ofMillis(5));",
-      "meters.recordLatency(\"history\", Duration.ofMillis(7));",
-      "assertThatThrownBy(() -> meters.recordLatency(\"other\", Duration.ofMillis(1)))"
+      "class IntakeServiceTest {",
+      "private IntakeService service(int capacity) {",
+      "return new IntakeService(props, auditTrail, stepLog, meters);",
+      "StepVerifier.create(service(8).receive(List.of(sample(\"c1\"), sample(\"c1\"))))",
+      "StepVerifier.create(service(8).receive(List.of())).expectNext(0).verifyComplete();",
+      "IntakeService service = service(8);",
+      "var received = service.stream().take(1).collectList();",
+      "service.receive(List.of(sample(\"c1\"))).block();",
+      "IntakeService service = service(8);",
+      "var verifier = StepVerifier.create(service.stream().take(2).map(TelemetrySample::deviceId))",
+      "service.receive(List.of(sample(\"c1\"), sample(\"c1\"))).block();",
+      "service(8).receive(List.of(sample(\"c1\"))).block();",
+      "IntakeService service = service(1);",
+      "service.stream().subscribe(s -> { }, e -> { }).dispose();",
+      "Integer accepted = service.receive(List.of(sample(\"c1\"), sample(\"c1\"), sample(\"c1\"))).block();",
+      "service(8).receive(List.of(sample(\"first\"), sample(\"second\"))).block();",
+      "service(8).receive(List.of(sample(\"c9\"), sample(\"c9\"))).block();"
     ]
   },
   "stderr": "",

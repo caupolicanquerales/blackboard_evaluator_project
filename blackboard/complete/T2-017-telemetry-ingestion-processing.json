@@ -3,34 +3,26 @@
   "targetAgent": "agent-coder",
   "stage": 2,
   "dependsOn": [
-    "T1-017"
+    "T1-017",
+    "T0-001"
   ],
-  "path": "src/main/java/com/blackboard/telemetry/shared/observability/CorrelationContext.java",
+  "path": "src/main/java/com/pulsestream/telemetry/intake/api/CorrelationWebFilter.java",
   "kind": "code",
-  "layer": "shared",
+  "layer": "interface",
   "feature": null,
-  "export": "CorrelationContext",
+  "export": "CorrelationWebFilter",
+  "intent": "Implement CorrelationWebFilter exactly as tabled. Single correlation middleware. Adopts the inbound X-Request-Id header or generates a UUID, echoes it in the X-Request-Id response header, and installs correlation by contextWrite of key requestId into the Reactor Context of the downstream chain (public constants CONTEXT_KEY=\"requestId\", HEADER=\"X-Request-Id\"). Correlation lives in the Reactor Context and as an explicit field of every audit record; no other propagation mechanism is installed.",
   "project": "telemetry-ingestion-processing",
-  "intent": "Implement CorrelationContext (Java 21, Spring Boot 3, WebFlux/Reactor/R2DBC, constructor injection, no blocking calls) so that the frozen test passes, providing exactly the ast_hints table and nothing improvised. Unit contract: Shared static-only holder (all members bound static in the table) that is the single owner of the correlation key literals requestId, the header X-Request-Id and the absent marker UNCORRELATED. Correlation lives in the Reactor Context and in the audit record's correlationId field; no MDC and no context-propagation library is used, so log lines do not carry the id (declared).",
   "ast_hints": {
-    "package": "com.blackboard.telemetry.shared.observability",
-    "implements": [],
+    "package": "com.pulsestream.telemetry.intake.api",
+    "implements": [
+      "WebFilter"
+    ],
     "dependencies": [],
     "methods": [
       {
-        "signature": "static String contextKey()",
-        "returns": "String",
-        "semantics": "Returns exactly requestId, the Reactor Context key and audit correlation key."
-      },
-      {
-        "signature": "static Mono<String> current()",
-        "returns": "Mono<String>",
-        "semantics": "Emits the requestId from the subscriber's Reactor Context; emits UNCORRELATED when the key is absent. Never empty, never errors."
-      },
-      {
-        "signature": "static String headerName()",
-        "returns": "String",
-        "semantics": "Returns exactly X-Request-Id, the HTTP header carrying the requestId."
+        "signature": "Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain)",
+        "returns": "Mono<Void>"
       }
     ]
   }

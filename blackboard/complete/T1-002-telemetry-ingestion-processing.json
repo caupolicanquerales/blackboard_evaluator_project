@@ -5,25 +5,57 @@
   "dependsOn": [
     "T0-001"
   ],
-  "path": "src/test/java/com/blackboard/telemetry/ingestion/domain/ValidationStatusTest.java",
+  "path": "src/test/java/com/pulsestream/telemetry/shared/config/TelemetryPropertiesTest.java",
   "kind": "test",
-  "layer": "domain",
+  "layer": "shared",
   "feature": null,
-  "export": "ValidationStatus",
+  "export": "TelemetryProperties",
+  "intent": "Write the test for TelemetryProperties (context telemetry-ingestion-processing) at the test file path; the unit under test lives at src/main/java/com/pulsestream/telemetry/shared/config/TelemetryProperties.java. Assert only against the tabled surface. Immutable record bound from the telemetry.* prefix of application.yml via @ConfigurationProperties (kebab-case keys map to the camelCase components). Carries the externalized operational values: reorder window seconds, buffer capacity, and Sensor Metric Boundaries (heart rate, power, cadence min/max, swim pace exclusive lower bound). No defaults or fallback literals in code; values come only from the config unit. TEST DUTIES: Bind the record from a map of the tabled keys with Spring Binder and assert every accessor returns the bound value.",
   "project": "telemetry-ingestion-processing",
-  "intent": "Write JUnit 5 + AssertJ tests (reactor-test StepVerifier for Mono/Flux, Mockito for collaborators, no external services, no Thread.sleep) for ValidationStatus. Assert ONLY against the ast_hints method table; at least one given/when/then case per table method and per branch. Unit contract: Context Telemetry Ingestion & Validation. Enum of a Telemetry Sample validation status, constants exactly: UNVALIDATED (initial state before boundary validation), VALID, VALIDATION_FAILED (sample violated its Sensor Metric Boundary; the payload is never dropped). Single owner of these names; consumers pin it.",
   "ast_hints": {
-    "package": "com.blackboard.telemetry.ingestion.domain",
+    "package": "com.pulsestream.telemetry.shared.config",
     "implements": [],
     "dependencies": [],
     "methods": [
       {
-        "signature": "static ValidationStatus valueOf(String name)",
-        "returns": "ValidationStatus"
+        "signature": "TelemetryProperties(long reorderWindowSeconds, int bufferCapacity, double heartRateMin, double heartRateMax, double powerMin, double powerMax, double cadenceMin, double cadenceMax, double swimPaceMinExclusive)",
+        "returns": ""
       },
       {
-        "signature": "static ValidationStatus[] values()",
-        "returns": "ValidationStatus[]"
+        "signature": "long reorderWindowSeconds()",
+        "returns": "long"
+      },
+      {
+        "signature": "int bufferCapacity()",
+        "returns": "int"
+      },
+      {
+        "signature": "double heartRateMin()",
+        "returns": "double"
+      },
+      {
+        "signature": "double heartRateMax()",
+        "returns": "double"
+      },
+      {
+        "signature": "double powerMin()",
+        "returns": "double"
+      },
+      {
+        "signature": "double powerMax()",
+        "returns": "double"
+      },
+      {
+        "signature": "double cadenceMin()",
+        "returns": "double"
+      },
+      {
+        "signature": "double cadenceMax()",
+        "returns": "double"
+      },
+      {
+        "signature": "double swimPaceMinExclusive()",
+        "returns": "double"
       }
     ]
   }

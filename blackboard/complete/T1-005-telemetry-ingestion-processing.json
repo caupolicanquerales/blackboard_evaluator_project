@@ -3,50 +3,28 @@
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
-    "T0-001",
-    "T1-003",
-    "T1-004"
+    "T0-001"
   ],
-  "path": "src/test/java/com/blackboard/telemetry/ingestion/domain/IngressPacketTest.java",
+  "path": "src/test/java/com/pulsestream/telemetry/shared/observability/AuditTrailTest.java",
   "kind": "test",
-  "layer": "domain",
+  "layer": "shared",
   "feature": null,
-  "export": "IngressPacket",
+  "export": "AuditTrail",
+  "intent": "Write the test for AuditTrail (context telemetry-ingestion-processing) at the test file path; the unit under test lives at src/main/java/com/pulsestream/telemetry/shared/observability/AuditTrail.java. Assert only against the tabled surface. Audit port. record(AuditEntry) appends one entry to the append-only audit trail; the returned Mono completes empty (best-effort: a sink failure never fails the caller). TEST DUTIES: Interface only: assert via a Mockito mock/compile-level check that the port has exactly the tabled method.",
   "project": "telemetry-ingestion-processing",
-  "intent": "Write JUnit 5 + AssertJ tests (reactor-test StepVerifier for Mono/Flux, Mockito for collaborators, no external services, no Thread.sleep) for IngressPacket. Assert ONLY against the ast_hints method table; at least one given/when/then case per table method and per branch. Unit contract: Context Telemetry Ingestion & Validation. Immutable record Ingress Packet: the raw payload from a device carrying one or more Telemetry Samples. Invariants: non-null components, non-blank deviceId, at least one sample (IllegalArgumentException otherwise), unmodifiable copy of the sample list.",
   "ast_hints": {
-    "package": "com.blackboard.telemetry.ingestion.domain",
+    "package": "com.pulsestream.telemetry.shared.observability",
     "implements": [],
     "dependencies": [
       {
-        "type": "SourceKind",
-        "task_id": "T2-003"
-      },
-      {
-        "type": "TelemetrySample",
+        "type": "AuditEntry",
         "task_id": "T2-004"
       }
     ],
     "methods": [
       {
-        "signature": "IngressPacket(String deviceId, SourceKind sourceKind, List<TelemetrySample> samples)",
-        "returns": "",
-        "semantics": "Null rejected (NullPointerException); deviceId non-blank; samples non-empty and defensively copied into an unmodifiable list."
-      },
-      {
-        "signature": "String deviceId()",
-        "returns": "String",
-        "semantics": "Never blank."
-      },
-      {
-        "signature": "SourceKind sourceKind()",
-        "returns": "SourceKind",
-        "semantics": "Never null."
-      },
-      {
-        "signature": "List<TelemetrySample> samples()",
-        "returns": "List<TelemetrySample>",
-        "semantics": "Unmodifiable, non-empty."
+        "signature": "Mono<Void> record(AuditEntry entry)",
+        "returns": "Mono<Void>"
       }
     ]
   }

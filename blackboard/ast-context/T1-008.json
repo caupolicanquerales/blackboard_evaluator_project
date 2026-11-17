@@ -3,41 +3,68 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "RevisionReason",
-    "constructors": [],
-    "static_calls": [
+    "type": "ValidationService",
+    "constructors": [
+      [
+        "props",
+        "stepLog",
+        "registry"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
       {
-        "method": "values",
-        "args": []
+        "receiver": "service",
+        "method": "validate",
+        "args": [
+          "sample(metric, value)"
+        ],
+        "returns": "TelemetrySample"
       },
       {
-        "method": "valueOf",
+        "receiver": "service",
+        "method": "validate",
         "args": [
-          "\"BACKFILL\""
+          "input"
+        ],
+        "returns": "TelemetrySample"
+      },
+      {
+        "receiver": "service",
+        "method": "validate",
+        "args": [
+          "sample(\"heart_rate\", 100.0)"
         ]
       },
       {
-        "method": "valueOf",
+        "receiver": "service",
+        "method": "validate",
         "args": [
-          "\"CORRECTION\""
+          "sample(\"heart_rate\", 500.0)"
         ]
       },
       {
-        "method": "valueOf",
+        "receiver": "service",
+        "method": "validate",
         "args": [
-          "\"UNKNOWN\""
+          "sample(\"power\", -5.0)"
         ]
       }
     ],
-    "calls": [],
     "verified": [],
     "usage_lines": [
-      "class RevisionReasonTest {",
-      "RevisionReason[] result = RevisionReason.values();",
-      "assertThat(result).containsExactly(RevisionReason.BACKFILL, RevisionReason.CORRECTION);",
-      "assertThat(RevisionReason.valueOf(\"BACKFILL\")).isEqualTo(RevisionReason.BACKFILL);",
-      "assertThat(RevisionReason.valueOf(\"CORRECTION\")).isEqualTo(RevisionReason.CORRECTION);",
-      "assertThatThrownBy(() -> RevisionReason.valueOf(\"UNKNOWN\"))"
+      "class ValidationServiceTest {",
+      "private ValidationService service;",
+      "service = new ValidationService(props, stepLog, registry);",
+      "TelemetrySample result = service.validate(sample(metric, value));",
+      "TelemetrySample result = service.validate(sample(metric, value));",
+      "TelemetrySample result = service.validate(sample(metric, value));",
+      "TelemetrySample result = service.validate(input);",
+      "service.validate(sample(\"heart_rate\", 100.0));",
+      "service.validate(sample(\"heart_rate\", 500.0));",
+      "service.validate(sample(\"power\", -5.0));",
+      "service.validate(sample(\"heart_rate\", 100.0));",
+      "service.validate(sample(\"heart_rate\", 500.0));"
     ]
   },
   "stderr": "",

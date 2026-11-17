@@ -1,1 +1,1 @@
-src/main/java/com/blackboard/telemetry/shared/config/TelemetryProperties.java
+src/main/java/com/pulsestream/telemetry/eventlog/infrastructure/SinkEventBroadcast.java

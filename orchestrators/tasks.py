@@ -61,6 +61,98 @@ MIGRATION_SCHEME_RE = re.compile(r"flyway|liquibase|schema-locations|script_loca
                                  r"version_locations|sql\.init", re.I)
 CWD_RELATIVE_LOCATION_RE = re.compile(r"(?:filesystem|file)\s*:[:\w./-]*migrations?/?", re.I)
 
+# --- Plan rules (s)/(t)/(u): the PART III (2026-11-16 evening) refusal classes.
+# (s) CORRECTION VS RETRY IS AN IDENTITY-AXIS DECISION (G2): rule (q) demands a dedup
+#     identity; it never demanded saying where the MUTABLE PAYLOAD lives relative to it.
+#     A natural identity that excludes the value turns a resent sample with a corrected
+#     value into a silent no-op "duplicate" - the seed's "corrections append revisions"
+#     dies while (q) is satisfied, every test is green and no gate sees the drop. The
+#     refusal is stack-neutral: it demands the plan SAY the axis decision (excluded +
+#     discriminator, or included) wherever the dedup sentence is spelled, never which
+#     database or schema syntax enforces it.
+# (t) A PROMISED MECHANISM IS A SCHEDULED DUTY (G3): the strategy promised correlation
+#     "propagated to log lines via <mechanism>"; no unit scheduled the dependency +
+#     wiring that INSTALLS that mechanism, so correlation stayed manual discipline and
+#     a future line silently loses the key. The rule carries the strategy's OWN token
+#     into the plan's duties - the concrete mechanism vocabulary belongs to the active
+#     tech-stack skill, never to this validator.
+# (u) NO AUDITED OUTCOME UNMETERED (G4): the floor gate checked that PROMISED meters
+#     are claimed, not that the floor covers every outcome the plan ACKNOWLEDGES. An
+#     error swallowed after a FAILED audit survives in the store but in no counter -
+#     ops sees a healthy stream while the pipeline loses events. Layer 1 pairs every
+#     step log with a metric (or an explicit uncounted_steps exemption); Layer 2 pairs
+#     every failure/drop vocabulary in tabled `semantics` with a counting meter (or a
+#     declared uncounted-failures posture). Meter NAMES stay abstract here; the stack
+#     skill names the registry.
+CORRECTION_RE = re.compile(r"correct\w*|backfill\w*|supersed\w*", re.I)
+VALUE_AXIS_RE = re.compile(
+    r"(?:value|payload|measurement)\w*[^.;\n]{0,80}(?:part of|inside|outside|excluded?"
+    r"|not in|included|covered|discriminat|compared?|dedup\w*|no-op|revision)"
+    r"|(?:identity|key)[^.;\n]{0,60}(?:includes?|excludes?|covers)[^.;\n]{0,40}"
+    r"(?:value|payload)"
+    r"|correction flag|client[- ]supplied (?:version|sequence|counter)"
+    r"|value (?:comparison|hash)|compare[sd]? (?:the )?(?:value|payload)"
+    r"|payload (?:differs|changed|comparison)", re.I)
+MECHANISM_PROMISE_RE = re.compile(r"\bvia\b[^.;\n]{0,80}\bpropagat\w*"
+                                  r"|\bpropagat\w*[^.;\n]{0,80}\bvia\b", re.I)
+VIA_TOKEN_RE = re.compile(r"\bvia\s+(?:the\s+)?([A-Za-z][\w]*(?:[-\s][A-Za-z][\w]*){0,2})",
+                         re.I)
+FAIL_OUTCOME_RE = re.compile(r"\b(?:drop\w*|fail\w*|reject\w*|swallow\w*|overflow\w*)\b", re.I)
+METER_CLAIM_RE = re.compile(r"(?:counter|meter|gauge|timer)[^.;\n]{0,80}"
+                            r"(?:drop|fail|reject|error)|(?:drop|fail|reject|error)"
+                            r"[^.;\n]{0,80}(?:counter|meter|gauge|timer)", re.I)
+STEP_STOP_TOKENS = {"the", "and", "for", "with", "into", "from", "that", "this", "are",
+                    "per", "each", "once", "after", "before", "when", "than", "then",
+                    "over", "under", "not", "new", "raw", "all", "same", "every",
+                    "their", "there", "which", "being", "was", "were", "been"}
+
+
+def _step_tokens(text):
+    return {w for w in re.findall(r"[a-z]{4,}", str(text or "").lower())
+            if w not in STEP_STOP_TOKENS}
+
+
+def _surface_norm(text):
+    return " ".join(str(text or "").strip().lower().rstrip(".").split())
+
+
+def _meter_pairs(step, metrics):
+    st = _step_tokens(step)
+    if not st:
+        return True
+    for entry in metrics:
+        if isinstance(entry, str):
+            entry = {"name": entry}
+        if not isinstance(entry, dict):
+            continue
+        blob = " ".join([str(entry.get("name", "")), " ".join(map(str, entry.get("tags") or [])),
+                         str(entry.get("counts", ""))])
+        mt = _step_tokens(blob)
+        if any(a == b or a.startswith(b[:5]) or b.startswith(a[:5]) for a in st for b in mt):
+            return True
+    return False
+
+
+def _mechanism_claimed(token, texts):
+    """The strategy's mechanism phrase must appear as an INSTALL duty, adjacent and
+    unnegated: 'no context-propagation library is used' is a divergence, not a duty -
+    the refusal class G3 was born from (the plan quietly un-promised the strategy)."""
+    norm = _surface_norm(token).replace("_", "-")
+    if not norm:
+        return True
+    words = [w for w in re.split(r"[-\s]+", norm) if w]
+    joined = r"[-\s]+".join(map(re.escape, words))
+    alt = r"[-\s]+".join(map(re.escape, reversed(words))) if len(words) > 1 else joined
+    finder = re.compile(f"(?:{joined}|{alt})", re.I)
+    negated = re.compile(r"\b(?:no|not|without|never|avoid\w*|skip\w*|exclude\w*|"
+                         r"drop\w*|remov\w*|abandon\w*)\b[^,.;]{0,24}$", re.I)
+    for text in texts:
+        for match in finder.finditer(text):
+            if negated.search(text[:match.start()][-28:]):
+                continue
+            return True
+    return False
+
 # Prose-vs-table shape (seed-002 rerun F2: the T2-014 pair that froze T2-020 and the
 # whole deferred cluster behind it). Two deterministic contradiction classes are emit-
 # refused because NO payload can ever satisfy both sides of the pair:
@@ -499,6 +591,62 @@ def plan_consistency(staged, index):
                     "shape must win at plan time: rewrite the prose against the injected "
                     f"collaborator, or bind `static` in {producer.get('id')}'s table; two "
                     "frozen tests written from the two shapes can never both pass (F2)")
+    # (w) a stage-1 TEST task owns a TEST artifact, NEVER the file under test
+    #     (2026-11-17 drain: the architect emitted every tester task with the paired
+    #     production unit's path - the tester writes its test AT `path`, so @Test
+    #     classes landed under the main source root, test-scoped dependencies were
+    #     invisible to their compile classpath, and the import-closure guard killed
+    #     the drain on the first red close-out). One path cannot hold both the frozen
+    #     test and the woven implementation; the pair is refused at emit. Stage 3 may
+    #     share stage 2's path: the refactor targets the implementation file.
+    code_paths = {}
+    for record in list(index.values()) + list(staged):
+        if (isinstance(record, dict) and record.get("stage") in (2, 3)
+                and isinstance(record.get("path"), str)):
+            code_paths.setdefault(str(record.get("project", "")), set()).add(
+                str(record["path"]).replace("\\", "/").lower())
+    for task in staged:
+        if task.get("stage") != settings.TESTER_STAGE:
+            continue
+        own = str(task.get("path", "")).replace("\\", "/").lower()
+        if own and own in code_paths.get(str(task.get("project", "")), set()):
+            errors.append(
+                f"{task['id']}: stage-1 test path equals an implementation task's path "
+                f"({task['path']}) - the tester writes the frozen test AT `path` and the "
+                "coder weaves the unit into that same file: point the test task at its own "
+                "test artifact (every stack keeps tests in a separate file from the unit, "
+                "visible only to the test classpath)")
+    # (x) a handler unit that forbids its stack's handler marker can never serve a
+    #     request (2026-11-17 drain: the controller's intent pinned "no scanning-
+    #     registration annotation: it is registered only by the wiring factory" -
+    #     WebFlux's RequestMappingHandlerMapping.isHandler accepts ONLY classes
+    #     annotated @Controller (verified against the framework bytecode), so the
+    #     factory bean was constructed, the context booted green... and every request
+    #     got 404). Refused at emit, gated on the strategy's planned language; the
+    #     concrete marker/mechanism names come from the tech-stack skill.
+    no_marker_re = re.compile(
+        r"no\s+(?:class\s+)?(?:stereotype|scanning[- ]registration|registration "
+        r"annotation)|never\s+(?:annotated|self-?regist)|not\s+annotated\s+with|"
+        r"registered\s+only\s+by\s+the\s+wiring", re.I)
+    for task in staged:
+        if task.get("stage") != settings.TDD_STAGE:
+            continue
+        if str(task.get("project", "")) and strategy_language(str(task.get("project", ""))) != "java":
+            continue
+        intent = str(task.get("intent", ""))
+        surface = intent + " " + str(task.get("export", "")) + " " + str(task.get("path", ""))
+        if not re.search(r"\bcontroller\b|@RequestMapping|@PostMapping|endpoint handler",
+                         surface, re.I):
+            continue  # mapped handlers only: factory-built WebFilter components are legal
+        if INBOUND_RE.search(intent) and no_marker_re.search(intent):
+            errors.append(
+                f"{task['id']}: an inbound handler unit whose intent FORBIDS the stack's "
+                "handler marker can never serve - WebFlux maps only classes carrying the "
+                "controller annotation (a factory-produced unmarked POJO boots green and "
+                "answers 404 on its own endpoints, 2026-11-17). Name ONE mechanism at plan "
+                "time: the handler carries the stack skill's controller marker (wiring still "
+                "supplies its collaborators), or the route is a functional router bean owned "
+                "by the wiring unit")
     # (k)/(m)/(n): the machine half of the 2026-11-16 findings - see the vocabulary
     # block above for what each refusal class means and why the per-unit gates
     # structurally cannot see them.
@@ -709,4 +857,112 @@ def plan_consistency(staged, index):
                         "directory. Spell the runner location as the PACKAGED form "
                         "(classpath:<dir>) and have the scripts live under the stack's "
                         "packaged resources root - the DB handoff names that directory")
+        # (s) CORRECTION VS RETRY ON A DEDUPED, APPEND-ONLY CHAIN: once rule (q) is
+        #     satisfied the plan HAS an identity - the silent failure moved one level
+        #     in: if the identity excludes the mutable payload and no discriminator
+        #     separates a retry from a correction, the seed's corrections resolve as
+        #     no-op duplicates (2026-11-16 PART III G2: UNIQUE(device, metric, t_device)
+        #     swallowed a resent sample with a corrected value; the dedup rule stayed
+        #     honored, the correction rule died undisclosed and untested).
+        stext = _strategy_text(project)
+        axis_corpus = " ".join([chain_text, stext])
+        if (inbound and (DEDUP_RE.search(chain_text) or strategy_exempt)
+                and APPEND_CHAIN_RE.search(axis_corpus)
+                and CORRECTION_RE.search(axis_corpus)
+                and not any(VALUE_AXIS_RE.search(seg)
+                            for seg in re.split(r"[.;\n]", axis_corpus))):
+            errors.append(
+                f"{project}: the chain dedups an at-least-once inbound over an append-only "
+                "history that SPEAKS of corrections/backfills, but no contract states the "
+                "VALUE-AXIS decision: is the mutable payload part of the dedup identity, or "
+                "excluded - and if excluded, what separates a retry (no-op) from a correction "
+                "(revision appended)? A dedup identity that never names what it dedups drops "
+                "every value-correction as a 'duplicate' while rule (q) stays satisfied. "
+                "Spell the axis decision beside the identity in the receiving contracts and "
+                "table BOTH resend classes as test duties (same-payload -> no-op; "
+                "changed-value -> revision)")
+        # (t) PROMISED MECHANISM -> SCHEDULED INSTALL DUTY: carry the strategy's own
+        #     vocabulary into the plan (2026-11-16 PART III G3: 'propagated to log lines
+        #     via context-propagation' stayed a promise - no unit scheduled the
+        #     dependency + boot wiring, correlation survived only as hand-passed
+        #     arguments, and every gate stayed green because prose and code never get
+        #     compared).
+        if stext:
+            duty_texts = [str(u.get("intent", "")) for u in live if u.get("stage") == 2]
+            for seg in re.split(r"[.;\n]", stext):
+                if not MECHANISM_PROMISE_RE.search(seg):
+                    continue
+                tok = VIA_TOKEN_RE.search(seg)
+                token = tok.group(1).strip() if tok else ""
+                if not token or _mechanism_claimed(token, duty_texts):
+                    continue
+                errors.append(
+                    f"{project}: the strategy promises "
+                    f"\"{seg.strip().strip('\",[]{} ')[:140]}\" but NO unit "
+                    f"schedules the duty that INSTALLS the mechanism '{token}' (declare it "
+                    "as a dependency + boot/wiring duty of the correlation, wiring or "
+                    "config unit - the mechanism's concrete shape comes from the active "
+                    "tech-stack skill). Manual discipline is not the promised mechanism: "
+                    "a future line that forgets the hand-pass silently loses it. If the "
+                    "plan will not install it, amend the promise to what the plan actually "
+                    "ships instead of emitting the mismatch")
+        # (u) THE FLOOR MUST COVER EVERY ACKNOWLEDGED OUTCOME: step logs pair with a
+        #     metric (or an explicit uncounted_steps exemption), and failure/drop
+        #     vocabulary tabled in `semantics` pairs with a counting meter (or a
+        #     declared uncounted-failures posture) - 2026-11-16 PART III G4: the
+        #     subscriber swallowed per-event errors after the FAILED audit; the failures
+        #     were durable in the store, invisible in the counters, and the floor was
+        #     'complete' because it only checked that promised meters were claimed.
+        try:
+            strat = json.loads(stext) if stext else {}
+        except json.JSONDecodeError:
+            strat = {}
+        obs = strat.get("observability") if isinstance(strat, dict) else None
+        steps = (obs or {}).get("step_logs") if isinstance(obs, dict) else None
+        metrics = (obs or {}).get("metrics") if isinstance(obs, dict) else None
+        if isinstance(steps, list) and isinstance(metrics, list) and steps and metrics:
+            exempt = set()
+            for entry in (obs.get("uncounted_steps") or []):
+                exempt.add(_surface_norm(entry if isinstance(entry, str)
+                                         else (entry or {}).get("step")))
+            for step in steps:
+                if (isinstance(step, str) and step.strip()
+                        and _surface_norm(step) not in exempt
+                        and not _meter_pairs(step, metrics)):
+                    errors.append(
+                        f"{project}: strategy step log '{step}' marks a boundary nobody "
+                        "counts - no metric name or tag pairs with it. Add a meter for "
+                        "that step (or group it under one that counts it) or record an "
+                        "explicit `uncounted_steps` entry with its reason: an uncounted "
+                        "outcome is visible only to whoever queries the store by hand "
+                        "(2026-11-16 G4: broadcast/windowed steps promised, never metered)")
+        # Layer 2: failure vocabulary TABLED IN `semantics` (the (m) contract surface)
+        # must be answered by the floor: a metric entry whose name/tags spell the
+        # failure class, an owning unit intent claiming the paired meter, or a declared
+        # `uncounted_failures` posture. Intents alone never TRIGGER (their operational
+        # prose mentions errors constantly); the trigger is the contracted outcome.
+        if isinstance(metrics, list) and metrics:
+            sem_texts = []
+            for u in live:
+                if u.get("stage") not in (1, 2):
+                    continue
+                for member in (u.get("ast_hints") or {}).get("methods") or []:
+                    if isinstance(member, dict) and member.get("semantics"):
+                        sem_texts.append(str(member["semantics"]))
+            if (any(FAIL_OUTCOME_RE.search(s) for s in sem_texts)
+                    and not FAIL_OUTCOME_RE.search(
+                        json.dumps(metrics) + str(obs.get("uncounted_failures", "")))
+                    and not any(METER_CLAIM_RE.search(str(u.get("intent", "")))
+                                for u in live if u.get("stage") == 2)):
+                errors.append(
+                    f"{project}: the plan contracts failure/drop outcomes in tabled "
+                    "`semantics` (dropped, failed, rejected, swallowed, overflowed paths) "
+                    "but NO meter in the strategy floor counts them, no unit claims the "
+                    "paired counter, and no posture declares failures intentionally "
+                    "uncounted: an audited failure without a paired counter shows in the "
+                    "store yet stays invisible on every operational surface (2026-11-16 "
+                    "G4: the subscriber swallowed per-event errors after the FAILED audit "
+                    "- zero counters, a healthy-looking dashboard). Add a drop/rejection "
+                    "counter to the floor and claim it in the owning unit, or record "
+                    "`uncounted_failures` with its reason")
     return errors

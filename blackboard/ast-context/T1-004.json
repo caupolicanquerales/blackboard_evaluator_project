@@ -3,154 +3,58 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "TelemetrySample",
+    "type": "AuditEntry",
     "constructors": [
       [
-        "\"dev-1\"",
-        "metric()",
-        "T_DEVICE",
-        "T_INGRESS",
-        "42.5",
-        "status"
-      ],
-      [
-        "null",
-        "metric()",
-        "T_DEVICE",
-        "T_INGRESS",
-        "1.0",
-        "ValidationStatus.UNVALIDATED"
-      ],
-      [
-        "\"dev-1\"",
-        "null",
-        "T_DEVICE",
-        "T_INGRESS",
-        "1.0",
-        "ValidationStatus.UNVALIDATED"
-      ],
-      [
-        "\"dev-1\"",
-        "metric()",
-        "null",
-        "T_INGRESS",
-        "1.0",
-        "ValidationStatus.UNVALIDATED"
-      ],
-      [
-        "\"dev-1\"",
-        "metric()",
-        "T_DEVICE",
-        "null",
-        "1.0",
-        "ValidationStatus.UNVALIDATED"
-      ],
-      [
-        "\"dev-1\"",
-        "metric()",
-        "T_DEVICE",
-        "T_INGRESS",
-        "1.0",
-        "null"
-      ],
-      [
-        "blank",
-        "metric()",
-        "T_DEVICE",
-        "T_INGRESS",
-        "1.0",
-        "ValidationStatus.UNVALIDATED"
-      ],
-      [
-        "\"dev-1\"",
-        "metric()",
-        "T_DEVICE",
-        "T_INGRESS",
-        "Double.NaN",
-        "ValidationStatus.UNVALIDATED"
+        "actor",
+        "\"intake.receive\"",
+        "\"accepted\"",
+        "TS",
+        "\"corr-1\""
       ]
     ],
     "static_calls": [],
     "calls": [
       {
-        "receiver": "original",
-        "method": "withStatus",
-        "args": [
-          "ValidationStatus.VALID"
-        ],
-        "returns": "TelemetrySample"
-      },
-      {
-        "receiver": "original",
-        "method": "status",
+        "receiver": "e",
+        "method": "actor",
         "args": []
       },
       {
-        "receiver": "original",
-        "method": "withStatus",
-        "args": [
-          "null"
-        ]
-      },
-      {
-        "receiver": "s",
-        "method": "deviceId",
+        "receiver": "e",
+        "method": "action",
         "args": []
       },
       {
-        "receiver": "s",
-        "method": "metric",
+        "receiver": "e",
+        "method": "outcome",
         "args": []
       },
       {
-        "receiver": "s",
-        "method": "tDevice",
+        "receiver": "e",
+        "method": "timestamp",
         "args": []
       },
       {
-        "receiver": "s",
-        "method": "tIngress",
-        "args": []
-      },
-      {
-        "receiver": "s",
-        "method": "value",
-        "args": []
-      },
-      {
-        "receiver": "s",
-        "method": "status",
+        "receiver": "e",
+        "method": "correlationId",
         "args": []
       }
     ],
     "verified": [],
     "usage_lines": [
-      "class TelemetrySampleTest {",
-      "private static TelemetrySample sample(ValidationStatus status) {",
-      "return new TelemetrySample(\"dev-1\", metric(), T_DEVICE, T_INGRESS, 42.5, status);",
-      "TelemetrySample s = sample(ValidationStatus.UNVALIDATED);",
-      "assertThat(s.deviceId()).isEqualTo(\"dev-1\");",
-      "assertThat(s.metric()).isEqualTo(metric());",
-      "assertThat(s.tDevice()).isEqualTo(T_DEVICE);",
-      "assertThat(s.tIngress()).isEqualTo(T_INGRESS);",
-      "assertThat(s.value()).isEqualTo(42.5);",
-      "assertThat(s.status()).isEqualTo(ValidationStatus.UNVALIDATED);",
-      "assertThatThrownBy(() -> new TelemetrySample(null, metric(), T_DEVICE, T_INGRESS, 1.0,",
-      "assertThatThrownBy(() -> new TelemetrySample(\"dev-1\", null, T_DEVICE, T_INGRESS, 1.0,",
-      "assertThatThrownBy(() -> new TelemetrySample(\"dev-1\", metric(), null, T_INGRESS, 1.0,",
-      "assertThatThrownBy(() -> new TelemetrySample(\"dev-1\", metric(), T_DEVICE, null, 1.0,",
-      "assertThatThrownBy(() -> new TelemetrySample(\"dev-1\", metric(), T_DEVICE, T_INGRESS, 1.0,",
-      "assertThatThrownBy(() -> new TelemetrySample(blank, metric(), T_DEVICE, T_INGRESS, 1.0,",
-      "TelemetrySample s = new TelemetrySample(\"dev-1\", metric(), T_DEVICE, T_INGRESS,",
-      "assertThat(s.value()).isNaN();",
-      "TelemetrySample original = sample(ValidationStatus.UNVALIDATED);",
-      "TelemetrySample result = original.withStatus(ValidationStatus.VALID);",
-      "assertThat(result).isEqualTo(sample(ValidationStatus.VALID));",
-      "assertThat(original.status()).isEqualTo(ValidationStatus.UNVALIDATED);",
-      "TelemetrySample original = sample(ValidationStatus.UNVALIDATED);",
-      "assertThatThrownBy(() -> original.withStatus(null))",
-      "assertThat(sample(ValidationStatus.VALID)).isEqualTo(sample(ValidationStatus.VALID))",
-      ".hasSameHashCodeAs(sample(ValidationStatus.VALID));"
+      "class AuditEntryTest {",
+      "private static AuditEntry entry(String actor) {",
+      "return new AuditEntry(actor, \"intake.receive\", \"accepted\", TS, \"corr-1\");",
+      "AuditEntry e = entry(\"intake\");",
+      "assertThat(e.actor()).isEqualTo(\"intake\");",
+      "assertThat(e.action()).isEqualTo(\"intake.receive\");",
+      "assertThat(e.outcome()).isEqualTo(\"accepted\");",
+      "assertThat(e.timestamp()).isEqualTo(TS);",
+      "assertThat(e.correlationId()).isEqualTo(\"corr-1\");",
+      "assertThat(entry(\"intake\")).isEqualTo(entry(\"intake\"))",
+      ".hasSameHashCodeAs(entry(\"intake\"));",
+      "assertThat(entry(\"intake\")).isNotEqualTo(entry(\"eventlog\"));"
     ]
   },
   "stderr": "",

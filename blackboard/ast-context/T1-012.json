@@ -3,63 +3,28 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "AuditEntry",
+    "type": "R2dbcEventLogRepository",
     "constructors": [
       [
-        "actor",
-        "action",
-        "outcome",
-        "timestamp",
-        "correlationId"
+        "client"
       ]
     ],
     "static_calls": [],
-    "calls": [
-      {
-        "receiver": "result",
-        "method": "actor",
-        "args": []
-      },
-      {
-        "receiver": "result",
-        "method": "action",
-        "args": []
-      },
-      {
-        "receiver": "result",
-        "method": "outcome",
-        "args": []
-      },
-      {
-        "receiver": "result",
-        "method": "timestamp",
-        "args": []
-      },
-      {
-        "receiver": "result",
-        "method": "correlationId",
-        "args": []
-      }
-    ],
+    "calls": [],
     "verified": [],
     "usage_lines": [
-      "class AuditEntryTest {",
-      "private static AuditEntry entry(String actor, AuditAction action, String outcome,",
-      "return new AuditEntry(actor, action, outcome, timestamp, correlationId);",
-      "AuditEntry result = entry(\"ingest-service\", AuditAction.INGEST_PACKET, outcome, NOW, \"req-1\");",
-      "assertThat(result.actor()).isEqualTo(\"ingest-service\");",
-      "assertThat(result.action()).isEqualTo(AuditAction.INGEST_PACKET);",
-      "assertThat(result.outcome()).isEqualTo(outcome);",
-      "assertThat(result.timestamp()).isEqualTo(NOW);",
-      "assertThat(result.correlationId()).isEqualTo(\"req-1\");",
-      "assertThatThrownBy(() -> entry(null, AuditAction.INGEST_PACKET, \"SUCCESS\", NOW, \"req-1\"))",
-      "assertThatThrownBy(() -> entry(\"actor\", null, \"SUCCESS\", NOW, \"req-1\"))",
-      "assertThatThrownBy(() -> entry(\"actor\", AuditAction.INGEST_PACKET, null, NOW, \"req-1\"))",
-      "assertThatThrownBy(() -> entry(\"actor\", AuditAction.INGEST_PACKET, \"SUCCESS\", null, \"req-1\"))",
-      "assertThatThrownBy(() -> entry(\"actor\", AuditAction.INGEST_PACKET, \"SUCCESS\", NOW, null))",
-      "assertThatThrownBy(() -> entry(actor, AuditAction.INGEST_PACKET, \"SUCCESS\", NOW, \"req-1\"))",
-      "assertThatThrownBy(() -> entry(\"actor\", AuditAction.INGEST_PACKET, \"SUCCESS\", NOW, correlationId))",
-      "assertThatThrownBy(() -> entry(\"actor\", AuditAction.INGEST_PACKET, outcome, NOW, \"req-1\"))"
+      "class R2dbcEventLogRepositoryTest {",
+      "private record Fixture(DatabaseClient client, R2dbcEventLogRepository repository) {}",
+      "return new Fixture(client, new R2dbcEventLogRepository(client));",
+      "StepVerifier.create(f.repository().append(sample(\"d1\", 120.0, \"VALID\")))",
+      "f.repository().append(sample(\"d1\", 120.0, \"VALID\")).block();",
+      "StepVerifier.create(f.repository().append(sample(\"d1\", 130.0, \"VALID\")))",
+      "f.repository().append(sample(\"d1\", 120.0, \"VALID\")).block();",
+      "StepVerifier.create(f.repository().append(sample(\"d2\", 121.0, \"VALID\")))",
+      "f.repository().append(sample(\"d1\", 999.0, \"VALIDATION_FAILED\")).block();",
+      "f.repository().append(sample(\"d1\", 120.0, \"VALID\")).block();",
+      "f.repository().append(sample(\"d1\", 130.0, \"VALID\")).block();",
+      "StepVerifier.create(f.repository().findLatest(\"d1\", \"heart_rate\", T_DEVICE))"
     ]
   },
   "stderr": "",

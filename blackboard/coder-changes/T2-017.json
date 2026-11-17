@@ -1,29 +1,36 @@
 {
   "id": "T2-017",
   "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/blackboard/telemetry/shared/observability/CorrelationContext.java",
-  "export": "CorrelationContext",
-  "kind": "class",
-  "method": "current",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/intake/api/CorrelationWebFilter.java",
+  "export": "CorrelationWebFilter",
+  "method": "filter",
   "language": "java",
-  "framework": "spring-boot",
-  "skill": "java-standard-best-practices",
-  "signature": "public static Mono<String> current()",
-  "returns": "Mono<String>",
-  "body": "return Mono.deferContextual(ctx -> Mono.just(ctx.getOrDefault(CONTEXT_KEY, UNCORRELATED)));",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "signature": "Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain)",
+  "returns": "Mono<Void>",
+  "body": "String inbound = exchange.getRequest().getHeaders().getFirst(HEADER);\nString requestId = inbound == null || inbound.isBlank() ? UUID.randomUUID().toString() : inbound;\nexchange.getResponse().getHeaders().set(HEADER, requestId);\nreturn chain.filter(exchange).contextWrite(context -> context.put(CONTEXT_KEY, requestId));",
   "imports": [
-    "reactor.core.publisher.Mono"
-  ],
-  "members": [
-    "private static final String CONTEXT_KEY = \"requestId\"",
-    "private static final String HEADER_NAME = \"X-Request-Id\"",
-    "public static final String UNCORRELATED = \"UNCORRELATED\"",
-    "private CorrelationContext() {}",
-    "public static String contextKey() { return CONTEXT_KEY; }",
-    "public static String headerName() { return HEADER_NAME; }"
+    "java.util.UUID",
+    "reactor.core.publisher.Mono",
+    "org.springframework.web.server.ServerWebExchange",
+    "org.springframework.web.server.WebFilter",
+    "org.springframework.web.server.WebFilterChain",
+    "org.springframework.stereotype.Component"
   ],
   "missing": [],
+  "kind": "class",
+  "implements": [
+    "WebFilter"
+  ],
+  "members": [
+    "public static final String CONTEXT_KEY = \"requestId\"",
+    "public static final String HEADER = \"X-Request-Id\""
+  ],
+  "annotations": [
+    "Component"
+  ],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-16T20:20:40.875854+00:00"
+  "recorded_at": "2026-11-17T15:29:57.188391+00:00"
 }

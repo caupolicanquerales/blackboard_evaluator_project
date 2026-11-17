@@ -2,540 +2,472 @@
   "status": "compile_error",
   "exit_code": 1,
   "missing_symbols": [
-    "HistoryEvent",
-    "HistoryEventType",
-    "MetricKind",
-    "TelemetrySample",
-    "ValidationStatus",
-    "HistoryEventPublisher",
-    "RevisionReason",
-    "ValidatedSampleEvent",
-    "AuditEntry",
+    "EventRecord",
+    "EventLogRepository",
+    "EventBroadcast",
     "AuditTrail",
-    "TelemetryHistoryRepository",
-    "ReorderHistoryService",
-    "InMemoryHistoryEventPublisher",
-    "ValidatedSampleStream",
-    "R2dbcTelemetryHistoryRepository",
+    "StepLog",
+    "EventLogService",
+    "TelemetrySample",
+    "R2dbcEventLogRepository",
+    "SinkEventBroadcast",
     "CorrelationWebFilter",
-    "IngestPacketService",
-    "IngressPacket",
-    "SourceKind",
-    "SampleRequest",
-    "SensorMetricBoundary"
+    "AuditEntry",
+    "R2dbcAuditTrail",
+    "TelemetryProperties"
   ],
   "missing_packages": [
-    "com.blackboard.telemetry.shared.config",
-    "com.blackboard.telemetry.shared.observability",
-    "com.blackboard.telemetry.ingestion.api.IngressPacketRequest"
+    "com.pulsestream.telemetry.validation.domain",
+    "com.pulsestream.telemetry.shared.observability",
+    "com.pulsestream.telemetry.shared.config"
   ],
   "failures": [],
   "counts": {},
   "classes": {},
   "member_demands": [
     {
-      "member": "HistoryEventPublisher",
-      "owner": "HistoryEventPublisherTest",
+      "member": "EventLogRepository",
+      "owner": "EventLogServiceTest",
       "kind": "class",
-      "context": "private final HistoryEventPublisher publisher = mock(HistoryEventPublisher.class);"
+      "context": "import com.pulsestream.telemetry.shared.observability.StepLog;"
     },
     {
-      "member": "HistoryEventType",
-      "owner": "HistoryEventPublisherTest",
+      "member": "EventBroadcast",
+      "owner": "EventLogServiceTest",
       "kind": "class",
-      "context": "private static HistoryEvent event(HistoryEventType type, int revisionNo, int windowSize) {"
-    },
-    {
-      "member": "HistoryEvent",
-      "owner": "HistoryEventPublisherTest",
-      "kind": "class",
-      "context": "private static HistoryEvent event(HistoryEventType type, int revisionNo, int windowSize) {"
-    },
-    {
-      "member": "MetricKind",
-      "owner": "ReorderHistoryServiceTest",
-      "kind": "class",
-      "context": "import com.blackboard.telemetry.shared.config.TelemetryProperties;"
-    },
-    {
-      "member": "TelemetryHistoryRepository",
-      "owner": "ReorderHistoryServiceTest",
-      "kind": "class",
-      "context": "private final TelemetryHistoryRepository repository = mock(TelemetryHistoryRepository.class);"
-    },
-    {
-      "member": "HistoryEventPublisher",
-      "owner": "ReorderHistoryServiceTest",
-      "kind": "class",
-      "context": "private final HistoryEventPublisher publisher = mock(HistoryEventPublisher.class);"
+      "context": "private EventBroadcast broadcast;"
     },
     {
       "member": "AuditTrail",
-      "owner": "ReorderHistoryServiceTest",
+      "owner": "EventLogServiceTest",
       "kind": "class",
-      "context": "private final AuditTrail auditTrail = mock(AuditTrail.class);"
+      "context": "private AuditTrail auditTrail;"
     },
     {
-      "member": "ReorderHistoryService",
-      "owner": "ReorderHistoryServiceTest",
+      "member": "StepLog",
+      "owner": "EventLogServiceTest",
       "kind": "class",
-      "context": "private ReorderHistoryService service;"
+      "context": "private StepLog stepLog;"
     },
     {
-      "member": "TelemetrySample",
-      "owner": "ReorderHistoryServiceTest",
+      "member": "EventLogService",
+      "owner": "EventLogServiceTest",
       "kind": "class",
-      "context": "private static TelemetrySample sample(Instant tIngress) {"
-    },
-    {
-      "member": "ValidatedSampleEvent",
-      "owner": "ReorderHistoryServiceTest",
-      "kind": "class",
-      "context": "private static ValidatedSampleEvent event(TelemetrySample sample) {"
-    },
-    {
-      "member": "HistoryEvent",
-      "owner": "ReorderHistoryServiceTest",
-      "kind": "class",
-      "context": "private List<HistoryEvent> published() {"
-    },
-    {
-      "member": "AuditEntry",
-      "owner": "ReorderHistoryServiceTest",
-      "kind": "class",
-      "context": "private List<AuditEntry> audited() {"
-    },
-    {
-      "member": "MetricKind",
-      "owner": "TelemetryHistoryRepositoryTest",
-      "kind": "class",
-      "context": "private static final MetricKind METRIC = MetricKind.values()[0];"
-    },
-    {
-      "member": "TelemetryHistoryRepository",
-      "owner": "TelemetryHistoryRepositoryTest",
-      "kind": "class",
-      "context": "private final TelemetryHistoryRepository repository = mock(TelemetryHistoryRepository.class);"
+      "context": "private EventLogService service;"
     },
     {
       "member": "TelemetrySample",
-      "owner": "TelemetryHistoryRepositoryTest",
+      "owner": "EventLogServiceTest",
       "kind": "class",
-      "context": "private static TelemetrySample sample(Instant tDevice) {"
-    },
-    {
-      "member": "HistoryEventType",
-      "owner": "HistoryEventTest",
-      "kind": "class",
-      "context": "private static final HistoryEventType TYPE = HistoryEventType.values()[0];"
+      "context": "private final TelemetrySample sample = new TelemetrySample(\"dev-1\", \"temp\","
     },
     {
       "member": "TelemetrySample",
-      "owner": "HistoryEventTest",
+      "owner": "EventRecordTest",
       "kind": "class",
-      "context": "private static TelemetrySample sample() {"
+      "context": "import com.pulsestream.telemetry.validation.domain.TelemetrySample;"
     },
     {
-      "member": "HistoryEventType",
-      "owner": "HistoryEventTypeTest",
+      "member": "R2dbcEventLogRepository",
+      "owner": "Fixture",
       "kind": "class",
-      "context": "void valueOf_constantName_returnsSameConstant(HistoryEventType type) {"
-    },
-    {
-      "member": "InMemoryHistoryEventPublisher",
-      "owner": "InMemoryHistoryEventPublisherTest",
-      "kind": "class",
-      "context": "import com.blackboard.telemetry.shared.config.TelemetryProperties;"
-    },
-    {
-      "member": "HistoryEvent",
-      "owner": "InMemoryHistoryEventPublisherTest",
-      "kind": "class",
-      "context": "private static HistoryEvent event(String correlationId) {"
-    },
-    {
-      "member": "ValidatedSampleStream",
-      "owner": "PipelineSubscriberTest",
-      "kind": "class",
-      "context": "private ValidatedSampleStream stream;"
-    },
-    {
-      "member": "ReorderHistoryService",
-      "owner": "PipelineSubscriberTest",
-      "kind": "class",
-      "context": "private ReorderHistoryService service;"
-    },
-    {
-      "member": "ValidatedSampleEvent",
-      "owner": "PipelineSubscriberTest",
-      "kind": "class",
-      "context": "private static ValidatedSampleEvent event(String correlationId) {"
-    },
-    {
-      "member": "R2dbcTelemetryHistoryRepository",
-      "owner": "R2dbcTelemetryHistoryRepositoryTest",
-      "kind": "class",
-      "context": "private R2dbcTelemetryHistoryRepository repository;"
-    },
-    {
-      "member": "MetricKind",
-      "owner": "R2dbcTelemetryHistoryRepositoryTest",
-      "kind": "class",
-      "context": "private static TelemetrySample sample(String device, MetricKind metric, Instant tDevice, double value,"
-    },
-    {
-      "member": "ValidationStatus",
-      "owner": "R2dbcTelemetryHistoryRepositoryTest",
-      "kind": "class",
-      "context": "ValidationStatus status) {"
+      "context": "import com.pulsestream.telemetry.validation.domain.TelemetrySample;"
     },
     {
       "member": "TelemetrySample",
-      "owner": "R2dbcTelemetryHistoryRepositoryTest",
+      "owner": "R2dbcEventLogRepositoryTest",
       "kind": "class",
-      "context": "private static TelemetrySample sample(String device, MetricKind metric, Instant tDevice, double value,"
+      "context": "private static TelemetrySample sample(String device, double value, String status) {"
+    },
+    {
+      "member": "SinkEventBroadcast",
+      "owner": "SinkEventBroadcastTest",
+      "kind": "class",
+      "context": "import com.pulsestream.telemetry.shared.config.TelemetryProperties;"
+    },
+    {
+      "member": "EventRecord",
+      "owner": "SinkEventBroadcastTest",
+      "kind": "class",
+      "context": "private static EventRecord record(int revision) {"
     },
     {
       "member": "CorrelationWebFilter",
       "owner": "CorrelationWebFilterTest",
       "kind": "class",
-      "context": "import com.blackboard.telemetry.shared.observability.CorrelationContext;"
+      "context": "private final CorrelationWebFilter filter = new CorrelationWebFilter();"
     },
     {
-      "member": "IngestPacketService",
-      "owner": "IngestionControllerTest",
+      "member": "EventRecord",
+      "owner": "EventBroadcastTest",
       "kind": "class",
-      "context": "private IngestPacketService service;"
+      "context": "Method method = EventBroadcast.class.getMethod(\"publish\", EventRecord.class);"
     },
     {
-      "member": "SampleRequest",
-      "owner": "IngressPacketRequestTest",
+      "member": "EventBroadcast",
+      "owner": "EventBroadcastTest",
       "kind": "class",
-      "context": "private static SampleRequest sample() {"
-    },
-    {
-      "member": "ValidatedSampleStream",
-      "owner": "IngestPacketServiceTest",
-      "kind": "class",
-      "context": "import com.blackboard.telemetry.shared.observability.CorrelationContext;"
-    },
-    {
-      "member": "AuditTrail",
-      "owner": "IngestPacketServiceTest",
-      "kind": "class",
-      "context": "private AuditTrail auditTrail;"
-    },
-    {
-      "member": "SensorMetricBoundary",
-      "owner": "IngestPacketServiceTest",
-      "kind": "class",
-      "context": "private IngestPacketService service(SensorMetricBoundary... boundaries) {"
-    },
-    {
-      "member": "IngestPacketService",
-      "owner": "IngestPacketServiceTest",
-      "kind": "class",
-      "context": "private IngestPacketService service(SensorMetricBoundary... boundaries) {"
-    },
-    {
-      "member": "MetricKind",
-      "owner": "IngestPacketServiceTest",
-      "kind": "class",
-      "context": "private static TelemetrySample sample(MetricKind metric, double value) {"
+      "context": "Method method = EventBroadcast.class.getMethod(\"publish\", EventRecord.class);"
     },
     {
       "member": "TelemetrySample",
-      "owner": "IngestPacketServiceTest",
+      "owner": "EventLogRepositoryTest",
       "kind": "class",
-      "context": "private static TelemetrySample sample(MetricKind metric, double value) {"
+      "context": "Method method = EventLogRepository.class.getMethod(\"append\", TelemetrySample.class);"
+    },
+    {
+      "member": "EventLogRepository",
+      "owner": "EventLogRepositoryTest",
+      "kind": "class",
+      "context": "Method method = EventLogRepository.class.getMethod(\"append\", TelemetrySample.class);"
+    },
+    {
+      "member": "EventRecord",
+      "owner": "EventLogRepositoryTest",
+      "kind": "class",
+      "context": "assertThat(method.getGenericReturnType().getTypeName()).contains(EventRecord.class.getName());"
+    },
+    {
+      "member": "AuditEntry",
+      "owner": "EventLogServiceTest",
+      "kind": "class",
+      "context": "when(auditTrail.record(any(AuditEntry.class))).thenReturn(Mono.empty());"
+    },
+    {
+      "member": "EventRecord",
+      "owner": "EventLogServiceTest",
+      "kind": "class",
+      "context": "EventRecord record = new EventRecord(sample, 1, EventRecord.KIND_RECORD);"
+    },
+    {
+      "member": "EventRecord",
+      "owner": "EventRecordTest",
+      "kind": "class",
+      "context": "EventRecord record = new EventRecord(sample, 3, \"REVISION\");"
+    },
+    {
+      "member": "R2dbcAuditTrail",
+      "owner": "R2dbcAuditTrailTest",
+      "kind": "class",
+      "context": "R2dbcAuditTrail trail = new R2dbcAuditTrail(client, new SimpleMeterRegistry());"
+    },
+    {
+      "member": "AuditEntry",
+      "owner": "R2dbcAuditTrailTest",
+      "kind": "class",
+      "context": "StepVerifier.create(trail.record(new AuditEntry(\"alice\", \"INGEST\", \"ACCEPTED\", NOW, \"corr-1\")))"
+    },
+    {
+      "member": "R2dbcEventLogRepository",
+      "owner": "R2dbcEventLogRepositoryTest",
+      "kind": "class",
+      "context": "return new Fixture(client, new R2dbcEventLogRepository(client));"
+    },
+    {
+      "member": "EventRecord",
+      "owner": "R2dbcEventLogRepositoryTest",
+      "kind": "class",
+      "context": ".assertNext((EventRecord r) -> {"
+    },
+    {
+      "member": "TelemetryProperties",
+      "owner": "SinkEventBroadcastTest",
+      "kind": "class",
+      "context": "new TelemetryProperties(60, capacity, 30, 220, 0, 2000, 0, 200, 0));"
+    },
+    {
+      "member": "TelemetrySample",
+      "owner": "SinkEventBroadcastTest",
+      "kind": "class",
+      "context": "new TelemetrySample(\"d1\", \"heart_rate\", T, T, 100.0, \"VALID\", \"corr\"),"
     }
   ],
   "problem_kinds": [
     {
-      "file": "HistoryEventPublisherTest.java",
+      "file": "EventBroadcastTest.java",
+      "line": 5,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventLogRepositoryTest.java",
+      "line": 5,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventLogRepositoryTest.java",
+      "line": 6,
+      "kind": "other"
+    },
+    {
+      "file": "EventLogServiceTest.java",
       "line": 8,
       "kind": "missing-symbol"
     },
     {
-      "file": "HistoryEventPublisherTest.java",
+      "file": "EventLogServiceTest.java",
       "line": 9,
-      "kind": "missing-symbol"
+      "kind": "other"
     },
     {
-      "file": "HistoryEventPublisherTest.java",
+      "file": "EventLogServiceTest.java",
       "line": 10,
+      "kind": "other"
+    },
+    {
+      "file": "EventLogServiceTest.java",
+      "line": 11,
+      "kind": "other"
+    },
+    {
+      "file": "EventLogServiceTest.java",
+      "line": 12,
+      "kind": "other"
+    },
+    {
+      "file": "EventLogServiceTest.java",
+      "line": 28,
       "kind": "missing-symbol"
     },
     {
-      "file": "HistoryEventPublisherTest.java",
+      "file": "EventLogServiceTest.java",
+      "line": 30,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventLogServiceTest.java",
+      "line": 32,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventLogServiceTest.java",
+      "line": 34,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventLogServiceTest.java",
+      "line": 37,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventLogServiceTest.java",
+      "line": 38,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventRecordTest.java",
+      "line": 5,
+      "kind": "other"
+    },
+    {
+      "file": "EventRecordTest.java",
       "line": 11,
       "kind": "missing-symbol"
     },
     {
-      "file": "HistoryEventPublisherTest.java",
-      "line": 12,
+      "file": "R2dbcAuditTrailTest.java",
+      "line": 5,
+      "kind": "other"
+    },
+    {
+      "file": "R2dbcEventLogRepositoryTest.java",
+      "line": 5,
       "kind": "missing-symbol"
     },
     {
-      "file": "HistoryEventPublisherTest.java",
-      "line": 21,
-      "kind": "missing-symbol"
+      "file": "R2dbcEventLogRepositoryTest.java",
+      "line": 6,
+      "kind": "other"
     },
     {
-      "file": "HistoryEventPublisherTest.java",
+      "file": "R2dbcEventLogRepositoryTest.java",
       "line": 23,
       "kind": "missing-symbol"
     },
     {
-      "file": "ReorderHistoryServiceTest.java",
+      "file": "R2dbcEventLogRepositoryTest.java",
+      "line": 37,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "SinkEventBroadcastTest.java",
+      "line": 5,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "SinkEventBroadcastTest.java",
+      "line": 6,
+      "kind": "other"
+    },
+    {
+      "file": "SinkEventBroadcastTest.java",
+      "line": 7,
+      "kind": "other"
+    },
+    {
+      "file": "SinkEventBroadcastTest.java",
       "line": 17,
       "kind": "missing-symbol"
     },
     {
-      "file": "ReorderHistoryServiceTest.java",
-      "line": 18,
-      "kind": "missing-symbol"
-    },
-    {
-      "file": "ReorderHistoryServiceTest.java",
-      "line": 19,
-      "kind": "missing-symbol"
-    },
-    {
-      "file": "ReorderHistoryServiceTest.java",
-      "line": 20,
-      "kind": "missing-symbol"
-    },
-    {
-      "file": "ReorderHistoryServiceTest.java",
-      "line": 21,
-      "kind": "missing-symbol"
-    },
-    {
-      "file": "ReorderHistoryServiceTest.java",
+      "file": "SinkEventBroadcastTest.java",
       "line": 22,
       "kind": "missing-symbol"
     },
     {
-      "file": "ReorderHistoryServiceTest.java",
-      "line": 23,
+      "file": "CorrelationWebFilterTest.java",
+      "line": 15,
       "kind": "missing-symbol"
     },
     {
-      "file": "ReorderHistoryServiceTest.java",
-      "line": 24,
-      "kind": "missing-symbol"
-    },
-    {
-      "file": "ReorderHistoryServiceTest.java",
-      "line": 25,
-      "kind": "missing-symbol"
-    },
-    {
-      "file": "ReorderHistoryServiceTest.java",
-      "line": 26,
-      "kind": "other"
-    },
-    {
-      "file": "ReorderHistoryServiceTest.java",
-      "line": 27,
-      "kind": "other"
-    },
-    {
-      "file": "ReorderHistoryServiceTest.java",
-      "line": 48,
-      "kind": "missing-symbol"
-    },
-    {
-      "file": "ReorderHistoryServiceTest.java",
-      "line": 50,
-      "kind": "missing-symbol"
-    },
-    {
-      "file": "ReorderHistoryServiceTest.java",
-      "line": 51,
-      "kind": "missing-symbol"
-    },
-    {
-      "file": "ReorderHistoryServiceTest.java",
-      "line": 52,
-      "kind": "missing-symbol"
-    },
-    {
-      "file": "ReorderHistoryServiceTest.java",
-      "line": 56,
-      "kind": "missing-symbol"
-    },
-    {
-      "file": "ReorderHistoryServiceTest.java",
-      "line": 77,
-      "kind": "missing-symbol"
-    },
-    {
-      "file": "ReorderHistoryServiceTest.java",
-      "line": 81,
-      "kind": "missing-symbol"
-    },
-    {
-      "file": "ReorderHistoryServiceTest.java",
-      "line": 85,
-      "kind": "missing-symbol"
-    },
-    {
-      "file": "ReorderHistoryServiceTest.java",
-      "line": 91,
-      "kind": "missing-symbol"
-    },
-    {
-      "file": "TelemetryHistoryRepositoryTest.java",
-      "line": 7,
-      "kind": "missing-symbol"
-    },
-    {
-      "file": "TelemetryHistoryRepositoryTest.java",
-      "line": 8,
-      "kind": "missing-symbol"
-    },
-    {
-      "file": "TelemetryHistoryRepositoryTest.java",
-      "line": 9,
-      "kind": "missing-symbol"
-    },
-    {
-      "file": "TelemetryHistoryRepositoryTest.java",
-      "line": 10,
-      "kind": "missing-symbol"
-    },
-    {
-      "file": "TelemetryHistoryRepositoryTest.java",
-      "line": 20,
-      "kind": "missing-symbol"
-    },
-    {
-      "file": "TelemetryHistoryRepositoryTest.java",
-      "line": 22,
-      "kind": "missing-symbol"
-    },
-    {
-      "file": "TelemetryHistoryRepositoryTest.java",
-      "line": 24,
-      "kind": "missing-symbol"
-    },
-    {
-      "file": "HistoryEventTest.java",
-      "line": 6,
-      "kind": "missing-symbol"
-    },
-    {
-      "file": "HistoryEventTest.java",
-      "line": 7,
-      "kind": "missing-symbol"
-    },
-    {
-      "file": "HistoryEventTest.java",
-      "line": 8,
-      "kind": "missing-symbol"
-    },
-    {
-      "file": "HistoryEventTest.java",
+      "file": "EventBroadcastTest.java",
       "line": 14,
       "kind": "missing-symbol"
     },
     {
-      "file": "HistoryEventTest.java",
+      "file": "EventBroadcastTest.java",
+      "line": 21,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventLogRepositoryTest.java",
       "line": 16,
       "kind": "missing-symbol"
     },
     {
-      "file": "HistoryEventTypeTest.java",
-      "line": 22,
+      "file": "EventLogRepositoryTest.java",
+      "line": 23,
       "kind": "missing-symbol"
     },
     {
-      "file": "InMemoryHistoryEventPublisherTest.java",
-      "line": 8,
+      "file": "EventLogRepositoryTest.java",
+      "line": 30,
       "kind": "missing-symbol"
     },
     {
-      "file": "InMemoryHistoryEventPublisherTest.java",
-      "line": 9,
+      "file": "EventLogRepositoryTest.java",
+      "line": 32,
       "kind": "missing-symbol"
     },
     {
-      "file": "InMemoryHistoryEventPublisherTest.java",
-      "line": 10,
+      "file": "EventLogServiceTest.java",
+      "line": 44,
       "kind": "missing-symbol"
     },
     {
-      "file": "InMemoryHistoryEventPublisherTest.java",
-      "line": 11,
+      "file": "EventLogServiceTest.java",
+      "line": 48,
       "kind": "missing-symbol"
     },
     {
-      "file": "InMemoryHistoryEventPublisherTest.java",
+      "file": "EventLogServiceTest.java",
+      "line": 57,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventLogServiceTest.java",
+      "line": 70,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventLogServiceTest.java",
+      "line": 83,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventLogServiceTest.java",
+      "line": 95,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventLogServiceTest.java",
+      "line": 107,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventLogServiceTest.java",
+      "line": 114,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventLogServiceTest.java",
+      "line": 116,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventLogServiceTest.java",
+      "line": 141,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventRecordTest.java",
       "line": 12,
       "kind": "missing-symbol"
     },
     {
-      "file": "InMemoryHistoryEventPublisherTest.java",
-      "line": 13,
-      "kind": "other"
-    },
-    {
-      "file": "InMemoryHistoryEventPublisherTest.java",
-      "line": 41,
+      "file": "EventRecordTest.java",
+      "line": 18,
       "kind": "missing-symbol"
     },
     {
-      "file": "InMemoryHistoryEventPublisherTest.java",
-      "line": 46,
+      "file": "EventRecordTest.java",
+      "line": 20,
       "kind": "missing-symbol"
     },
     {
-      "file": "PipelineSubscriberTest.java",
-      "line": 7,
+      "file": "EventRecordTest.java",
+      "line": 29,
       "kind": "missing-symbol"
     },
     {
-      "file": "PipelineSubscriberTest.java",
-      "line": 8,
+      "file": "EventRecordTest.java",
+      "line": 30,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventRecordTest.java",
+      "line": 37,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "EventRecordTest.java",
+      "line": 38,
       "kind": "missing-symbol"
     }
   ],
   "excerpt": [
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/blackboard/telemetry/ingestion/application/IngestPacketServiceTest.java:[20,45] cannot find symbol",
-    "[ERROR]   symbol:   class AuditEntry",
-    "[ERROR]   location: package com.blackboard.telemetry.shared.audit",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/blackboard/telemetry/ingestion/application/IngestPacketServiceTest.java:[21,45] cannot find symbol",
-    "[ERROR]   symbol:   class AuditTrail",
-    "[ERROR]   location: package com.blackboard.telemetry.shared.audit",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/blackboard/telemetry/ingestion/application/IngestPacketServiceTest.java:[22,46] package com.blackboard.telemetry.shared.config does not exist",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/blackboard/telemetry/ingestion/application/IngestPacketServiceTest.java:[23,53] package com.blackboard.telemetry.shared.observability does not exist",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/blackboard/telemetry/ingestion/application/IngestPacketServiceTest.java:[24,53] package com.blackboard.telemetry.shared.observability does not exist",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/blackboard/telemetry/ingestion/application/IngestPacketServiceTest.java:[45,13] cannot find symbol",
-    "[ERROR]   symbol:   class ValidatedSampleStream",
-    "[ERROR]   location: class com.blackboard.telemetry.ingestion.application.IngestPacketServiceTest",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/blackboard/telemetry/ingestion/application/IngestPacketServiceTest.java:[46,13] cannot find symbol",
-    "[ERROR]   symbol:   class AuditTrail",
-    "[ERROR]   location: class com.blackboard.telemetry.ingestion.application.IngestPacketServiceTest",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/blackboard/telemetry/ingestion/application/IngestPacketServiceTest.java:[69,41] cannot find symbol",
-    "[ERROR]   symbol:   class SensorMetricBoundary",
-    "[ERROR]   location: class com.blackboard.telemetry.ingestion.application.IngestPacketServiceTest",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/blackboard/telemetry/ingestion/application/IngestPacketServiceTest.java:[69,13] cannot find symbol",
-    "[ERROR]   symbol:   class IngestPacketService",
-    "[ERROR]   location: class com.blackboard.telemetry.ingestion.application.IngestPacketServiceTest",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/blackboard/telemetry/ingestion/application/IngestPacketServiceTest.java:[76,20] cannot find symbol",
-    "[ERROR]   symbol:   class SensorMetricBoundary",
-    "[ERROR]   location: class com.blackboard.telemetry.ingestion.application.IngestPacketServiceTest",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/blackboard/telemetry/ingestion/application/IngestPacketServiceTest.java:[80,20] cannot find symbol",
-    "[ERROR]   symbol:   class SensorMetricBoundary",
-    "[ERROR]   location: class com.blackboard.telemetry.ingestion.application.IngestPacketServiceTest",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/blackboard/telemetry/ingestion/application/IngestPacketServiceTest.java:[84,43] cannot find symbol",
-    "[ERROR]   symbol:   class MetricKind",
-    "[ERROR]   location: class com.blackboard.telemetry.ingestion.application.IngestPacketServiceTest",
-    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/blackboard/telemetry/ingestion/application/IngestPacketServiceTest.java:[84,20] cannot find symbol",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/eventlog/infrastructure/SinkEventBroadcastTest.java:[23,20] cannot find symbol",
+    "[ERROR]   symbol:   class EventRecord",
+    "[ERROR]   location: class com.pulsestream.telemetry.eventlog.infrastructure.SinkEventBroadcastTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/eventlog/infrastructure/SinkEventBroadcastTest.java:[24,21] cannot find symbol",
     "[ERROR]   symbol:   class TelemetrySample",
-    "[ERROR]   location: class com.blackboard.telemetry.ingestion.application.IngestPacketServiceTest",
+    "[ERROR]   location: class com.pulsestream.telemetry.eventlog.infrastructure.SinkEventBroadcastTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/eventlog/infrastructure/SinkEventBroadcastTest.java:[30,9] cannot find symbol",
+    "[ERROR]   symbol:   class SinkEventBroadcast",
+    "[ERROR]   location: class com.pulsestream.telemetry.eventlog.infrastructure.SinkEventBroadcastTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/eventlog/infrastructure/SinkEventBroadcastTest.java:[31,9] cannot find symbol",
+    "[ERROR]   symbol:   class EventRecord",
+    "[ERROR]   location: class com.pulsestream.telemetry.eventlog.infrastructure.SinkEventBroadcastTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/eventlog/infrastructure/SinkEventBroadcastTest.java:[32,9] cannot find symbol",
+    "[ERROR]   symbol:   class EventRecord",
+    "[ERROR]   location: class com.pulsestream.telemetry.eventlog.infrastructure.SinkEventBroadcastTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/eventlog/infrastructure/SinkEventBroadcastTest.java:[51,9] cannot find symbol",
+    "[ERROR]   symbol:   class SinkEventBroadcast",
+    "[ERROR]   location: class com.pulsestream.telemetry.eventlog.infrastructure.SinkEventBroadcastTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/intake/api/CorrelationWebFilterTest.java:[15,53] cannot find symbol",
+    "[ERROR]   symbol:   class CorrelationWebFilter",
+    "[ERROR]   location: class com.pulsestream.telemetry.intake.api.CorrelationWebFilterTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/intake/api/CorrelationWebFilterTest.java:[20,28] cannot find symbol",
+    "[ERROR]   symbol:   variable CorrelationWebFilter",
+    "[ERROR]   location: class com.pulsestream.telemetry.intake.api.CorrelationWebFilterTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/intake/api/CorrelationWebFilterTest.java:[27,39] cannot find symbol",
+    "[ERROR]   symbol:   variable CorrelationWebFilter",
+    "[ERROR]   location: class com.pulsestream.telemetry.intake.api.CorrelationWebFilterTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/intake/api/CorrelationWebFilterTest.java:[58,20] cannot find symbol",
+    "[ERROR]   symbol:   variable CorrelationWebFilter",
+    "[ERROR]   location: class com.pulsestream.telemetry.intake.api.CorrelationWebFilterTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing/src/test/java/com/pulsestream/telemetry/intake/api/CorrelationWebFilterTest.java:[59,20] cannot find symbol",
+    "[ERROR]   symbol:   variable CorrelationWebFilter",
+    "[ERROR]   location: class com.pulsestream.telemetry.intake.api.CorrelationWebFilterTest",
     "[ERROR] -> [Help 1]",
     "[ERROR] ",
     "[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.",
@@ -544,8 +476,8 @@
     "[ERROR] For more information about the errors and possible solutions, please read the following articles:",
     "[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException"
   ],
-  "command": "./mvnw -Dtest=AuditEntryTest test",
+  "command": "./mvnw -Dtest=R2dbcEventLogRepositoryTest test",
   "task_id": "T1-012",
   "executed": true,
-  "recorded_at": "2026-11-16T20:04:45.235513+00:00"
+  "recorded_at": "2026-11-17T15:22:50.151519+00:00"
 }

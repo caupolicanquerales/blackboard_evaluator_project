@@ -3,57 +3,21 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "ValidatedSampleStream",
-    "constructors": [],
-    "static_calls": [],
-    "calls": [
-      {
-        "receiver": "stream",
-        "method": "publish",
-        "args": [
-          "event"
-        ],
-        "stubbed_to": "Mono.empty()"
-      },
-      {
-        "receiver": "stream",
-        "method": "publish",
-        "args": [
-          "event"
-        ]
-      },
-      {
-        "receiver": "stream",
-        "method": "publish",
-        "args": [
-          "event"
-        ],
-        "stubbed_to": "Mono.error(new IllegalStateException(\"overflow\"))"
-      },
-      {
-        "receiver": "stream",
-        "method": "events",
-        "args": [],
-        "stubbed_to": "Flux.just(event)"
-      },
-      {
-        "receiver": "stream",
-        "method": "events",
-        "args": []
-      }
+    "type": "TelemetryIngestController",
+    "constructors": [
+      [
+        "service"
+      ]
     ],
+    "static_calls": [],
+    "calls": [],
     "verified": [],
     "usage_lines": [
-      "class ValidatedSampleStreamTest {",
-      "ValidatedSampleStream stream = mock(ValidatedSampleStream.class);",
-      "when(stream.publish(event)).thenReturn(Mono.empty());",
-      "StepVerifier.create(stream.publish(event)).verifyComplete();",
-      "ValidatedSampleStream stream = mock(ValidatedSampleStream.class);",
-      "when(stream.publish(event)).thenReturn(Mono.error(new IllegalStateException(\"overflow\")));",
-      "StepVerifier.create(stream.publish(event)).expectError(IllegalStateException.class).verify();",
-      "ValidatedSampleStream stream = mock(ValidatedSampleStream.class);",
-      "when(stream.events()).thenReturn(Flux.just(event));",
-      "StepVerifier.create(stream.events()).expectNext(event).verifyComplete();"
+      "class TelemetryIngestControllerTest {",
+      "var controller = new TelemetryIngestController(service);",
+      "var packet = new TelemetryIngestController.IngressPacketDto(\"dev-1\",",
+      "List.of(new TelemetryIngestController.SampleDto(\"heart_rate\", Instant.parse(T_DEVICE), 80.0)));",
+      "assertThat(response.getBody()).isEqualTo(new TelemetryIngestController.IngressAck(1));"
     ]
   },
   "stderr": "",

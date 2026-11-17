@@ -3,30 +3,31 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "CorrelationContext",
-    "constructors": [],
-    "static_calls": [
+    "type": "CorrelationWebFilter",
+    "constructors": [
+      []
+    ],
+    "static_calls": [],
+    "calls": [
       {
-        "method": "contextKey",
-        "args": []
-      },
-      {
-        "method": "headerName",
-        "args": []
-      },
-      {
-        "method": "current",
-        "args": []
+        "receiver": "filter",
+        "method": "filter",
+        "args": [
+          "exchange",
+          "capturing(seen)"
+        ]
       }
     ],
-    "calls": [],
     "verified": [],
     "usage_lines": [
-      "class CorrelationContextTest {",
-      "assertThat(CorrelationContext.contextKey()).isEqualTo(\"requestId\");",
-      "assertThat(CorrelationContext.headerName()).isEqualTo(\"X-Request-Id\");",
-      "StepVerifier.create(CorrelationContext.current()",
-      "StepVerifier.create(CorrelationContext.current())"
+      "class CorrelationWebFilterTest {",
+      "private final CorrelationWebFilter filter = new CorrelationWebFilter();",
+      "builder.header(CorrelationWebFilter.HEADER, requestId);",
+      "seen.set(ctx.getOrDefault(CorrelationWebFilter.CONTEXT_KEY, null));",
+      "StepVerifier.create(filter.filter(exchange, capturing(seen))).verifyComplete();",
+      "StepVerifier.create(filter.filter(exchange, capturing(seen))).verifyComplete();",
+      "assertThat(CorrelationWebFilter.CONTEXT_KEY).isEqualTo(\"requestId\");",
+      "assertThat(CorrelationWebFilter.HEADER).isEqualTo(\"X-Request-Id\");"
     ]
   },
   "stderr": "",

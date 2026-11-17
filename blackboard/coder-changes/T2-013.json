@@ -1,24 +1,26 @@
 {
   "id": "T2-013",
   "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/blackboard/telemetry/shared/audit/AuditTrail.java",
-  "export": "AuditTrail",
-  "kind": "interface",
-  "method": "record",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/eventlog/application/EventBroadcast.java",
+  "export": "EventBroadcast",
+  "method": "publish",
   "language": "java",
-  "framework": "springboot3",
-  "skill": "java-springboot3",
-  "signature": "Mono<Void> record(AuditEntry entry)",
-  "returns": "Mono<Void>",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "signature": "boolean publish(EventRecord record)",
+  "returns": "boolean",
   "body": "",
-  "members": [
-    "Mono<Void> record(AuditEntry entry);"
-  ],
   "imports": [
-    "reactor.core.publisher.Mono"
+    "com.pulsestream.telemetry.eventlog.domain.EventRecord",
+    "reactor.core.publisher.Flux"
   ],
   "missing": [],
+  "kind": "interface",
+  "members": [
+    "boolean publish(EventRecord record);",
+    "Flux<EventRecord> stream();"
+  ],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-16T20:19:13.130221+00:00"
+  "recorded_at": "2026-11-17T15:34:36.545465+00:00"
 }

@@ -365,6 +365,32 @@ check("P3 a pom without any <build> receives the full block (valid XML both ways
 out_p4, ch_p4 = repin.transform(POM_WITH_PLUGINS, "3.5.16", [])
 check("P4 timeout=0 keeps a plain re-pin pure (no unrequested pom edits)", ch_p4 == [])
 
+# --- P5-P8: the 2026-11-17 drain's skill laws stay taught (each line blocks a class of
+#     unwinnable frozen test or silent-fiction plan the per-unit gates cannot see).
+tester_doc = (REPO / ".opencode" / "skills" / "tester-framework" / "java-junit5" /
+              "SKILL.md").read_text()
+check("P5 the tester skill teaches substitute-credentials + aggregate-decode laws "
+      "(28000 creator/reader split and 'Cannot decode value of type Long' are fixture "
+      "defects a compile-error red never executes - they freeze units at the green gate)",
+      ";USER=sa;PASSWORD=" in tester_doc and "Cannot decode value of type" in tester_doc)
+db_doc = (REPO / ".opencode" / "skills" / "tech-stack" / "concrete-database-migration" /
+          "SKILL.md").read_text()
+check("P6 the database skill outputs scripts at the RUNTIME-LOADED directory, not a "
+      "module-root folder nobody reads (2026-11-17: packaged classpath dir stayed empty)",
+      "src/main/resources/db/migration" in db_doc
+      and 'never plan a "copy into resources" duty owned by nobody' in db_doc)
+scaffold_doc = (REPO / ".opencode" / "skills" / "mcp-server-alternatives" /
+                "mcp-server-springboot" / "SKILL.md").read_text()
+check("P7 the scaffold skill verifies COMPOSITION-ROOT PLACEMENT (the Initializr nests "
+      "the boot class under <base>.<artifact>: a sibling-package @SpringBootTest then "
+      "dies on the upward config search while the scaffold's own smoke test passes)",
+      "COMPOSITION-ROOT PLACEMENT" in scaffold_doc)
+stack_doc = (REPO / ".opencode" / "skills" / "tech-stack" / "java-springboot3" /
+             "SKILL.md").read_text()
+check("P8 the stack skill names the WebFlux handler-marker law (isHandler accepts only "
+      "@Controller - a factory-built POJO boots green and answers 404 on its own endpoint)",
+      "isHandler" in stack_doc and "404" in stack_doc)
+
 bad_names = [n for n, c in CHECKS if not c]
 print(f"\nSKILL-SCRIPTS SUITE: {len(CHECKS) - len(bad_names)}/{len(CHECKS)}")
 print("FAILED:", bad_names if bad_names else "none")

@@ -3,48 +3,51 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "ValidatedSampleEvent",
+    "type": "R2dbcAuditTrail",
     "constructors": [
       [
-        "s",
-        "\"req-1\""
+        "client",
+        "new SimpleMeterRegistry()"
       ],
       [
-        "null",
-        "\"req-1\""
-      ],
-      [
-        "s",
-        "null"
-      ],
-      [
-        "s",
-        "blank"
+        "client(newDb())",
+        "registry"
       ]
     ],
     "static_calls": [],
     "calls": [
       {
-        "receiver": "event",
-        "method": "sample",
-        "args": []
+        "receiver": "trail",
+        "method": "record",
+        "args": [
+          "new AuditEntry(\"alice\", \"INGEST\", \"ACCEPTED\", NOW, \"corr-1\")"
+        ]
       },
       {
-        "receiver": "event",
-        "method": "correlationId",
-        "args": []
+        "receiver": "trail",
+        "method": "record",
+        "args": [
+          "new AuditEntry(\"a\", \"X\", \"OK\", NOW, \"c1\")"
+        ]
+      },
+      {
+        "receiver": "trail",
+        "method": "record",
+        "args": [
+          "new AuditEntry(\"b\", \"Y\", \"OK\", NOW, \"c2\")"
+        ]
       }
     ],
     "verified": [],
     "usage_lines": [
-      "class ValidatedSampleEventTest {",
-      "ValidatedSampleEvent event = new ValidatedSampleEvent(s, \"req-1\");",
-      "assertThat(event.sample()).isEqualTo(s);",
-      "assertThat(event.correlationId()).isEqualTo(\"req-1\");",
-      "assertThatThrownBy(() -> new ValidatedSampleEvent(s, \"req-1\"))",
-      "assertThatThrownBy(() -> new ValidatedSampleEvent(null, \"req-1\"))",
-      "assertThatThrownBy(() -> new ValidatedSampleEvent(s, null))",
-      "assertThatThrownBy(() -> new ValidatedSampleEvent(s, blank))"
+      "class R2dbcAuditTrailTest {",
+      "R2dbcAuditTrail trail = new R2dbcAuditTrail(client, new SimpleMeterRegistry());",
+      "StepVerifier.create(trail.record(new AuditEntry(\"alice\", \"INGEST\", \"ACCEPTED\", NOW, \"corr-1\")))",
+      "R2dbcAuditTrail trail = new R2dbcAuditTrail(client, new SimpleMeterRegistry());",
+      "trail.record(new AuditEntry(\"a\", \"X\", \"OK\", NOW, \"c1\")).block();",
+      "trail.record(new AuditEntry(\"b\", \"Y\", \"OK\", NOW, \"c2\")).block();",
+      "R2dbcAuditTrail trail = new R2dbcAuditTrail(client(newDb()), registry);",
+      "StepVerifier.create(trail.record(new AuditEntry(\"a\", \"X\", \"OK\", NOW, \"c1\")))"
     ]
   },
   "stderr": "",

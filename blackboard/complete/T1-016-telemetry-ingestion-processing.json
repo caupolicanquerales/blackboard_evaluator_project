@@ -1,71 +1,64 @@
 {
+  "observability": {
+    "step_logs": [
+      "intake.packet.received"
+    ]
+  },
   "id": "T1-016",
   "targetAgent": "agent-tester",
   "stage": 1,
   "dependsOn": [
-    "T0-001",
-    "T1-003",
-    "T1-001",
-    "T1-002",
-    "T1-008"
+    "T0-001"
   ],
-  "path": "src/test/java/com/blackboard/telemetry/shared/observability/TelemetryMetersTest.java",
+  "path": "src/test/java/com/pulsestream/telemetry/intake/application/IntakeServiceTest.java",
   "kind": "test",
-  "layer": "shared",
+  "layer": "application",
   "feature": null,
-  "export": "TelemetryMeters",
+  "export": "IntakeService",
+  "intent": "Write the test for IntakeService (context telemetry-ingestion-processing) at the test file path; the unit under test lives at src/main/java/com/pulsestream/telemetry/intake/application/IntakeService.java. Assert only against the tabled surface. Telemetry Intake entry owner with zero blocking I/O. receive stamps tIngress (current instant) on every sample via withIngress and offers each to its own bounded Sinks.many().multicast().onBackpressureBuffer(bufferCapacity, false) sink (capacity from TelemetryProperties); a refused offer (on_false) is dropped and counted telemetry.pipeline.dropped tag stage=intake, an accepted offer (on_true) counts toward the returned accepted total. Counter telemetry.intake.packets tag outcome=accepted when every sample was accepted, outcome=overflow otherwise. Audit entry (actor device, action ingest, outcome accepted or overflow, correlationId of the first sample) written through AuditTrail. stream exposes the sink as the Flux consumed by the pipeline. observability.step_logs: intake.packet.received (via the StepLog instance method emit once per packet). observability.step_logs = [\"intake.packet.received\"] TEST DUTIES: Assert tIngress is stamped, accepted count, empty list gives 0, stream emits the offered samples, overflow with capacity exhausted yields outcome=overflow and dropped{stage=intake}, audit entry fields and the step name.",
   "project": "telemetry-ingestion-processing",
-  "intent": "Write JUnit 5 + AssertJ tests (reactor-test StepVerifier for Mono/Flux, Mockito for collaborators, no external services, no Thread.sleep) for TelemetryMeters. Assert ONLY against the ast_hints method table; at least one given/when/then case per table method and per branch. Unit contract: Single owner of the Micrometer meter names and bounded tags of the context (tags are enumerations only, NEVER deviceId): counters telemetry.packets.received{source_kind}, telemetry.samples.validated{metric,status}, telemetry.samples.reordered{metric}, telemetry.revisions.appended{reason}; timer telemetry.pipeline.latency{stage in validate,history}. Consumers pin this unit and never spell meter names. Registered ONLY by the wiring unit TelemetryConfiguration (no stereotype annotation). Metrics are asserted through an injected SimpleMeterRegistry.",
   "ast_hints": {
-    "package": "com.blackboard.telemetry.shared.observability",
+    "package": "com.pulsestream.telemetry.intake.application",
     "implements": [],
     "dependencies": [
       {
-        "type": "SourceKind",
-        "task_id": "T2-003"
-      },
-      {
-        "type": "MetricKind",
-        "task_id": "T2-001"
-      },
-      {
-        "type": "ValidationStatus",
+        "type": "TelemetryProperties",
         "task_id": "T2-002"
       },
       {
-        "type": "RevisionReason",
-        "task_id": "T2-008"
+        "type": "TelemetrySample",
+        "task_id": "T2-003"
+      },
+      {
+        "type": "AuditTrail",
+        "task_id": "T2-005"
+      },
+      {
+        "type": "AuditEntry",
+        "task_id": "T2-004"
+      },
+      {
+        "type": "StepLog",
+        "task_id": "T2-006"
+      },
+      {
+        "type": "io.micrometer.core.instrument.MeterRegistry",
+        "task_id": "T0-001"
       }
     ],
     "methods": [
       {
-        "signature": "TelemetryMeters(MeterRegistry registry)",
+        "signature": "IntakeService(TelemetryProperties properties, AuditTrail auditTrail, StepLog stepLog, MeterRegistry meterRegistry)",
         "returns": ""
       },
       {
-        "signature": "void packetReceived(SourceKind sourceKind)",
-        "returns": "void",
-        "semantics": "Increments counter telemetry.packets.received with tag source_kind=sourceKind name."
+        "signature": "Mono<Integer> receive(List<TelemetrySample> samples)",
+        "returns": "Mono<Integer>",
+        "semantics": "refused offer: counted in telemetry.pipeline.dropped{stage=intake} and packet outcome=overflow"
       },
       {
-        "signature": "void sampleValidated(MetricKind metric, ValidationStatus status)",
-        "returns": "void",
-        "semantics": "Increments counter telemetry.samples.validated with tags metric and status."
-      },
-      {
-        "signature": "void sampleReordered(MetricKind metric)",
-        "returns": "void",
-        "semantics": "Increments counter telemetry.samples.reordered with tag metric."
-      },
-      {
-        "signature": "void revisionAppended(RevisionReason reason)",
-        "returns": "void",
-        "semantics": "Increments counter telemetry.revisions.appended with tag reason."
-      },
-      {
-        "signature": "void recordLatency(String stage, Duration elapsed)",
-        "returns": "void",
-        "semantics": "Records timer telemetry.pipeline.latency with tag stage; stage must be one of validate, history (IllegalArgumentException otherwise)."
+        "signature": "Flux<TelemetrySample> stream()",
+        "returns": "Flux<TelemetrySample>"
       }
     ]
   }

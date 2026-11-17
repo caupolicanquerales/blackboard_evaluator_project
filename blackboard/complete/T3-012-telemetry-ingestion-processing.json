@@ -5,11 +5,11 @@
   "dependsOn": [
     "T2-012"
   ],
-  "path": "src/main/java/com/blackboard/telemetry/shared/audit/AuditEntry.java",
+  "path": "src/main/java/com/pulsestream/telemetry/eventlog/infrastructure/R2dbcEventLogRepository.java",
   "kind": "refactor",
-  "layer": "domain",
+  "layer": "infrastructure",
   "feature": null,
-  "export": "AuditEntry",
-  "project": "telemetry-ingestion-processing",
-  "intent": "Inspect and refactor AuditEntry without changing the ast_hints surface or the tests' behavior (never seal or finalize a type another unit stubs; no magic numbers, no blocking calls, no raw logger calls beyond the claimed step logs). Unit contract: Shared audit trail record: actor, action, outcome (SUCCESS|FAILURE), timestamp, correlationId (the requestId). Immutable record; the outcome literals SUCCESS and FAILURE are owned here and consumers pin this unit."
+  "export": "R2dbcEventLogRepository",
+  "intent": "Inspect and refactor R2dbcEventLogRepository without changing its tabled contract or the frozen tests; keep it consistent with: R2DBC adapter of EventLogRepository over table telemetry_record (columns exactly as declared in migration V1, keyed by device_id, metric, t_device, revision). Strictly append-only: only INSERT and SELECT statements, revision computed from the stored maximum for the key; corrections and backfills insert a new revision and never touch earlier rows.",
+  "project": "telemetry-ingestion-processing"
 }

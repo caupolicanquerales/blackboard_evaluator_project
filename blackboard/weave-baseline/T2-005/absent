@@ -1,1 +1,1 @@
-src/main/java/com/blackboard/telemetry/ingestion/domain/IngressPacket.java
+src/main/java/com/pulsestream/telemetry/shared/observability/AuditTrail.java

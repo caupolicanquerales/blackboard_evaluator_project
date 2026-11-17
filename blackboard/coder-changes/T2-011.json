@@ -1,25 +1,28 @@
 {
   "id": "T2-011",
   "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/blackboard/telemetry/shared/audit/AuditAction.java",
-  "export": "AuditAction",
-  "method": "values",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/eventlog/application/EventLogRepository.java",
+  "export": "EventLogRepository",
+  "method": "append",
   "language": "java",
   "framework": "springboot",
   "skill": "java-springboot",
-  "kind": "enum",
-  "signature": "static AuditAction[] values()",
-  "returns": "AuditAction[]",
+  "signature": "Mono<EventRecord> append(TelemetrySample sample)",
+  "returns": "Mono<EventRecord>",
   "body": "",
-  "imports": [],
+  "imports": [
+    "com.pulsestream.telemetry.eventlog.domain.EventRecord",
+    "com.pulsestream.telemetry.validation.domain.TelemetrySample",
+    "java.time.Instant",
+    "reactor.core.publisher.Mono"
+  ],
   "missing": [],
+  "kind": "interface",
   "members": [
-    "INGEST_PACKET",
-    "VALIDATE_SAMPLE",
-    "APPEND_REVISION",
-    "BROADCAST_WINDOW"
+    "Mono<EventRecord> append(TelemetrySample sample);",
+    "Mono<EventRecord> findLatest(String deviceId, String metric, Instant tDevice);"
   ],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-16T20:16:19.045449+00:00"
+  "recorded_at": "2026-11-17T15:34:58.266477+00:00"
 }

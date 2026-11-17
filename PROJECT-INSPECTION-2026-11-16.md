@@ -8,6 +8,13 @@
 > (o)–(r) and the weaver fixes were built from. **PART III (below) inspects the
 > CURRENT delivered artifact (third drain, 32 units, 258/258 green) and is the
 > current truth about the delivered artifact.**
+> **Addendum (2026-11-17).** §III.6 records which residuals closed afterward and
+> where the fix landed: G1 the same day via plan rule (r); G2/G3/G4 next morning
+> via plan rules (s)/(t)/(u) at the skills/emit tier. One DELIVERED-TREE edit was
+> made, disclosed (supervision item #17): `application.yml` re-serialized to its
+> kind's native nested form - shape only, zero value changes, 258/258 proven, no
+> test touched - plus plan rule (v) and its assembly probe for future trees.
+> Apart from that re-serialization, the tree findings below remain the truth.
 
 Object: the generated service at
 `projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing`
@@ -591,3 +598,30 @@ Assumption/ambiguity machinery is for. The day's trajectory: lying board → sil
 landmines → proven integration with disclosed edges. The process is no longer the
 weakest part of the artifact; the remaining gaps are the business ambiguities only
 an operator can decide.
+
+## III.6 Dated addendum (2026-11-17) — the residuals closed at the factory
+
+Per-item status after the evening/root work; full incident write-ups in
+`RUN-SUPERVISION-2026-11-16.md` §"Post-drain" (items 12 and 14–17). The delivered
+artifact is UNCHANGED: its frozen tests, README known-limitations section and this
+PART III record stay as delivered — what moved is the factory that will plan the
+next drain, plus (for G2/G3/G4) the tier where each root cause actually lived.
+
+| residual | root tier | closure |
+|---|---|---|
+| G1 dead `filesystem:` line | plan-emission vs gate-shipment timing | CLOSED same day by plan rule **(r)** at emit (refused where the architect can still fix it; NEVER relitigated at the assembly gate — the T4 livelock doctrine). This tree keeps the disclosed line: retro-fixing it would order the assembler to break a frozen test. |
+| G2 corrections swallowed as duplicates | discovery/strategy ambiguity + rule (q) silent on the value axis | CLOSED by plan rule **(s)** (emit refuses a deduped correcting chain whose contracts never state the VALUE-AXIS decision; both resend classes become tabled test duties), plus `domain-boundary-discovery` now records the AXIS QUESTION inside the identity ambiguity, and `domain-driven-architecture` operationalizes "open questions, never silently decided": a question some unit operationalizes must be promoted to an explicit Assumption BEFORE decomposition. Pins Y1/Y1b. |
+| disabled metrics with unnamed ranges | NOT a defect — fidelity rule 7 ("nothing invented") working as designed | Kept as honest `enabled:false`; delta: discovery must now INVENTORY the range-less metrics as one operator-facing decision list, so the posture is an answered question rather than a thrice-repeated silent surprise. |
+| G3 correlation by discipline | promise-vs-duty gap between strategy and plan | CLOSED by plan rule **(t)**: the strategy's own mechanism token must appear ADJACENT and UNNEGATED as some unit's install duty (dependency + enablement at wiring/boot) — refusal of the DISAGREEMENT, not the choice; a plan that will not install amends the strategy first. The concrete half lives where the doctrine says: `java-reactive-patterns` gained the architect-tier clause naming `io.micrometer:context-propagation` + `Hooks.enableAutomaticContextPropagation()`; the validator itself never names a library. Pins Y2/Y2b/Y2c — Y2c exists because this very plan tabled "no context-propagation library is used": a matcher blind to negation would have waved it through. |
+| G4 audited-but-uncounted drops | floor completeness law missing upstream of decomposition | CLOSED by plan rule **(u)**, both layers refused at emit: every promised step log pairs with a metric (or an explicit `uncounted_steps` reason), and every failure/drop outcome contracted in tabled `semantics` pairs with a counting meter (or a declared `uncounted_failures` posture). Stack spelling (Micrometer counter, bounded `stage` tag) stays in `java-reactive-patterns`. Pins Y3/Y3b/Y3c + Y4/Y4b/Y4c. |
+
+Live-fire grading of the new rules, read-only against the artifact that revealed
+them (same method as III.2): replaying `plan_consistency` over this board's 102
+task records + strategy now refuses exactly the disclosed residuals — (s) on the
+dedup-correcting chain, (t) on the promised-but-unscheduled mechanism, (u) twice
+on the uncounted steps and the FAILED-audit semantics. Gauntlet: 162/162 engine
+decisions (11 new pins over 151 pre-existing), 53/53 skill scripts. The
+III.5 sentence "the remaining gaps are the business ambiguities only an operator
+can decide" stands — what closed is the class "the plan chose one semantics and
+did not say so": that class is now a refusal, and the only remaining exit for an
+undecided semantics is a recorded, exempted, operator-visible decision.

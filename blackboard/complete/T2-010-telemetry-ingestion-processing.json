@@ -4,59 +4,41 @@
   "stage": 2,
   "dependsOn": [
     "T1-010",
-    "T2-009",
-    "T2-004"
+    "T2-003",
+    "T0-001"
   ],
-  "path": "src/main/java/com/blackboard/telemetry/history/domain/HistoryEvent.java",
+  "path": "src/main/java/com/pulsestream/telemetry/eventlog/domain/EventRecord.java",
   "kind": "code",
   "layer": "domain",
   "feature": null,
-  "export": "HistoryEvent",
+  "export": "EventRecord",
+  "intent": "Implement EventRecord exactly as tabled. Event Revision record of the append-only Telemetry Event Log: the persisted sample, its revision number (assigned by the repository, increasing per device/metric/tDevice key) and kind (RECORD for the first record of a key, REVISION for each later corrective or backfilled frame). Public String constants KIND_RECORD=\"RECORD\", KIND_REVISION=\"REVISION\".",
   "project": "telemetry-ingestion-processing",
-  "intent": "Implement HistoryEvent (Java 21, Spring Boot 3, WebFlux/Reactor/R2DBC, constructor injection, no blocking calls) so that the frozen test passes, providing exactly the ast_hints table and nothing improvised. Unit contract: Context Telemetry Stream Processing & History. Immutable published-language record broadcast downstream to the analytics consumers. Invariants: revisionNo >= 0 (0 = none, first revision = 1, enforced by IllegalArgumentException), windowSize >= 0, non-null type/sample, non-blank correlationId.",
   "ast_hints": {
-    "package": "com.blackboard.telemetry.history.domain",
+    "package": "com.pulsestream.telemetry.eventlog.domain",
     "implements": [],
     "dependencies": [
       {
-        "type": "HistoryEventType",
-        "task_id": "T2-009"
-      },
-      {
         "type": "TelemetrySample",
-        "task_id": "T2-004"
+        "task_id": "T2-003"
       }
     ],
     "methods": [
       {
-        "signature": "HistoryEvent(HistoryEventType type, TelemetrySample sample, int revisionNo, int windowSize, String correlationId)",
-        "returns": "",
-        "semantics": "Null rejected (NullPointerException); type and sample non-null; revisionNo >= 0 where 0 means no revision and the first Event Revision of a sample is 1; windowSize >= 0; correlationId non-blank."
-      },
-      {
-        "signature": "HistoryEventType type()",
-        "returns": "HistoryEventType",
-        "semantics": "Never null."
+        "signature": "EventRecord(TelemetrySample sample, int revision, String kind)",
+        "returns": ""
       },
       {
         "signature": "TelemetrySample sample()",
-        "returns": "TelemetrySample",
-        "semantics": "Never null."
+        "returns": "TelemetrySample"
       },
       {
-        "signature": "int revisionNo()",
-        "returns": "int",
-        "semantics": "0 = not a revision event; otherwise >= 1."
+        "signature": "int revision()",
+        "returns": "int"
       },
       {
-        "signature": "int windowSize()",
-        "returns": "int",
-        "semantics": "Number of samples in the buffered window; 0 for non-window events."
-      },
-      {
-        "signature": "String correlationId()",
-        "returns": "String",
-        "semantics": "Never blank."
+        "signature": "String kind()",
+        "returns": "String"
       }
     ]
   }

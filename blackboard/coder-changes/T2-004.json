@@ -1,31 +1,28 @@
 {
   "id": "T2-004",
   "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/blackboard/telemetry/ingestion/domain/TelemetrySample.java",
-  "export": "TelemetrySample",
-  "method": "withStatus",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/shared/observability/AuditEntry.java",
+  "export": "AuditEntry",
+  "kind": "record",
+  "method": "AuditEntry",
   "language": "java",
-  "framework": "springboot",
+  "framework": "spring-boot",
   "skill": "java-springboot",
-  "signature": "public TelemetrySample withStatus(ValidationStatus status)",
-  "returns": "TelemetrySample",
-  "body": "return new TelemetrySample(deviceId, metric, tDevice, tIngress, value, status);",
+  "signature": "AuditEntry(String actor, String action, String outcome, Instant timestamp, String correlationId)",
+  "returns": "void",
+  "body": "",
   "imports": [
-    "java.time.Instant",
-    "java.util.Objects"
+    "java.time.Instant"
+  ],
+  "members": [
+    "String actor",
+    "String action",
+    "String outcome",
+    "Instant timestamp",
+    "String correlationId"
   ],
   "missing": [],
-  "kind": "record",
-  "members": [
-    "String deviceId",
-    "MetricKind metric",
-    "Instant tDevice",
-    "Instant tIngress",
-    "double value",
-    "ValidationStatus status",
-    "public TelemetrySample(String deviceId, MetricKind metric, Instant tDevice, Instant tIngress, double value, ValidationStatus status) {\n    this.deviceId = Objects.requireNonNull(deviceId, \"deviceId\");\n    if (deviceId.isBlank()) {\n        throw new IllegalArgumentException(\"deviceId must not be blank\");\n    }\n    this.metric = Objects.requireNonNull(metric, \"metric\");\n    this.tDevice = Objects.requireNonNull(tDevice, \"tDevice\");\n    this.tIngress = Objects.requireNonNull(tIngress, \"tIngress\");\n    this.value = value;\n    this.status = Objects.requireNonNull(status, \"status\");\n}"
-  ],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-16T20:57:27.300537+00:00"
+  "recorded_at": "2026-11-17T15:31:58.070723+00:00"
 }

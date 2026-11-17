@@ -5,11 +5,11 @@
   "dependsOn": [
     "T2-006"
   ],
-  "path": "src/main/java/com/blackboard/telemetry/ingestion/domain/SensorMetricBoundary.java",
+  "path": "src/main/java/com/pulsestream/telemetry/shared/observability/StepLog.java",
   "kind": "refactor",
-  "layer": "domain",
+  "layer": "shared",
   "feature": null,
-  "export": "SensorMetricBoundary",
-  "project": "telemetry-ingestion-processing",
-  "intent": "Inspect and refactor SensorMetricBoundary without changing the ast_hints surface or the tests' behavior (never seal or finalize a type another unit stubs; no magic numbers, no blocking calls, no raw logger calls beyond the claimed step logs). Unit contract: Context Telemetry Ingestion & Validation. Immutable record Sensor Metric Boundary (physical limit of a metric, Source of truth of boundary definitions, supplied by configuration and bound through TelemetryProperties). Rules: accepts(value) is true when disabled; otherwise min <= value <= max, with value > min when minExclusive (swim pace must be strictly above its minimum). Pure domain logic, no framework imports."
+  "export": "StepLog",
+  "intent": "Inspect and refactor StepLog without changing its tabled contract or the frozen tests; keep it consistent with: Step-log emitter: the single place where contractual step facts are logged. Instance class with a no-arg constructor; emit writes one INFO structured event through SLF4J key-value pairs carrying step (the step name) and correlationId. Level and format are configuration literals; business units never call a raw logger for step facts.",
+  "project": "telemetry-ingestion-processing"
 }

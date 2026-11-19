@@ -320,8 +320,19 @@ def run_architect(args, phase="tasks"):
     """Run the architect in phase 'strategy' (writes execution strategies) or 'tasks' (queues tasks)."""
 
     def post_check():
-        if phase == "strategy" and not any(settings.COMPLETE_DIR.glob("execution-strategy-*.json")):
-            return "architect finished but no execution-strategy-<slug>.json was created"
+        if phase == "strategy":
+            if not any(settings.COMPLETE_DIR.glob("execution-strategy-*.json")):
+                return "architect finished but no execution-strategy-<slug>.json was created"
+            coverage = ddd.validate_strategy_coverage()
+            if coverage:
+                return coverage
+            for slug in ddd.database_slugs():
+                # The strategy is the security step's only input: existence was never
+                # enough, an underspecified plan silently costs the domain its permissions.
+                reason = ddd.validate_strategy(slug)
+                if reason:
+                    return reason
+            return None
         if phase == "tasks" and not any(
             (match := settings.ID_PATTERN.match(task_id)) and int(match.group(1)) >= 1
             for task_id in task_queue.load_index()
@@ -343,6 +354,39 @@ def run_database(args, slug):
     return _run_phase(
         settings.DATABASE_AGENT, prompts.build_database_prompt(slug, RUNNER_SCRIPT), args,
         span_name="blackboard.database", span_attributes={"slug": slug}, cmd_note="database",
+    )
+
+
+def run_security(args, slug):
+    """Run the security architect for one context. Returns (ok, reason).
+
+    No runner is passed: this phase authors one artifact and queues nothing. The spec gate
+    is the post-check - a half-written, misnamed, or stack-leaking spec is an artifact the
+    decomposition cannot read, so the phase is not clean until the gate says so.
+    """
+    return _run_phase(
+        settings.SECURITY_AGENT, prompts.build_security_prompt(slug), args,
+        post_check=lambda: ddd.validate_security_spec(slug),
+        span_name="blackboard.security", span_attributes={"slug": slug}, cmd_note="security",
+    )
+
+
+def run_performance(args, slug):
+    """Performance architect, one context: one artifact, gate-post-checked, queues nothing."""
+    return _run_phase(
+        settings.PERFORMANCE_AGENT, prompts.build_performance_prompt(slug), args,
+        post_check=lambda: ddd.validate_performance_spec(slug),
+        span_name="blackboard.performance", span_attributes={"slug": slug},
+        cmd_note="performance",
+    )
+
+
+def run_ai(args, slug):
+    """AI architect, one context (only when the description directed it)."""
+    return _run_phase(
+        settings.AI_AGENT, prompts.build_ai_prompt(slug), args,
+        post_check=lambda: ddd.validate_ai_spec(slug),
+        span_name="blackboard.ai", span_attributes={"slug": slug}, cmd_note="ai",
     )
 
 

@@ -1,0 +1,13 @@
+{
+  "id": "T0-001",
+  "targetAgent": "agent-container",
+  "stage": 0,
+  "dependsOn": [],
+  "kind": "bootstrap",
+  "layer": "root",
+  "feature": null,
+  "export": "project_scaffold",
+  "project": "telemetry-ingestion",
+  "path": "pom.xml",
+  "intent": "Generate the telemetry-ingestion project root and build scaffold using the matching mcp-server-springboot skill, with language version Java 21, framework version Spring Boot 3, base package com.pulsestream.telemetry, and build dependencies webflux, data-r2dbc, flyway, h2, actuator, validation, test, reactor-test (Maven wrapper). Require a SINGLE composition root (@SpringBootApplication at the base package, no second boot class), a surefire test-run timeout guardrail via the scaffold script's --surefire-timeout flag, the Flyway migration runner wired into the build (flyway-core plus flyway-database-postgresql, JDBC driver for the runner) with the embedded H2 in-process substitute test-scoped only, so the scaffold's own boot test passes without external services."
+}

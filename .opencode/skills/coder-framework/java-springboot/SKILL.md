@@ -15,3 +15,18 @@ Mono/Flux per contract; never block (.block, sleep, sync IO); Sinks: check EmitR
 When the unit's path is a configuration artifact, the payload is the FILE, and the file's FORMAT is decided by its KIND, not by how the plan spelled the pairs: a plan/intent tables KEY/VALUE facts as SEMANTIC property paths (`spring.r2dbc.url -> ${VAR}`) - serialize them in the artifact's NATIVE form (the active tech-stack skill's YAML CONFIG FORMAT clause): nested YAML mappings and sequences into `.yml`/`.yaml` (list-of-objects = sequence, never `key[0]` pseudo-lines); flat `key=value` into `.properties`; a dotted-LEAF key (`com.blackboard.telemetry: INFO`) is one key at its nesting level. NEVER copy a plan's dotted pairs into a structured document as flat lines, and never let the same fact exist in two artifacts with two values.
 # Misc
 imports: clean FQNs, no keyword/`;`/wildcards, no java.lang. `var` only when obvious. records for immutable payloads. Tests: StepVerifier (reactor-test).
+# Security units (only when the task names a security token)
+Chain DSL, the principal adapter, custody/crypto bodies: read `.opencode/skills/tech-stack/spring-security/SKILL.md` §Chain/§Adapter/§Custody/§Config once for the batch; the task's table wins over it, and a disagreement is reported, not re-decided.
+
+# Performance units (only when the task carries a PB-/PI- claim)
+Counting decorator, bounded retry/concurrency/timeout bodies, cache ACTIVATION, deterministic
+saturation wiring: read `.opencode/skills/tech-stack/spring-performance/SKILL.md` once for the
+batch - the same rule: the task's table wins, disagreements are reported, never re-decided.
+
+# AI units (only when the task carries an AC-/AM- claim)
+Port adapters over `ChatClient`/`EmbeddingModel`, the offline stub, output validation, memory:
+read `.opencode/skills/tech-stack/spring-ai/SKILL.md` once for the batch; the adapter is the
+only class importing the framework, and a use case holding a client is a defect you report.
+The flow's declared invocation mode is part of the contract: in a reactive flow the model
+`call()`, terminal and blocking, is wrapped - never `block()` on an event-loop thread (the
+§Reactive rule, applied to model hops).

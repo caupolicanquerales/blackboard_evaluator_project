@@ -1,0 +1,42 @@
+{
+  "project": "telemetry-ingestion",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/distribution/api/ValidatedEventConsumer.java",
+  "stack": "java-springboot3",
+  "skill": "java-springboot3",
+  "summary": "Extracted dropUntrusted/toBroadcast/recordBufferedWindow, replaced fully-qualified names with imports, renamed meterWindow and reflection locals. Behavior and signatures unchanged.",
+  "findings": [
+    "recordBufferedWindow reads TelemetryMetrics.registry reflectively to emit telemetry.broadcast.windows (green-phase hack the frozen test requires); fix belongs in TelemetryMetrics, out of scope",
+    "'redaction' constructor parameter is stored but unused; signature frozen"
+  ],
+  "changes": [
+    "Extracted dropUntrusted, toBroadcast, recordBufferedWindow; flattened buffer pipeline",
+    "Imports instead of fully-qualified reflection/Micrometer types"
+  ],
+  "reverts": [],
+  "final_test": {
+    "status": "passed",
+    "exit_code": 0,
+    "counts": {
+      "run": 5,
+      "failures": 0,
+      "errors": 0
+    },
+    "classes": {
+      "com.pulsestream.telemetry.distribution.api.ValidatedEventConsumerTest": "passed"
+    }
+  },
+  "task_id": "T3-030",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-18T20:42:55.630072+00:00",
+  "engine_diff": [
+    {
+      "file": "src/main/java/com/pulsestream/telemetry/distribution/api/ValidatedEventConsumer.java",
+      "added": 23,
+      "removed": 15,
+      "capped": false,
+      "patch": "--- a/src/main/java/com/pulsestream/telemetry/distribution/api/ValidatedEventConsumer.java\n+++ b/src/main/java/com/pulsestream/telemetry/distribution/api/ValidatedEventConsumer.java\n@@ -1,5 +1,7 @@\n package com.pulsestream.telemetry.distribution.api;\n \n+import io.micrometer.core.instrument.MeterRegistry;\n+import java.lang.reflect.Field;\n import java.time.Duration;\n import java.time.Instant;\n import java.util.List;\n@@ -38,27 +40,33 @@\n         this.windowMaxEvents = windowMaxEvents;\n     }\n \n-    private void meterWindow() {\n+    private void recordBufferedWindow() {\n         metrics.windowBroadcast(\"buffered\");\n         try {\n-            java.lang.reflect.Field f = TelemetryMetrics.class.getDeclaredField(\"registry\");\n-            f.setAccessible(true);\n-            ((io.micrometer.core.instrument.MeterRegistry) f.get(metrics)).counter(\"telemetry.broadcast.windows\", \"outcome\", \"buffered\").increment();\n+            Field registryField = TelemetryMetrics.class.getDeclaredField(\"registry\");\n+            registryField.setAccessible(true);\n+            ((MeterRegistry) registryField.get(metrics)).counter(\"telemetry.broadcast.windows\", \"outcome\", \"buffered\").increment();\n         } catch (ReflectiveOperationException ignored) {\n         }\n     }\n \n+    private Mono<TelemetryEvent> dropUntrusted(TelemetryEvent event) {\n+        metrics.broadcastDropped(\"untrusted-publisher\");\n+        return Mono.defer(() -> auditTrail.record(new AuditEntry(\"telemetry-broadcast\", \"authorization-denied\", \"denied\", Instant.now(), event.deviceId()))).then(Mono.<TelemetryEvent>empty());\n+    }\n+\n+    private TelemetryWindowBroadcast toBroadcast(List<TelemetryEvent> batch) {\n+        Instant end = Instant.now();\n+        recordBufferedWindow();\n+        return new TelemetryWindowBroadcast(end.minus(windowDuration), end, List.copyOf(batch));\n+    }\n+\n     public Flux<TelemetryWindowBroadcast> buffer(Flux<TelemetryEvent> events) {\n-        return events.concatMap(event -> {\n-            if (policy.permits(event)) {\n-                return Mono.just(event);\n-            }\n-            metrics.broadcastDropped(\"untrusted-publisher\");\n-            return Mono.defer(() -> auditTrail.record(new AuditEntry(\"telemetry-broadcast\", \"authorization-denied\", \"denied\", Instant.now(), event.deviceId()))).then(Mono.<TelemetryEvent>empty());\n-        }).windowTimeout(windowMaxEvents, windowDuration).concatMap(window -> window.collectList(), 1).filter(batch -> !batch.isEmpty()).map(batch -> {\n-            Instant end = Instant.now();\n-            meterWindow();\n-            return new TelemetryWindowBroadcast(end.minus(windowDuration), end, List.copyOf(batch));\n-        });\n+        return events\n+                .concatMap(event -> policy.permits(event) ? Mono.just(event) : dropUntrusted(event))\n+                .windowTimeout(windowMaxEvents, windowDuration)\n+                .concatMap(window -> window.collectList(), 1)\n+                .filter(batch -> !batch.isEmpty())\n+                .map(this::toBroadcast);\n     }\n }"
+    }
+  ],
+  "engine_diff_files": 1
+}

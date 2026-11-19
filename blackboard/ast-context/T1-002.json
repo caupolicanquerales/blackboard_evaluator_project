@@ -3,58 +3,41 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "TelemetryProperties",
+    "type": "ValidationStatus",
     "constructors": [],
-    "static_calls": [],
-    "calls": [
+    "static_calls": [
       {
-        "receiver": "p",
-        "method": "heartRateMin",
+        "method": "values",
         "args": []
       },
       {
-        "receiver": "p",
-        "method": "heartRateMax",
-        "args": []
+        "method": "valueOf",
+        "args": [
+          "\"VALIDATED\""
+        ]
       },
       {
-        "receiver": "p",
-        "method": "powerMin",
-        "args": []
+        "method": "valueOf",
+        "args": [
+          "\"VALIDATION_FAILED\""
+        ]
       },
       {
-        "receiver": "p",
-        "method": "powerMax",
-        "args": []
-      },
-      {
-        "receiver": "p",
-        "method": "cadenceMin",
-        "args": []
-      },
-      {
-        "receiver": "p",
-        "method": "cadenceMax",
-        "args": []
+        "method": "valueOf",
+        "args": [
+          "\"NOPE\""
+        ]
       }
     ],
+    "calls": [],
     "verified": [],
     "usage_lines": [
-      "class TelemetryPropertiesTest {",
-      "private static TelemetryProperties bind() {",
-      ".bind(\"telemetry\", TelemetryProperties.class).get();",
-      "assertThat(bind().reorderWindowSeconds()).isEqualTo(60L);",
-      "assertThat(bind().bufferCapacity()).isEqualTo(128);",
-      "TelemetryProperties p = bind();",
-      "assertThat(p.heartRateMin()).isEqualTo(30.0);",
-      "assertThat(p.heartRateMax()).isEqualTo(240.0);",
-      "TelemetryProperties p = bind();",
-      "assertThat(p.powerMin()).isEqualTo(1.0);",
-      "assertThat(p.powerMax()).isEqualTo(2500.0);",
-      "TelemetryProperties p = bind();",
-      "assertThat(p.cadenceMin()).isEqualTo(2.0);",
-      "assertThat(p.cadenceMax()).isEqualTo(220.0);",
-      "assertThat(bind().swimPaceMinExclusive()).isEqualTo(45.5);"
+      "class ValidationStatusTest {",
+      "assertThat(ValidationStatus.values())",
+      ".contains(ValidationStatus.VALIDATED, ValidationStatus.VALIDATION_FAILED);",
+      "assertThat(ValidationStatus.valueOf(\"VALIDATED\")).isEqualTo(ValidationStatus.VALIDATED);",
+      "assertThat(ValidationStatus.valueOf(\"VALIDATION_FAILED\")).isEqualTo(ValidationStatus.VALIDATION_FAILED);",
+      "assertThatThrownBy(() -> ValidationStatus.valueOf(\"NOPE\")).isInstanceOf(IllegalArgumentException.class);"
     ]
   },
   "stderr": "",

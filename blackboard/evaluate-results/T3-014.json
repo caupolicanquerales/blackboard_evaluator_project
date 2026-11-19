@@ -1,23 +1,19 @@
 {
-  "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/eventlog/infrastructure/SinkEventBroadcast.java",
+  "project": "telemetry-ingestion",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/shared/observability/CorrelationWebFilter.java",
   "stack": "java-springboot3",
   "skill": "java-springboot3",
-  "summary": "Moved fields above constructor and reused capacity local field in sink construction; kept buffered-count guard because Reactor's pre-subscriber buffer does not reject at capacity.",
-  "findings": [
-    "publish keeps a manual 'buffered' counter (green-phase workaround): Reactor's multicast onBackpressureBuffer does not return a failure at capacity without subscribers, and the frozen test publish_boundedBufferFullWithoutSubscriber_returnsFalse requires false. Cannot be removed without weakening the contract."
-  ],
+  "summary": "Extracted request-id resolution into a private helper; behavior and API unchanged.",
+  "findings": [],
   "changes": [
-    "Declared fields before constructor; constructor reuses this.capacity."
+    "Extracted resolveRequestId(ServerWebExchange) from filter()"
   ],
-  "reverts": [
-    "Removing buffered/capacity guard made publish_boundedBufferFullWithoutSubscriber_returnsFalse fail; reverted."
-  ],
+  "reverts": [],
   "final_test": {
+    "command": "./mvnw -o -q -Dtest=CorrelationWebFilterTest test",
     "status": "passed",
-    "command": "./mvnw -Dtest=SinkEventBroadcastTest test",
     "counts": {
-      "run": 3,
+      "run": 7,
       "failures": 0,
       "errors": 0
     }
@@ -25,14 +21,14 @@
   "task_id": "T3-014",
   "stage": 3,
   "executed": true,
-  "recorded_at": "2026-11-17T15:48:41.540090+00:00",
+  "recorded_at": "2026-11-18T21:01:37.428029+00:00",
   "engine_diff": [
     {
-      "file": "src/main/java/com/pulsestream/telemetry/eventlog/infrastructure/SinkEventBroadcast.java",
-      "added": 3,
-      "removed": 5,
+      "file": "src/main/java/com/pulsestream/telemetry/shared/observability/CorrelationWebFilter.java",
+      "added": 6,
+      "removed": 2,
       "capped": false,
-      "patch": "--- a/src/main/java/com/pulsestream/telemetry/eventlog/infrastructure/SinkEventBroadcast.java\n+++ b/src/main/java/com/pulsestream/telemetry/eventlog/infrastructure/SinkEventBroadcast.java\n@@ -9,10 +9,12 @@\n public class SinkEventBroadcast implements EventBroadcast {\n \n     private final Sinks.Many<EventRecord> sink;\n+    private final int capacity;\n+    private int buffered;\n \n     public SinkEventBroadcast(TelemetryProperties properties) {\n         this.capacity = properties.bufferCapacity();\n-        this.sink = Sinks.many().multicast().onBackpressureBuffer(properties.bufferCapacity(), false);\n+        this.sink = Sinks.many().multicast().onBackpressureBuffer(capacity, false);\n     }\n \n     @Override\n@@ -32,8 +34,4 @@\n         }\n         return accepted;\n     }\n-\n-    private final int capacity;\n-\n-    private int buffered;\n }"
+      "patch": "--- a/src/main/java/com/pulsestream/telemetry/shared/observability/CorrelationWebFilter.java\n+++ b/src/main/java/com/pulsestream/telemetry/shared/observability/CorrelationWebFilter.java\n@@ -26,9 +26,13 @@\n     }\n \n     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {\n-        String incoming = exchange.getRequest().getHeaders().getFirst(HEADER_NAME);\n-        String requestId = (incoming == null || incoming.isBlank()) ? UUID.randomUUID().toString() : incoming.trim();\n+        String requestId = resolveRequestId(exchange);\n         exchange.getResponse().getHeaders().set(HEADER_NAME, requestId);\n         return chain.filter(exchange).contextWrite(ctx -> ctx.put(CONTEXT_KEY, requestId));\n     }\n+\n+    private static String resolveRequestId(ServerWebExchange exchange) {\n+        String incoming = exchange.getRequest().getHeaders().getFirst(HEADER_NAME);\n+        return (incoming == null || incoming.isBlank()) ? UUID.randomUUID().toString() : incoming.trim();\n+    }\n }"
     }
   ],
   "engine_diff_files": 1

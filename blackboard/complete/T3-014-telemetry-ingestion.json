@@ -1,0 +1,15 @@
+{
+  "id": "T3-014",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-014"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/shared/observability/CorrelationWebFilter.java",
+  "kind": "refactor",
+  "intent": "Refactor CorrelationWebFilter: keep the ast_hints table, behavior and frozen tests unchanged; remove duplication, tighten naming, keep layer import rules.",
+  "feature": null,
+  "export": "com.pulsestream.telemetry.shared.observability.CorrelationWebFilter",
+  "project": "telemetry-ingestion",
+  "layer": "shared"
+}

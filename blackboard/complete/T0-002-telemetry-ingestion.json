@@ -1,0 +1,15 @@
+{
+  "id": "T0-002",
+  "targetAgent": "agent-container",
+  "stage": 0,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "db/migrations/V1__create_telemetry_records.sql",
+  "kind": "bootstrap",
+  "layer": "root",
+  "feature": null,
+  "export": "V1__create_telemetry_records",
+  "intent": "Store setup: PostgreSQL (prod, Flyway expand-only; H2 test profile only) append-only telemetry_records table with dedup unique index, script V1__create_telemetry_records, context telemetry-ingestion. ",
+  "project": "telemetry-ingestion"
+}

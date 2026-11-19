@@ -1,0 +1,65 @@
+{
+  "schema_version": "1.0",
+  "report_type": "context-map",
+  "metadata": {
+    "generated_at": "2026-11-18T13:40:00-03:00",
+    "agent": "domain-context-mapping",
+    "source_report": "blackboard/domain"
+  },
+  "context_map": [
+    {
+      "upstream": "external",
+      "downstream": "Telemetry Ingestion",
+      "relationship": "Conformist",
+      "direction": "external -> Telemetry Ingestion",
+      "exchanged_information": "Ingress Packets carrying 1Hz Telemetry Samples with t_device from edge devices, bike computers and wearables.",
+      "boundary_protection": "Device payload shape is adopted as-is; Sensor Metric Boundary validation at intake tags VALIDATION_FAILED without dropping payload. Device firmware internals never leak in."
+    },
+    {
+      "upstream": "Telemetry Ingestion",
+      "downstream": "Telemetry Stream Distribution",
+      "relationship": "Open host service / published language",
+      "direction": "Telemetry Ingestion -> Telemetry Stream Distribution",
+      "exchanged_information": "Events TelemetrySampleValidated, TelemetrySampleValidationFailed, TelemetryBackfillReordered, TelemetryRevisionAppended.",
+      "boundary_protection": "Only versioned published events cross; raw append-only storage, validation and reorder rules never leak. Distribution holds derived non-authoritative buffers only."
+    },
+    {
+      "upstream": "Telemetry Stream Distribution",
+      "downstream": "external",
+      "relationship": "Open host service / published language",
+      "direction": "Telemetry Stream Distribution -> external",
+      "exchanged_information": "TelemetryWindowBroadcast to downstream streaming analytics consumers (PulseStream Engine).",
+      "boundary_protection": "Backpressure-aware demand-driven delivery; consumers receive windowed broadcast events only, never raw storage access."
+    }
+  ],
+  "cross_boundary_flows": [
+    {
+      "business_process": "Validated telemetry propagation",
+      "contexts_involved": [
+        "Telemetry Ingestion",
+        "Telemetry Stream Distribution"
+      ],
+      "consistency_expectation": "eventual",
+      "notes": "Producer appends then publishes; consumer must be idempotent per (device, metric, t_device, revision) with retry on failure. Ambiguity flagged: retry vs revision identity and delivery posture unstated."
+    },
+    {
+      "business_process": "Out-of-order backfill and revision broadcast",
+      "contexts_involved": [
+        "Telemetry Ingestion",
+        "Telemetry Stream Distribution",
+        "external"
+      ],
+      "consistency_expectation": "eventual",
+      "notes": "Reordered within 60s window by t_device; packets later than window unspecified (open question). Corrections append revisions, never mutate."
+    },
+    {
+      "business_process": "Windowed broadcast to analytics",
+      "contexts_involved": [
+        "Telemetry Stream Distribution",
+        "external"
+      ],
+      "consistency_expectation": "eventual",
+      "notes": "Slow consumers handled by Reactive Stream Backpressure. Flag: Distribution may merge into Ingestion (low confidence). No coupling cycles; all flows one-directional."
+    }
+  ]
+}

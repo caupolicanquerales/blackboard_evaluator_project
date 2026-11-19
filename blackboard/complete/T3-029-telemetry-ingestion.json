@@ -1,0 +1,15 @@
+{
+  "id": "T3-029",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-029"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/distribution/application/TrustedPublisherPolicy.java",
+  "kind": "refactor",
+  "intent": "Refactor TrustedPublisherPolicy: keep the ast_hints table, behavior and frozen tests unchanged; remove duplication, tighten naming, keep layer import rules.",
+  "feature": null,
+  "export": "com.pulsestream.telemetry.distribution.application.TrustedPublisherPolicy",
+  "project": "telemetry-ingestion",
+  "layer": "application"
+}

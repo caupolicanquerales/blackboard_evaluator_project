@@ -6,62 +6,26 @@
     "type": "TelemetrySample",
     "constructors": [
       [
-        "\"dev-1\"",
-        "\"heart_rate\"",
+        "device",
+        "\"temp\"",
         "T_DEVICE",
         "T_INGRESS",
-        "142.5",
-        "TelemetrySample.STATUS_PENDING",
-        "\"corr-1\""
+        "value",
+        "ValidationStatus.VALIDATED",
+        "\"{}\""
+      ],
+      [
+        "\"dev-1\"",
+        "\"temp\"",
+        "T_DEVICE",
+        "T_INGRESS",
+        "1.0",
+        "ValidationStatus.VALIDATION_FAILED",
+        "\"{}\""
       ]
     ],
     "static_calls": [],
     "calls": [
-      {
-        "receiver": "copy",
-        "method": "status",
-        "args": []
-      },
-      {
-        "receiver": "copy",
-        "method": "tIngress",
-        "args": []
-      },
-      {
-        "receiver": "original",
-        "method": "withStatus",
-        "args": [
-          "TelemetrySample.STATUS_VALID"
-        ],
-        "returns": "TelemetrySample"
-      },
-      {
-        "receiver": "original",
-        "method": "withStatus",
-        "args": [
-          "TelemetrySample.STATUS_VALIDATION_FAILED"
-        ]
-      },
-      {
-        "receiver": "original",
-        "method": "withIngress",
-        "args": [
-          "later"
-        ],
-        "returns": "TelemetrySample"
-      },
-      {
-        "receiver": "original",
-        "method": "withIngress",
-        "args": [
-          "T_INGRESS.plusSeconds(5)"
-        ]
-      },
-      {
-        "receiver": "original",
-        "method": "tIngress",
-        "args": []
-      },
       {
         "receiver": "s",
         "method": "deviceId",
@@ -94,44 +58,29 @@
       },
       {
         "receiver": "s",
-        "method": "correlationId",
+        "method": "payload",
         "args": []
       }
     ],
     "verified": [],
     "usage_lines": [
       "class TelemetrySampleTest {",
-      "private static TelemetrySample sample() {",
-      "return new TelemetrySample(\"dev-1\", \"heart_rate\", T_DEVICE, T_INGRESS, 142.5,",
-      "TelemetrySample.STATUS_PENDING, \"corr-1\");",
-      "TelemetrySample s = sample();",
+      "private static TelemetrySample sample(String device, double value) {",
+      "return new TelemetrySample(device, \"temp\", T_DEVICE, T_INGRESS, value,",
+      "TelemetrySample s = sample(\"dev-1\", 21.5);",
       "assertThat(s.deviceId()).isEqualTo(\"dev-1\");",
-      "assertThat(s.metric()).isEqualTo(\"heart_rate\");",
+      "assertThat(s.metric()).isEqualTo(\"temp\");",
       "assertThat(s.tDevice()).isEqualTo(T_DEVICE);",
       "assertThat(s.tIngress()).isEqualTo(T_INGRESS);",
-      "assertThat(s.value()).isEqualTo(142.5);",
-      "assertThat(s.status()).isEqualTo(\"PENDING\");",
-      "assertThat(s.correlationId()).isEqualTo(\"corr-1\");",
-      "TelemetrySample original = sample();",
-      "TelemetrySample copy = original.withStatus(TelemetrySample.STATUS_VALID);",
-      "assertThat(copy).isNotSameAs(original);",
-      "assertThat(copy.status()).isEqualTo(\"VALID\");",
-      "assertThat(copy).usingRecursiveComparison().ignoringFields(\"status\").isEqualTo(original);",
-      "TelemetrySample original = sample();",
-      "original.withStatus(TelemetrySample.STATUS_VALIDATION_FAILED);",
-      "assertThat(original).isEqualTo(sample());",
-      "TelemetrySample original = sample();",
-      "TelemetrySample copy = original.withIngress(later);",
-      "assertThat(copy).isNotSameAs(original);",
-      "assertThat(copy.tIngress()).isEqualTo(later);",
-      "assertThat(copy).usingRecursiveComparison().ignoringFields(\"tIngress\").isEqualTo(original);",
-      "TelemetrySample original = sample();",
-      "original.withIngress(T_INGRESS.plusSeconds(5));",
-      "assertThat(original.tIngress()).isEqualTo(T_INGRESS);",
-      "assertThat(original).isEqualTo(sample());",
-      "assertThat(TelemetrySample.STATUS_PENDING).isEqualTo(\"PENDING\");",
-      "assertThat(TelemetrySample.STATUS_VALID).isEqualTo(\"VALID\");",
-      "assertThat(TelemetrySample.STATUS_VALIDATION_FAILED).isEqualTo(\"VALIDATION_FAILED\");"
+      "assertThat(s.value()).isEqualTo(21.5);",
+      "assertThat(s.status()).isEqualTo(ValidationStatus.VALIDATED);",
+      "assertThat(s.payload()).isEqualTo(\"{}\");",
+      "assertThat(sample(\"dev-1\", 1.0)).isEqualTo(sample(\"dev-1\", 1.0))",
+      ".hasSameHashCodeAs(sample(\"dev-1\", 1.0));",
+      "assertThat(sample(\"dev-1\", 1.0)).isNotEqualTo(sample(\"dev-2\", 1.0));",
+      "assertThat(sample(\"dev-1\", 1.0)).isNotEqualTo(sample(\"dev-1\", 2.0));",
+      "TelemetrySample other = new TelemetrySample(\"dev-1\", \"temp\", T_DEVICE, T_INGRESS, 1.0,",
+      "assertThat(sample(\"dev-1\", 1.0)).isNotEqualTo(other);"
     ]
   },
   "stderr": "",

@@ -1,0 +1,59 @@
+{
+  "id": "T1-003",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/ingestion/domain/TelemetrySampleTest.java",
+  "kind": "test",
+  "intent": "Frozen test of TelemetrySample asserting only its ast_hints table. Assert accessors return constructor values and equality is value-based.",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.domain",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ValidationStatus",
+        "task_id": "T2-002"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "TelemetrySample(String deviceId, String metric, Instant tDevice, Instant tIngress, double value, ValidationStatus status, String payload)",
+        "returns": ""
+      },
+      {
+        "signature": "String deviceId()",
+        "returns": "String"
+      },
+      {
+        "signature": "String metric()",
+        "returns": "String"
+      },
+      {
+        "signature": "Instant tDevice()",
+        "returns": "Instant"
+      },
+      {
+        "signature": "Instant tIngress()",
+        "returns": "Instant"
+      },
+      {
+        "signature": "double value()",
+        "returns": "double"
+      },
+      {
+        "signature": "ValidationStatus status()",
+        "returns": "ValidationStatus"
+      },
+      {
+        "signature": "String payload()",
+        "returns": "String"
+      }
+    ]
+  },
+  "feature": null,
+  "export": "com.pulsestream.telemetry.ingestion.domain.TelemetrySample",
+  "project": "telemetry-ingestion",
+  "layer": "domain"
+}

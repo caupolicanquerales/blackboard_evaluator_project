@@ -1,0 +1,15 @@
+{
+  "id": "T3-023",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-023"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/infrastructure/DeviceCredentialAuthenticationManager.java",
+  "kind": "refactor",
+  "intent": "Refactor DeviceCredentialAuthenticationManager: keep the ast_hints table, behavior and frozen tests unchanged; remove duplication, tighten naming, keep layer import rules.",
+  "feature": null,
+  "export": "com.pulsestream.telemetry.ingestion.infrastructure.DeviceCredentialAuthenticationManager",
+  "project": "telemetry-ingestion",
+  "layer": "infrastructure"
+}

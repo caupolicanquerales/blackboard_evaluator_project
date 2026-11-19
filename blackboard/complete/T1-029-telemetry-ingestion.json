@@ -1,0 +1,36 @@
+{
+  "id": "T1-029",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/distribution/application/TrustedPublisherPolicyTest.java",
+  "kind": "test",
+  "intent": "Frozen test of TrustedPublisherPolicy asserting only its ast_hints table. Permitted trusted versioned event true; unknown publisher false; wrong schemaVersion false; key not matching payload deviceId false.",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.distribution.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetryEvent",
+        "task_id": "T2-005"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "TrustedPublisherPolicy(String trustedPublisherId)",
+        "returns": ""
+      },
+      {
+        "signature": "boolean permits(TelemetryEvent event)",
+        "returns": "boolean",
+        "semantics": "false = reject and drop"
+      }
+    ]
+  },
+  "feature": null,
+  "export": "com.pulsestream.telemetry.distribution.application.TrustedPublisherPolicy",
+  "project": "telemetry-ingestion",
+  "layer": "application"
+}

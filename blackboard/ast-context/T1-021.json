@@ -1,0 +1,46 @@
+{
+  "task_id": "T1-021",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "IngressPacketRequest",
+    "constructors": [
+      [
+        "\"dev-1\"",
+        "samples"
+      ],
+      [
+        "\"dev-1\"",
+        "List.of(dto)"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "request",
+        "method": "deviceId",
+        "args": []
+      },
+      {
+        "receiver": "request",
+        "method": "samples",
+        "args": []
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class IngressPacketRequestTest {",
+      "private static IngressPacketRequest.SampleDto sample(String metric, Double value) {",
+      "return new IngressPacketRequest.SampleDto(metric, T, value, null);",
+      "private Set<ConstraintViolation<IngressPacketRequest>> validate(List<IngressPacketRequest.SampleDto> samples) {",
+      "return validator.validate(new IngressPacketRequest(\"dev-1\", samples));",
+      "IngressPacketRequest.SampleDto dto = new IngressPacketRequest.SampleDto(\"temp\", T, 2.0, \"p\");",
+      "IngressPacketRequest request = new IngressPacketRequest(\"dev-1\", List.of(dto));",
+      "assertThat(request.deviceId()).isEqualTo(\"dev-1\");",
+      "assertThat(request.samples()).containsExactly(dto);",
+      "private static List<IngressPacketRequest.SampleDto> samples(int n) {"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

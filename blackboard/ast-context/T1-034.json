@@ -1,0 +1,40 @@
+{
+  "task_id": "T1-034",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "TelemetryProperties",
+    "constructors": [
+      [
+        "Duration.ofSeconds(3)",
+        "10",
+        "Duration.ofSeconds(4)",
+        "20",
+        "30",
+        "40",
+        "\"pub\"",
+        "\"key\""
+      ]
+    ],
+    "static_calls": [],
+    "calls": [],
+    "verified": [],
+    "usage_lines": [
+      "class TelemetryPropertiesTest {",
+      "private TelemetryProperties bind() {",
+      "return new Binder(source).bind(\"telemetry\", TelemetryProperties.class).get();",
+      "var props = bind();",
+      "var props = bind();",
+      "var props = bind();",
+      "var props = bind();",
+      "new TelemetryProperties.Credential(\"dev-1\", \"hash-1\", \"ingest\"));",
+      "var props = bind();",
+      "new TelemetryProperties.Credential(\"con-1\", \"hash-2\", \"broadcast\"));",
+      "var credential = new TelemetryProperties.Credential(\"id-9\", \"hash-9\", \"scope-9\");",
+      "var devices = List.of(new TelemetryProperties.Credential(\"d\", \"h\", \"s\"));",
+      "var props = new TelemetryProperties(Duration.ofSeconds(3), 10, Duration.ofSeconds(4), 20, 30, 40,"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

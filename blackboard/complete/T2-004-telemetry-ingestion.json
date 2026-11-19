@@ -1,0 +1,51 @@
+{
+  "id": "T2-004",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-004"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/domain/TelemetryRevision.java",
+  "kind": "code",
+  "intent": "Append-only revision of a sample. Revision 1 is the original record; a correction appends latest+1. reason is CORRECTION (value differs, arrived inside the reorder window) or LATE (value differs, arrived after it).",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.domain",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "TelemetryRevision(String deviceId, String metric, Instant tDevice, int revisionNumber, double value, String reason)",
+        "returns": "",
+        "semantics": "revisionNumber >= 1; the first revision is 1 (sole owner of this literal)"
+      },
+      {
+        "signature": "String deviceId()",
+        "returns": "String"
+      },
+      {
+        "signature": "String metric()",
+        "returns": "String"
+      },
+      {
+        "signature": "Instant tDevice()",
+        "returns": "Instant"
+      },
+      {
+        "signature": "int revisionNumber()",
+        "returns": "int"
+      },
+      {
+        "signature": "double value()",
+        "returns": "double"
+      },
+      {
+        "signature": "String reason()",
+        "returns": "String"
+      }
+    ]
+  },
+  "feature": null,
+  "export": "com.pulsestream.telemetry.ingestion.domain.TelemetryRevision",
+  "project": "telemetry-ingestion",
+  "layer": "domain"
+}

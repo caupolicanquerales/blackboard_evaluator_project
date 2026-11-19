@@ -7,6 +7,9 @@ the skill dispatchers and the verification gate.
 import heapq
 import json
 import re
+import shutil
+import time
+from pathlib import Path
 
 import attempt_ledger
 import assembly
@@ -68,6 +71,35 @@ def _resolvable_types(project, exclude_id):
     return resolvable
 
 
+_SYMBOL_SHAPE_RE = re.compile(r"symbol:\s+(?:class|variable|method)\s+([A-Za-z]\w*)")
+_LOCATION_PACKAGE_RE = re.compile(r"location:\s+package\s+([\w.]+)")
+
+
+def _excerpt_package_locations(result):
+    """{symbol: {packages}} for javac 'cannot find symbol' errors located in a PACKAGE.
+
+    javac prints `location: package X` ONLY when X RESOLVES - the package exists on the
+    classpath and merely lacks the class. That is a payload defect of the importing file:
+    no planner can schedule a unit that exports a class into someone else's library, and
+    the importing unit's own gate must bounce its coder (2026-11-18 live: a coder wrote
+    import org.springframework.r2dbc.core.Parameters; the classification read the bare
+    token as a scheduling hole and aborted a healthy domain at task 8 of ~110).
+    """
+    out = {}
+    pending = None
+    for line in (result.get("excerpt") or []):
+        text = str(line).replace("[ERROR]", "").strip()
+        hit = _SYMBOL_SHAPE_RE.search(text)
+        if hit:
+            pending = hit.group(1)
+            continue
+        hit = _LOCATION_PACKAGE_RE.search(text)
+        if hit and pending:
+            out.setdefault(pending, set()).add(hit.group(1))
+            pending = None
+    return out
+
+
 def _unresolvable_missing(result, task):
     """Missing symbols no queued task exports and no source on disk declares.
 
@@ -98,6 +130,18 @@ def _unresolvable_missing(result, task):
         if isinstance(demand, dict) and (demand.get("owner") in resolvable
                                          or demand.get("owner") == tasks.exported_product(task)):
             tokens -= _identifier_tokens(str(demand.get("member") or ""))
+    # A class the log locates INSIDE an existing classpath package is a code defect of the
+    # importing unit, never a schedulable type (see _excerpt_package_locations). Only a
+    # package that is itself unknown is left as a possible planning hole, conservatively.
+    located = _excerpt_package_locations(result)
+    if located:
+        ext = test_gate.external_type_index(workspace.project_root_for(task.get("project", "")))
+        ext_packages = {fqn.rsplit(".", 1)[0] for names in ext.values() for fqn in names}
+        for token in list(tokens):
+            for pkg in located.get(token, ()):
+                if pkg in ext_packages:
+                    tokens.discard(token)
+                    break
     return sorted(tokens - resolvable)
 
 
@@ -487,7 +531,7 @@ def terminal_suite_gate():
         fp = test_gate._tree_fingerprint(root)
         # Same stamp the per-unit wave gate uses: a tree the wave already judged is
         # served from cache; a tree an evaluator/assembler moved re-runs ONCE.
-        stamp = f"{slug}-v9-{fp}"
+        stamp = f"{slug}-{test_gate.WAVE_GRAMMAR}-{fp}"
         cache_file = settings.GATE_CACHE_DIR / f"wave-{stamp}.json"
         data = None
         if cache_file.is_file():
@@ -499,6 +543,15 @@ def terminal_suite_gate():
             data = test_gate._run_suite_once(root, suite, stamp)
         if not isinstance(data, dict):
             continue
+        if (data.get("status") == "error" and not (data.get("counts") or {}).get("run")
+                and test_gate._fork_boot_corruption(root)):
+            # same refusal as the per-unit wave door: a fork that died on corrupted
+            # build output is a tooling wound, not a verdict on the delivered tree
+            cache_file.unlink(missing_ok=True)
+            shutil.rmtree(root / "target", ignore_errors=True)
+            data = test_gate._run_suite_once(root, suite, stamp)
+            if not isinstance(data, dict):
+                continue
         classes = data.get("classes") or {}
         reds = sorted(str(k) for k, v in classes.items() if v != "passed")
         if not reds and data.get("status") not in ("passed", None):
@@ -788,10 +841,11 @@ def _own_type_member_demand(result, task):
         return False
     resolvable = None
     for demand in (result.get("member_demands") or []):
-        if not isinstance(demand, dict) or demand.get("owner") != export:
+        if not isinstance(demand, dict) or not _owner_matches_export(demand.get("owner", ""),
+                                                                     export):
             continue
         kind = demand.get("kind")
-        if kind in ("method", "constructor", "property", "attribute"):
+        if kind in ("method", "constructor", "property", "attribute", "variable"):
             return True
         if kind == "class":
             # `symbol: class Foo located in Bar` reads two ways: Foo is a NESTED type of
@@ -913,6 +967,65 @@ def _mock_impossible_owner(result, task):
     return None
 
 
+def _owner_matches_export(owner, export):
+    """Does a javac demand-owner spell THIS unit's exported type?
+
+    `tasks.exported_product` is the SIMPLE name; the toolchains print owners as simple,
+    package-qualified (`com.x.Color`), or the NESTED `OUTER.Inner` / `com.x.OUTER.Inner`
+    shape - the outer segment owns the surface. The old exact `owner != export` comparison
+    matched none of the qualified spellings, so demands on `TelemetryEvent.Type` charged
+    nobody and every unit of the domain deferred on it (observed live 2026-11-18 15:20).
+    """
+    if not owner or not export:
+        return False
+    owner, export = str(owner).strip(), str(export).strip()
+    if owner == export:
+        return True
+    o_parts = owner.split(".")
+    e_simple = export.split(".")[-1]
+    if o_parts[-1] == e_simple:
+        return True
+    return len(o_parts) >= 2 and o_parts[-2] == e_simple and o_parts[-1][:1].isupper()
+
+
+def _unambiguous_member_demand(result, task):
+    """A javac-proven statement about THIS type's own surface, independent of any caller.
+
+    `symbol: variable LATE located in class ValidationStatus` cannot be repaired at the call
+    site - the constant either exists on the enum or it does not - so it does not need the
+    peer-call-site adjudication the method demands wait for. Method/constructor demands stay
+    guarded: their spelling is only proven by the callers' own-file attempts.
+    """
+    export = tasks.exported_product(task) or ""
+    for demand in (result.get("member_demands") or []):
+        if isinstance(demand, dict) and demand.get("kind") in ("variable", "property", "attribute") \
+                and _owner_matches_export(demand.get("owner", ""), export):
+            return True
+    return False
+
+
+def _own_hallucinated_import(result, task, locations):
+    """True when a symbol miss IN MY FILE names a class inside an EXISTING external package.
+
+    Such an import references a type no task of this domain can ever produce and no peer edit
+    can conjure: javac proves it against the classpath, so it is structural to MY payload, not
+    a cascade. Without this edge the ANY-cascade rule defers the owner of the bad import as
+    long as some other blamed file belongs to a peer (2026-11-18 live:
+    import org.springframework.r2dbc.core.Parameters sat in line 13 of the repository's OWN
+    file while IngestPacketUseCase.java belonged to T2-017 - T2-019 never got charged,
+    consumed stayed 0, and the domain re-fatals on stuck passes forever).
+    """
+    own = str(task.get("path", "")).split("/")[-1]
+    if not any(name == own for name, _ in locations):
+        return False
+    located = _excerpt_package_locations(result)
+    if not located:
+        return False
+    ext = test_gate.external_type_index(workspace.project_root_for(task.get("project", "")))
+    ext_packages = {fqn.rsplit(".", 1)[0] for names in ext.values() for fqn in names}
+    return any(pkg in ext_packages for pkgs in located.values() for pkg in pkgs)
+
+
 def _blocked_by_peers(result, task):
     """True when a red stage-2 gate is NOT this unit's own fault.
 
@@ -948,7 +1061,8 @@ def _blocked_by_peers(result, task):
             return True    # the supertype is not on the tree yet: nothing to adapt to, defer
                            # (materialized port: fall through to charge - deferral would
                            # deadlock both gates on the same module-wide compile failure)
-        if not own_structural and any(owners.get(name) != task["id"] for name in main_names):
+        if not own_structural and any(owners.get(name) != task["id"] for name in main_names) \
+                and not _own_hallucinated_import(result, task, locations):
             return True
         return False                       # the own file is structurally broken: real retry
     if _own_type_member_demand(result, task):
@@ -960,7 +1074,8 @@ def _blocked_by_peers(result, task):
         # the wiring file itself stayed the true defect (seed-002 rerun 14:03).
         # Let the peers' own-file attempts resolve their call sites first; if the gap
         # is genuinely mine, my frozen test will charge me afterwards.
-        if main_names and all(owners.get(name) != task["id"] for name in main_names):
+        if main_names and all(owners.get(name) != task["id"] for name in main_names) \
+                and not _unambiguous_member_demand(result, task):
             return True
         return False             # additive member demanded on MY exported type: nothing defers it
     if result.get("status") == "compile_error":
@@ -989,9 +1104,10 @@ def _blocked_by_peers(result, task):
         demands = [d for d in (result.get("member_demands") or []) if isinstance(d, dict)]
         if not demands:
             return True
-        located = {str(d.get("owner") or "") for d in demands}
+        located = {str(d.get("owner") or "") for d in demands if str(d.get("owner") or "").strip()}
         named = {owner_id for name, owner_id in owners.items()
-                 if name.removesuffix(".java") in located or name in located}
+                 if any(_owner_matches_export(owner, name.removesuffix(".java"))
+                        or _owner_matches_export(owner, name) for owner in located)}
         if task["id"] in named:
             return False                   # the gap sits in MY exported type: real retry
         return True                        # another queued unit owns the named type: defer
@@ -1117,6 +1233,29 @@ def autogrant_progressing():
     return task_queue.retry_error_tasks(restored) if restored else []
 
 
+def _source_is_proven_poison(source):
+    """Did SOURCE's quarantine evidence prove CODE BROKEN IN THE TREE?
+
+    A WOVEN-CLEAN failure (the tree compiles, the suite completes, only the source unit's
+    own tests are red) or a cascade reason (the source was never adjudicated) says NOTHING
+    about whether dependents compile. Reverting their woven payloads anyway holes the tree
+    and converts one stall into a rollback cascade - each undone class breaks another
+    unit's WOVEN-CLEAN probe, which reverts that unit in turn (2026-11-18 live:
+    SliceTestSupport was reverted because T2-035 was re-quarantined; the support class
+    imported nothing broken, and the whole test tree stopped compiling for every sibling).
+    Unreadable evidence stays conservative-revert: an unknown verdict may not poison the
+    shared tree.
+    """
+    for f in settings.ERROR_DIR.glob(f"{source}-*"):
+        try:
+            rec = json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return True
+        err = str(rec.get("error") or "")
+        return "WOVEN-CLEAN" not in err and not err.startswith("dependsOn")
+    return True
+
+
 def quarantine_dependents(failed_id, tasks, files, dependents, remaining):
     """Send every transitive dependent of a failed task to the error queue."""
     pending = [failed_id]
@@ -1137,7 +1276,8 @@ def quarantine_dependents(failed_id, tasks, files, dependents, remaining):
                            "compile, suspect this file]")
             task_queue.send_to_error(file, reason, dependent_task)
             print(f"[error] {file.name}: {reason}")
-            if dependent_task["stage"] == settings.TDD_STAGE and has_payload:
+            if (dependent_task["stage"] == settings.TDD_STAGE and has_payload
+                    and _source_is_proven_poison(source)):
                 if dispatchers.revert_weave(dependent_task, discard_payload=False):
                     hole = _surface_rollback_hole(dependent_task)
                     if hole:
@@ -1145,6 +1285,11 @@ def quarantine_dependents(failed_id, tasks, files, dependents, remaining):
                         _note_on_quarantine(dependent_task["id"], hole)
                 else:
                     _warn_unrevertable_poison(dependent_task)
+            elif (dependent_task["stage"] == settings.TDD_STAGE and has_payload):
+                print(f"[keep ] {dependent_task['id']}: woven payload kept through the cascade - "
+                      f"its blocker {source} is not proven poison for the tree (behavioral or "
+                      "never-adjudicated), and reverting a victim is how one stall becomes a "
+                      "rollback chain")
             remaining.discard(dependent_id)
             pending.append(dependent_id)
 
@@ -1163,6 +1308,37 @@ def _ensure_task_parent(task):
             parents=True, exist_ok=True)
     except (OSError, KeyError, TypeError):
         pass
+
+
+def _build_manifest_duty(task):
+    """True when a stage-0 task OWNS a build file but is not the scaffold itself.
+
+    The scaffold CREATES the build file (export marker `project_scaffold`: file on disk = done);
+    a build-manifest duty MODIFIES the one the scaffold made - its artifact is always already on
+    disk, so existence proves nothing (2026-11-18 live: the skip-agent resume guard 'completed'
+    the queued manifest duty in 3 seconds without a session, and the next close-out fataled on
+    the very gap the duty was scheduled to fill).
+    """
+    return (task.get("stage") == 0 and task.get("kind") == "bootstrap"
+            and Path(str(task.get("path", ""))).name in settings.BUILD_FILE_NAMES
+            and str(task.get("export", "")).strip() != task_queue.SCAFFOLD_EXPORT)
+
+
+def _manifest_duty_pending(project):
+    """True when the QUEUE holds an unfinished stage-0 build-manifest duty for the domain.
+
+    Such a duty rewrites the classpath that `scan_red_phase_gaps` reads, and heap order runs it
+    before any stage-1 work; fataling at the resume gate on a gap that the queued duty exists to
+    fill deadlocks the board forever (the remedy is only valid AFTER stage 0 ran).
+    """
+    for file in sorted(settings.QUEUE_DIR.glob("T0-*.json")):
+        try:
+            task = json.loads(file.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if isinstance(task, dict) and task.get("project") == project and _build_manifest_duty(task):
+            return True
+    return False
 
 
 def _tester_close_out(task):
@@ -1192,7 +1368,12 @@ def _tester_close_out(task):
         raise FatalPipeline(
             f"{task['id']} tests import {len(gap)} package(s) no task produces and "
             f"the scaffold classpath lacks: {', '.join(gap)}. Stage 2 cannot edit the "
-            "build file, so every gate of this domain would fail forever.")
+            "build file, so every gate of this domain would fail forever. Remedy: the plan "
+            "omitted the build-manifest duty that owns these coordinates - emit a stage-0 "
+            "bootstrap task (layer root, feature null, dependsOn empty, path = the stack's "
+            "build file, export = its base name, intent = the generator-native ids plus any "
+            "catalog-absent artifact required test-scoped) through the orchestrator's --emit "
+            "and relaunch; the drain runs stage 0 before the remaining stage-1 work.")
     dispatchers.run_ast_dispatcher(task)
     return True, ""
 
@@ -1224,12 +1405,17 @@ def drain_queue(args, invoke_for_task):
     gaps = dispatchers.scan_red_phase_gaps()
     if gaps:
         # Stale foreign-gap records (a session killed before close-out): try the same
-        # deterministic import repair per affected project, re-record the red verdicts,
-        # and only abort if a package is STILL foreign after the reroute.
+        # deterministic import repair per affected project, then RE-RECORD the red verdicts
+        # UNCONDITIONALLY - the disk file is the truth, and the repair returning "nothing
+        # changed" does NOT mean the record is current: 2026-11-18 live, a close-out-time
+        # reroute left the file clean while the recorded verdict still named the old package,
+        # the gated re-record was skipped for exactly that reason, and every relaunch died
+        # on a gap no file contains. Re-record is zero-session: it reruns the red build.
+        # A pending stage-0 build-manifest duty DEFERS the fatal: heap order runs stage 0
+        # first, the classpath then re-checks per task at close-out.
         index = task_queue.load_index(include_error=True)
         for project in list(gaps):
-            if not test_gate.repair_test_imports(workspace.project_root_for(project)):
-                continue
+            test_gate.repair_test_imports(workspace.project_root_for(project))
             for record_path in settings.RED_PHASE_DIR.glob("*.json"):
                 try:
                     tid = str(json.loads(record_path.read_text(encoding="utf-8")).get("task_id")
@@ -1240,6 +1426,12 @@ def drain_queue(args, invoke_for_task):
                 if stale.get("project") == project:
                     dispatchers.rerecord_red_phase(stale)
         gaps = dispatchers.scan_red_phase_gaps()
+        deferred = [project for project in gaps if _manifest_duty_pending(project)]
+        for project in deferred:
+            print(f"[defer ] red-phase classpath gap deferred for {project}: a queued stage-0 "
+                  "build-manifest duty owns the build file and runs BEFORE any stage-1 work; "
+                  "the same check re-runs at each task's close-out")
+        gaps = {project: pkgs for project, pkgs in gaps.items() if project not in deferred}
     if gaps:
         detail = "; ".join(f"{project}: {', '.join(pkgs)}"
                            for project, pkgs in sorted(gaps.items()))
@@ -1292,7 +1484,8 @@ def drain_queue(args, invoke_for_task):
                 print(f"[skip-agent] {task['id']} coder payload already recorded; going straight to verify")
                 return True, ""
             if (task["stage"] == 0 and feedback is None
-                    and (workspace.project_root_for(task["project"]) / task["path"]).is_file()):
+                    and (workspace.project_root_for(task["project"]) / task["path"]).is_file()
+                    and not _build_manifest_duty(task)):
                 print(f"[skip-agent] {task['id']} bootstrap artifact already on disk "
                       f"({task['path']}); no agent session needed")
                 return True, ""
@@ -1370,8 +1563,20 @@ def drain_queue(args, invoke_for_task):
                             "live sibling units - evaluator session not billed")
             pre_edit_snapshot = (refactor_audit.snapshot_sources(task)
                                  if task["stage"] == settings.EVALUATOR_STAGE else None)
+            started = time.time()
             ok, reason = invoke_for_task(task, feedback)
             problem = _missing_artifact_problem(task, ok)
+            if not problem and ok and _build_manifest_duty(task):
+                # A MUTATION duty is not proved by existence: the build file has been on disk
+                # since the scaffold made it, so the existence guard read the container's honest
+                # "no pom was moved" halt as [done] (2026-11-18 live). The duty is delivered only
+                # when the session moved the file it owns (mtime is content-time, mv-safe).
+                moved = workspace.project_root_for(task["project"]) / str(task.get("path", ""))
+                if moved.is_file() and moved.stat().st_mtime < started:
+                    problem = (f"build-manifest duty ended with {task['path']} untouched - its "
+                               "contract is to MODIFY the build file the scaffold already "
+                               "created, and an unchanged classpath repeats the same gap on "
+                               "every relaunch")
             if problem:
                 return False, problem
             if ok and task["stage"] == settings.TESTER_STAGE:
@@ -1482,12 +1687,14 @@ def drain_queue(args, invoke_for_task):
                 # loop that spun silently on an empty queue (seed-002 rerun, 2026-11-12).
                 # Dependents STAY in the queue; the next launch's ScaffoldUnresolved (or
                 # --retry after the fix) resumes the domain. One fatal line, no scatter.
+                what = ("build-manifest duty" if _build_manifest_duty(task) else "scaffold")
                 raise FatalPipeline(
-                    f"stage-0 scaffold {task['id']} of '{task.get('project', '?')}' failed: "
+                    f"stage-0 {what} {task['id']} of '{task.get('project', '?')}' failed: "
                     f"{str(detail)[:300]} - the domain cannot build while its root is broken; "
                     f"its {len(dependents.get(task_id, []))} dependent(s) stayed in the queue. "
                     "Fix the container stage (MCP image/skill/environment) and relaunch with --retry.")
-            if stage == settings.TDD_STAGE and not proven_harmless:
+            if stage == settings.TDD_STAGE and not proven_harmless \
+                    and not str(detail).startswith("dependsOn"):
                 if dispatchers.revert_weave(task, discard_payload=True):
                     notice = _surface_rollback_hole(task)
                     if notice:
@@ -1495,6 +1702,17 @@ def drain_queue(args, invoke_for_task):
                         _note_on_quarantine(task["id"], notice)
                 else:
                     _warn_unrevertable_poison(task)
+            elif stage == settings.TDD_STAGE and str(detail).startswith("dependsOn"):
+                # A DEPENDENCY-CASCADE quarantine reverting its payload is rollback
+                # suicide (2026-11-18 live: T2-037 was restored, its blocker re-quarantined
+                # under a sibling race, the cascade reason reached this handler, the revert
+                # undid SliceTestSupport - and the now-uncompilable test tree poisoned every
+                # sibling's WOVEN-CLEAN probe, so each kept unit's payload got rolled back
+                # in turn). A scheduling stall proves NOTHING about these bytes: the woven
+                # payload and the record stay intact; WOVEN-UNVERIFIED already routes the
+                # suspicion, and --retry restores the unit to adjudicate for real.
+                print(f"[keep ] {task['id']}: dependency-cascade quarantine - payload woven, "
+                      "record kept: not adjudicated, not proven poison")
             elif proven_harmless:
                 print(f"[keep ] {task['id']}: payload stays woven - reverting would hole every "
                       "file that imports this unit's types (the T2-003 domain freeze)")

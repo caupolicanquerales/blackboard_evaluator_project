@@ -3,58 +3,79 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "AuditEntry",
+    "type": "TelemetryRevision",
     "constructors": [
       [
-        "actor",
-        "\"intake.receive\"",
-        "\"accepted\"",
-        "TS",
-        "\"corr-1\""
+        "\"dev-1\"",
+        "\"heart_rate\"",
+        "T_DEVICE",
+        "2",
+        "61.5",
+        "\"correction\""
+      ],
+      [
+        "\"dev-1\"",
+        "\"heart_rate\"",
+        "T_DEVICE",
+        "revisionNumber",
+        "1.0",
+        "\"r\""
+      ],
+      [
+        "\"dev-1\"",
+        "\"heart_rate\"",
+        "T_DEVICE",
+        "1",
+        "1.0",
+        "\"initial\""
       ]
     ],
     "static_calls": [],
     "calls": [
       {
-        "receiver": "e",
-        "method": "actor",
+        "receiver": "r",
+        "method": "deviceId",
         "args": []
       },
       {
-        "receiver": "e",
-        "method": "action",
+        "receiver": "r",
+        "method": "metric",
         "args": []
       },
       {
-        "receiver": "e",
-        "method": "outcome",
+        "receiver": "r",
+        "method": "tDevice",
         "args": []
       },
       {
-        "receiver": "e",
-        "method": "timestamp",
+        "receiver": "r",
+        "method": "revisionNumber",
         "args": []
       },
       {
-        "receiver": "e",
-        "method": "correlationId",
+        "receiver": "r",
+        "method": "value",
+        "args": []
+      },
+      {
+        "receiver": "r",
+        "method": "reason",
         "args": []
       }
     ],
     "verified": [],
     "usage_lines": [
-      "class AuditEntryTest {",
-      "private static AuditEntry entry(String actor) {",
-      "return new AuditEntry(actor, \"intake.receive\", \"accepted\", TS, \"corr-1\");",
-      "AuditEntry e = entry(\"intake\");",
-      "assertThat(e.actor()).isEqualTo(\"intake\");",
-      "assertThat(e.action()).isEqualTo(\"intake.receive\");",
-      "assertThat(e.outcome()).isEqualTo(\"accepted\");",
-      "assertThat(e.timestamp()).isEqualTo(TS);",
-      "assertThat(e.correlationId()).isEqualTo(\"corr-1\");",
-      "assertThat(entry(\"intake\")).isEqualTo(entry(\"intake\"))",
-      ".hasSameHashCodeAs(entry(\"intake\"));",
-      "assertThat(entry(\"intake\")).isNotEqualTo(entry(\"eventlog\"));"
+      "class TelemetryRevisionTest {",
+      "TelemetryRevision r = new TelemetryRevision(\"dev-1\", \"heart_rate\", T_DEVICE, 2, 61.5, \"correction\");",
+      "assertThat(r.deviceId()).isEqualTo(\"dev-1\");",
+      "assertThat(r.metric()).isEqualTo(\"heart_rate\");",
+      "assertThat(r.tDevice()).isEqualTo(T_DEVICE);",
+      "assertThat(r.revisionNumber()).isEqualTo(2);",
+      "assertThat(r.value()).isEqualTo(61.5);",
+      "assertThat(r.reason()).isEqualTo(\"correction\");",
+      "assertThatThrownBy(() -> new TelemetryRevision(\"dev-1\", \"heart_rate\", T_DEVICE, revisionNumber, 1.0, \"r\"))",
+      "TelemetryRevision r = new TelemetryRevision(\"dev-1\", \"heart_rate\", T_DEVICE, 1, 1.0, \"initial\");",
+      "assertThat(r.revisionNumber()).isEqualTo(1);"
     ]
   },
   "stderr": "",

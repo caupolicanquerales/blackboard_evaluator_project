@@ -1,0 +1,16 @@
+{
+  "id": "T3-025",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-025"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/api/IngressPacketController.java",
+  "kind": "refactor",
+  "intent": "Refactor IngressPacketController: keep the ast_hints table, behavior and frozen tests unchanged; remove duplication, tighten naming, keep layer import rules.",
+  "feature": null,
+  "export": "com.pulsestream.telemetry.ingestion.api.IngressPacketController",
+  "project": "telemetry-ingestion",
+  "layer": "interface",
+  "error": "dependsOn T2-025 not resolvable in queue or complete"
+}

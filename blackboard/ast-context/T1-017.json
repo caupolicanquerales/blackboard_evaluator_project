@@ -3,31 +3,45 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "CorrelationWebFilter",
+    "type": "IngestPacketUseCase",
     "constructors": [
-      []
+      [
+        "repository",
+        "publisher",
+        "auditTrail",
+        "boundary",
+        "reorderer",
+        "redaction",
+        "new TelemetryMetrics(registry)",
+        "Clock.fixed(NOW, ZoneOffset.UTC)"
+      ]
     ],
     "static_calls": [],
     "calls": [
       {
-        "receiver": "filter",
-        "method": "filter",
+        "receiver": "useCase",
+        "method": "ingest",
         "args": [
-          "exchange",
-          "capturing(seen)"
+          "owner",
+          "Flux.just(samples)"
+        ]
+      },
+      {
+        "receiver": "useCase",
+        "method": "ingest",
+        "args": [
+          "\"dev-1\"",
+          "Flux.just(sample(\"dev-1\", \"heart_rate\", T_DEVICE, 60))"
         ]
       }
     ],
     "verified": [],
     "usage_lines": [
-      "class CorrelationWebFilterTest {",
-      "private final CorrelationWebFilter filter = new CorrelationWebFilter();",
-      "builder.header(CorrelationWebFilter.HEADER, requestId);",
-      "seen.set(ctx.getOrDefault(CorrelationWebFilter.CONTEXT_KEY, null));",
-      "StepVerifier.create(filter.filter(exchange, capturing(seen))).verifyComplete();",
-      "StepVerifier.create(filter.filter(exchange, capturing(seen))).verifyComplete();",
-      "assertThat(CorrelationWebFilter.CONTEXT_KEY).isEqualTo(\"requestId\");",
-      "assertThat(CorrelationWebFilter.HEADER).isEqualTo(\"X-Request-Id\");"
+      "class IngestPacketUseCaseTest {",
+      "private IngestPacketUseCase useCase;",
+      "useCase = new IngestPacketUseCase(repository, publisher, auditTrail, boundary, reorderer, redaction,",
+      "return useCase.ingest(owner, Flux.just(samples)).block(Duration.ofSeconds(5));",
+      "StepVerifier.create(useCase.ingest(\"dev-1\", Flux.just(sample(\"dev-1\", \"heart_rate\", T_DEVICE, 60))))"
     ]
   },
   "stderr": "",

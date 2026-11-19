@@ -1,28 +1,26 @@
 {
   "id": "T2-011",
-  "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/eventlog/application/EventLogRepository.java",
-  "export": "EventLogRepository",
-  "method": "append",
+  "project": "telemetry-ingestion",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ingestion/application/IngestSummary.java",
+  "export": "IngestSummary",
+  "kind": "record",
+  "method": "refused",
   "language": "java",
-  "framework": "springboot",
+  "framework": "springboot3",
   "skill": "java-springboot",
-  "signature": "Mono<EventRecord> append(TelemetrySample sample)",
-  "returns": "Mono<EventRecord>",
-  "body": "",
-  "imports": [
-    "com.pulsestream.telemetry.eventlog.domain.EventRecord",
-    "com.pulsestream.telemetry.validation.domain.TelemetrySample",
-    "java.time.Instant",
-    "reactor.core.publisher.Mono"
-  ],
+  "signature": "public boolean refused()",
+  "returns": "boolean",
+  "body": "return refused;",
+  "imports": [],
   "missing": [],
-  "kind": "interface",
   "members": [
-    "Mono<EventRecord> append(TelemetrySample sample);",
-    "Mono<EventRecord> findLatest(String deviceId, String metric, Instant tDevice);"
+    "int appended",
+    "int rejectedValidation",
+    "int revisions",
+    "int duplicates",
+    "boolean refused"
   ],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-17T15:34:58.266477+00:00"
+  "recorded_at": "2026-11-18T17:57:31.599450+00:00"
 }

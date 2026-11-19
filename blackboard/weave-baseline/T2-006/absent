@@ -1,1 +1,1 @@
-src/main/java/com/pulsestream/telemetry/shared/observability/StepLog.java
+src/main/java/com/pulsestream/telemetry/ingestion/domain/SensorMetricBoundary.java

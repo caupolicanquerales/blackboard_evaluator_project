@@ -1,0 +1,15 @@
+{
+  "id": "T3-007",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-007"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/application/AuditEntry.java",
+  "kind": "refactor",
+  "intent": "Refactor AuditEntry: keep the ast_hints table, behavior and frozen tests unchanged; remove duplication, tighten naming, keep layer import rules.",
+  "feature": null,
+  "export": "com.pulsestream.telemetry.ingestion.application.AuditEntry",
+  "project": "telemetry-ingestion",
+  "layer": "application"
+}

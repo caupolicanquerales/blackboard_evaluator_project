@@ -1,0 +1,34 @@
+{
+  "id": "T2-018",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-018"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/infrastructure/AesGcmPayloadCipher.java",
+  "kind": "code",
+  "intent": "SI-05 envelope-encryption: AES-256-GCM adapter at the store boundary with random IV prefixed, Base64 output; key supplied at construction from runtime-injected custody, held apart from data access, never logged or in source.",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.infrastructure",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "AesGcmPayloadCipher(byte[] key)",
+        "returns": ""
+      },
+      {
+        "signature": "String encrypt(String plaintext)",
+        "returns": "String"
+      },
+      {
+        "signature": "String decrypt(String ciphertext)",
+        "returns": "String"
+      }
+    ]
+  },
+  "feature": null,
+  "export": "com.pulsestream.telemetry.ingestion.infrastructure.AesGcmPayloadCipher",
+  "project": "telemetry-ingestion",
+  "layer": "infrastructure"
+}

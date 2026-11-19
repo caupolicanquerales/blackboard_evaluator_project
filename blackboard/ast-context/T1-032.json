@@ -1,0 +1,46 @@
+{
+  "task_id": "T1-032",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "BroadcastLifecycle",
+    "constructors": [
+      [
+        "service"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "lifecycle",
+        "method": "isRunning",
+        "args": []
+      },
+      {
+        "receiver": "lifecycle",
+        "method": "start",
+        "args": []
+      },
+      {
+        "receiver": "lifecycle",
+        "method": "stop",
+        "args": []
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class BroadcastLifecycleTest {",
+      "BroadcastLifecycle lifecycle = new BroadcastLifecycle(service);",
+      "assertThat(lifecycle.isRunning()).isFalse();",
+      "BroadcastLifecycle lifecycle = new BroadcastLifecycle(service);",
+      "lifecycle.start();",
+      "assertThat(lifecycle.isRunning()).isTrue();",
+      "BroadcastLifecycle lifecycle = new BroadcastLifecycle(service);",
+      "lifecycle.start();",
+      "lifecycle.stop();",
+      "assertThat(lifecycle.isRunning()).isFalse();"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

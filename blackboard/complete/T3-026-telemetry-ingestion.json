@@ -1,0 +1,15 @@
+{
+  "id": "T3-026",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-026"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/distribution/domain/TelemetryWindowBroadcast.java",
+  "kind": "refactor",
+  "intent": "Refactor TelemetryWindowBroadcast: keep the ast_hints table, behavior and frozen tests unchanged; remove duplication, tighten naming, keep layer import rules.",
+  "feature": null,
+  "export": "com.pulsestream.telemetry.distribution.domain.TelemetryWindowBroadcast",
+  "project": "telemetry-ingestion",
+  "layer": "domain"
+}

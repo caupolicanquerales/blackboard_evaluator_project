@@ -1,0 +1,33 @@
+{
+  "id": "T2-012",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-012",
+    "T2-005"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/application/EventPublisher.java",
+  "kind": "code",
+  "intent": "Outbound port publishing versioned events to Distribution.",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetryEvent",
+        "task_id": "T2-005"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Boolean> publish(TelemetryEvent event)",
+        "returns": "Mono<Boolean>",
+        "semantics": "true = accepted by the bounded bus; false = overflow, event dropped"
+      }
+    ]
+  },
+  "feature": null,
+  "export": "com.pulsestream.telemetry.ingestion.application.EventPublisher",
+  "project": "telemetry-ingestion",
+  "layer": "application"
+}

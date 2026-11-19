@@ -1,35 +1,41 @@
 {
   "id": "T2-014",
-  "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/eventlog/infrastructure/SinkEventBroadcast.java",
-  "export": "SinkEventBroadcast",
-  "kind": "class",
-  "method": "publish",
+  "project": "telemetry-ingestion",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/shared/observability/CorrelationWebFilter.java",
+  "export": "CorrelationWebFilter",
+  "method": "filter",
   "language": "java",
-  "framework": "spring-boot",
-  "skill": "java-springboot",
-  "signature": "public synchronized boolean publish(EventRecord record)",
-  "returns": "boolean",
-  "body": "if (sink.currentSubscriberCount() > 0) {\n    buffered = 0;\n} else if (buffered >= capacity) {\n    return false;\n}\nboolean accepted = sink.tryEmitNext(record) == Sinks.EmitResult.OK;\nif (accepted && sink.currentSubscriberCount() == 0) {\n    buffered++;\n}\nreturn accepted;",
+  "framework": "springboot3",
+  "skill": "java-springboot3",
+  "kind": "class",
+  "signature": "public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain)",
+  "returns": "Mono<Void>",
+  "body": "String incoming = exchange.getRequest().getHeaders().getFirst(HEADER_NAME);\nString requestId = (incoming == null || incoming.isBlank()) ? UUID.randomUUID().toString() : incoming.trim();\nexchange.getResponse().getHeaders().set(HEADER_NAME, requestId);\nreturn chain.filter(exchange).contextWrite(ctx -> ctx.put(CONTEXT_KEY, requestId));",
   "imports": [
-    "com.pulsestream.telemetry.eventlog.application.EventBroadcast",
-    "com.pulsestream.telemetry.eventlog.domain.EventRecord",
-    "com.pulsestream.telemetry.shared.config.TelemetryProperties",
-    "reactor.core.publisher.Flux",
-    "reactor.core.publisher.Sinks"
+    "java.util.UUID",
+    "org.springframework.core.Ordered",
+    "org.springframework.core.annotation.Order",
+    "org.springframework.stereotype.Component",
+    "org.springframework.web.server.ServerWebExchange",
+    "org.springframework.web.server.WebFilter",
+    "org.springframework.web.server.WebFilterChain",
+    "reactor.core.publisher.Mono"
   ],
   "implements": [
-    "EventBroadcast"
+    "WebFilter"
+  ],
+  "annotations": [
+    "Component",
+    "Order(Ordered.HIGHEST_PRECEDENCE)"
   ],
   "members": [
-    "private final Sinks.Many<EventRecord> sink",
-    "private final int capacity",
-    "private int buffered",
-    "public SinkEventBroadcast(TelemetryProperties properties) { this.capacity = properties.bufferCapacity(); this.sink = Sinks.many().multicast().onBackpressureBuffer(properties.bufferCapacity(), false); }",
-    "@Override public Flux<EventRecord> stream() { return sink.asFlux(); }"
+    "private static final String CONTEXT_KEY = \"requestId\";",
+    "private static final String HEADER_NAME = \"X-Request-Id\";",
+    "public static String contextKey() { return CONTEXT_KEY; }",
+    "public static String headerName() { return HEADER_NAME; }"
   ],
   "missing": [],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-17T15:44:39.075699+00:00"
+  "recorded_at": "2026-11-18T18:04:07.323237+00:00"
 }

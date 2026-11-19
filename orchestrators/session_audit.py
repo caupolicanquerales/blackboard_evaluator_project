@@ -23,7 +23,7 @@ from pathlib import Path
 SESSION_GLOB = "~/.copilot/session-state/*/events.jsonl"
 
 BUDGETS = {
-    "discovery": 10, "mapping": 10, "architect": 12, "database": 10,
+    "discovery": 10, "mapping": 10, "architect": 13, "database": 10, "security": 8,
     "container": 10, "tester": 8, "coder": 6, "evaluator": 12, "assembly": 12,
 }
 
@@ -57,6 +57,7 @@ ROLE_MARKERS = (
     ("discovery", "you are the domain boundary discovery specialist"),
     ("mapping", "you are the domain context mapping specialist"),
     ("database", "you are the blackboard database architect"),
+    ("security", "you are the blackboard security architect"),
     ("architect", "you are the blackboard architect"),
     ("coder", "emit the payload of this unit"),
     ("coder", "create the implementation at"),
@@ -238,14 +239,117 @@ def report(rows, show_budget):
         print("\nbudgets (tool calls per session):", BUDGETS)
 
 
+CHARS_PER_TOKEN = 3.7   # calibrated against the records' own token counts on tool payloads
+
+
+def burn_report(since_hours, role="architect", top=20):
+    """What inside a session cost what - item tokens weighted by the turns that re-sent them.
+
+    `report` says what a run cost; it cannot say WHY. Every tool result enters the transcript and is
+    then re-sent on all later turns, so an item's true price is its size x its residence: a 5k-token
+    skill loaded on turn 1 of a 12-turn session costs ~60k, the same skill loaded on turn 10 costs
+    10k. Output is listed separately because it is the expensive class and the one a plan-phase
+    change can actually move. Run this after any prompt/skill/emission-shape change: re-auditing the
+    same sessions is the only evidence that a token fix worked.
+    """
+    start_ts = time.time() - since_hours * 3600
+    items = collections.defaultdict(lambda: [0.0, 0.0, 0])
+    totals = collections.Counter()
+    for path in sorted(glob.glob(os.path.expanduser(SESSION_GLOB))):
+        try:
+            if os.path.getmtime(path) < start_ts:
+                continue
+            prompt = first_user_message(path) or ""
+        except OSError:
+            continue
+        got, _unit = classify(prompt)
+        if got != role:
+            continue
+        events = []
+        for line in open(path, encoding="utf-8", errors="ignore"):
+            try:
+                events.append(json.loads(line))
+            except ValueError:
+                continue
+        events.sort(key=lambda e: e.get("timestamp", ""))
+        usage = [((e.get("data") or {}).get("usage") or {}) for e in events
+                 if e.get("type") == "session.usage_record"]
+        if not usage:
+            continue
+        turns = len(usage)
+        totals["sessions"] += 1
+        totals["turns"] += turns
+        totals["in"] += sum(u.get("inputTokens", 0) or 0 for u in usage)
+        totals["out"] += sum(u.get("outputTokens", 0) or 0 for u in usage)
+        totals["cache_read"] += sum(u.get("cacheReadTokens", 0) or 0 for u in usage)
+        totals["peak_turn"] = max(totals["peak_turn"],
+                                  max(u.get("outputTokens", 0) or 0 for u in usage))
+        open_calls, pending, turn = {}, [], 0
+        for event in events:
+            kind = event.get("type")
+            data = event.get("data") or {}
+            if kind == "assistant.turn_start":
+                turn += 1
+            elif kind == "tool.execution_start":
+                args = data.get("arguments") or {}
+                name = str(data.get("toolName"))
+                if name in ("view", "read", "create", "edit", "write", "str_replace"):
+                    tail = Path(str(args.get("path", "?")))
+                    label = f"{name} {tail.parent.name}/{tail.name}" if tail.name else name
+                elif name == "bash":
+                    label = "bash " + re.sub(r"\s+", " ", str(args.get("command", "")))[:58]
+                elif name == "glob":
+                    label = f"glob {args.get('pattern', '')}"
+                else:
+                    label = name
+                item = {"label": label[:76], "turn": turn,
+                        "chars": len(json.dumps(args, default=str))}
+                open_calls[data.get("toolCallId")] = item
+                pending.append(item)
+            elif kind == "tool.execution_complete":
+                item = open_calls.get(data.get("toolCallId"))
+                if item:
+                    result = data.get("result")
+                    item["chars"] += len(json.dumps(result, default=str)) if result is not None else 0
+        for item in pending:
+            tok = item["chars"] / CHARS_PER_TOKEN
+            residence = max(1, turns - item["turn"] + 1)
+            agg = items[item["label"]]
+            agg[0] += tok * residence
+            agg[1] += tok
+            agg[2] += 1
+    uncached = totals["in"] - totals["cache_read"]
+    print(f"BURN REPORT  role={role}  window={since_hours:g}h  sessions={totals['sessions']}  "
+          f"turns={totals['turns']}")
+    print(f"  input {totals['in']:,} tok ({totals['cache_read']:,} cache-read = "
+          f"{totals['cache_read'] / max(totals['in'], 1):.0%}, {uncached:,} re-priced)  "
+          f"output {totals['out']:,} tok  worst single-turn output {totals['peak_turn']:,}")
+    print(f"  {'carried':>12} {'raw':>9} {'n':>4}  item  (size x turns that re-sent it)")
+    for label, (cost, raw, n) in sorted(items.items(), key=lambda kv: -kv[1][0])[:top]:
+        print(f"  {cost:>12,.0f} {raw:>9,.0f} {n:>4}  {label}")
+    if not items:
+        print("   (no sessions of this role in the window)")
+    print("  read: skills and file reads are paid AGAIN on every later turn - load only the phase's"
+          " own,\n  at the paths the profile gives; output is the expensive class, so a smaller"
+          " emission unit and an\n  edit-not-rewrite remedy move the number that matters.")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Audit agent session cost from the Copilot CLI records.")
     parser.add_argument("--since-hours", type=float, default=12, help="look back this far (default 12)")
     parser.add_argument("--limit", type=int, default=0, help="show at most N sessions (0 = all)")
     parser.add_argument("--budget-report", action="store_true", help="print the configured budgets")
     parser.add_argument("--json", action="store_true", help="emit machine-readable rows")
+    parser.add_argument("--burn-report", action="store_true",
+                        help="per-item token cost weighted by the turns that re-sent it (why a "
+                             "session cost what it cost)")
+    parser.add_argument("--role", default="architect",
+                        help="which agent to attribute (default: architect; used with --burn-report)")
     args = parser.parse_args()
 
+    if args.burn_report:
+        burn_report(args.since_hours, args.role)
+        return
     rows = collect(args.since_hours)
     if args.limit:
         rows = rows[:args.limit]

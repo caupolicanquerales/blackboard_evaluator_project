@@ -1,0 +1,15 @@
+{
+  "id": "T0-006",
+  "targetAgent": "agent-container",
+  "stage": 0,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "db/migrations/backup-recovery.md",
+  "kind": "bootstrap",
+  "layer": "root",
+  "feature": null,
+  "export": "backup-recovery",
+  "intent": "Backup/recovery: PostgreSQL snapshots plus WAL archiving (PITR), forward-fix posture for expand-only Flyway migrations, script backup-recovery, context telemetry-ingestion.",
+  "project": "telemetry-ingestion"
+}

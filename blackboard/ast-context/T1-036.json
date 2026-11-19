@@ -1,0 +1,17 @@
+{
+  "task_id": "T1-036",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "yml",
+    "constructors": [],
+    "static_calls": [],
+    "calls": [],
+    "verified": [],
+    "usage_lines": [
+      "var resource = new ClassPathResource(\"application.yml\");"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

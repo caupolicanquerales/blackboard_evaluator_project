@@ -1,0 +1,25 @@
+{
+  "id": "T2-029",
+  "project": "telemetry-ingestion",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/distribution/application/TrustedPublisherPolicy.java",
+  "export": "TrustedPublisherPolicy",
+  "method": "TrustedPublisherPolicy",
+  "language": "java",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "kind": "class",
+  "signature": "TrustedPublisherPolicy(String trustedPublisherId)",
+  "returns": "void",
+  "body": "this.trustedPublisherId = trustedPublisherId;",
+  "imports": [
+    "com.pulsestream.telemetry.ingestion.domain.TelemetryEvent"
+  ],
+  "members": [
+    "private final String trustedPublisherId;",
+    "public boolean perm\\u0069ts(TelemetryEvent event) { if (event == null || event.publisherId() == null || !event.publisherId().equals(trustedPublisherId)) { return false; } if (event.schemaVersion() != 1 || event.eventKey() == null) { return false; } return event.eventKey().equals(TelemetryEvent.keyOf(event.deviceId(), event.metric(), event.tDevice(), event.revision())); }"
+  ],
+  "missing": [],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-18T18:10:13.561563+00:00"
+}

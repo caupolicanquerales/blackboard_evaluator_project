@@ -1,0 +1,47 @@
+{
+  "id": "T2-013",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-013",
+    "T2-003",
+    "T2-004"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/application/TelemetryRecordRepository.java",
+  "kind": "code",
+  "intent": "Outbound append-only store port: records, revisions, dedup lookup by identity (deviceId, metric, tDevice). No update/delete exists.",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-003"
+      },
+      {
+        "type": "TelemetryRevision",
+        "task_id": "T2-004"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Boolean> appendRecord(TelemetrySample sample)",
+        "returns": "Mono<Boolean>",
+        "semantics": "true = appended (also writes revision 1); false = identity already stored, no-op"
+      },
+      {
+        "signature": "Mono<Void> appendRevision(TelemetryRevision revision)",
+        "returns": "Mono<Void>"
+      },
+      {
+        "signature": "Mono<TelemetryRevision> findLatestRevision(String deviceId, String metric, Instant tDevice)",
+        "returns": "Mono<TelemetryRevision>",
+        "semantics": "empty when identity unknown"
+      }
+    ]
+  },
+  "feature": null,
+  "export": "com.pulsestream.telemetry.ingestion.application.TelemetryRecordRepository",
+  "project": "telemetry-ingestion",
+  "layer": "application"
+}

@@ -3,64 +3,52 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "IntakeService",
+    "type": "BackfillReorderer",
     "constructors": [
       [
-        "props",
-        "auditTrail",
-        "stepLog",
-        "meters"
+        "WINDOW",
+        "100",
+        "metrics"
+      ],
+      [
+        "Duration.ofHours(1)",
+        "2",
+        "metrics"
       ]
     ],
     "static_calls": [],
     "calls": [
       {
-        "receiver": "service",
-        "method": "stream",
-        "args": []
-      },
-      {
-        "receiver": "service",
-        "method": "receive",
+        "receiver": "reorderer",
+        "method": "reorder",
         "args": [
-          "List.of(sample(\"c1\"))"
+          "Flux.just(late, early)"
         ]
       },
       {
-        "receiver": "service",
-        "method": "receive",
+        "receiver": "reorderer",
+        "method": "reorder",
         "args": [
-          "List.of(sample(\"c1\"), sample(\"c1\"))"
+          "Flux.just(first, second)"
         ]
       },
       {
-        "receiver": "service",
-        "method": "receive",
+        "receiver": "reorderer",
+        "method": "reorder",
         "args": [
-          "List.of(sample(\"c1\"), sample(\"c1\"), sample(\"c1\"))"
-        ],
-        "returns": "Integer"
+          "Flux.just(late, early).concatWith(Flux.never())"
+        ]
       }
     ],
     "verified": [],
     "usage_lines": [
-      "class IntakeServiceTest {",
-      "private IntakeService service(int capacity) {",
-      "return new IntakeService(props, auditTrail, stepLog, meters);",
-      "StepVerifier.create(service(8).receive(List.of(sample(\"c1\"), sample(\"c1\"))))",
-      "StepVerifier.create(service(8).receive(List.of())).expectNext(0).verifyComplete();",
-      "IntakeService service = service(8);",
-      "var received = service.stream().take(1).collectList();",
-      "service.receive(List.of(sample(\"c1\"))).block();",
-      "IntakeService service = service(8);",
-      "var verifier = StepVerifier.create(service.stream().take(2).map(TelemetrySample::deviceId))",
-      "service.receive(List.of(sample(\"c1\"), sample(\"c1\"))).block();",
-      "service(8).receive(List.of(sample(\"c1\"))).block();",
-      "IntakeService service = service(1);",
-      "service.stream().subscribe(s -> { }, e -> { }).dispose();",
-      "Integer accepted = service.receive(List.of(sample(\"c1\"), sample(\"c1\"), sample(\"c1\"))).block();",
-      "service(8).receive(List.of(sample(\"first\"), sample(\"second\"))).block();",
-      "service(8).receive(List.of(sample(\"c9\"), sample(\"c9\"))).block();"
+      "class BackfillReordererTest {",
+      "BackfillReorderer reorderer = new BackfillReorderer(WINDOW, 100, metrics);",
+      "StepVerifier.withVirtualTime(() -> reorderer.reorder(Flux.just(late, early)))",
+      "BackfillReorderer reorderer = new BackfillReorderer(WINDOW, 100, metrics);",
+      "StepVerifier.withVirtualTime(() -> reorderer.reorder(Flux.just(first, second)))",
+      "BackfillReorderer reorderer = new BackfillReorderer(Duration.ofHours(1), 2, metrics);",
+      "StepVerifier.withVirtualTime(() -> reorderer.reorder(Flux.just(late, early).concatWith(Flux.never())))"
     ]
   },
   "stderr": "",

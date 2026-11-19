@@ -1,40 +1,43 @@
 {
   "id": "T2-015",
-  "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/eventlog/application/EventLogService.java",
-  "export": "EventLogService",
-  "method": "append",
+  "project": "telemetry-ingestion",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/shared/observability/TelemetryMetrics.java",
+  "export": "TelemetryMetrics",
+  "method": "TelemetryMetrics",
   "language": "java",
-  "framework": "springboot",
+  "framework": "spring-boot",
   "skill": "java-springboot",
-  "signature": "Mono<EventRecord> append(TelemetrySample sample)",
-  "returns": "Mono<EventRecord>",
-  "body": "return repository.append(sample)\n        .flatMap(record -> {\n            boolean revision = EventRecord.KIND_REVISION.equals(record.kind());\n            meterRegistry.counter(\"telemetry.eventlog.appended\", \"kind\", revision ? \"revision\" : \"record\").increment();\n            stepLog.emit(revision ? \"eventlog.revision.appended\" : \"eventlog.record.appended\", sample.correlationId());\n            if (broadcast.publish(record)) {\n                stepLog.emit(\"eventlog.broadcast.published\", sample.correlationId());\n            } else {\n                meterRegistry.counter(\"telemetry.pipeline.dropped\", \"stage\", \"broadcast\").increment();\n            }\n            return auditTrail.record(new AuditEntry(\"eventlog\", \"append\", \"success\", Instant.now(), sample.correlationId()))\n                    .thenReturn(record);\n        })\n        .onErrorResume(error -> {\n            meterRegistry.counter(\"telemetry.pipeline.dropped\", \"stage\", \"eventlog\").increment();\n            return auditTrail.record(new AuditEntry(\"eventlog\", \"append\", \"failure\", Instant.now(), sample.correlationId()))\n                    .then(Mono.<EventRecord>empty());\n        });",
-  "imports": [
-    "com.pulsestream.telemetry.eventlog.domain.EventRecord",
-    "com.pulsestream.telemetry.validation.domain.TelemetrySample",
-    "com.pulsestream.telemetry.shared.observability.AuditEntry",
-    "com.pulsestream.telemetry.shared.observability.AuditTrail",
-    "com.pulsestream.telemetry.shared.observability.StepLog",
-    "io.micrometer.core.instrument.MeterRegistry",
-    "java.time.Instant",
-    "reactor.core.publisher.Mono",
-    "org.springframework.stereotype.Service"
-  ],
-  "missing": [],
   "kind": "class",
+  "signature": "public TelemetryMetrics(MeterRegistry registry)",
+  "returns": "void",
+  "body": "this.registry = registry;\nregistry.config().meterFilter(new MeterFilter() {\n    @Override\n    public Meter.Id map(Meter.Id id) {\n        if (!id.getName().startsWith(\"telemetry.\")) {\n            return id;\n        }\n        List<Tag> kept = id.getTags().stream()\n                .filter(tag -> Arrays.asList(\"status\", \"metric\", \"reason\", \"outcome\").contains(tag.getKey()))\n                .toList();\n        return id.replaceTags(Tags.of(kept));\n    }\n});",
+  "imports": [
+    "io.micrometer.core.instrument.Meter",
+    "io.micrometer.core.instrument.MeterRegistry",
+    "io.micrometer.core.instrument.Tag",
+    "io.micrometer.core.instrument.Tags",
+    "io.micrometer.core.instrument.config.MeterFilter",
+    "java.time.Duration",
+    "java.util.Arrays",
+    "java.util.List",
+    "org.springframework.stereotype.Component"
+  ],
   "annotations": [
-    "Service"
+    "Component"
   ],
   "members": [
-    "private final EventLogRepository repository",
-    "private final EventBroadcast broadcast",
-    "private final AuditTrail auditTrail",
-    "private final StepLog stepLog",
-    "private final MeterRegistry meterRegistry",
-    "public EventLogService(EventLogRepository repository, EventBroadcast broadcast, AuditTrail auditTrail, StepLog stepLog, MeterRegistry meterRegistry) {\n    this.repository = repository;\n    this.broadcast = broadcast;\n    this.auditTrail = auditTrail;\n    this.stepLog = stepLog;\n    this.meterRegistry = meterRegistry;\n}"
+    "private final MeterRegistry registry;",
+    "private static String closed(String value, String... allowed) { return value != null && Arrays.asList(allowed).contains(value) ? value : \"other\"; }",
+    "public void samplesIngested(String status) { registry.counter(\"telemetry.samples.ingested\", \"status\", closed(status, \"accepted\", \"VALIDATED\", \"VALIDATION_FAILED\", \"DUPLICATE\", \"REFUSED\")).increment(); }",
+    "public void validationFailed(String metric) { registry.counter(\"telemetry.validation.failed\", \"metric\", closed(metric, \"temperature\", \"humidity\", \"pressure\", \"voltage\", \"current\", \"vibration\")).increment(); }",
+    "public void backfillReordered() { registry.counter(\"telemetry.backfill.reordered\").increment(); }",
+    "public void revisionAppended(String reason) { registry.counter(\"telemetry.revision.appended\", \"reason\", closed(reason, \"backfill\", \"correction\", \"late\")).increment(); }",
+    "public void windowBroadcast(String outcome) { registry.counter(\"telemetry.window.broadcast\", \"outcome\", closed(outcome, \"buffered\", \"broadcast\", \"success\")).increment(); }",
+    "public void broadcastDropped(String reason) { registry.counter(\"telemetry.broadcast.dropped\", \"reason\", closed(reason, \"overflow\", \"slow_consumer\", \"timeout\")).increment(); }",
+    "public void ingestDuration(String outcome, Duration elapsed) { registry.timer(\"telemetry.ingest.duration\", \"outcome\", closed(outcome, \"success\", \"failure\", \"refused\")).record(elapsed); }"
   ],
+  "missing": [],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-17T15:29:57.386678+00:00"
+  "recorded_at": "2026-11-18T19:23:40.664629+00:00"
 }

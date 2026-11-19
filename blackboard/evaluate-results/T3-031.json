@@ -1,0 +1,37 @@
+{
+  "project": "telemetry-ingestion",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/distribution/application/BroadcastService.java",
+  "stack": "java-springboot3",
+  "skill": "java-springboot3",
+  "summary": "Extracted isRunning guard, renamed emit to publish, ordered members by lifecycle, sorted imports; behavior unchanged.",
+  "findings": [
+    "No secrets, injection, or unbounded collections; sink capacity is bounded."
+  ],
+  "changes": [
+    "Extracted isRunning()",
+    "Renamed emit->publish",
+    "Reordered methods and imports, removed blank-line noise"
+  ],
+  "reverts": [],
+  "final_test": {
+    "command": "./mvnw -Dtest=BroadcastServiceTest test",
+    "status": "passed",
+    "run": 4,
+    "failures": 0,
+    "errors": 0
+  },
+  "task_id": "T3-031",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-18T20:43:49.614695+00:00",
+  "engine_diff": [
+    {
+      "file": "src/main/java/com/pulsestream/telemetry/distribution/application/BroadcastService.java",
+      "added": 20,
+      "removed": 21,
+      "capped": false,
+      "patch": "--- a/src/main/java/com/pulsestream/telemetry/distribution/application/BroadcastService.java\n+++ b/src/main/java/com/pulsestream/telemetry/distribution/application/BroadcastService.java\n@@ -1,28 +1,23 @@\n package com.pulsestream.telemetry.distribution.application;\n \n+import com.pulsestream.telemetry.distribution.api.ValidatedEventConsumer;\n+import com.pulsestream.telemetry.distribution.domain.TelemetryWindowBroadcast;\n+import com.pulsestream.telemetry.shared.observability.TelemetryMetrics;\n+import org.slf4j.Logger;\n+import org.slf4j.LoggerFactory;\n+import org.springframework.stereotype.Service;\n import reactor.core.Disposable;\n import reactor.core.publisher.Flux;\n import reactor.core.publisher.Sinks;\n-import org.slf4j.Logger;\n-import org.slf4j.LoggerFactory;\n-import org.springframework.stereotype.Service;\n-import com.pulsestream.telemetry.distribution.api.ValidatedEventConsumer;\n-import com.pulsestream.telemetry.distribution.domain.TelemetryWindowBroadcast;\n-import com.pulsestream.telemetry.shared.observability.TelemetryMetrics;\n \n @Service\n public class BroadcastService {\n \n     private static final Logger LOG = LoggerFactory.getLogger(BroadcastService.class);\n-\n     private final ValidatedEventConsumer buffer;\n-\n     private final TelemetryEventSource source;\n-\n     private final TelemetryMetrics metrics;\n-\n     private final Sinks.Many<TelemetryWindowBroadcast> sink;\n-\n     private Disposable subscription;\n \n     public BroadcastService(ValidatedEventConsumer buffer, TelemetryEventSource source, TelemetryMetrics metrics, int sinkCapacity) {\n@@ -32,8 +27,11 @@\n         this.sink = Sinks.many().multicast().onBackpressureBuffer(sinkCapacity, false);\n     }\n \n-    public Flux<TelemetryWindowBroadcast> subscribe() {\n-        return sink.asFlux();\n+    public void start() {\n+        if (isRunning()) {\n+            return;\n+        }\n+        subscription = buffer.buffer(source.events()).subscribe(this::publish);\n     }\n \n     public void stop() {\n@@ -42,7 +40,15 @@\n         }\n     }\n \n-    private void emit(TelemetryWindowBroadcast window) {\n+    public Flux<TelemetryWindowBroadcast> subscribe() {\n+        return sink.asFlux();\n+    }\n+\n+    private boolean isRunning() {\n+        return subscription != null && !subscription.isDisposed();\n+    }\n+\n+    private void publish(TelemetryWindowBroadcast window) {\n         Sinks.EmitResult result = sink.tryEmitNext(window);\n         if (result == Sinks.EmitResult.FAIL_OVERFLOW) {\n             metrics.broadcastDropped(\"subscriber-overflow\");\n@@ -52,11 +58,4 @@\n             LOG.info(\"window-broadcast\");\n         }\n     }\n-\n-    public void start() {\n-        if (subscription != null && !subscription.isDisposed()) {\n-            return;\n-        }\n-        subscription = buffer.buffer(source.events()).subscribe(this::emit);\n-    }\n }"
+    }
+  ],
+  "engine_diff_files": 1
+}

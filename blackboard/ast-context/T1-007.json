@@ -3,51 +3,53 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "R2dbcAuditTrail",
+    "type": "AuditEntry",
     "constructors": [
       [
-        "client",
-        "new SimpleMeterRegistry()"
-      ],
-      [
-        "client(newDb())",
-        "registry"
+        "\"actor\"",
+        "\"action\"",
+        "\"outcome\"",
+        "now",
+        "\"corr-1\""
       ]
     ],
     "static_calls": [],
     "calls": [
       {
-        "receiver": "trail",
-        "method": "record",
-        "args": [
-          "new AuditEntry(\"alice\", \"INGEST\", \"ACCEPTED\", NOW, \"corr-1\")"
-        ]
+        "receiver": "entry",
+        "method": "actor",
+        "args": []
       },
       {
-        "receiver": "trail",
-        "method": "record",
-        "args": [
-          "new AuditEntry(\"a\", \"X\", \"OK\", NOW, \"c1\")"
-        ]
+        "receiver": "entry",
+        "method": "action",
+        "args": []
       },
       {
-        "receiver": "trail",
-        "method": "record",
-        "args": [
-          "new AuditEntry(\"b\", \"Y\", \"OK\", NOW, \"c2\")"
-        ]
+        "receiver": "entry",
+        "method": "outcome",
+        "args": []
+      },
+      {
+        "receiver": "entry",
+        "method": "timestamp",
+        "args": []
+      },
+      {
+        "receiver": "entry",
+        "method": "correlationId",
+        "args": []
       }
     ],
     "verified": [],
     "usage_lines": [
-      "class R2dbcAuditTrailTest {",
-      "R2dbcAuditTrail trail = new R2dbcAuditTrail(client, new SimpleMeterRegistry());",
-      "StepVerifier.create(trail.record(new AuditEntry(\"alice\", \"INGEST\", \"ACCEPTED\", NOW, \"corr-1\")))",
-      "R2dbcAuditTrail trail = new R2dbcAuditTrail(client, new SimpleMeterRegistry());",
-      "trail.record(new AuditEntry(\"a\", \"X\", \"OK\", NOW, \"c1\")).block();",
-      "trail.record(new AuditEntry(\"b\", \"Y\", \"OK\", NOW, \"c2\")).block();",
-      "R2dbcAuditTrail trail = new R2dbcAuditTrail(client(newDb()), registry);",
-      "StepVerifier.create(trail.record(new AuditEntry(\"a\", \"X\", \"OK\", NOW, \"c1\")))"
+      "class AuditEntryTest {",
+      "AuditEntry entry = new AuditEntry(\"actor\", \"action\", \"outcome\", now, \"corr-1\");",
+      "assertThat(entry.actor()).isEqualTo(\"actor\");",
+      "assertThat(entry.action()).isEqualTo(\"action\");",
+      "assertThat(entry.outcome()).isEqualTo(\"outcome\");",
+      "assertThat(entry.timestamp()).isEqualTo(now);",
+      "assertThat(entry.correlationId()).isEqualTo(\"corr-1\");"
     ]
   },
   "stderr": "",

@@ -1,0 +1,31 @@
+{
+  "task_id": "T1-026",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "TelemetryWindowBroadcast",
+    "constructors": [
+      [
+        "START",
+        "END",
+        "List.of(event())"
+      ],
+      [
+        "START",
+        "END",
+        "List.of(e)"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [],
+    "verified": [],
+    "usage_lines": [
+      "class TelemetryWindowBroadcastTest {",
+      "var window = new TelemetryWindowBroadcast(START, END, List.of(event()));",
+      "var window = new TelemetryWindowBroadcast(START, END, List.of(event()));",
+      "var window = new TelemetryWindowBroadcast(START, END, List.of(e));"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

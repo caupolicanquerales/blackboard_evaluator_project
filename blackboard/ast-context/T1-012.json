@@ -3,28 +3,25 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "R2dbcEventLogRepository",
-    "constructors": [
-      [
-        "client"
-      ]
-    ],
+    "type": "EventPublisher",
+    "constructors": [],
     "static_calls": [],
-    "calls": [],
+    "calls": [
+      {
+        "receiver": "publisher",
+        "method": "publish",
+        "args": [
+          "event()"
+        ]
+      }
+    ],
     "verified": [],
     "usage_lines": [
-      "class R2dbcEventLogRepositoryTest {",
-      "private record Fixture(DatabaseClient client, R2dbcEventLogRepository repository) {}",
-      "return new Fixture(client, new R2dbcEventLogRepository(client));",
-      "StepVerifier.create(f.repository().append(sample(\"d1\", 120.0, \"VALID\")))",
-      "f.repository().append(sample(\"d1\", 120.0, \"VALID\")).block();",
-      "StepVerifier.create(f.repository().append(sample(\"d1\", 130.0, \"VALID\")))",
-      "f.repository().append(sample(\"d1\", 120.0, \"VALID\")).block();",
-      "StepVerifier.create(f.repository().append(sample(\"d2\", 121.0, \"VALID\")))",
-      "f.repository().append(sample(\"d1\", 999.0, \"VALIDATION_FAILED\")).block();",
-      "f.repository().append(sample(\"d1\", 120.0, \"VALID\")).block();",
-      "f.repository().append(sample(\"d1\", 130.0, \"VALID\")).block();",
-      "StepVerifier.create(f.repository().findLatest(\"d1\", \"heart_rate\", T_DEVICE))"
+      "class EventPublisherTest {",
+      "EventPublisher publisher = e -> Mono.just(true);",
+      "StepVerifier.create(publisher.publish(event())).expectNext(true).verifyComplete();",
+      "EventPublisher publisher = e -> Mono.just(false);",
+      "StepVerifier.create(publisher.publish(event())).expectNext(false).verifyComplete();"
     ]
   },
   "stderr": "",

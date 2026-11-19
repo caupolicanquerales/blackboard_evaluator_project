@@ -1,0 +1,134 @@
+{
+  "schema_version": "1.0",
+  "report_type": "security-spec",
+  "slug": "<domain-slug>",
+  "metadata": {
+    "generated_at": "<ISO-8601>",
+    "agent": "agent-security-architect",
+    "inputs": ["<file>", "<file>"],
+    "confidence": "high|medium|low"
+  },
+  "assumptions": [
+    {
+      "id": "AS-01",
+      "text": "<decided posture, one sentence>",
+      "source": "<the input concept verbatim: an actors/external_systems entry, a surface, a flow, or 'baseline rule' - NEVER a file name: only metadata.inputs may cite files>",
+      "excludes": "<what this decision rules out>"
+    }
+  ],
+  "trust_boundaries": [
+    {
+      "id": "TB-01",
+      "name": "<the crossing>",
+      "from": "<principal|context|store>",
+      "to": "<principal|context|store>",
+      "untrusted_inputs": ["<field or payload>"],
+      "controls": ["AZ-01", "SI-01"]
+    }
+  ],
+  "principals": [
+    {
+      "id": "P-01",
+      "name": "<term used by the inputs>",
+      "kind": "human|service|device|anonymous|job",
+      "source": "<actors|external_systems entry, VERBATIM>",
+      "authentication": "required|not-applicable",
+      "credential_capability": "<abstract token, e.g. proof-of-possession>",
+      "identity_claims": ["tenant_id", "owner_id", "scopes"]
+    }
+  ],
+  "data_classification": [
+    {
+      "id": "DC-01",
+      "concept": "<data_model concept or language term>",
+      "class": "public|internal|confidential|restricted",
+      "pii": false,
+      "secret": false,
+      "fields": ["<field names as the strategy spells them>"],
+      "at_rest": "none|envelope-encryption|field-encryption|hashing|tokenization",
+      "in_transit": "none|mutual-tls|tls",
+      "masking": "none|partial|redact|hash",
+      "retention": "<duty>",
+      "deletion": "<duty>",
+      "log_visibility": "allowed|masked|forbidden",
+      "error_visibility": "allowed|masked|forbidden",
+      "export_visibility": "allowed|masked|forbidden",
+      "reason": "<why this class>"
+    }
+  ],
+  "authorization_matrix": [
+    {
+      "id": "AZ-01",
+      "surface": "<strategy surfaces[].name, VERBATIM: the join key>",
+      "operation": "GET|POST|PUT|PATCH|DELETE|consume|schedule|cli|internal-call",
+      "principal_ids": ["P-01"],
+      "roles": ["<role name>"],
+      "scopes": ["<scope name>"],
+      "ownership_rule": "none|owner|tenant|owner-and-tenant|public|<explicit predicate>",
+      "client_supplied_ids": ["<path/body/header key>"],
+      "decision_point": {
+        "layer": "interface|application|domain|infrastructure",
+        "component": "<module or context name>"
+      },
+      "default": "deny",
+      "effect_on_deny": "unauthenticated|forbidden-not-found|reject-drop|no-op",
+      "fields_read": ["DC-01"],
+      "fields_written": ["DC-01"],
+      "audit_event": "<event class or none>",
+      "test_duty": "<permitted case, denied case, cross-owner case>"
+    }
+  ],
+  "invariants": [
+    {
+      "id": "SI-01",
+      "rule": "<never/always statement>",
+      "capability": "<abstract token, e.g. tenant-scoped-query>",
+      "enforcement_layer": "edge|application|domain|store|pipeline",
+      "owner_context": "<bounded context name, exactly as the strategy spells it>",
+      "failure_mode": "closed|open",
+      "verification": "<the one observation that proves it false>"
+    }
+  ],
+  "secrets": {
+    "inventory": [
+      {
+        "id": "SD-01",
+        "name": "<capability, never a value>",
+        "owner": "<context>",
+        "custody": "external-key-store|runtime-injection|operator-supplied",
+        "rotation": "<duty>",
+        "must_not_appear_in": ["source", "logs", "error responses", "test fixtures", "build artifacts"]
+      }
+    ],
+    "handling_rules": ["<abstract duty>"]
+  },
+  "error_policy": {
+    "allowed_fields": ["code", "message", "correlation_key"],
+    "never_expose": ["stack traces", "internal identifiers", "queries", "paths", "secrets", "input echo"],
+    "security_audit_events": [
+      {
+        "event": "<class, e.g. authorization-denied>",
+        "fields": ["actor", "action", "resource", "outcome", "reason", "timestamp", "correlation_key"]
+      }
+    ]
+  },
+  "duties": [
+    {
+      "spec_ref": "AZ-01",
+      "obligation": "<one implementable sentence>",
+      "capability": "<declared abstract token>",
+      "unit_kind": "policy-port|policy-adapter|ownership-predicate|validator|redaction|audit-event|credential-handling|key-custody|classification-rule"
+    }
+  ],
+  "risks": [
+    {
+      "id": "R-01",
+      "risk": "<exposure>",
+      "likelihood": "low|medium|high",
+      "impact": "low|medium|high",
+      "mitigation": "<spec entry or duty>",
+      "residual": "<what remains after it>"
+    }
+  ],
+  "open_questions": ["<decision still owed, and the input that would answer it>"]
+}

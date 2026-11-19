@@ -1,0 +1,15 @@
+{
+  "id": "T3-022",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-022"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/api/IngressPacketResponse.java",
+  "kind": "refactor",
+  "intent": "Refactor IngressPacketResponse: keep the ast_hints table, behavior and frozen tests unchanged; remove duplication, tighten naming, keep layer import rules.",
+  "feature": null,
+  "export": "com.pulsestream.telemetry.ingestion.api.IngressPacketResponse",
+  "project": "telemetry-ingestion",
+  "layer": "interface"
+}

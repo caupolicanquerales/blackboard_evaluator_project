@@ -1,0 +1,36 @@
+{
+  "id": "T2-020",
+  "project": "telemetry-ingestion",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ingestion/infrastructure/R2dbcAuditTrail.java",
+  "export": "R2dbcAuditTrail",
+  "kind": "class",
+  "method": "record",
+  "language": "java",
+  "framework": "springboot",
+  "skill": "java-standard-best-practices",
+  "signature": "public Mono<Void> record(AuditEntry entry)",
+  "returns": "Mono<Void>",
+  "body": "return client.sql(INSERT)\n        .bind(\"actor\", Parameters.in(R2dbcType.VARCHAR, entry.actor()))\n        .bind(\"action\", Parameters.in(R2dbcType.VARCHAR, entry.action()))\n        .bind(\"outcome\", Parameters.in(R2dbcType.VARCHAR, entry.outcome()))\n        .bind(\"occurredAt\", entry.timestamp().atOffset(ZoneOffset.UTC))\n        .bind(\"correlationId\", Parameters.in(R2dbcType.VARCHAR, entry.correlationId()))\n        .then();",
+  "members": [
+    "private static final String INSERT = \"INSERT INTO audit_trail (actor, action, outcome, occurred_at, correlation_id) VALUES (:actor, :action, :outcome, :occurredAt, :correlationId)\"",
+    "private final DatabaseClient client",
+    "public R2dbcAuditTrail(DatabaseClient client) {\n    this.client = Objects.requireNonNull(client, \"client\");\n}"
+  ],
+  "implements": [
+    "AuditTrail"
+  ],
+  "imports": [
+    "java.time.ZoneOffset",
+    "java.util.Objects",
+    "com.pulsestream.telemetry.ingestion.application.AuditEntry",
+    "com.pulsestream.telemetry.ingestion.application.AuditTrail",
+    "io.r2dbc.spi.Parameters",
+    "io.r2dbc.spi.R2dbcType",
+    "org.springframework.r2dbc.core.DatabaseClient",
+    "reactor.core.publisher.Mono"
+  ],
+  "missing": [],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-18T17:58:59.043871+00:00"
+}

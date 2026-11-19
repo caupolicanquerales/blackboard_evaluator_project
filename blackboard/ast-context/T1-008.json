@@ -3,68 +3,23 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "ValidationService",
-    "constructors": [
-      [
-        "props",
-        "stepLog",
-        "registry"
-      ]
-    ],
+    "type": "AuditTrail",
+    "constructors": [],
     "static_calls": [],
     "calls": [
       {
-        "receiver": "service",
-        "method": "validate",
+        "receiver": "trail",
+        "method": "record",
         "args": [
-          "sample(metric, value)"
-        ],
-        "returns": "TelemetrySample"
-      },
-      {
-        "receiver": "service",
-        "method": "validate",
-        "args": [
-          "input"
-        ],
-        "returns": "TelemetrySample"
-      },
-      {
-        "receiver": "service",
-        "method": "validate",
-        "args": [
-          "sample(\"heart_rate\", 100.0)"
-        ]
-      },
-      {
-        "receiver": "service",
-        "method": "validate",
-        "args": [
-          "sample(\"heart_rate\", 500.0)"
-        ]
-      },
-      {
-        "receiver": "service",
-        "method": "validate",
-        "args": [
-          "sample(\"power\", -5.0)"
+          "entry"
         ]
       }
     ],
     "verified": [],
     "usage_lines": [
-      "class ValidationServiceTest {",
-      "private ValidationService service;",
-      "service = new ValidationService(props, stepLog, registry);",
-      "TelemetrySample result = service.validate(sample(metric, value));",
-      "TelemetrySample result = service.validate(sample(metric, value));",
-      "TelemetrySample result = service.validate(sample(metric, value));",
-      "TelemetrySample result = service.validate(input);",
-      "service.validate(sample(\"heart_rate\", 100.0));",
-      "service.validate(sample(\"heart_rate\", 500.0));",
-      "service.validate(sample(\"power\", -5.0));",
-      "service.validate(sample(\"heart_rate\", 100.0));",
-      "service.validate(sample(\"heart_rate\", 500.0));"
+      "class AuditTrailTest {",
+      "AuditTrail trail = entry -> {",
+      "StepVerifier.create(trail.record(entry)).verifyComplete();"
     ]
   },
   "stderr": "",

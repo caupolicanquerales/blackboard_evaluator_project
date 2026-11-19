@@ -3,38 +3,146 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "EventLogService",
+    "type": "TelemetryMetrics",
     "constructors": [
       [
-        "repository",
-        "broadcast",
-        "auditTrail",
-        "stepLog",
         "registry"
       ]
     ],
     "static_calls": [],
     "calls": [
       {
-        "receiver": "service",
-        "method": "append",
+        "receiver": "metrics",
+        "method": "samplesIngested",
         "args": [
-          "sample"
+          "\"accepted\""
+        ]
+      },
+      {
+        "receiver": "metrics",
+        "method": "samplesIngested",
+        "args": [
+          "\"sensor-9f8e7d\""
+        ]
+      },
+      {
+        "receiver": "metrics",
+        "method": "samplesIngested",
+        "args": [
+          "null"
+        ]
+      },
+      {
+        "receiver": "metrics",
+        "method": "validationFailed",
+        "args": [
+          "\"temperature\""
+        ]
+      },
+      {
+        "receiver": "metrics",
+        "method": "validationFailed",
+        "args": [
+          "\"device-123\""
+        ]
+      },
+      {
+        "receiver": "metrics",
+        "method": "backfillReordered",
+        "args": []
+      },
+      {
+        "receiver": "metrics",
+        "method": "revisionAppended",
+        "args": [
+          "\"backfill\""
+        ]
+      },
+      {
+        "receiver": "metrics",
+        "method": "revisionAppended",
+        "args": [
+          "\"tenant-42\""
+        ]
+      },
+      {
+        "receiver": "metrics",
+        "method": "windowBroadcast",
+        "args": [
+          "\"success\""
+        ]
+      },
+      {
+        "receiver": "metrics",
+        "method": "windowBroadcast",
+        "args": [
+          "\"window-77\""
+        ]
+      },
+      {
+        "receiver": "metrics",
+        "method": "broadcastDropped",
+        "args": [
+          "\"overflow\""
+        ]
+      },
+      {
+        "receiver": "metrics",
+        "method": "broadcastDropped",
+        "args": [
+          "\"subscriber-abc\""
+        ]
+      },
+      {
+        "receiver": "metrics",
+        "method": "ingestDuration",
+        "args": [
+          "\"success\"",
+          "Duration.ofMillis(50)"
+        ]
+      },
+      {
+        "receiver": "metrics",
+        "method": "ingestDuration",
+        "args": [
+          "\"sensor-1\"",
+          "Duration.ofMillis(5)"
+        ]
+      },
+      {
+        "receiver": "metrics",
+        "method": "ingestDuration",
+        "args": [
+          "\"sensor-1\"",
+          "Duration.ofMillis(1)"
         ]
       }
     ],
     "verified": [],
     "usage_lines": [
-      "class EventLogServiceTest {",
-      "private EventLogService service;",
-      "service = new EventLogService(repository, broadcast, auditTrail, stepLog, registry);",
-      "StepVerifier.create(service.append(sample)).expectNext(record).verifyComplete();",
-      "StepVerifier.create(service.append(sample)).expectNext(record).verifyComplete();",
-      "StepVerifier.create(service.append(sample)).expectNext(record).verifyComplete();",
-      "StepVerifier.create(service.append(sample)).expectNext(record).verifyComplete();",
-      "StepVerifier.create(service.append(sample)).expectNext(record).verifyComplete();",
-      "StepVerifier.create(service.append(sample)).verifyComplete();",
-      "StepVerifier.create(service.append(sample)).verifyComplete();"
+      "class TelemetryMetricsTest {",
+      "private final TelemetryMetrics metrics = new TelemetryMetrics(registry);",
+      "metrics.samplesIngested(\"accepted\");",
+      "metrics.samplesIngested(\"sensor-9f8e7d\");",
+      "metrics.samplesIngested(null);",
+      "metrics.validationFailed(\"temperature\");",
+      "metrics.validationFailed(\"device-123\");",
+      "metrics.backfillReordered();",
+      "metrics.backfillReordered();",
+      "metrics.revisionAppended(\"backfill\");",
+      "metrics.revisionAppended(\"tenant-42\");",
+      "metrics.windowBroadcast(\"success\");",
+      "metrics.windowBroadcast(\"window-77\");",
+      "metrics.broadcastDropped(\"overflow\");",
+      "metrics.broadcastDropped(\"subscriber-abc\");",
+      "metrics.ingestDuration(\"success\", Duration.ofMillis(50));",
+      "metrics.ingestDuration(\"sensor-1\", Duration.ofMillis(5));",
+      "metrics.samplesIngested(\"sensor-9f8e7d\");",
+      "metrics.validationFailed(\"device-123\");",
+      "metrics.revisionAppended(\"tenant-42\");",
+      "metrics.windowBroadcast(\"window-77\");",
+      "metrics.broadcastDropped(\"subscriber-abc\");",
+      "metrics.ingestDuration(\"sensor-1\", Duration.ofMillis(1));"
     ]
   },
   "stderr": "",

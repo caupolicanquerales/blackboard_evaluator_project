@@ -1,0 +1,45 @@
+{
+  "id": "T1-013",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/ingestion/application/TelemetryRecordRepositoryTest.java",
+  "kind": "test",
+  "intent": "Frozen test of TelemetryRecordRepository asserting only its ast_hints table. Interface contract via stub covering both appendRecord outcomes.",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-003"
+      },
+      {
+        "type": "TelemetryRevision",
+        "task_id": "T2-004"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Boolean> appendRecord(TelemetrySample sample)",
+        "returns": "Mono<Boolean>",
+        "semantics": "true = appended (also writes revision 1); false = identity already stored, no-op"
+      },
+      {
+        "signature": "Mono<Void> appendRevision(TelemetryRevision revision)",
+        "returns": "Mono<Void>"
+      },
+      {
+        "signature": "Mono<TelemetryRevision> findLatestRevision(String deviceId, String metric, Instant tDevice)",
+        "returns": "Mono<TelemetryRevision>",
+        "semantics": "empty when identity unknown"
+      }
+    ]
+  },
+  "feature": null,
+  "export": "com.pulsestream.telemetry.ingestion.application.TelemetryRecordRepository",
+  "project": "telemetry-ingestion",
+  "layer": "application"
+}

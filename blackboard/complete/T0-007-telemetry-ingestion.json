@@ -1,0 +1,13 @@
+{
+  "id": "T0-007",
+  "targetAgent": "agent-container",
+  "stage": 0,
+  "dependsOn": [],
+  "path": "pom.xml",
+  "kind": "bootstrap",
+  "layer": "root",
+  "feature": null,
+  "export": "build-manifest",
+  "intent": "Rebuild the telemetry-ingestion Maven scaffold via mcp-server-springboot with the SAME pins (Java 21, Spring Boot 3) and the dependency ids webflux, data-r2dbc, flyway, h2, actuator, validation, test, reactor-test PLUS security; add spring-security-test test-scoped through the Step 4 require step (BOM-managed, the parent owns versions - write none). Verify the whole generated pom, then move ONLY the verified pom.xml into the module root; src/ and the existing frozen tests stay untouched.",
+  "project": "telemetry-ingestion"
+}

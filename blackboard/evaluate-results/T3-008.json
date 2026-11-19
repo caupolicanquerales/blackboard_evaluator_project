@@ -1,30 +1,25 @@
 {
-  "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/validation/application/ValidationService.java",
+  "project": "telemetry-ingestion",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ingestion/application/AuditTrail.java",
   "stack": "java-springboot3",
   "skill": "java-springboot3",
-  "summary": "Audit found no defects; the unit matches the tabled contract. No edits made.",
+  "summary": "AuditTrail is a minimal reactive port interface (single method, inward-only imports). No duplication, naming, or layering issues; no edits.",
   "findings": [],
   "changes": [],
   "reverts": [],
   "final_test": {
     "status": "passed",
-    "exit_code": 0,
+    "source": "gate-cache/T2-008.json",
     "counts": {
-      "run": 25,
-      "failures": 0,
-      "errors": 0
-    },
-    "classes": {
-      "com.pulsestream.telemetry.validation.application.ValidationServiceTest": "passed"
-    },
-    "evidence": "surefire-xml",
-    "source": "gate-cache/T2-008.json"
+      "run": 180,
+      "failures": 8,
+      "errors": 24
+    }
   },
   "task_id": "T3-008",
   "stage": 3,
   "executed": true,
-  "recorded_at": "2026-11-17T16:34:03.560016+00:00",
+  "recorded_at": "2026-11-18T20:47:51.561220+00:00",
   "engine_diff": [],
   "engine_diff_files": 0
 }

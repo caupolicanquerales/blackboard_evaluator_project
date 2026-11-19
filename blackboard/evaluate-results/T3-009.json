@@ -1,39 +1,21 @@
 {
-  "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/reordering/application/ReorderingService.java",
+  "project": "telemetry-ingestion",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ingestion/application/RedactionPort.java",
   "stack": "java-springboot3",
   "skill": "java-springboot3",
-  "status": "REFACTORED",
-  "summary": "Audit found the unit framework-free apart from Micrometer ports, no hacks, no secrets/injection. Hoisted the per-call comparator into a static constant.",
-  "findings": [
-    "Comparator rebuilt on each reorderWindow call (minor loop-invariant work)",
-    "Timer measures only late-count work, not sort; kept to preserve behavior"
-  ],
-  "changes": [
-    "Extracted BY_DEVICE_TIME static Comparator constant"
-  ],
+  "summary": "Audit CLEAN: single-method framework-free application port; no duplication, hacks, or naming issues. No edits.",
+  "findings": [],
+  "changes": [],
   "reverts": [],
   "final_test": {
-    "command": "./mvnw -o -q -Dtest=ReorderingServiceTest test",
     "status": "passed",
-    "counts": {
-      "run": 7,
-      "failures": 0,
-      "errors": 0
-    }
+    "source": "gate-cache/T2-009.json",
+    "command": "./mvnw -Dtest=RedactionPortTest test"
   },
   "task_id": "T3-009",
   "stage": 3,
   "executed": true,
-  "recorded_at": "2026-11-17T16:32:14.565258+00:00",
-  "engine_diff": [
-    {
-      "file": "src/main/java/com/pulsestream/telemetry/reordering/application/ReorderingService.java",
-      "added": 3,
-      "removed": 1,
-      "capped": false,
-      "patch": "--- a/src/main/java/com/pulsestream/telemetry/reordering/application/ReorderingService.java\n+++ b/src/main/java/com/pulsestream/telemetry/reordering/application/ReorderingService.java\n@@ -12,6 +12,8 @@\n import java.util.concurrent.TimeUnit;\n \n public class ReorderingService {\n+\n+    private static final Comparator<TelemetrySample> BY_DEVICE_TIME = Comparator.comparing(TelemetrySample::tDevice);\n \n     private final TelemetryProperties properties;\n \n@@ -31,7 +33,7 @@\n         }\n         long startNanos = System.nanoTime();\n         recordLateSamples(window);\n-        List<TelemetrySample> sorted = window.stream().sorted(Comparator.comparing(TelemetrySample::tDevice)).toList();\n+        List<TelemetrySample> sorted = window.stream().sorted(BY_DEVICE_TIME).toList();\n         Timer.builder(\"telemetry.pipeline.latency\").tag(\"stage\", \"reordering\").register(meterRegistry).record(System.nanoTime() - startNanos, TimeUnit.NANOSECONDS);\n         stepLog.emit(\"reordering.window.flushed\", window.get(0).correlationId());\n         return sorted;"
-    }
-  ],
-  "engine_diff_files": 1
+  "recorded_at": "2026-11-18T20:49:52.774749+00:00",
+  "engine_diff": [],
+  "engine_diff_files": 0
 }

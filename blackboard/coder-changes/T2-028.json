@@ -1,0 +1,38 @@
+{
+  "id": "T2-028",
+  "project": "telemetry-ingestion",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/distribution/infrastructure/InProcessEventBus.java",
+  "export": "InProcessEventBus",
+  "method": "InProcessEventBus",
+  "language": "java",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "kind": "class",
+  "implements": [
+    "EventPublisher",
+    "TelemetryEventSource"
+  ],
+  "signature": "InProcessEventBus(int capacity, TelemetryMetrics metrics)",
+  "returns": "void",
+  "body": "this.metrics = metrics;\nthis.sink = Sinks.many().multicast().onBackpressureBuffer(capacity, false);",
+  "imports": [
+    "reactor.core.publisher.Flux",
+    "reactor.core.publisher.Mono",
+    "reactor.core.publisher.Sinks",
+    "com.pulsestream.telemetry.ingestion.domain.TelemetryEvent",
+    "com.pulsestream.telemetry.ingestion.application.EventPublisher",
+    "com.pulsestream.telemetry.distribution.application.TelemetryEventSource",
+    "com.pulsestream.telemetry.shared.observability.TelemetryMetrics"
+  ],
+  "missing": [],
+  "members": [
+    "private final Sinks.Many<TelemetryEvent> sink;",
+    "private final TelemetryMetrics metrics;",
+    "@Override public Mono<Boolean> publish(TelemetryEvent event) { return Mono.fromSupplier(() -> emit(event)); }",
+    "@Override public Flux<TelemetryEvent> events() { return sink.asFlux(); }",
+    "private boolean emit(TelemetryEvent event) { Sinks.EmitResult result; do { result = sink.tryEmitNext(event); } while (result == Sinks.EmitResult.FAIL_NON_SERIALIZED); if (result.isSuccess()) { return true; } if (result == Sinks.EmitResult.FAIL_OVERFLOW) { metrics.broadcastDropped(\"bus-overflow\"); } return false; }"
+  ],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-18T17:55:09.022770+00:00"
+}

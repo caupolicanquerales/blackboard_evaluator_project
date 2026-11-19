@@ -1,31 +1,37 @@
 {
-  "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/eventlog/application/EventLogService.java",
-  "stack": "java-springboot3-webflux",
-  "skill": "java-springboot3",
-  "status": "CLEAN",
-  "summary": "Audit found no defects; behavior matches the contract. No edits.",
+  "project": "telemetry-ingestion",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/shared/observability/TelemetryMetrics.java",
+  "stack": "java-springboot3",
+  "skill": "coder-framework/java-springboot3",
+  "summary": "Extracted duplicated string literals into constants; behavior unchanged.",
   "findings": [
-    "No hacks, swallowed errors beyond the specified on_false path, or injection sinks; dependencies are ports only."
+    "Magic strings 'other', 'telemetry.' and inline tag-key list rebuilt on every meter id mapping"
   ],
-  "changes": [],
+  "changes": [
+    "Added OTHER, METER_PREFIX, ALLOWED_TAG_KEYS constants; filter uses the constant list"
+  ],
   "reverts": [],
   "final_test": {
     "status": "passed",
-    "exit_code": 0,
+    "command": "./mvnw -Dtest=TelemetryMetricsTest test",
     "counts": {
-      "run": 7,
+      "run": 15,
       "failures": 0,
       "errors": 0
-    },
-    "classes": {
-      "com.pulsestream.telemetry.eventlog.application.EventLogServiceTest": "passed"
     }
   },
   "task_id": "T3-015",
   "stage": 3,
   "executed": true,
-  "recorded_at": "2026-11-17T15:47:26.273829+00:00",
-  "engine_diff": [],
-  "engine_diff_files": 0
+  "recorded_at": "2026-11-18T21:02:14.085941+00:00",
+  "engine_diff": [
+    {
+      "file": "src/main/java/com/pulsestream/telemetry/shared/observability/TelemetryMetrics.java",
+      "added": 7,
+      "removed": 3,
+      "capped": false,
+      "patch": "--- a/src/main/java/com/pulsestream/telemetry/shared/observability/TelemetryMetrics.java\n+++ b/src/main/java/com/pulsestream/telemetry/shared/observability/TelemetryMetrics.java\n@@ -13,10 +13,14 @@\n @Component\n public class TelemetryMetrics {\n \n+    private static final String OTHER = \"other\";\n+    private static final String METER_PREFIX = \"telemetry.\";\n+    private static final List<String> ALLOWED_TAG_KEYS = List.of(\"status\", \"metric\", \"reason\", \"outcome\");\n+\n     private final MeterRegistry registry;\n \n     private static String closed(String value, String... allowed) {\n-        return value != null && Arrays.asList(allowed).contains(value) ? value : \"other\";\n+        return value != null && Arrays.asList(allowed).contains(value) ? value : OTHER;\n     }\n \n     public void samplesIngested(String status) {\n@@ -53,10 +57,10 @@\n \n             @Override\n             public Meter.Id map(Meter.Id id) {\n-                if (!id.getName().startsWith(\"telemetry.\")) {\n+                if (!id.getName().startsWith(METER_PREFIX)) {\n                     return id;\n                 }\n-                List<Tag> kept = id.getTags().stream().filter(tag -> Arrays.asList(\"status\", \"metric\", \"reason\", \"outcome\").contains(tag.getKey())).toList();\n+                List<Tag> kept = id.getTags().stream().filter(tag -> ALLOWED_TAG_KEYS.contains(tag.getKey())).toList();\n                 return id.replaceTags(Tags.of(kept));\n             }\n         });"
+    }
+  ],
+  "engine_diff_files": 1
 }

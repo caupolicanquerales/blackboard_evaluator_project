@@ -1,1 +1,1 @@
-src/main/java/com/pulsestream/telemetry/shared/config/PipelineConfiguration.java
+src/main/java/com/pulsestream/telemetry/ingestion/infrastructure/R2dbcTelemetryRecordRepository.java

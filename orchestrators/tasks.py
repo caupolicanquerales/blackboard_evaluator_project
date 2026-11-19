@@ -25,6 +25,16 @@ NULL_REJECT_RE = re.compile(
     r"rejects?[^.;]*\bnull\b|null[- ]?(?:reject|intoler)|\bnon-null\b", re.I)
 # argument + comparison inside parentheses (or adjacent): "revision (>=1, ...)",
 # "window (> 0)", "capacity (<= 1000)" - the invariant-claim surface of an intent.
+# INTENT ECONOMY (2026-11-18 token audit of the plan phase): the emitted plan of one domain measured
+# 23,585 tokens, of which `intent` prose was 52%; the biggest single assistant output turn on record
+# was 40,442 tokens, and half the emit attempts bounced a refusal that used to demand a full rewrite.
+# Volume is therefore a plan defect, not a style preference - but the machine rule is a WALL, not a
+# target: only a document-sized intent is refused, and only while planning (a resumed board must stay
+# readable). What must go instead is the narration `ast_hints` already pins; every token the gates
+# demand (spec_ref + capability + mechanism, config literals, both signal branches) still stays.
+INTENT_WORD_TARGET = 80
+INTENT_WORD_CEILING = 180
+
 CONSTRUCTOR_CLAIM_RE = re.compile(r"\b(\w+)\s*\(\s*(?:>=|<=|>|<)\s*\d")
 STREAM_REQUEST_TYPES = ("Flux<", "Observable<", "ReadableStream", "AsyncGenerator",
                         "AsyncIterable", "stream of")
@@ -328,8 +338,13 @@ def depends_transitively(start, target, index, seen=None):
 def validate_ast_hints(hints):
     """Structural shape of the API contract table. No language grammar: the entries are
     names and the language's own declaration text, treated as opaque strings."""
-    if not isinstance(hints, dict) or set(hints) != set(settings.AST_HINT_KEYS):
-        return f"ast_hints keys must be exactly {list(settings.AST_HINT_KEYS)}"
+    if not isinstance(hints, dict):
+        return "ast_hints must be an object"
+    if set(settings.AST_HINT_KEYS) - set(hints):
+        return f"ast_hints keys must contain {list(settings.AST_HINT_KEYS)}"
+    extra = sorted(set(hints) - set(settings.AST_HINT_KEYS) - set(settings.AST_HINT_OPTIONAL_KEYS))
+    if extra:
+        return f"ast_hints keys must be from {list(settings.AST_HINT_KEYS) + list(settings.AST_HINT_OPTIONAL_KEYS)}, got {extra}"
     if not (isinstance(hints["package"], str) and hints["package"].strip()):
         return "ast_hints.package must be a non-empty string"
     if not isinstance(hints["implements"], list) \
@@ -353,6 +368,46 @@ def validate_ast_hints(hints):
                         for k, v in method.items() if k == "semantics")):
             return ("each ast_hints.methods entry must be {signature, returns} plus optional "
                     "non-empty `semantics` (returns '' for none)")
+    if "meters" in hints:
+        if not isinstance(hints["meters"], list):
+            return "ast_hints.meters must be a list of {name, duty} objects (rule (z))"
+        for entry in hints["meters"]:
+            if not (isinstance(entry, dict) and set(entry) == {"name", "duty"}
+                    and isinstance(entry["name"], str) and entry["name"].strip()
+                    and entry["duty"] in settings.METER_DUTIES):
+                return ("each ast_hints.meters entry must be {name, duty} with a non-empty "
+                        f"name and duty in {list(settings.METER_DUTIES)} - the owning unit "
+                        "spells `owns`, every unit whose contract records the meter spells `uses`")
+    if "routes" in hints:
+        if not isinstance(hints["routes"], list):
+            return "ast_hints.routes must be a list of {method, path, duty} objects (rule (z))"
+        for entry in hints["routes"]:
+            if not (isinstance(entry, dict) and set(entry) == {"method", "path", "duty"}
+                    and isinstance(entry["method"], str) and entry["method"].strip()
+                    and isinstance(entry["path"], str) and entry["path"].strip().startswith("/")
+                    and entry["duty"] in settings.ROUTE_DUTIES):
+                return ("each ast_hints.routes entry must be {method, path, duty} with a non-empty "
+                        "method, a path starting with '/', and duty in "
+                        f"{list(settings.ROUTE_DUTIES)} - the inbound unit that answers the route "
+                        "spells `serves`; guards, callers and slices spell `uses`")
+    if "config" in hints:
+        if not isinstance(hints["config"], list):
+            return "ast_hints.config must be a list of {path, kind[, fields]} objects (rule (z5))"
+        for entry in hints["config"]:
+            if not (isinstance(entry, dict)
+                    and {"path", "kind"} <= set(entry) <= {"path", "kind", "fields"}
+                    and isinstance(entry["path"], str) and entry["path"].strip()
+                    and "/" not in entry["path"]
+                    and entry["kind"] in settings.CONFIG_KINDS
+                    and ("fields" not in entry
+                         or (isinstance(entry["fields"], list) and entry["fields"]
+                             and all(isinstance(f, str) and f.strip()
+                                     for f in entry["fields"])))):
+                return ("each ast_hints.config entry must be {path, kind} (a dotted property "
+                        f"path, kind in {list(settings.CONFIG_KINDS)}) plus optional non-empty "
+                        "`fields` (the element keys of a structured path) - the binding unit "
+                        "tables the shape its record declares and the config unit cites it "
+                        "VERBATIM (rule (z5))")
     return None
 
 
@@ -441,6 +496,17 @@ def validate(task, index, planning=False):
                     "verbatim execution-strategy entries this unit owns and its stage-1 "
                     "test must assert (the claim is the machine surface, never prose)")
     if planning and stage in (1, 2):
+        words = len(str(task["intent"]).split())
+        if words > INTENT_WORD_CEILING:
+            return (f"intent runs to {words} words (target {INTENT_WORD_TARGET}, ceiling "
+                    f"{INTENT_WORD_CEILING}): the plan of one domain is emitted in a single turn and "
+                    "re-sent on every later one, so prose volume is paid twice. Move what "
+                    "`ast_hints` already pins (signatures, types, collaborators) out of the sentence, "
+                    "and split any unit whose contract genuinely needs more: one unit that must "
+                    "explain itself at length is usually two units. Keep every token the gates demand "
+                    "in prose - the security spec_ref + capability + mechanism, the config literals, "
+                    "the both-branch semantics - but meter names and request paths are NOT prose: they "
+                    "belong in ast_hints.meters / ast_hints.routes (rule (z))")
         if "ast_hints" not in task:
             return ("stage 1-2 tasks carry ast_hints: the API contract table "
                     "(package, implements, dependencies, methods) the tester and coder "

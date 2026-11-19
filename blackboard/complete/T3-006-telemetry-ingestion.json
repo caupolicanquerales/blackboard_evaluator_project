@@ -1,0 +1,15 @@
+{
+  "id": "T3-006",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-006"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/domain/SensorMetricBoundary.java",
+  "kind": "refactor",
+  "intent": "Refactor SensorMetricBoundary: keep the ast_hints table, behavior and frozen tests unchanged; remove duplication, tighten naming, keep layer import rules.",
+  "feature": null,
+  "export": "com.pulsestream.telemetry.ingestion.domain.SensorMetricBoundary",
+  "project": "telemetry-ingestion",
+  "layer": "domain"
+}

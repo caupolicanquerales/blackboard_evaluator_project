@@ -1,0 +1,41 @@
+{
+  "project": "telemetry-ingestion",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/distribution/application/TrustedPublisherPolicy.java",
+  "stack": "java-springboot3",
+  "skill": "java-springboot3",
+  "summary": "Split permits into named predicates, removed unicode-escaped identifier, named schema version constant, constructor first.",
+  "findings": [
+    "Unicode escape in method name 'permits'",
+    "Magic number schema version 1",
+    "Nested guard clauses duplicated null checks"
+  ],
+  "changes": [
+    "Extracted isFromTrustedPublisher and hasCanonicalKey",
+    "Added SUPPORTED_SCHEMA_VERSION constant",
+    "Reordered constructor before methods"
+  ],
+  "reverts": [],
+  "final_test": {
+    "status": "passed",
+    "exit_code": 0,
+    "counts": {
+      "run": 4,
+      "failures": 0,
+      "errors": 0
+    }
+  },
+  "task_id": "T3-029",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-18T20:44:45.910102+00:00",
+  "engine_diff": [
+    {
+      "file": "src/main/java/com/pulsestream/telemetry/distribution/application/TrustedPublisherPolicy.java",
+      "added": 19,
+      "removed": 10,
+      "capped": false,
+      "patch": "--- a/src/main/java/com/pulsestream/telemetry/distribution/application/TrustedPublisherPolicy.java\n+++ b/src/main/java/com/pulsestream/telemetry/distribution/application/TrustedPublisherPolicy.java\n@@ -4,19 +4,28 @@\n \n public class TrustedPublisherPolicy {\n \n+    private static final int SUPPORTED_SCHEMA_VERSION = 1;\n+\n     private final String trustedPublisherId;\n-\n-    public boolean perm\\u0069ts(TelemetryEvent event) {\n-        if (event == null || event.publisherId() == null || !event.publisherId().equals(trustedPublisherId)) {\n-            return false;\n-        }\n-        if (event.schemaVersion() != 1 || event.eventKey() == null) {\n-            return false;\n-        }\n-        return event.eventKey().equals(TelemetryEvent.keyOf(event.deviceId(), event.metric(), event.tDevice(), event.revision()));\n-    }\n \n     public TrustedPublisherPolicy(String trustedPublisherId) {\n         this.trustedPublisherId = trustedPublisherId;\n     }\n+\n+    public boolean permits(TelemetryEvent event) {\n+        return event != null\n+                && isFromTrustedPublisher(event)\n+                && event.schemaVersion() == SUPPORTED_SCHEMA_VERSION\n+                && hasCanonicalKey(event);\n+    }\n+\n+    private boolean isFromTrustedPublisher(TelemetryEvent event) {\n+        return event.publisherId() != null && event.publisherId().equals(trustedPublisherId);\n+    }\n+\n+    private static boolean hasCanonicalKey(TelemetryEvent event) {\n+        return event.eventKey() != null\n+                && event.eventKey().equals(\n+                        TelemetryEvent.keyOf(event.deviceId(), event.metric(), event.tDevice(), event.revision()));\n+    }\n }"
+    }
+  ],
+  "engine_diff_files": 1
+}

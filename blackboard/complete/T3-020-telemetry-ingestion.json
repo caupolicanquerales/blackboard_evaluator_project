@@ -1,0 +1,15 @@
+{
+  "id": "T3-020",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-020"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/infrastructure/R2dbcAuditTrail.java",
+  "kind": "refactor",
+  "intent": "Refactor R2dbcAuditTrail: keep the ast_hints table, behavior and frozen tests unchanged; remove duplication, tighten naming, keep layer import rules.",
+  "feature": null,
+  "export": "com.pulsestream.telemetry.ingestion.infrastructure.R2dbcAuditTrail",
+  "project": "telemetry-ingestion",
+  "layer": "infrastructure"
+}

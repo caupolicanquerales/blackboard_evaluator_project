@@ -1,0 +1,68 @@
+{
+  "schema_version": "1.0",
+  "report_type": "performance-spec",
+  "slug": "<domain-slug>",
+  "metadata": {
+    "generated_at": "<ISO-8601>",
+    "agent": "agent-performance-architect",
+    "inputs": ["<file>", "<file>"],
+    "confidence": "high|medium|low"
+  },
+  "assumptions": [
+    {
+      "id": "PA-01",
+      "text": "<decided load posture, one sentence>",
+      "source": "<the input concept verbatim: a surfaces[].name entry, a persistence concept, a flow, or 'baseline rule' - NEVER a file name: only metadata.inputs may cite files>"
+    }
+  ],
+  "workload": {
+    "entries": [
+      {
+        "id": "WB-01",
+        "surface": "<a strategy surfaces[].name, copied VERBATIM - this is the join key>",
+        "driver": "<arrival rate / payload / fan-out / data volume, one sentence; when the description omits the number cite the baseline assumption ('per PA-01') - never halt the run for a missing number>",
+        "data": ["<persistence.data_model concept names, verbatim>"]
+      }
+    ],
+    "surfaces_exempt": [
+      { "surface": "<declared surface name, verbatim>", "reason": "<why it carries no load duty - silence is not a decision>" }
+    ]
+  },
+  "budgets": [
+    {
+      "id": "PB-01",
+      "target": "<the bounded thing, one sentence>",
+      "limit": "<the bound as a requirement sentence>",
+      "capability": "<abstract-token: lowercase-kebab>",
+      "measurement": {
+        "kind": "query-count|config-key|status-code|payload-size|queue-depth|deterministic-count",
+        "assertion": "<what a stage-1 test observes WITHOUT a clock or a load harness>"
+      }
+    }
+  ],
+  "invariants": [
+    {
+      "id": "PI-01",
+      "rule": "<what holds at worst case, one sentence>",
+      "capability": "<abstract-token: lowercase-kebab>",
+      "owner_context": "<a strategy bounded_contexts name, exactly as spelled, or omit>"
+    }
+  ],
+  "duties": [
+    {
+      "spec_ref": "WB-01|PB-01|PI-01|PA-01",
+      "obligation": "<one sentence: what a unit must hold>",
+      "capability": "<abstract-token matching the rule it discharges>",
+      "unit_kind": "admission-control|rate-limit-policy|concurrency-guard|cache-policy|retry-policy|pagination-rule|resource-ceiling|batch-policy|timeout-policy|budget-observer"
+    }
+  ],
+  "risks": [
+    {
+      "id": "R-01",
+      "risk": "<exposure the plan refuses to soften away>",
+      "mitigation": "<an id this spec declares> OR accepted:|none:|operator:|out-of-scope: <posture>",
+      "residual": "<what stays exposed; required for accepted postures>"
+    }
+  ],
+  "open_questions": ["<anything an input never declared - an entry here STOPS the run>"]
+}

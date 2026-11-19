@@ -1,0 +1,15 @@
+{
+  "id": "T3-019",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-019"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/infrastructure/R2dbcTelemetryRecordRepository.java",
+  "kind": "refactor",
+  "intent": "Refactor R2dbcTelemetryRecordRepository: keep the ast_hints table, behavior and frozen tests unchanged; remove duplication, tighten naming, keep layer import rules.",
+  "feature": null,
+  "export": "com.pulsestream.telemetry.ingestion.infrastructure.R2dbcTelemetryRecordRepository",
+  "project": "telemetry-ingestion",
+  "layer": "infrastructure"
+}

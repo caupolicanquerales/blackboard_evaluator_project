@@ -1,1 +1,1 @@
-src/main/java/com/pulsestream/telemetry/shared/config/TelemetryProperties.java
+src/main/java/com/pulsestream/telemetry/ingestion/domain/ValidationStatus.java

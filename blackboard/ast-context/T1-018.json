@@ -3,21 +3,68 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "TelemetryIngestController",
+    "type": "AesGcmPayloadCipher",
     "constructors": [
       [
-        "service"
+        "new byte[32]"
+      ],
+      [
+        "new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,\n             "
       ]
     ],
     "static_calls": [],
-    "calls": [],
+    "calls": [
+      {
+        "receiver": "c",
+        "method": "decrypt",
+        "args": [
+          "c.encrypt(\"{\\\"v\\\":1}\")"
+        ]
+      },
+      {
+        "receiver": "c",
+        "method": "encrypt",
+        "args": [
+          "\"{\\\"v\\\":1}\""
+        ]
+      },
+      {
+        "receiver": "c",
+        "method": "encrypt",
+        "args": [
+          "\"same\""
+        ]
+      },
+      {
+        "receiver": "c",
+        "method": "encrypt",
+        "args": [
+          "\"payload\""
+        ]
+      },
+      {
+        "receiver": "c",
+        "method": "decrypt",
+        "args": [
+          "tampered"
+        ]
+      }
+    ],
     "verified": [],
     "usage_lines": [
-      "class TelemetryIngestControllerTest {",
-      "var controller = new TelemetryIngestController(service);",
-      "var packet = new TelemetryIngestController.IngressPacketDto(\"dev-1\",",
-      "List.of(new TelemetryIngestController.SampleDto(\"heart_rate\", Instant.parse(T_DEVICE), 80.0)));",
-      "assertThat(response.getBody()).isEqualTo(new TelemetryIngestController.IngressAck(1));"
+      "class AesGcmPayloadCipherTest {",
+      "private static AesGcmPayloadCipher cipher() {",
+      "return new AesGcmPayloadCipher(new byte[32]);",
+      "AesGcmPayloadCipher c = cipher();",
+      "assertThat(c.decrypt(c.encrypt(\"{\\\"v\\\":1}\"))).isEqualTo(\"{\\\"v\\\":1}\");",
+      "assertThat(cipher().encrypt(\"secret-payload\")).isNotEqualTo(\"secret-payload\");",
+      "AesGcmPayloadCipher c = cipher();",
+      "assertThat(c.encrypt(\"same\")).isNotEqualTo(c.encrypt(\"same\"));",
+      "AesGcmPayloadCipher c = cipher();",
+      "byte[] raw = Base64.getDecoder().decode(c.encrypt(\"payload\"));",
+      "assertThatThrownBy(() -> c.decrypt(tampered)).isInstanceOf(RuntimeException.class);",
+      "String foreign = new AesGcmPayloadCipher(new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,",
+      "assertThatThrownBy(() -> cipher().decrypt(foreign)).isInstanceOf(RuntimeException.class);"
     ]
   },
   "stderr": "",

@@ -98,7 +98,19 @@ observability pass: `python-fastapi` and `typescript-nestjs` added to the allow-
    blocklist; `_build_task` defaults `layout` to `"java"` when absent.
 6. `ARCHITECT_TASKS_PROMPT`'s `ast_hints` vocabulary (`implements`) is Java-leaning;
    the prompt already says "as your language spells it".
-7. `tech-stack-architect/` has only `java-reactive-patterns`.
+7. Spring security is covered by TWO skills, one per tier (2026-11-18):
+   `tech-stack-architect/spring-security-architect` — the planning table phase 2 copies from
+   (token → unit + layer + the exact mechanism IDENTIFIER + token-triggered keys + build
+   coordinates + DAG order,
+   and nothing else); and `tech-stack/spring-security` — the coder/tester-tier file that spells the
+   chain DSL, the principal adapter, the custody/crypto bodies and the `spring-security-test`
+   permitted/denied/CROSS-OWNER cases. The two MUST NOT share a skill `name`: same-id skills shadow
+   each other in the loader, and while both were named `spring-security` the architect's grant
+   silently handed phase 2 the bodies file instead of its mapping table. The framework skills
+   (`coder-framework/java-springboot`, `tester-framework/java-junit5`) each carry a one-line pointer
+   to the security file, because both their profiles forbid searching skill folders. Pinned by
+   gauntlet Q21-Q28. Python and TypeScript still have no architect-tier security table: on those
+   stacks rule (y) is satisfied by the architect's own naming, with no pinned vocabulary.
 
 ## 5. Per-stack support matrix
 
@@ -106,7 +118,8 @@ observability pass: `python-fastapi` and `typescript-nestjs` added to the allow-
 |---|---|---|---|
 | Scaffold (stage 0) skill + MCP | ✅ | ✅ | ✅ |
 | tech-stack skill | ✅ | ✅ | ✅ |
-| tech-stack-architect skill | ✅ | ❌ | ❌ |
+| tech-stack-architect skill | ✅ `java-reactive-patterns`, `spring-security-architect` | ❌ | ❌ |
+| security skill (coder/tester tier) | ✅ `tech-stack/spring-security` | ❌ | ❌ |
 | tester-framework skill | ✅ `java-junit5` | ❌ | ❌ |
 | coder-framework skill | ✅ ×2 | ❌ | ❌ |
 | AST extractor builder (real) | ✅ JAR | stub | stub |

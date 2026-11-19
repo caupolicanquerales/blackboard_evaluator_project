@@ -1,0 +1,22 @@
+{
+  "id": "T2-036",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-036",
+    "T0-005"
+  ],
+  "path": "src/main/resources/application.yml",
+  "kind": "code",
+  "intent": "Runtime config src/main/resources/application.yml, nested YAML, two documents: base and profile test (spring.config.activate.on-profile: test, H2). Base: spring.flyway.enabled true, locations classpath:db/migration, url ${TELEMETRY_JDBC_URL}; spring.r2dbc.url ${TELEMETRY_R2DBC_URL} (distinct keys per reader). Test: H2 jdbc url and r2dbc url on the same in-memory db, flyway enabled so actual migrations run. telemetry: reorder-window 60s, reorder-buffer-capacity 1000, window-duration 1s, window-max-events 500, bus-capacity 1024, broadcast-capacity 256, publisher-id telemetry-ingestion-publisher, data-key ${TELEMETRY_DATA_KEY:}, devices/consumers secret-hash from ${TELEMETRY_DEVICE_SECRET_HASH} / ${TELEMETRY_CONSUMER_SECRET_HASH} (runtime-injected custody). logging.file.name logs/telemetry-ingestion.log, logging.structured.format.file ecs, logging.logback.rollingpolicy max-file-size 10MB max-history 7, root level INFO. management.endpoints.web.exposure.include health (metrics via Micrometer through actuator, no push). server.error include-message/stacktrace/binding-errors never. server.ssl.client-auth want. spring.codec.max-in-memory-size 256KB. spring.ssl.bundle.watch.file.quiet-period 10s.",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.shared.config",
+    "implements": [],
+    "dependencies": [],
+    "methods": []
+  },
+  "feature": null,
+  "export": "application.yml",
+  "project": "telemetry-ingestion",
+  "layer": "shared"
+}

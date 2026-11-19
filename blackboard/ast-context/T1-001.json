@@ -3,18 +3,13 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "yml",
+    "type": "xml",
     "constructors": [],
     "static_calls": [],
     "calls": [],
     "verified": [],
     "usage_lines": [
-      "documents = new YamlPropertySourceLoader().load(\"application\", new ClassPathResource(\"application.yml\"));",
-      "void yml_tabledPath_hasTabledLiteral(String path, String expected) {",
-      "void yml_document_isSingleDocument() {",
-      "void yml_flywayLocation_startsWithClasspathPrefix() {",
-      "void yml_document_isNestedWithNoDottedTopLevelKey() throws IOException {",
-      "var resource = new ClassPathResource(\"application.yml\");"
+      ".parse(Path.of(\"pom.xml\").toFile());"
     ]
   },
   "stderr": "",

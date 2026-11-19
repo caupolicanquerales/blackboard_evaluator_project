@@ -13,6 +13,7 @@ import subprocess
 import sys
 
 import pathlib
+import shutil
 
 import settings
 import tasks
@@ -631,7 +632,11 @@ def _fingerprint(task):
         # cached before the field exists would keep the filtered digest's blind charge).
         # v10: parse_counts aggregates per-class surefire lines - the first-match form
         # hid a failing class's errors behind an innocent class's zero-count line.
-        "memo_version": 10,
+        # v11: member_demands widened to `variable` (the enum-constant gap: only when the
+        # located class is NOT the failing file's own type) and nested owners kept as
+        # `OUTER.Inner`; engine attribution and the classpath-hole classification changed
+        # with it - every memoized verdict computed under the old evidence view is stale.
+        "memo_version": 11,
         "payload": payload.stat().st_mtime_ns if payload.is_file() else 0,
         "tree": _tree_fingerprint(root),
     }, sort_keys=True)
@@ -861,6 +866,16 @@ def _tree_wide_failure(data) -> bool:
     return data.get("status") in ("compile_error", "error")
 
 
+# The wave verdict cache's grammar version. It must move WITH the run-test-tool
+# normalization: a wave stored under the old parser carries verdicts WITHOUT the
+# member_demands the new attribution requires, and `_shared_verdict` replays them to
+# every unit of the tree - all evidence present, zero charges, mutual deferral forever
+# (2026-11-18 live: memo_version moved to 11 and the per-unit memos refreshed, but the
+# v9 wave kept serving the pre-demand verdict and the drain stayed at processed 0).
+# v10: variable demands + OUTER.Inner owners joined the evidence (see memo_version v11).
+WAVE_GRAMMAR = "v10"
+
+
 def _shared_verdict(data, task):
     """The wave's decisive failure as any unit's own gate verdict: the same fields it
     would have seen in its own (byte-identical) scoped build."""
@@ -923,7 +938,7 @@ def wave_gate_verdict(task, command):
         return None
     root = workspace.project_root_for(task["project"])
     fp = _tree_fingerprint(root)
-    stamp = f"{task['project']}-v9-{fp}"
+    stamp = f"{task['project']}-{WAVE_GRAMMAR}-{fp}"
     cache_file = settings.GATE_CACHE_DIR / f"wave-{stamp}.json"
     data = None
     if cache_file.is_file():
@@ -935,6 +950,16 @@ def wave_gate_verdict(task, command):
     # command is shaped: the fact is about the tree, not the selector. (This is also
     # where a scoped fallback that primed its decisive verdict gets reused for free.)
     if data is not None and _tree_wide_failure(data):
+        if data.get("status") == "error" and not (data.get("counts") or {}).get("run") \
+                and _fork_boot_corruption(root):
+            cache_file.unlink(missing_ok=True)
+            # corrupted fork boot is not a tree fact: drop the cached wave and fall to
+            # the scoped per-unit gate, which wipes target and re-runs as a
+            # zero-session repair (green_test_result) instead of laundering one killed
+            # build into every unit's verdict - and do NOT rebuild the suite HERE on
+            # the still-corrupted target; the scoped path heals first.
+            return None
+    if data is not None and _tree_wide_failure(data):
         return _shared_verdict(data, task)
     suite = _suite_command(command)
     selector = _selector_of(command)
@@ -944,9 +969,19 @@ def wave_gate_verdict(task, command):
         try:
             data = _run_suite_once(root, suite, stamp)
         except (OSError, subprocess.TimeoutExpired) as exc:
-            return f"test gate: wave build could not run: {exc}", {"status": "not_run",
-                                                                    "reason": str(exc)}
+            # NOT a fact about the tree - the toolchain could not run HERE. Returning a
+            # not_run verdict would hand green_test_result a memoizable environmental
+            # phantom (a wave primed under a wrong cwd replays forever as "cached
+            # verdict"); fall to the unit's own scoped gate path instead, where a
+            # persistent environment fault aborts loudly through the EXEC_ERROR contract.
+            print(f"[gate ] {task['id']} wave build could not run: {str(exc)[:120]}")
+            return None
     if not isinstance(data, dict) or data.get("status") == "not_run":
+        return None
+    if data.get("status") == "error" and not (data.get("counts") or {}).get("run") \
+            and _fork_boot_corruption(root):
+        # fresh suite run died at fork boot on a corrupted output: same refusal as the
+        # cached door - the scoped gate heals (wipe + rerun) before any unit sees a verdict
         return None
     if _tree_wide_failure(data):
         return _shared_verdict(data, task)
@@ -982,6 +1017,29 @@ def wave_gate_verdict(task, command):
         shared["excerpt"] = excerpt
     print(f"[gate ] {task['id']} wave verdict: red ({key})")
     return f"test gate: {_failure_detail(shared, task)}", shared
+
+
+_CORRUPT_FORK_MARKS = ("Truncated class file", "Error while running fork",
+                       "The forked VM terminated without properly saying goodbye")
+
+
+def _fork_boot_corruption(project_root):
+    """True when the newest surefire dumpstreams show the fork dying at CLASS LOADING.
+
+    A build killed mid-write leaves a half-written .class in target/; every forked test
+    JVM then dies before running anything (status=error, tests=0) - a TOOLING wound the
+    engine can heal free by wiping the build output, never a unit defect. Charging it to
+    units (or memoizing it as a tree-wide fact) converts one killed build into a whole
+    board of false identical failures (observed live 2026-11-18: an operator SIGTERM
+    during a build poisoned every subsequent gate).
+    """
+    reports = pathlib.Path(project_root) / "target" / "surefire-reports"
+    try:
+        dumps = sorted(reports.glob("*.dumpstream"), key=lambda f: f.stat().st_mtime_ns)[-2:]
+        return any(mark in f.read_text(encoding="utf-8", errors="ignore")
+                   for f in dumps for mark in _CORRUPT_FORK_MARKS)
+    except OSError:
+        return False
 
 
 def green_test_result(task):
@@ -1040,6 +1098,24 @@ def green_test_result(task):
             return reason, None
         if not isinstance(result, dict):
             return f"test gate produced unexpected output: {str(result)[:400]}", None
+        if (result.get("status") == "error" and not (result.get("counts") or {}).get("run")
+                and _fork_boot_corruption(workspace.project_root_for(task["project"]))):
+            # The empty fork is a tooling wound, not a verdict: heal it BEFORE memo, wave
+            # publish or ledger signature can launder it into a tree-wide fact.
+            print(f"[test] {task['id']} fork boot dies on corrupted build output: "
+                  "wiping target and re-running the gate once (zero-session repair)")
+            shutil.rmtree(workspace.project_root_for(task["project"]) / "target",
+                          ignore_errors=True)
+            try:
+                completed = subprocess.run(
+                    tool_command, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT, text=True,
+                    timeout=settings.TEST_GATE_TIMEOUT + 30, cwd=str(settings.ROOT))
+                rerun = json.loads(completed.stdout)
+                if isinstance(rerun, dict):
+                    result = rerun
+            except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError):
+                pass
         if result.get("status") == "passed":
             counts = result.get("counts") or {}
             print(f"[test] {task['id']} green ({counts.get('run', '?')} tests passed)")
@@ -1050,7 +1126,7 @@ def green_test_result(task):
             # cache so every sibling unit at this fingerprint shares it for free instead
             # of re-deriving byte-identical output with its own full build.
             root = workspace.project_root_for(task["project"])
-            _write_wave(result, f"{task['project']}-v9-{_tree_fingerprint(root)}")
+            _write_wave(result, f"{task['project']}-{WAVE_GRAMMAR}-{_tree_fingerprint(root)}")
         reason = f"test gate: {_failure_detail(result, task)}"
         telemetry.mark_error(current, reason)
         print(f"[test] {task['id']} {reason}")

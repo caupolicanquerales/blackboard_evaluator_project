@@ -1,0 +1,42 @@
+{
+  "id": "T1-020",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T0-004"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/ingestion/infrastructure/R2dbcAuditTrailTest.java",
+  "kind": "test",
+  "intent": "Frozen test of R2dbcAuditTrail asserting only its ast_hints table. REAL-SUBSTRATE: H2 executing actual migration V3; assert durable row with all fields, null actor violates NOT NULL, no update path.",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.infrastructure",
+    "implements": [
+      "AuditTrail"
+    ],
+    "dependencies": [
+      {
+        "type": "AuditTrail",
+        "task_id": "T2-008"
+      },
+      {
+        "type": "AuditEntry",
+        "task_id": "T2-007"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "R2dbcAuditTrail(DatabaseClient client)",
+        "returns": ""
+      },
+      {
+        "signature": "Mono<Void> record(AuditEntry entry)",
+        "returns": "Mono<Void>"
+      }
+    ]
+  },
+  "feature": null,
+  "export": "com.pulsestream.telemetry.ingestion.infrastructure.R2dbcAuditTrail",
+  "project": "telemetry-ingestion",
+  "layer": "infrastructure"
+}

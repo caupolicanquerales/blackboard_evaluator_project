@@ -1,1 +1,1 @@
-src/main/java/com/pulsestream/telemetry/eventlog/application/EventLogService.java
+src/main/java/com/pulsestream/telemetry/shared/observability/TelemetryMetrics.java

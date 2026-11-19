@@ -1,0 +1,44 @@
+{
+  "id": "T2-020",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-020",
+    "T2-008",
+    "T2-007",
+    "T0-004"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/infrastructure/R2dbcAuditTrail.java",
+  "kind": "code",
+  "intent": "SI-10 audit-event: AuditTrail adapter inserting into append-only audit_trail via DatabaseClient (insert only, DC-03 classification-rule: no sample values). Audited events: authentication-failure, authorization-denied, service-credential-use.",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.infrastructure",
+    "implements": [
+      "AuditTrail"
+    ],
+    "dependencies": [
+      {
+        "type": "AuditTrail",
+        "task_id": "T2-008"
+      },
+      {
+        "type": "AuditEntry",
+        "task_id": "T2-007"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "R2dbcAuditTrail(DatabaseClient client)",
+        "returns": ""
+      },
+      {
+        "signature": "Mono<Void> record(AuditEntry entry)",
+        "returns": "Mono<Void>"
+      }
+    ]
+  },
+  "feature": null,
+  "export": "com.pulsestream.telemetry.ingestion.infrastructure.R2dbcAuditTrail",
+  "project": "telemetry-ingestion",
+  "layer": "infrastructure"
+}

@@ -1,26 +1,29 @@
 {
   "id": "T2-013",
-  "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/eventlog/application/EventBroadcast.java",
-  "export": "EventBroadcast",
-  "method": "publish",
+  "project": "telemetry-ingestion",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ingestion/application/TelemetryRecordRepository.java",
+  "export": "TelemetryRecordRepository",
+  "kind": "interface",
+  "method": "appendRecord",
   "language": "java",
-  "framework": "springboot",
+  "framework": "springboot3",
   "skill": "java-springboot",
-  "signature": "boolean publish(EventRecord record)",
-  "returns": "boolean",
+  "signature": "Mono<Boolean> appendRecord(TelemetrySample sample)",
+  "returns": "Mono<Boolean>",
   "body": "",
   "imports": [
-    "com.pulsestream.telemetry.eventlog.domain.EventRecord",
-    "reactor.core.publisher.Flux"
+    "com.pulsestream.telemetry.ingestion.domain.TelemetrySample",
+    "com.pulsestream.telemetry.ingestion.domain.TelemetryRevision",
+    "java.time.Instant",
+    "reactor.core.publisher.Mono"
   ],
   "missing": [],
-  "kind": "interface",
   "members": [
-    "boolean publish(EventRecord record);",
-    "Flux<EventRecord> stream();"
+    "Mono<Boolean> appendRecord(TelemetrySample sample);",
+    "Mono<Void> appendRevision(TelemetryRevision revision);",
+    "Mono<TelemetryRevision> findLatestRevision(String deviceId, String metric, Instant tDevice);"
   ],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-17T15:34:36.545465+00:00"
+  "recorded_at": "2026-11-18T17:57:31.797971+00:00"
 }

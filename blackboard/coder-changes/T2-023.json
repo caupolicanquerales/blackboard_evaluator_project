@@ -1,0 +1,35 @@
+{
+  "id": "T2-023",
+  "project": "telemetry-ingestion",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ingestion/infrastructure/DeviceCredentialAuthenticationManager.java",
+  "export": "DeviceCredentialAuthenticationManager",
+  "kind": "class",
+  "method": "authenticate",
+  "language": "java",
+  "framework": "springboot",
+  "skill": "java-standard-best-practices",
+  "signature": "public Mono<Authentication> authenticate(Authentication authentication)",
+  "returns": "Mono<Authentication>",
+  "body": "Object name = authentication.getPrincipal();\nObject secret = authentication.getCredentials();\nif (name == null || secret == null) {\n    return Mono.empty();\n}\nreturn users.findByUsername(name.toString())\n        .filter(user -> user.isEnabled() && user.isAccountNonLocked() && user.isAccountNonExpired()\n                && user.isCredentialsNonExpired())\n        .filter(user -> encoder.matches(secret.toString(), user.getPassword()))\n        .<Authentication>map(user -> UsernamePasswordAuthenticationToken.authenticated(\n                user.getUsername(), null, user.getAuthorities()))\n        .onErrorResume(error -> Mono.empty());",
+  "members": [
+    "private final ReactiveUserDetailsService users",
+    "private final PasswordEncoder encoder",
+    "public DeviceCredentialAuthenticationManager(ReactiveUserDetailsService users, PasswordEncoder encoder) {\n    this.users = Objects.requireNonNull(users, \"users\");\n    this.encoder = Objects.requireNonNull(encoder, \"encoder\");\n}"
+  ],
+  "implements": [
+    "ReactiveAuthenticationManager"
+  ],
+  "imports": [
+    "java.util.Objects",
+    "org.springframework.security.authentication.ReactiveAuthenticationManager",
+    "org.springframework.security.authentication.UsernamePasswordAuthenticationToken",
+    "org.springframework.security.core.Authentication",
+    "org.springframework.security.core.userdetails.ReactiveUserDetailsService",
+    "org.springframework.security.crypto.password.PasswordEncoder",
+    "reactor.core.publisher.Mono"
+  ],
+  "missing": [],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-18T17:58:58.973566+00:00"
+}

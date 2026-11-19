@@ -49,6 +49,21 @@ SLICE_KEYS = (
     "bounded_contexts",
     "assumptions",
 )
+# The ONE lawful way a domain escapes the security phase: the business description itself says so, and
+# discovery records that sentence VERBATIM. Optional - an absent directive means SECURITY REQUIRED, the
+# default. `quote` is checked by the engine against the description file named in `metadata`
+# (ddd.validate_security_directives), so a waiver an agent invented cannot pass; the SHAPE is checked
+# here, at the writer, because an unusable directive must never reach the board.
+# `ai_directive` is the same witness law with the polarity flipped: the AI phase is opt-IN, so the
+# directive must say required:true AND carry the user's sentence VERBATIM (ddd.ai_required re-reads
+# it); "required:false" is refused at the shape level because not-wanted IS the absent default -
+# recording a false buys nothing and could launder a missing quote past nothing.
+SLICE_OPTIONAL_KEYS = ("security_directive", "ai_directive")
+SECURITY_DIRECTIVE_KEYS = ("required", "quote", "source")
+SECURITY_DIRECTIVE_SOURCES = ("description",)
+AI_DIRECTIVE_KEYS = ("required", "quote", "source")
+AI_DIRECTIVE_SOURCES = ("description",)
+SECURITY_QUOTE_MINIMUM = 20   # a waiver cannot rest on a word: the shortest defensible sentence fragment
 
 CONFIDENCES = frozenset({"high", "medium", "low"})
 SUBDOMAIN_TYPES = frozenset({"core", "supporting", "generic"})
@@ -547,9 +562,51 @@ def validate_final(report):
     return validate_handoff_notes(report.get("handoff_notes"), "report.handoff_notes")
 
 
+def validate_security_directive(directive, label):
+    """Shape of the security waiver: a boolean, a verbatim sentence, and where it came from."""
+    reason = check_keys(directive, SECURITY_DIRECTIVE_KEYS, (), label)
+    if reason:
+        return reason
+    if not isinstance(directive.get("required"), bool):
+        return f"{label}.required must be a boolean: a waiver is a decision, never an omission"
+    if not is_non_empty_str(directive.get("quote")):
+        return (f"{label}.quote must be the sentence from the business description, copied VERBATIM "
+                "(the engine checks it against that file; a paraphrase or an invented reason is refused)")
+    if len(str(directive.get("quote", "")).strip()) < SECURITY_QUOTE_MINIMUM:
+        return (f"{label}.quote must be at least {SECURITY_QUOTE_MINIMUM} characters: a one-word "
+                "waiver is not a sentence from the description")
+    if directive.get("source") not in SECURITY_DIRECTIVE_SOURCES:
+        return (f"{label}.source must be one of {list(SECURITY_DIRECTIVE_SOURCES)} "
+                "(only the business description can waive security)")
+    return None
+
+
+def validate_ai_directive(directive, label):
+    """Shape of the AI trigger: required must be TRUE and the quote verbatim - the same
+    witness law as the security waiver, opposite polarity (opt-in, not exemption)."""
+    reason = check_keys(directive, AI_DIRECTIVE_KEYS, (), label)
+    if reason:
+        return reason
+    if directive.get("required") is not True:
+        return (f"{label}.required must be true: an AI capability is triggered ONLY by a "
+                "sentence of the business description. 'false' is the absent default - "
+                "recording it adds no evidence and buys no opt-out")
+    if not is_non_empty_str(directive.get("quote")):
+        return (f"{label}.quote must be the sentence from the business description, copied "
+                "VERBATIM (the engine checks it against that file; a paraphrase or an "
+                "invented capability is refused)")
+    if len(str(directive.get("quote", "")).strip()) < SECURITY_QUOTE_MINIMUM:
+        return (f"{label}.quote must be at least {SECURITY_QUOTE_MINIMUM} characters: a "
+                "one-word trigger is not a sentence from the description")
+    if directive.get("source") not in AI_DIRECTIVE_SOURCES:
+        return (f"{label}.source must be one of {list(AI_DIRECTIVE_SOURCES)} "
+                "(only the business description can request an AI capability)")
+    return None
+
+
 def validate_domain_slice(report):
     """Validate one per-subdomain file consumed by domain-context-mapping."""
-    reason = check_keys(report, SLICE_KEYS, (), "report")
+    reason = check_keys(report, SLICE_KEYS, SLICE_OPTIONAL_KEYS, "report")
     if reason:
         return reason
     reason = validate_metadata(report.get("metadata"), REPORT_TYPE_SLICE, "report.metadata")
@@ -564,7 +621,17 @@ def validate_domain_slice(report):
     context_names = validate_bounded_contexts(report.get("bounded_contexts"), "report.bounded_contexts")
     if isinstance(context_names, str):
         return context_names
-    return validate_assumptions(report.get("assumptions"), "report.assumptions")
+    reason = validate_assumptions(report.get("assumptions"), "report.assumptions")
+    if reason:
+        return reason
+    if "security_directive" in report:
+        reason = validate_security_directive(report["security_directive"],
+                                             "report.security_directive")
+        if reason:
+            return reason
+    if "ai_directive" in report:
+        return validate_ai_directive(report["ai_directive"], "report.ai_directive")
+    return None
 
 
 def load_context_names(source_report):

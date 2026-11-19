@@ -1,0 +1,38 @@
+{
+  "project": "telemetry-ingestion",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/distribution/infrastructure/InProcessEventBus.java",
+  "stack": "java-springboot3-webflux",
+  "skill": "java-springboot3",
+  "summary": "Simplified emit result handling and extracted overflow reason constant; behavior unchanged.",
+  "findings": [
+    "No layer violations; no unbounded collections (bounded buffer capacity)."
+  ],
+  "changes": [
+    "Collapsed emit success/overflow branches into single return",
+    "Extracted OVERFLOW_REASON constant"
+  ],
+  "reverts": [],
+  "final_test": {
+    "status": "passed",
+    "command": "./mvnw -Dtest=InProcessEventBusTest test",
+    "counts": {
+      "run": 3,
+      "failures": 0,
+      "errors": 0
+    }
+  },
+  "task_id": "T3-028",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-18T20:46:33.317226+00:00",
+  "engine_diff": [
+    {
+      "file": "src/main/java/com/pulsestream/telemetry/distribution/infrastructure/InProcessEventBus.java",
+      "added": 5,
+      "removed": 6,
+      "capped": false,
+      "patch": "--- a/src/main/java/com/pulsestream/telemetry/distribution/infrastructure/InProcessEventBus.java\n+++ b/src/main/java/com/pulsestream/telemetry/distribution/infrastructure/InProcessEventBus.java\n@@ -9,6 +9,8 @@\n import com.pulsestream.telemetry.shared.observability.TelemetryMetrics;\n \n public class InProcessEventBus implements EventPublisher, TelemetryEventSource {\n+\n+    private static final String OVERFLOW_REASON = \"bus-overflow\";\n \n     private final Sinks.Many<TelemetryEvent> sink;\n \n@@ -29,13 +31,10 @@\n         do {\n             result = sink.tryEmitNext(event);\n         } while (result == Sinks.EmitResult.FAIL_NON_SERIALIZED);\n-        if (result.isSuccess()) {\n-            return true;\n+        if (result == Sinks.EmitResult.FAIL_OVERFLOW) {\n+            metrics.broadcastDropped(OVERFLOW_REASON);\n         }\n-        if (result == Sinks.EmitResult.FAIL_OVERFLOW) {\n-            metrics.broadcastDropped(\"bus-overflow\");\n-        }\n-        return false;\n+        return result.isSuccess();\n     }\n \n     public InProcessEventBus(int capacity, TelemetryMetrics metrics) {"
+    }
+  ],
+  "engine_diff_files": 1
+}

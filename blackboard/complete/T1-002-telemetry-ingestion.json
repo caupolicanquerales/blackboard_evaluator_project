@@ -1,0 +1,30 @@
+{
+  "id": "T1-002",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/ingestion/domain/ValidationStatusTest.java",
+  "kind": "test",
+  "intent": "Frozen test of ValidationStatus asserting only its ast_hints table. Assert both constants exist and valueOf round-trips.",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.domain",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "static ValidationStatus valueOf(String name)",
+        "returns": "ValidationStatus"
+      },
+      {
+        "signature": "static ValidationStatus[] values()",
+        "returns": "ValidationStatus[]"
+      }
+    ]
+  },
+  "feature": null,
+  "export": "com.pulsestream.telemetry.ingestion.domain.ValidationStatus",
+  "project": "telemetry-ingestion",
+  "layer": "domain"
+}

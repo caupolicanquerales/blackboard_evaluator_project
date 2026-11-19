@@ -1,0 +1,40 @@
+{
+  "project": "telemetry-ingestion",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/distribution/infrastructure/BroadcastLifecycle.java",
+  "stack": "java-springboot3",
+  "skill": "java-springboot3",
+  "summary": "Constructor moved before lifecycle methods, field renamed service->broadcastService, imports ordered; behavior and signatures unchanged.",
+  "findings": [],
+  "changes": [
+    "Moved constructor above lifecycle methods",
+    "Renamed field service to broadcastService",
+    "Reordered imports"
+  ],
+  "reverts": [],
+  "final_test": {
+    "status": "passed",
+    "exit_code": 0,
+    "counts": {
+      "run": 3,
+      "failures": 0,
+      "errors": 0
+    },
+    "classes": {
+      "com.pulsestream.telemetry.distribution.infrastructure.BroadcastLifecycleTest": "passed"
+    }
+  },
+  "task_id": "T3-032",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-18T20:45:54.899126+00:00",
+  "engine_diff": [
+    {
+      "file": "src/main/java/com/pulsestream/telemetry/distribution/infrastructure/BroadcastLifecycle.java",
+      "added": 8,
+      "removed": 8,
+      "capped": false,
+      "patch": "--- a/src/main/java/com/pulsestream/telemetry/distribution/infrastructure/BroadcastLifecycle.java\n+++ b/src/main/java/com/pulsestream/telemetry/distribution/infrastructure/BroadcastLifecycle.java\n@@ -1,23 +1,27 @@\n package com.pulsestream.telemetry.distribution.infrastructure;\n \n+import com.pulsestream.telemetry.distribution.application.BroadcastService;\n import org.springframework.context.SmartLifecycle;\n-import com.pulsestream.telemetry.distribution.application.BroadcastService;\n \n public class BroadcastLifecycle implements SmartLifecycle {\n \n-    private final BroadcastService service;\n+    private final BroadcastService broadcastService;\n \n     private volatile boolean running;\n \n+    public BroadcastLifecycle(BroadcastService broadcastService) {\n+        this.broadcastService = broadcastService;\n+    }\n+\n     @Override\n     public void start() {\n-        service.start();\n+        broadcastService.start();\n         running = true;\n     }\n \n     @Override\n     public void stop() {\n-        service.stop();\n+        broadcastService.stop();\n         running = false;\n     }\n \n@@ -25,8 +29,4 @@\n     public boolean isRunning() {\n         return running;\n     }\n-\n-    public BroadcastLifecycle(BroadcastService service) {\n-        this.service = service;\n-    }\n }"
+    }
+  ],
+  "engine_diff_files": 1
+}

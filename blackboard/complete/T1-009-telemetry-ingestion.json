@@ -1,0 +1,26 @@
+{
+  "id": "T1-009",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/ingestion/application/RedactionPortTest.java",
+  "kind": "test",
+  "intent": "Frozen test of RedactionPort asserting only its ast_hints table. Interface contract via stub: mask is deterministic.",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.application",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "String mask(String value)",
+        "returns": "String"
+      }
+    ]
+  },
+  "feature": null,
+  "export": "com.pulsestream.telemetry.ingestion.application.RedactionPort",
+  "project": "telemetry-ingestion",
+  "layer": "application"
+}

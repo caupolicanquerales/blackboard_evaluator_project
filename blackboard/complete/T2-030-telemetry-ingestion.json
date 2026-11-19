@@ -1,0 +1,67 @@
+{
+  "id": "T2-030",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-030",
+    "T2-029",
+    "T2-008",
+    "T2-009",
+    "T2-015",
+    "T2-005",
+    "T2-026"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/distribution/api/ValidatedEventConsumer.java",
+  "kind": "code",
+  "intent": "Surface validated-event-consumer: buffers permitted events into bounded windows via windowTimeout(windowMaxEvents, windowDuration). permits true -> buffered, meter telemetry.broadcast.windows outcome buffered; false -> event dropped, audit authorization-denied, broadcastDropped untrusted-publisher, stream continues. Never logs event content (DC-04 classification-rule: bounded memory only, discarded on window close). Pins TrustedPublisherPolicy. observability.step_logs: [\"window-buffered\"].",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.distribution.api",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TrustedPublisherPolicy",
+        "task_id": "T2-029"
+      },
+      {
+        "type": "AuditTrail",
+        "task_id": "T2-008"
+      },
+      {
+        "type": "RedactionPort",
+        "task_id": "T2-009"
+      },
+      {
+        "type": "TelemetryMetrics",
+        "task_id": "T2-015"
+      },
+      {
+        "type": "TelemetryEvent",
+        "task_id": "T2-005"
+      },
+      {
+        "type": "TelemetryWindowBroadcast",
+        "task_id": "T2-026"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "ValidatedEventConsumer(TrustedPublisherPolicy policy, AuditTrail auditTrail, RedactionPort redaction, TelemetryMetrics metrics, Duration windowDuration, int windowMaxEvents)",
+        "returns": ""
+      },
+      {
+        "signature": "Flux<TelemetryWindowBroadcast> buffer(Flux<TelemetryEvent> events)",
+        "returns": "Flux<TelemetryWindowBroadcast>",
+        "semantics": "meters telemetry.broadcast.windows, telemetry.broadcast.dropped"
+      }
+    ]
+  },
+  "feature": null,
+  "export": "com.pulsestream.telemetry.distribution.api.ValidatedEventConsumer",
+  "project": "telemetry-ingestion",
+  "layer": "interface",
+  "observability": {
+    "step_logs": [
+      "window-buffered"
+    ]
+  }
+}

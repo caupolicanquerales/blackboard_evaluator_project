@@ -1,0 +1,50 @@
+{
+  "task_id": "T1-022",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "IngressPacketResponse",
+    "constructors": [
+      [
+        "4",
+        "3",
+        "2",
+        "1"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "response",
+        "method": "appended",
+        "args": []
+      },
+      {
+        "receiver": "response",
+        "method": "rejectedValidation",
+        "args": []
+      },
+      {
+        "receiver": "response",
+        "method": "revisions",
+        "args": []
+      },
+      {
+        "receiver": "response",
+        "method": "duplicates",
+        "args": []
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class IngressPacketResponseTest {",
+      "IngressPacketResponse response = new IngressPacketResponse(4, 3, 2, 1);",
+      "assertThat(response.appended()).isEqualTo(4);",
+      "assertThat(response.rejectedValidation()).isEqualTo(3);",
+      "assertThat(response.revisions()).isEqualTo(2);",
+      "assertThat(response.duplicates()).isEqualTo(1);"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

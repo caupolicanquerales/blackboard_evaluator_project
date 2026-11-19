@@ -1,0 +1,15 @@
+{
+  "id": "T3-004",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-004"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/domain/TelemetryRevision.java",
+  "kind": "refactor",
+  "intent": "Refactor TelemetryRevision: keep the ast_hints table, behavior and frozen tests unchanged; remove duplication, tighten naming, keep layer import rules.",
+  "feature": null,
+  "export": "com.pulsestream.telemetry.ingestion.domain.TelemetryRevision",
+  "project": "telemetry-ingestion",
+  "layer": "domain"
+}

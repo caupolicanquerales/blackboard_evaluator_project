@@ -1,0 +1,21 @@
+{
+  "id": "T1-001",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/PomManifestTest.java",
+  "kind": "test",
+  "intent": "Frozen test of PomManifest asserting only its ast_hints table. Parse pom.xml and assert each coordinate with its scope, plus the scaffold's webflux, data-r2dbc, flyway, h2 (test), actuator, validation dependencies remain.",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry",
+    "implements": [],
+    "dependencies": [],
+    "methods": []
+  },
+  "feature": null,
+  "export": "pom.xml",
+  "project": "telemetry-ingestion",
+  "layer": "root"
+}

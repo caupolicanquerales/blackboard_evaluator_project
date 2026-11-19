@@ -1,0 +1,15 @@
+{
+  "id": "T3-012",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-012"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/application/EventPublisher.java",
+  "kind": "refactor",
+  "intent": "Refactor EventPublisher: keep the ast_hints table, behavior and frozen tests unchanged; remove duplication, tighten naming, keep layer import rules.",
+  "feature": null,
+  "export": "com.pulsestream.telemetry.ingestion.application.EventPublisher",
+  "project": "telemetry-ingestion",
+  "layer": "application"
+}

@@ -1,0 +1,34 @@
+{
+  "id": "T2-010",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-010",
+    "T2-009"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/infrastructure/Sha256RedactionAdapter.java",
+  "kind": "code",
+  "intent": "SI-08 log-redaction: RedactionPort adapter returning a SHA-256 hex digest prefix so identical values map to identical masks and the original is not recoverable; sample values, payloads and device ids never reach logs or errors.",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.infrastructure",
+    "implements": [
+      "RedactionPort"
+    ],
+    "dependencies": [
+      {
+        "type": "RedactionPort",
+        "task_id": "T2-009"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "String mask(String value)",
+        "returns": "String"
+      }
+    ]
+  },
+  "feature": null,
+  "export": "com.pulsestream.telemetry.ingestion.infrastructure.Sha256RedactionAdapter",
+  "project": "telemetry-ingestion",
+  "layer": "infrastructure"
+}

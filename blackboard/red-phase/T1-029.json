@@ -1,0 +1,511 @@
+{
+  "status": "compile_error",
+  "exit_code": 1,
+  "missing_symbols": [
+    "TrustedPublisherPolicy",
+    "TelemetryWindowBroadcast",
+    "AuditEntry",
+    "ValidatedEventConsumer",
+    "TelemetryEvent",
+    "BroadcastService",
+    "TelemetryEventSource",
+    "TelemetryMetrics",
+    "IngestPacketUseCase",
+    "DeviceCredentialAuthenticationManager",
+    "ReactiveUserDetailsService",
+    "AuditTrail",
+    "IngressPacketRequest",
+    "WindowBroadcastController",
+    "TelemetrySecurityConfiguration",
+    "IngressPacketController",
+    "SliceTestSupport",
+    "RedactionPort",
+    "events()"
+  ],
+  "missing_packages": [
+    "com.pulsestream.telemetry.ingestion.domain",
+    "com.pulsestream.telemetry.ingestion.application",
+    "com.pulsestream.telemetry.shared.observability",
+    "com.pulsestream.telemetry.ingestion.infrastructure",
+    "org.springframework.security.authentication",
+    "org.springframework.security.core.authority",
+    "org.springframework.security.core.userdetails"
+  ],
+  "failures": [],
+  "counts": {},
+  "classes": {},
+  "member_demands": [
+    {
+      "member": "AuditEntry",
+      "owner": "ValidatedEventConsumerTest",
+      "kind": "class",
+      "context": "import com.pulsestream.telemetry.ingestion.domain.TelemetryEvent;"
+    },
+    {
+      "member": "ValidatedEventConsumer",
+      "owner": "ValidatedEventConsumerTest",
+      "kind": "class",
+      "context": "private ValidatedEventConsumer consumer(Duration duration, int max) {"
+    },
+    {
+      "member": "TelemetryEvent",
+      "owner": "ValidatedEventConsumerTest",
+      "kind": "class",
+      "context": "private TelemetryEvent event(String deviceId, String keyDevice, String publisher, int offset) {"
+    },
+    {
+      "member": "BroadcastService",
+      "owner": "WindowBroadcastControllerTest",
+      "kind": "class",
+      "context": "import com.pulsestream.telemetry.ingestion.infrastructure.TelemetrySecurityConfiguration;"
+    },
+    {
+      "member": "ValidatedEventConsumer",
+      "owner": "BroadcastServiceTest",
+      "kind": "class",
+      "context": "import com.pulsestream.telemetry.shared.observability.TelemetryMetrics;"
+    },
+    {
+      "member": "TelemetryEventSource",
+      "owner": "BroadcastServiceTest",
+      "kind": "class",
+      "context": "private final TelemetryEventSource source = mock(TelemetryEventSource.class);"
+    },
+    {
+      "member": "TelemetryMetrics",
+      "owner": "BroadcastServiceTest",
+      "kind": "class",
+      "context": "private final TelemetryMetrics metrics = mock(TelemetryMetrics.class);"
+    },
+    {
+      "member": "TelemetryWindowBroadcast",
+      "owner": "BroadcastServiceTest",
+      "kind": "class",
+      "context": "private static TelemetryWindowBroadcast window(int second) {"
+    },
+    {
+      "member": "TelemetryEvent",
+      "owner": "TelemetryEventSourceTest",
+      "kind": "class",
+      "context": "import com.pulsestream.telemetry.ingestion.domain.TelemetryEvent;"
+    },
+    {
+      "member": "TelemetryEvent",
+      "owner": "TrustedPublisherPolicyTest",
+      "kind": "class",
+      "context": "import com.pulsestream.telemetry.ingestion.domain.TelemetryEvent;"
+    },
+    {
+      "member": "TrustedPublisherPolicy",
+      "owner": "TrustedPublisherPolicyTest",
+      "kind": "class",
+      "context": "private final TrustedPublisherPolicy policy = new TrustedPublisherPolicy(TRUSTED);"
+    },
+    {
+      "member": "TelemetryEvent",
+      "owner": "TelemetryWindowBroadcastTest",
+      "kind": "class",
+      "context": "import com.pulsestream.telemetry.ingestion.domain.TelemetryEvent;"
+    },
+    {
+      "member": "BroadcastService",
+      "owner": "BroadcastLifecycleTest",
+      "kind": "class",
+      "context": "private BroadcastService service;"
+    },
+    {
+      "member": "TelemetryEvent",
+      "owner": "InProcessEventBusTest",
+      "kind": "class",
+      "context": "import com.pulsestream.telemetry.ingestion.domain.TelemetryEvent;"
+    },
+    {
+      "member": "IngestPacketUseCase",
+      "owner": "IngressPacketControllerTest",
+      "kind": "class",
+      "context": "import org.springframework.security.core.authority.AuthorityUtils;"
+    },
+    {
+      "member": "DeviceCredentialAuthenticationManager",
+      "owner": "IngressPacketControllerTest",
+      "kind": "class",
+      "context": "private DeviceCredentialAuthenticationManager deviceManager;"
+    },
+    {
+      "member": "ReactiveUserDetailsService",
+      "owner": "IngressPacketControllerTest",
+      "kind": "class",
+      "context": "private ReactiveUserDetailsService users;"
+    },
+    {
+      "member": "AuditTrail",
+      "owner": "IngressPacketControllerTest",
+      "kind": "class",
+      "context": "private AuditTrail auditTrail;"
+    },
+    {
+      "member": "TelemetryMetrics",
+      "owner": "IngressPacketControllerTest",
+      "kind": "class",
+      "context": "private TelemetryMetrics metrics;"
+    },
+    {
+      "member": "IngressPacketRequest",
+      "owner": "IngressPacketControllerTest",
+      "kind": "class",
+      "context": "private static IngressPacketRequest request(String deviceId, String metric) {"
+    },
+    {
+      "member": "IngressPacketRequest",
+      "owner": "IngressPacketRequestTest",
+      "kind": "class",
+      "context": "private static IngressPacketRequest.SampleDto sample(String metric, Double value) {"
+    },
+    {
+      "member": "AuditTrail",
+      "owner": "ValidatedEventConsumerTest",
+      "kind": "class",
+      "context": "AuditTrail trail = entry -> {"
+    },
+    {
+      "member": "RedactionPort",
+      "owner": "ValidatedEventConsumerTest",
+      "kind": "class",
+      "context": "RedactionPort redaction = value -> \"***\";"
+    },
+    {
+      "member": "TrustedPublisherPolicy",
+      "owner": "ValidatedEventConsumerTest",
+      "kind": "class",
+      "context": "return new ValidatedEventConsumer(new TrustedPublisherPolicy(TRUSTED), trail, redaction,"
+    },
+    {
+      "member": "TelemetryMetrics",
+      "owner": "ValidatedEventConsumerTest",
+      "kind": "class",
+      "context": "new TelemetryMetrics(registry), duration, max);"
+    },
+    {
+      "member": "TelemetryWindowBroadcast",
+      "owner": "ValidatedEventConsumerTest",
+      "kind": "class",
+      "context": "Flux<TelemetryWindowBroadcast> out = consumer(Duration.ofSeconds(30), 1)"
+    },
+    {
+      "member": "events()",
+      "owner": "Object",
+      "kind": "method",
+      "context": ".assertNext(w -> assertThat(w.events()).hasSize(1))"
+    },
+    {
+      "member": "TelemetryWindowBroadcast",
+      "owner": "WindowBroadcastControllerTest",
+      "kind": "class",
+      "context": "when(service.subscribe()).thenReturn(Flux.just(new TelemetryWindowBroadcast(t, t.plusSeconds(5), List.of())));"
+    },
+    {
+      "member": "BroadcastService",
+      "owner": "BroadcastServiceTest",
+      "kind": "class",
+      "context": "BroadcastService service = new BroadcastService(buffer, source, metrics, 16);"
+    }
+  ],
+  "problem_kinds": [
+    {
+      "file": "ValidatedEventConsumerTest.java",
+      "line": 2,
+      "kind": "other"
+    },
+    {
+      "file": "ValidatedEventConsumerTest.java",
+      "line": 6,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "ValidatedEventConsumerTest.java",
+      "line": 7,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "ValidatedEventConsumerTest.java",
+      "line": 8,
+      "kind": "other"
+    },
+    {
+      "file": "ValidatedEventConsumerTest.java",
+      "line": 9,
+      "kind": "other"
+    },
+    {
+      "file": "ValidatedEventConsumerTest.java",
+      "line": 10,
+      "kind": "other"
+    },
+    {
+      "file": "ValidatedEventConsumerTest.java",
+      "line": 11,
+      "kind": "other"
+    },
+    {
+      "file": "ValidatedEventConsumerTest.java",
+      "line": 12,
+      "kind": "other"
+    },
+    {
+      "file": "ValidatedEventConsumerTest.java",
+      "line": 28,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "ValidatedEventConsumerTest.java",
+      "line": 31,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "ValidatedEventConsumerTest.java",
+      "line": 41,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "WindowBroadcastControllerTest.java",
+      "line": 5,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "WindowBroadcastControllerTest.java",
+      "line": 6,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "WindowBroadcastControllerTest.java",
+      "line": 7,
+      "kind": "other"
+    },
+    {
+      "file": "WindowBroadcastControllerTest.java",
+      "line": 27,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "BroadcastServiceTest.java",
+      "line": 10,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "BroadcastServiceTest.java",
+      "line": 11,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "BroadcastServiceTest.java",
+      "line": 12,
+      "kind": "other"
+    },
+    {
+      "file": "BroadcastServiceTest.java",
+      "line": 26,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "BroadcastServiceTest.java",
+      "line": 27,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "BroadcastServiceTest.java",
+      "line": 28,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "BroadcastServiceTest.java",
+      "line": 30,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "BroadcastServiceTest.java",
+      "line": 34,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryEventSourceTest.java",
+      "line": 3,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryEventSourceTest.java",
+      "line": 4,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryEventSourceTest.java",
+      "line": 14,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TrustedPublisherPolicyTest.java",
+      "line": 5,
+      "kind": "other"
+    },
+    {
+      "file": "TrustedPublisherPolicyTest.java",
+      "line": 6,
+      "kind": "other"
+    },
+    {
+      "file": "TrustedPublisherPolicyTest.java",
+      "line": 15,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TrustedPublisherPolicyTest.java",
+      "line": 20,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "TelemetryWindowBroadcastTest.java",
+      "line": 5,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryWindowBroadcastTest.java",
+      "line": 6,
+      "kind": "other"
+    },
+    {
+      "file": "TelemetryWindowBroadcastTest.java",
+      "line": 16,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "BroadcastLifecycleTest.java",
+      "line": 7,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "BroadcastLifecycleTest.java",
+      "line": 17,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "InProcessEventBusTest.java",
+      "line": 5,
+      "kind": "other"
+    },
+    {
+      "file": "InProcessEventBusTest.java",
+      "line": 6,
+      "kind": "other"
+    },
+    {
+      "file": "InProcessEventBusTest.java",
+      "line": 14,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "IngressPacketControllerTest.java",
+      "line": 10,
+      "kind": "other"
+    },
+    {
+      "file": "IngressPacketControllerTest.java",
+      "line": 11,
+      "kind": "other"
+    },
+    {
+      "file": "IngressPacketControllerTest.java",
+      "line": 12,
+      "kind": "other"
+    },
+    {
+      "file": "IngressPacketControllerTest.java",
+      "line": 13,
+      "kind": "other"
+    },
+    {
+      "file": "IngressPacketControllerTest.java",
+      "line": 14,
+      "kind": "other"
+    },
+    {
+      "file": "IngressPacketControllerTest.java",
+      "line": 15,
+      "kind": "other"
+    },
+    {
+      "file": "IngressPacketControllerTest.java",
+      "line": 27,
+      "kind": "other"
+    },
+    {
+      "file": "IngressPacketControllerTest.java",
+      "line": 28,
+      "kind": "other"
+    },
+    {
+      "file": "IngressPacketControllerTest.java",
+      "line": 29,
+      "kind": "other"
+    },
+    {
+      "file": "IngressPacketControllerTest.java",
+      "line": 44,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "IngressPacketControllerTest.java",
+      "line": 46,
+      "kind": "missing-symbol"
+    },
+    {
+      "file": "IngressPacketControllerTest.java",
+      "line": 48,
+      "kind": "missing-symbol"
+    }
+  ],
+  "excerpt": [
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion/src/test/java/com/pulsestream/telemetry/distribution/application/BroadcastServiceTest.java:[31,20] cannot find symbol",
+    "[ERROR]   symbol:   class TelemetryWindowBroadcast",
+    "[ERROR]   location: class com.pulsestream.telemetry.distribution.application.BroadcastServiceTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion/src/test/java/com/pulsestream/telemetry/distribution/application/BroadcastServiceTest.java:[41,9] cannot find symbol",
+    "[ERROR]   symbol:   class TelemetryWindowBroadcast",
+    "[ERROR]   location: class com.pulsestream.telemetry.distribution.application.BroadcastServiceTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion/src/test/java/com/pulsestream/telemetry/distribution/application/BroadcastServiceTest.java:[43,9] cannot find symbol",
+    "[ERROR]   symbol:   class BroadcastService",
+    "[ERROR]   location: class com.pulsestream.telemetry.distribution.application.BroadcastServiceTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion/src/test/java/com/pulsestream/telemetry/distribution/application/BroadcastServiceTest.java:[43,40] cannot find symbol",
+    "[ERROR]   symbol:   class BroadcastService",
+    "[ERROR]   location: class com.pulsestream.telemetry.distribution.application.BroadcastServiceTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion/src/test/java/com/pulsestream/telemetry/distribution/application/BroadcastServiceTest.java:[55,9] cannot find symbol",
+    "[ERROR]   symbol:   class TelemetryWindowBroadcast",
+    "[ERROR]   location: class com.pulsestream.telemetry.distribution.application.BroadcastServiceTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion/src/test/java/com/pulsestream/telemetry/distribution/application/BroadcastServiceTest.java:[58,9] cannot find symbol",
+    "[ERROR]   symbol:   class BroadcastService",
+    "[ERROR]   location: class com.pulsestream.telemetry.distribution.application.BroadcastServiceTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion/src/test/java/com/pulsestream/telemetry/distribution/application/BroadcastServiceTest.java:[58,40] cannot find symbol",
+    "[ERROR]   symbol:   class BroadcastService",
+    "[ERROR]   location: class com.pulsestream.telemetry.distribution.application.BroadcastServiceTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion/src/test/java/com/pulsestream/telemetry/distribution/application/BroadcastServiceTest.java:[59,14] cannot find symbol",
+    "[ERROR]   symbol:   class TelemetryWindowBroadcast",
+    "[ERROR]   location: class com.pulsestream.telemetry.distribution.application.BroadcastServiceTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion/src/test/java/com/pulsestream/telemetry/distribution/application/BroadcastServiceTest.java:[74,9] cannot find symbol",
+    "[ERROR]   symbol:   class BroadcastService",
+    "[ERROR]   location: class com.pulsestream.telemetry.distribution.application.BroadcastServiceTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion/src/test/java/com/pulsestream/telemetry/distribution/application/BroadcastServiceTest.java:[74,40] cannot find symbol",
+    "[ERROR]   symbol:   class BroadcastService",
+    "[ERROR]   location: class com.pulsestream.telemetry.distribution.application.BroadcastServiceTest",
+    "[ERROR] /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion/src/test/java/com/pulsestream/telemetry/distribution/application/BroadcastServiceTest.java:[89,27] cannot find symbol",
+    "[ERROR]   symbol:   class TelemetryWindowBroadcast",
+    "[ERROR]   location: class com.pulsestream.telemetry.distribution.application.BroadcastServiceTest",
+    "[ERROR] -> [Help 1]",
+    "[ERROR] ",
+    "[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.",
+    "[ERROR] Re-run Maven using the -X switch to enable full debug logging.",
+    "[ERROR] ",
+    "[ERROR] For more information about the errors and possible solutions, please read the following articles:",
+    "[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException"
+  ],
+  "command": "./mvnw -Dtest=TrustedPublisherPolicyTest test",
+  "task_id": "T1-029",
+  "executed": true,
+  "recorded_at": "2026-11-18T17:36:27.566668+00:00"
+}

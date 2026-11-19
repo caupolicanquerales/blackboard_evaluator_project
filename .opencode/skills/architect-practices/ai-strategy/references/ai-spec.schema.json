@@ -1,0 +1,65 @@
+{
+  "schema_version": "1.0",
+  "report_type": "ai-spec",
+  "slug": "<domain-slug>",
+  "metadata": {
+    "generated_at": "<ISO-8601>",
+    "agent": "agent-ai-architect",
+    "inputs": ["<file>", "<file>"],
+    "confidence": "high|medium|low"
+  },
+  "assumptions": [
+    {
+      "id": "AA-01",
+      "text": "<decided posture, one sentence>",
+      "source": "<the input concept verbatim: the directed sentence's concept, a surfaces[].name, a flow, or 'baseline rule' - NEVER a file name: only metadata.inputs may cite files>"
+    }
+  ],
+  "model_roles": [
+    {
+      "id": "AR-01",
+      "role": "<generation|embedding|rerank|... a capability, never a product>",
+      "statefulness": "none|session|durable - durable is MANDATORY when any trigger holds: cross-session continuity, a human-approval-gate pause bound to the role (checked), a shared blackboard/audit trail whose concept must already sit in persistence.data_model (checked), long-term semantic recall",
+      "memory_technique": "sliding-window|rolling-summary|semantic-episodic - REQUIRED with session/durable, forbidden with none; semantic-episodic requires a retrieval-scope-guard capability (checked)",
+      "data_classes": ["<persisted concept or data class names, from the strategy/slice, verbatim>"]
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "AC-01",
+      "surface_or_flow": "<a strategy surfaces[].name or a context-map flow, copied VERBATIM - the join key>",
+      "requirement": "<what must hold, one sentence>",
+      "capability": "prompt-contract|structured-output-guard|context-budget-cap|fallback-model-route|retrieval-scope-guard|tool-call-guard|eval-golden-set|memory-boundary|offline-model-port|token-cost-cap|agent-handoff|loop-budget-cap|human-approval-gate|incremental-progress-stream",
+    "roles": ["<optional: model_roles ids this rule binds - every agent in a topology must be an agent in the plan>"],
+      "measurement": {
+        "kind": "stub-call-count|schema-validation|config-key|status-code|payload-size|deterministic-count",
+        "assertion": "<what a stage-1 test observes against the STUB port - never a model's wording, never a clock>"
+      }
+    }
+  ],
+  "invariants": [
+    {
+      "id": "AM-01",
+      "rule": "<worst-case law, one sentence; one MUST state that no test path reaches a live endpoint>",
+      "capability": "offline-model-port|loop-budget-cap|<another closed token; an agent-handoff topology MUST have a loop-budget-cap invariant here>",
+      "roles": ["<optional: model_roles ids this law binds - a loop-budget-cap names exactly the AR- agents whose cycle it caps>"]
+    }
+  ],
+  "duties": [
+    {
+      "spec_ref": "AC-01|AM-01 (ONLY rule rows - roles and assumptions carry no capability to match; cite AR-/AA- inside the obligation text, never as the duty target)",
+      "obligation": "<one sentence: what a unit must hold>",
+      "capability": "<the SAME closed token as the rule it discharges>",
+      "unit_kind": "model-port-adapter|prompt-contract|output-validator|context-budget|fallback-policy|retrieval-adapter|tool-guard|eval-harness|memory-adapter|offline-stub|orchestration-router|loop-governor|approval-gate|stream-delivery"
+    }
+  ],
+  "risks": [
+    {
+      "id": "R-01",
+      "risk": "<exposure this plan refuses to soften>",
+      "mitigation": "<an id this spec declares> OR accepted:|none:|operator:|out-of-scope: <posture>",
+      "residual": "<what stays exposed; required for accepted postures>"
+    }
+  ],
+  "open_questions": ["<anything the inputs never declared - an entry here STOPS the run>"]
+}

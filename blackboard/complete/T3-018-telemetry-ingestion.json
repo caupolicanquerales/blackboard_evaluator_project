@@ -1,0 +1,15 @@
+{
+  "id": "T3-018",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-018"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/infrastructure/AesGcmPayloadCipher.java",
+  "kind": "refactor",
+  "intent": "Refactor AesGcmPayloadCipher: keep the ast_hints table, behavior and frozen tests unchanged; remove duplication, tighten naming, keep layer import rules.",
+  "feature": null,
+  "export": "com.pulsestream.telemetry.ingestion.infrastructure.AesGcmPayloadCipher",
+  "project": "telemetry-ingestion",
+  "layer": "infrastructure"
+}

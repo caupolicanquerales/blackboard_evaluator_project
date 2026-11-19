@@ -1,35 +1,24 @@
 {
   "id": "T2-008",
-  "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/validation/application/ValidationService.java",
-  "export": "ValidationService",
-  "method": "validate",
+  "project": "telemetry-ingestion",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ingestion/application/AuditTrail.java",
+  "export": "AuditTrail",
+  "kind": "interface",
+  "method": "record",
   "language": "java",
   "framework": "springboot",
-  "skill": "java-springboot",
-  "kind": "class",
-  "annotations": [
-    "Service"
-  ],
+  "skill": "java-standard-best-practices",
+  "signature": "Mono<Void> record(AuditEntry entry)",
+  "returns": "Mono<Void>",
+  "body": "",
   "imports": [
-    "org.springframework.stereotype.Service",
-    "io.micrometer.core.instrument.MeterRegistry",
-    "com.pulsestream.telemetry.shared.config.TelemetryProperties",
-    "com.pulsestream.telemetry.shared.observability.StepLog",
-    "com.pulsestream.telemetry.validation.domain.TelemetrySample"
+    "reactor.core.publisher.Mono"
   ],
-  "members": [
-    "private final TelemetryProperties properties",
-    "private final StepLog stepLog",
-    "private final MeterRegistry meterRegistry",
-    "public ValidationService(TelemetryProperties properties, StepLog stepLog, MeterRegistry meterRegistry) { this.properties = properties; this.stepLog = stepLog; this.meterRegistry = meterRegistry; }",
-    "private boolean isValid(String metric, double value) { if (metric == null) { return true; } return switch (metric) { case \"heart_rate\" -> value >= properties.heartRateMin() && value <= properties.heartRateMax(); case \"power\" -> value >= properties.powerMin() && value <= properties.powerMax(); case \"cadence\" -> value >= properties.cadenceMin() && value <= properties.cadenceMax(); case \"swim_pace\" -> value > properties.swimPaceMinExclusive(); default -> true; }; }"
-  ],
-  "signature": "public TelemetrySample validate(TelemetrySample sample)",
-  "returns": "TelemetrySample",
-  "body": "boolean valid = isValid(sample.metric(), sample.value());\nString status = valid ? \"valid\" : \"failed\";\nmeterRegistry.counter(\"telemetry.validation.samples\", \"status\", status).increment();\nstepLog.emit(valid ? \"validation.sample.validated\" : \"validation.sample.failed\", sample.correlationId());\nreturn sample.withStatus(valid ? TelemetrySample.STATUS_VALID : TelemetrySample.STATUS_VALIDATION_FAILED);",
   "missing": [],
+  "members": [
+    "Mono<Void> record(AuditEntry entry);"
+  ],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-17T15:35:41.718910+00:00"
+  "recorded_at": "2026-11-18T17:55:53.740804+00:00"
 }

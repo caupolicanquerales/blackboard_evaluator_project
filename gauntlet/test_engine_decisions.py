@@ -11,7 +11,11 @@ Coverage:
   G. plan validity at emit: the API table gate + seed-002 D1..D3 refusal classes
      (unowned file duties, config-less runtime plans, request-encoding
      contradictions, null-rejection without semantics)
+  S. security architect: the spec gate (deny-by-default, IDOR, disclosure, duty
+     closure), the stage 0 scaffold identity, and the emit gate's duty-claim
+     coverage with its three phase-order skips
 """
+import inspect
 import json
 import shutil
 import sys
@@ -41,6 +45,7 @@ settings.CONTEXT_MAP_DIR = ROOT / "blackboard" / "context-map"
 (ROOT / "blackboard" / "complete").mkdir(parents=True)
 
 import attempt_ledger
+import ddd
 import task_queue
 import tdd_engine
 import test_gate
@@ -1338,11 +1343,12 @@ rc_x = emit([xv_t1, xv_t2])
 check("X2 a plan with an inbound HTTP adapter but no end-to-end request-path slice is "
       "REFUSED (contextLoads + new-built unit tests never make the pieces AGREE)",
       bool(rc_x) and "request-path slice" in str(rc_x), str(rc_x)[:200])
+xw_front_hints = dict(xu_hints, routes=[{"method": "POST", "path": "/api/pong", "duty": "serves"}])
 xv_t1b = gtask("T1-944", "com.x.Pong", 1, project="xw", path="src/test/java/x/PongTest.java",
-               intent="assert the controller delegates", hints=xu_hints)
+               intent="assert the controller delegates", hints=xw_front_hints)
 xv_t2b = gtask("T2-944", "com.x.Pong", 2, deps=("T1-944",), project="xw",
                path="src/main/java/x/Pong.java",
-               intent="@PostMapping /api/pong request body handling", hints=xu_hints)
+               intent="@PostMapping /api/pong request body handling", hints=xw_front_hints)
 xv_e2e = gtask("T1-945", "com.x.EntrySliceTest", 1, project="xw",
                path="src/test/java/x/EntrySliceTest.java",
                intent="end-to-end request-path slice: drive the entry, assert durable rows",
@@ -1360,13 +1366,14 @@ xw2_chain_t2 = gtask("T2-946", "com.x.Ingest", 2, deps=("T1-946",), project="xx"
                      path="src/main/java/x/Ingest.java",
                      intent="append-only revision store: nextRevision per delivery",
                      hints=xu_hints)
+xx_front_hints = dict(xu_hints, routes=[{"method": "POST", "path": "/api/ingest", "duty": "serves"}])
 xw2_in_t1 = gtask("T1-947", "com.x.Front", 1, project="xx",
                   path="src/test/java/x/FrontTest.java",
-                  intent="assert the POST handler", hints=xu_hints)
+                  intent="assert the POST handler", hints=xx_front_hints)
 xw2_in_t2 = gtask("T2-947", "com.x.Front", 2, deps=("T1-947", "T2-946"), project="xx",
                   path="src/main/java/x/Front.java",
                   intent="@PostMapping /api/ingest request body, server-minted id",
-                  hints=xu_hints)
+                  hints=xx_front_hints)
 xw2_e2e = gtask("T1-948", "com.x.ChainSliceTest", 1, project="xx",
                 path="src/test/java/x/ChainSliceTest.java",
                 intent="end-to-end request-path slice for the ingress chain",
@@ -1525,6 +1532,8 @@ check("X8d flat dotted keys in a PROPERTIES artifact are their kind's native for
 #    the three residuals the third drain shipped GREEN - the same probe over the real
 #    v9 board names all four findings; these pins lock the machine cores.
 # Y1/Y1b: (s) a deduped chain over a CORRECTING history must state the value axis.
+ax_front_hints = dict(xu_hints, routes=[{"method": "POST", "path": "/api/ingest",
+                                         "duty": "serves"}])
 y1_units = [
     gtask("T1-960", "com.x.CorStore", 1, project="ax",
           path="src/test/java/x/CorStoreTest.java",
@@ -1536,10 +1545,10 @@ y1_units = [
           hints=xu_hints),
     gtask("T1-961", "com.x.CorFront", 1, project="ax",
           path="src/test/java/x/CorFrontTest.java",
-          intent="assert the POST handler", hints=xu_hints),
+          intent="assert the POST handler", hints=ax_front_hints),
     gtask("T2-961", "com.x.CorFront", 2, deps=("T1-961", "T2-960"), project="ax",
           path="src/main/java/x/CorFront.java",
-          intent="@PostMapping /api/ingest request body handling", hints=xu_hints),
+          intent="@PostMapping /api/ingest request body handling", hints=ax_front_hints),
     gtask("T1-962", "com.x.CorSlice", 1, project="ax",
           path="src/test/java/x/CorSliceTest.java",
           intent="end-to-end request-path slice for the ingress chain", hints=xu_hints),
@@ -1735,14 +1744,19 @@ check("Z1c the rule is board-wide, not pair-local: a test task aimed at ANOTHER 
         "export": {"logs": "structured file sink"}}}))
 z2_hints = {"package": "com.z2", "implements": [], "dependencies": [],
             "methods": [{"signature": "accept(P p)", "returns": "void"}]}
+z2_serve_hints = dict(z2_hints, routes=[{"method": "POST", "path": "/api/v1/probe",
+                                         "duty": "serves"}])
+z2_uses_hints = dict(z2_hints, routes=[{"method": "POST", "path": "/api/v1/probe",
+                                        "duty": "uses"}])
 z2_tester = gtask("T1-988", "ProbeController", 1, project="z2",
-                  path="src/test/java/z2/ProbeControllerTest.java", hints=z2_hints)
+                  path="src/test/java/z2/ProbeControllerTest.java", hints=z2_serve_hints)
 z2_slice = gtask("T1-989", "EntrySlice", 1, project="z2",
-                 path="src/test/java/z2/EntrySliceTest.java", hints=z2_hints,
+                 path="src/test/java/z2/EntrySliceTest.java",
+                 hints=z2_uses_hints,
                  intent="end-to-end request-path slice driving POST /api/v1/probe and "
                         "asserting the durable row")
 z2_pojo = dict(gtask("T2-988", "ProbeController", 2, deps=("T1-988",), project="z2",
-                     hints=z2_hints,
+                     hints=z2_serve_hints,
                      intent="POST /api/v1/probe endpoint handler. Declared via class-level "
                             "@RequestMapping with @ResponseBody methods and no scanning-"
                             "registration annotation: it is registered only by the wiring factory."),
@@ -1752,14 +1766,12 @@ rc_z = emit([z2_tester, z2_slice, z2_pojo])
 check("Z2 (x) an inbound HANDLER unit forbidding the stack's marker while crediting the "
       "factory alone is REFUSED (the green boot answering 404 on its own endpoint)",
       bool(rc_z) and "404" in str(rc_z), str(rc_z)[:250])
-z2_marked = dict(z2_pojo, id="T2-989", dependsOn=["T1-990"],
+z2_marked = dict(z2_pojo,
                  intent="POST /api/v1/probe endpoint handler. Class-level @Controller + "
                         "@RequestMapping with @ResponseBody methods: it self-registers "
                         "through the marker (WebFlux maps only annotated classes); the "
                         "wiring unit supplies its collaborators and never re-produces it.")
-z2_tester2 = dict(z2_tester, id="T1-990")
-z2_slice2 = dict(z2_slice, id="T1-991")
-rc_z = emit([z2_tester2, z2_slice2, z2_marked])
+rc_z = emit([z2_tester, z2_slice, z2_marked])
 check("Z2b the batch ACCEPTS once the handler names its marker registration",
       rc_z is None, str(rc_z)[:250])
 z2f_tester = gtask("T1-992", "RequestAdmissionFilter", 1, project="z2",
@@ -1773,6 +1785,1881 @@ rc_z = emit([z2f_tester, z2_filter])
 check("Z2c the rule exempts NON-handler components: a factory-built WebFilter never needs "
       "the handler marker - refusing it would be the (r)-style gate-vs-gate trap",
       rc_z is None, str(rc_z)[:250])
+
+# --- S. the security architect: one artifact, four laws, zero engine vocabulary.
+#     (2026-11-17, revised after the separation-of-concerns review) The step decides WHAT
+#     must hold and names the capability that holds it; the architect maps tokens to real
+#     mechanisms and schedules them. Every case below guards one of those two boundaries:
+#     a leak of realization vocabulary into the spec, or a duty that reaches no unit.
+
+SEC_SLUG = "sec"
+SEC_FILE = settings.COMPLETE_DIR / f"security-spec-{SEC_SLUG}.json"
+
+
+def sec_spec(mutate=None):
+    """One lawful spec in the shape references/security-spec.schema.json tables (trimmed to
+    the fields these gates read; Q1 pins the full key contract against the engine)."""
+    spec = {
+        "schema_version": "1.0", "report_type": "security-spec", "slug": SEC_SLUG,
+        "metadata": {"generated_at": "2026-11-17T00:00:00-03:00",
+                     "agent": "agent-security-architect", "inputs": ["execution-strategy"],
+                     "confidence": "high"},
+        "assumptions": [{"id": "AS-01", "text": "callers arrive authenticated",
+                         "source": "context-map", "excludes": "anonymous intake"}],
+        "trust_boundaries": [{"id": "TB-01", "name": "caller to intake", "from": "device",
+                              "to": "Intake", "untrusted_inputs": ["payload"],
+                              "controls": ["AZ-01"]}],
+        "principals": [{"id": "P-01", "name": "device", "kind": "device", "source": "actors",
+                        "authentication": "required", "credential_capability": "proof-of-possession",
+                        "identity_claims": ["tenant_id"]}],
+        "data_classification": [{"id": "DC-01", "concept": "location", "class": "confidential",
+                                 "pii": True, "secret": False, "fields": ["latitude"],
+                                 "at_rest": "envelope-encryption", "in_transit": "tls",
+                                 "masking": "partial", "retention": "90d", "deletion": "hard",
+                                 "log_visibility": "masked", "error_visibility": "forbidden",
+                                 "export_visibility": "masked", "reason": "tracks a person"}],
+        "authorization_matrix": [
+            {"id": "AZ-01", "surface": "intake write", "operation": "POST",
+             "principal_ids": ["P-01"], "roles": ["device"], "scopes": ["ingest"],
+             "ownership_rule": "owner-and-tenant", "client_supplied_ids": ["device_key"],
+             "decision_point": {"layer": "application", "component": "Intake"}, "default": "deny",
+             "effect_on_deny": "unauthenticated", "fields_read": [], "fields_written": ["DC-01"],
+             "audit_event": "intake-denied", "test_duty": "permitted, denied, cross-owner"},
+            {"id": "AZ-02", "surface": "sample read", "operation": "GET", "principal_ids": ["P-01"],
+             "roles": ["device"], "scopes": ["read"], "ownership_rule": "tenant",
+             "client_supplied_ids": ["sample_id"],
+             "decision_point": {"layer": "application", "component": "Query"}, "default": "deny",
+             "effect_on_deny": "forbidden-not-found", "fields_read": ["DC-01"],
+             "fields_written": [], "audit_event": "read-denied", "test_duty": "foreign tenant refused"}],
+        "invariants": [{"id": "SI-01", "rule": "no lookup by a client key skips the tenant clause",
+                        "capability": "tenant-scoped-query", "enforcement_layer": "application",
+                        "owner_context": "Intake", "failure_mode": "closed",
+                        "verification": "cross-owner refused"}],
+        "secrets": {"inventory": [{"id": "SD-01", "name": "device credential", "owner": "Intake",
+                                   "custody": "external-key-store", "rotation": "90d",
+                                   "must_not_appear_in": ["source", "logs"]}],
+                    "handling_rules": ["never logged"]},
+        "error_policy": {"allowed_fields": ["code", "message", "correlation_key"],
+                         "never_expose": ["stack traces"], "security_audit_events": []},
+        "duties": [
+            {"spec_ref": "AZ-01", "obligation": "admit only rows the caller owns within its tenant",
+             "capability": "tenant-scoped-query", "unit_kind": "ownership-predicate"},
+            {"spec_ref": "AZ-02", "obligation": "scope every read by the caller's tenant",
+             "capability": "tenant-scoped-query", "unit_kind": "policy-adapter"},
+            {"spec_ref": "SI-01", "obligation": "decide admission at the boundary, failing closed",
+             "capability": "deny-by-default", "unit_kind": "policy-port"},
+            {"spec_ref": "DC-01", "obligation": "mask classified fields on every egress surface",
+             "capability": "log-redaction", "unit_kind": "redaction"}],
+        "risks": [{"id": "R-01", "risk": "credential reuse", "likelihood": "medium",
+                   "impact": "high", "mitigation": "SD-01 rotation", "residual": "rotation window"}],
+        "open_questions": [],
+    }
+    if mutate:
+        mutate(spec)
+    SEC_FILE.write_text(json.dumps(spec))
+    return spec
+
+
+def sec_task(tid, stage, path, intent, export, deps=(), hints=None, layer=None):
+    record = {"id": tid, "targetAgent": settings.STAGE_AGENTS[stage], "stage": stage,
+              "dependsOn": list(deps), "path": path, "kind": settings.STAGE_KINDS[stage][0],
+              "layer": layer or ("root" if stage == 0 else "application"), "feature": None,
+              "export": export, "intent": intent, "project": SEC_SLUG}
+    if hints is not None:
+        record["ast_hints"] = hints
+    return record
+
+
+def sec_reset():
+    """Clear this section's board only: ids are refused twice, and deleting another
+    project's records would break pin closures the earlier sections still assert."""
+    for folder in (settings.QUEUE_DIR, settings.ERROR_DIR):
+        for stale in folder.glob(f"*-{SEC_SLUG}.json"):
+            stale.unlink()
+
+
+SEC_HINTS = {"package": "com.sec", "implements": [], "dependencies": [],
+             "methods": [{"signature": "permits(String tenantKey)", "returns": "boolean",
+                          "semantics": "true admits the caller, false rejects at the boundary"}]}
+SEC_BOARD = [
+    sec_task("T0-501", 0, "pom.xml", "Generate the sec project root and build scaffold",
+             task_queue.SCAFFOLD_EXPORT),
+    sec_task("T1-501", 1, "src/test/java/sec/AdmissionTest.java",
+             "Test AZ-01: permitted caller, denied caller, and the cross-owner case where a "
+             "valid key owned by another tenant is refused", "AdmissionTest", ("T0-501",),
+             SEC_HINTS),
+    sec_task("T2-501", 2, "src/main/java/sec/Admission.java",
+             "Enforce AZ-01 and SI-01: the tenant-scoped-query predicate plus deny-by-default, "
+             "applied inside the lookup, so a foreign key admits nothing and answers like a "
+             "missing row", "Admission", ("T1-501",), SEC_HINTS),
+    sec_task("T2-502", 2, "src/main/java/sec/Reader.java",
+             "Enforce AZ-02 and DC-01: tenant-scoped-query on every read, log-redaction on "
+             "egress fields", "Reader", ("T1-501",), SEC_HINTS),
+]
+
+sec_spec()
+check("S1 the spec gate passes a lawful, capability-only spec",
+      ddd.validate_security_spec(SEC_SLUG) is None, ddd.validate_security_spec(SEC_SLUG))
+check("S2 an absent spec is a reason, never a pass (the phase must be seen to have run)",
+      "not found" in ddd.validate_security_spec("no-such-domain"))
+sec_spec(lambda s: s["authorization_matrix"][1].update(ownership_rule="none"))
+check("S3 a row addressed by client-supplied ids with no ownership predicate is REFUSED "
+      "(the IDOR law, machine-checkable in the artifact)",
+      "IDOR" in str(ddd.validate_security_spec(SEC_SLUG)))
+sec_spec(lambda s: s["duties"][0].update(spec_ref="AZ-99"))
+check("S4 a duty pointing at a rule the spec never declares is REFUSED (broken handoff)",
+      "no entry" in str(ddd.validate_security_spec(SEC_SLUG)))
+sec_spec(lambda s: s["duties"].pop(1))
+check("S5 a matrix row that discharges no duty is REFUSED (a rule nobody schedules is prose)",
+      "no owning duty" in str(ddd.validate_security_spec(SEC_SLUG)))
+sec_spec(lambda s: s["data_classification"][0].update(
+    **{"class": "restricted", "log_visibility": "allowed"}))
+check("S6 restricted data visible anywhere is REFUSED (the disclosure law)",
+      "disclosure" in str(ddd.validate_security_spec(SEC_SLUG)))
+sec_spec(lambda s: s["authorization_matrix"][0].update(principal_ids=["P-77"]))
+check("S7 a row granting an undeclared principal is REFUSED",
+      "no principals entry" in str(ddd.validate_security_spec(SEC_SLUG)))
+sec_spec(lambda s: s["authorization_matrix"][0].update(default="permit"))
+check("S8 deny-by-default is enforced, not advised",
+      "must be 'deny'" in str(ddd.validate_security_spec(SEC_SLUG)))
+sec_spec(lambda s: s["duties"][0].update(capability="TenantScopedQuery"))
+check("S9 a capability token that is not an abstract token is REFUSED",
+      "abstract token" in str(ddd.validate_security_spec(SEC_SLUG)))
+sec_spec(lambda s: s["duties"][0].update(unit_kind="web-filter"))
+check("S10 an invented duty kind is REFUSED (closed enumeration, not a suggestion)",
+      "unit_kind" in str(ddd.validate_security_spec(SEC_SLUG)))
+
+# --- the separation-of-concerns law: the spec may not decide the architect's job.
+for label, mutate, at_path in (
+        ("a framework product name",
+         lambda s: s["duties"][0].update(
+             obligation="Spring Security denies the row at the filter"), "duties[0].obligation"),
+        ("an annotation",
+         lambda s: s["authorization_matrix"][0].update(
+             test_duty="@PreAuthorize rejects the caller"), "authorization_matrix[0].test_duty"),
+        ("a class with a framework suffix",
+         lambda s: s["authorization_matrix"][0].update(
+             decision_point={"layer": "application", "component": "IntakeController"}),
+         "authorization_matrix[0].decision_point.component"),
+        ("a file name",
+         lambda s: s["error_policy"].update(never_expose=["application.yml"]),
+         "error_policy.never_expose[0]"),
+        ("an assumption source citing an input FILE (the shape the reference itself used to "
+         "teach: 2026-11-18 live - the agent obeyed '<input file or baseline rule>' and the "
+         "gate refused it - only metadata.inputs may cite files)",
+         lambda s: s["assumptions"][0].update(
+             source="domain-boundary-sec.json assumption: security required"),
+         "assumptions[0].source"),
+        ("a package path",
+         lambda s: s["duties"][0].update(obligation="declare com.sec.intake.Admission"),
+         "duties[0].obligation"),
+        ("a task id",
+         lambda s: s["duties"][0].update(obligation="claimed by T2-004"), "duties[0].obligation"),
+        ("a stage number",
+         lambda s: s["duties"][0].update(obligation="installed at stage 0 by the scaffold"),
+         "duties[0].obligation"),
+        ("an agent name",
+         lambda s: s["duties"][0].update(obligation="agent-container wires the keystore"),
+         "duties[0].obligation"),
+):
+    sec_spec(mutate)
+    refused = str(ddd.validate_security_spec(SEC_SLUG))
+    check(f"S11 the gate refuses {label} at {at_path} - realization vocabulary is the "
+          "architect's, with the tech-stack skill",
+          "REALIZATION" in refused and at_path in refused, refused[:200])
+sec_spec()
+spec = sec_spec()
+spec["duties"][0]["obligation"] = ("a traveller's passport number, a lab flask, the buffer queue, "
+                                   "and how fast sensors react are all ordinary requirements")
+spec["error_policy"]["allowed_fields"] = ["code", "message", "correlation_key"]
+SEC_FILE.write_text(json.dumps(spec))
+check("S11z ordinary domain English that merely LOOKS technical stays legal (passport is PII, "
+      "a flask is glassware, a queue is a buffer, react is a verb, a stage is a phase of work)",
+      ddd.validate_security_spec(SEC_SLUG) is None, ddd.validate_security_spec(SEC_SLUG))
+
+print("== stage 0 identity and the emit gate")
+sec_reset()
+rc = emit(SEC_BOARD)
+check("S12 emit ACCEPTS a decomposition that claims every duty by token",
+      rc is None or not any("security duty" in line for line in str(rc).splitlines()), str(rc)[:260])
+sec_reset()
+rc = emit([t for t in SEC_BOARD if t["id"] != "T2-502"])
+check("S13 an unclaimed security duty is REFUSED naming the token (the rule would ship in no "
+      "unit while every per-unit gate stays green)",
+      any("security duty AZ-02" in line for line in str(rc).splitlines()), str(rc)[:260])
+bare = [dict(t) for t in SEC_BOARD]
+bare[3]["intent"] = ("Enforce the read path per AZ-02 and DC-01 with a scoped query and masked "
+                     "output")  # ids named, capability tokens paraphrased away
+sec_reset()
+rc = emit(bare)
+check("S14b a claim that cites the duty id but never names its capability token is REFUSED "
+      "(a citation is not a mapping: the duty looks covered and nothing was realized)",
+      any("citation, not a mapping" in line for line in str(rc).splitlines()), str(rc)[:280])
+shifted = [dict(t) for t in SEC_BOARD]
+shifted[3]["intent"] = "Enforce AZ-07 on the read path"
+sec_reset()
+rc = emit(shifted)
+check("S14 a spec_ref the spec never declared is REFUSED too (one plan, one vocabulary)",
+      any("security entry AZ-07" in line for line in str(rc).splitlines()), str(rc)[:260])
+sec_reset()
+rc = emit([t for t in SEC_BOARD if int(t["stage"]) == 0])
+check("S15 skip (b): a stage-0-only batch is never refused for duties it cannot claim - the "
+      "database step would otherwise livelock on a board whose spec arrived late",
+      rc is None, str(rc)[:220])
+sec_reset()
+settings.QUEUE_DIR.joinpath(f"T0-501-{SEC_SLUG}.json").write_text(json.dumps(SEC_BOARD[0]))
+settings.QUEUE_DIR.joinpath(f"T0-509-{SEC_SLUG}.json").write_text(json.dumps(
+    sec_task("T0-509", 0, "bootstrap-notes.md", "A dependency-free stage 0 sibling", "notes")))
+check("S16 the scaffold resolves by its export marker even beside another dependency-free "
+      "stage 0 task (the shape heuristic alone would credit whichever id sorted first)",
+      task_queue.scaffold_task_id(SEC_SLUG) == "T0-501", task_queue.scaffold_task_id(SEC_SLUG))
+sec_reset()
+settings.QUEUE_DIR.joinpath(f"T0-510-{SEC_SLUG}.json").write_text(json.dumps(
+    sec_task("T0-510", 0, "pom.xml", "A board written before the marker was taught", "notes")))
+settings.QUEUE_DIR.joinpath(f"T0-511-{SEC_SLUG}.json").write_text(json.dumps(
+    sec_task("T0-511", 0, "db/migrations/V1__x.sql", "A migration task", "V1__x", deps=("T0-510",))))
+check("S17 the legacy fallback still finds the dependency-free non-migrations task, and a "
+      "migration task is never mistaken for the scaffold",
+      task_queue.scaffold_task_id(SEC_SLUG) == "T0-510", task_queue.scaffold_task_id(SEC_SLUG))
+
+print("== prompts and profiles")
+import prompts  # noqa: E402
+
+SEC_REPO = Path(__file__).resolve().parents[1]
+sec_msg = prompts.build_security_prompt(SEC_SLUG)
+SEC_FLAT = " ".join(sec_msg.split())
+sec_arch_msg = prompts.build_architect_prompt(ROOT, "runner", phase="tasks")
+check("S17b the architect's phase-2 prompt demands the pair (spec_ref + capability), names the "
+      "mechanism in the same intent, asks for the closure list - and emits ONE BATCH of per-context "
+      "drafts, so the atomic cross-context checks still see the whole plan (2026-11-18 token audit: "
+      "one 57-task file forced a 40,442-token single output turn; a context file is ~8k)",
+      "/tmp/tasks/<slug>-<context>.json" in prompts.ARCHITECT_TASKS_PROMPT
+      and "ONE array file PER BOUNDED CONTEXT" in prompts.ARCHITECT_TASKS_PROMPT
+      and "One command is mandatory" in prompts.ARCHITECT_TASKS_PROMPT
+      and "BOTH" in prompts.ARCHITECT_TASKS_PROMPT
+      and "citation is not a mapping" in prompts.ARCHITECT_TASKS_PROMPT
+      and "spec_ref -> claiming unit ids -> mechanism named" in prompts.ARCHITECT_TASKS_PROMPT)
+check("S17c the refusal is machine-enforced, not just taught: the emit gate itself carries the "
+      "mapping layer (source-level read of the gate, so a doc that promises it without the code "
+      "fails here)",
+      "citation, not a mapping" in inspect.getsource(task_queue._security_claim_errors)
+      and "duty_caps" in inspect.getsource(task_queue._security_claim_errors))
+check("S18 the security prompt renders its paths and ships no queue command",
+      f"security-spec-{SEC_SLUG}.json" in sec_msg
+      and not any(token in sec_msg for token in
+                  ("{slug}", "{spec_path}", "{strategy_path}", "{slice_path}", "{map_path}"))
+      and "python3" not in sec_msg and "/tmp/tasks" not in sec_msg)
+check("S19 the security prompt commands the prohibition its gate enforces",
+      "Your vocabulary is requirements only" in SEC_FLAT
+      and "never an invented answer" in SEC_FLAT
+      and "You queue nothing and you author no project file" in SEC_FLAT)
+sec_arch = prompts.build_architect_prompt(ROOT, "runner", phase="tasks")
+check("S20 the architect owns the mapping: its prompt claims tokens, maps capabilities to the "
+      "stack's mechanisms, and never receives security stage-0 ids (none exist)",
+      "SECURITY DECOMPOSITION DUTY" in sec_arch and "you own every HOW" in sec_arch
+      and "{security_ids}" not in sec_arch and "security_ids" not in sec_arch)
+check("S21 phase 1 is told the security step reads its surfaces and data model",
+      "The security step runs after you" in prompts.ARCHITECT_STRATEGY_PROMPT)
+bodies = [(SEC_REPO / ".opencode/agents/agent-security-architect.md").read_text(),
+          (SEC_REPO / ".github/agents/agent-security-architect.agent.md").read_text()]
+frontmatter = bodies[0].split("---\n", 2)[1]
+open_body, copilot_body = (b.split("---\n", 2)[2] for b in bodies)
+check("S22 no tech-stack skill is granted to the security profile (the leak was the rule, not "
+      "the wording: loading a stack skill puts framework idioms in the context that decides "
+      "requirements)",
+      "java-springboot3" not in frontmatter and "python-fastapi" not in frontmatter
+      and "typescript-nestjs" not in frontmatter and "security-strategy: allow" in frontmatter
+      and frontmatter.count("allow") <= 8)
+check("S23 the profile edits ONLY its spec and runs ONLY the reader: no runner, no /tmp draft, "
+      "no project tree write - it queues nothing",
+      '"services/*/security/**"' not in frontmatter and '"/tmp/**"' not in frontmatter
+      and "orchestrator_" not in frontmatter
+      and '"blackboard/complete/security-spec-*.json": allow' in frontmatter)
+check("S24 both profiles teach the same body and no queueing step (the .github skills folder "
+      "is a symlink: one skill, two profiles, zero drift)",
+      open_body == copilot_body and "--emit" not in open_body
+      and "/tmp/tasks" not in open_body and "security-spec-<slug>.json" in open_body
+      and "Budget <=8" in open_body)
+check("S25 the engine's budget for this phase matches the profile it states",
+      settings.SECURITY_AGENT == "agent-security-architect"
+      and settings.call_budget(settings.SECURITY_AGENT) == 8
+      and "Budget <=8" in open_body)
+
+# --- Z. the SURFACE JOIN (Gap A) and the PLACEMENT law (Gap B), 2026-11-18 probe.
+#     The probe that wrote this section shipped a plan whose every duty was claimed and whose
+#     entry unit had no guard on its path, and a spec that tabled one row for a strategy with
+#     four inbound surfaces - every gate green both times. Each case below is one of those two
+#     shapes: a surface phase 1 hid, or a claim that sits on an island.
+#     Ids live in the 67x band: `load_index` keys by ID alone, so a section that reuses another
+#     section's id (T2-902 here once did) silently overwrites its record and the case passes for
+#     the wrong reason.
+import pipeline as pipeline_mod
+
+Z_SLUG = "surf"
+settings.DOMAIN_DIR.mkdir(parents=True, exist_ok=True)
+
+Z_ROW = {"id": "AZ-01", "surface": "intake write", "operation": "POST",
+         "principal_ids": ["P-01"], "roles": ["device"], "scopes": ["ingest"],
+         "ownership_rule": "owner-and-tenant", "client_supplied_ids": ["device_key"],
+         "decision_point": {"layer": "application", "component": "Intake"}, "default": "deny",
+         "effect_on_deny": "unauthenticated", "fields_read": [], "fields_written": ["DC-01"],
+         "audit_event": "intake-denied", "test_duty": "permitted, denied, cross-owner"}
+Z_DUTY = {"spec_ref": "AZ-01", "obligation": "admit only rows the caller owns",
+          "capability": "tenant-scoped-query", "unit_kind": "ownership-predicate"}
+
+
+def z_strategy(surfaces=("intake write",), contexts=("Intake",), exempt=None):
+    strat = {"slug": Z_SLUG, "language": "Java 21", "modules": [Z_SLUG],
+             "layers": ["domain", "application", "interface"], "build_order": ["domain"],
+             "bounded_contexts": list(contexts),
+             "surfaces": [{"name": name, "kind": "http", "context": contexts[0],
+                           "operations": ["POST"]} for name in surfaces],
+             "persistence": {"data_model": "telemetry_record (tenant_id, device_key, value)"},
+             "observability": FULL_FLOOR, "risks": []}
+    if exempt:
+        strat["contexts_without_inbound"] = exempt
+    (ROOT / "blackboard" / "complete" / f"execution-strategy-{Z_SLUG}.json").write_text(
+        json.dumps(strat))
+    return strat
+
+
+def z_spec(rows=(), duties=(), principals=None, invariants=(), questions=()):
+    spec = sec_spec()   # the lawful S-block shape, retargeted at this section's slug
+    spec.update({"slug": Z_SLUG, "authorization_matrix": list(rows) or [Z_ROW],
+                 "duties": list(duties) or [Z_DUTY], "invariants": list(invariants),
+                 "principals": principals if principals is not None else spec["principals"],
+                 "open_questions": list(questions)})
+    spec["trust_boundaries"] = []
+    (settings.COMPLETE_DIR / f"security-spec-{Z_SLUG}.json").write_text(json.dumps(spec))
+    return spec
+
+
+(settings.DOMAIN_DIR / f"domain-boundary-{Z_SLUG}.json").write_text(json.dumps(
+    {"bounded_contexts": [{"name": "Intake", "actors": ["IoT edge device"],
+                           "consumes": ["Device transmissions (external)"]}]}))
+z_spec()
+z_strategy()
+check("Z1 a lawful strategy naming its inbound surfaces passes the phase-1 gate",
+      ddd.validate_strategy(Z_SLUG) is None, str(ddd.validate_strategy(Z_SLUG))[:200])
+surfaceless = dict(z_strategy(), surfaces=None)
+(ROOT / "blackboard" / "complete" / f"execution-strategy-{Z_SLUG}.json").write_text(
+    json.dumps(surfaceless))
+check("Z2 a strategy that names NO inbound surface is REFUSED at phase 1 (Gap A: the spec can "
+      "only table rows for surfaces it was told about, and rule (y) discharges only that spec)",
+      "surfaces" in str(ddd.validate_strategy(Z_SLUG)), str(ddd.validate_strategy(Z_SLUG))[:120])
+z_strategy(surfaces=("intake write",), contexts=("Intake", "Archive"))
+check("Z3 a declared context in neither `surfaces` nor `contexts_without_inbound` is REFUSED "
+      "(silence is not a decision)",
+      "Archive" in str(ddd.validate_strategy(Z_SLUG)), str(ddd.validate_strategy(Z_SLUG))[:200])
+z_strategy(surfaces=("intake write",), contexts=("Intake", "Archive"),
+           exempt=[{"context": "Archive", "reason": "store-only, no caller"}])
+check("Z4 the exemption with a reason ACCEPTS", ddd.validate_strategy(Z_SLUG) is None,
+      str(ddd.validate_strategy(Z_SLUG))[:200])
+z_strategy(surfaces=("intake write", "sample read"))
+check("Z5 a declared surface with NO authorization row is refused by the SPEC gate - 'the table "
+      "is not empty' was never the law 'one row per surface' (Gap A)",
+      "sample read" in str(ddd.validate_security_spec(Z_SLUG)),
+      str(ddd.validate_security_spec(Z_SLUG))[:220])
+z_strategy()
+z_spec(invariants=[{"id": "SI-01", "rule": "no lookup skips the tenant clause",
+                    "capability": "tenant-scoped-query", "enforcement_layer": "application",
+                    "owner_context": "Nowhere", "failure_mode": "closed",
+                    "verification": "cross-owner refused"}],
+       duties=[Z_DUTY, {"spec_ref": "SI-01", "obligation": "decide at the edge, failing closed",
+                        "capability": "deny-by-default", "unit_kind": "policy-port"}])
+check("Z6 an invariant owned by a context the strategy never declared is REFUSED",
+      "owner_context" in str(ddd.validate_security_spec(Z_SLUG)),
+      str(ddd.validate_security_spec(Z_SLUG))[:200])
+z_spec(invariants=())
+principals = [{"id": "P-01", "name": "operator", "kind": "human", "source": "Nightly operator",
+               "authentication": "required", "credential_capability": "bearer-jwt-proof",
+               "identity_claims": ["tenant_id"]}]
+z_spec(principals=principals)
+check("Z7 a principal whose source cites no `actors`/`external_systems` entry is REFUSED "
+      "(the traceability law was prose)",
+      "Nightly operator" in str(ddd.validate_security_spec(Z_SLUG)),
+      str(ddd.validate_security_spec(Z_SLUG))[:200])
+z_spec(principals=None)
+z_spec(questions=["the read surface carries no row: no input declared it"])
+check("Z8 the pipeline reads what the spec leaves undecided (an open question is a STOP signal, "
+      "not a filed-away note)", ddd.security_open_questions(Z_SLUG) != []
+      and "open question(s)" in inspect.getsource(pipeline_mod.run)
+      and "--replan" in inspect.getsource(pipeline_mod.build_parser),
+      str(ddd.security_open_questions(Z_SLUG))[:120])
+z_spec(questions=[])
+
+Z_GUARD_HINTS = {"package": "com.surf.guard", "implements": [], "dependencies": [],
+                 "methods": [{"signature": "permits(String tenantKey)", "returns": "boolean",
+                              "semantics": "true admits, false denies at the boundary"}]}
+Z_ENTRY_HINTS = {"package": "com.surf.entry", "implements": [], "dependencies": [],
+                 "methods": [{"signature": "accept(byte[] payload)", "returns": "void",
+                              "semantics": "acknowledges the packet"}],
+                 "routes": [{"method": "POST", "path": "/api/samples", "duty": "serves"}]}
+Z_ENTRY_PINNED = {"package": "com.surf.entry", "implements": [],
+                  "dependencies": [{"type": "Guard", "task_id": "T2-673"}],
+                  "methods": Z_ENTRY_HINTS["methods"],
+                  "routes": [{"method": "POST", "path": "/api/samples", "duty": "serves"}]}
+
+
+def z_board(entry_hints=Z_ENTRY_HINTS, entry_deps=("T1-672",), guard_stage=2, tester_intent=None):
+    guard_intent = ("Enforce AZ-01 with the tenant-scoped-query ownership predicate at the lookup")
+    if guard_stage == 3:
+        guard = gtask("T3-673", "Guard", 3, deps=("T0-671",), intent=guard_intent,
+                      project=Z_SLUG, path="src/main/java/surf/Guard.java", hints=Z_GUARD_HINTS)
+    elif guard_stage == 1:
+        guard = gtask("T1-673", "GuardTest", 1, deps=("T0-671",), intent=guard_intent,
+                      project=Z_SLUG, path="src/test/java/surf/GuardTest.java",
+                      hints=Z_GUARD_HINTS)
+    else:
+        guard = gtask("T2-673", "Guard", 2, deps=("T0-671",), intent=guard_intent,
+                      project=Z_SLUG, path="src/main/java/surf/Guard.java", hints=Z_GUARD_HINTS)
+        guard["observability"] = {"step_logs": ["packet received (IngressPacket)"]}
+    entry_tester = gtask("T1-672", "EntryTest", 1, deps=("T0-671",),
+                         intent=tester_intent or ("End-to-end request-path slice drives the "
+                                                  "intake write surface and asserts the stored row"),
+                         project=Z_SLUG, path="src/test/java/surf/EntryTest.java",
+                         hints=entry_hints)
+    entry = gtask("T2-672", "EntryHandler", 2, deps=entry_deps,
+                  intent="POST /api/samples: the intake write surface accepts the device packet",
+                  project=Z_SLUG, path="src/main/java/surf/EntryHandler.java",
+                  hints=entry_hints)
+    entry["layer"] = "interface"
+    scaffold = gtask("T0-671", "Scaffold", 0, project=Z_SLUG, path="pom.xml",
+                     intent="Generate the surf project root and build scaffold")
+    scaffold["layer"] = "root"
+    scaffold["export"] = task_queue.SCAFFOLD_EXPORT
+    return [scaffold, guard, entry_tester, entry]
+
+
+def z_reset():
+    """Task records only: the section's strategy and spec must survive between cases, and
+    a wildcard here would delete them with the board (they live in complete/ too)."""
+    for folder in (settings.QUEUE_DIR, settings.ERROR_DIR, settings.COMPLETE_DIR):
+        for stale in folder.glob(f"T[0-9]-*-{Z_SLUG}.json"):
+            stale.unlink()
+
+
+rc_z = emit(z_board())
+check("Z9 (y2 REACH) an island guard - every duty claimed, the entry unit never pins it - is "
+      "REFUSED naming the surface and both units (2026-11-18 probe B1: this plan was accepted)",
+      bool(rc_z) and "intake write" in str(rc_z) and "T2-672" in str(rc_z), str(rc_z)[:260])
+z_reset()
+rc_z = emit(z_board(entry_hints=Z_ENTRY_PINNED,
+                    tester_intent=("End-to-end request-path slice drives the intake write "
+                                   "surface: AZ-01 permitted, denied, and the cross-owner case "
+                                   "where a key owned by another tenant is refused")))
+check("Z10 the SAME plan WIRED (entry pins the guard, its pair asserts the cross-owner case) is "
+      "ACCEPTED - the law refuses the gap, not a style", rc_z is None, str(rc_z)[:260])
+z_reset()
+rc_z = emit(z_board(entry_deps=("T1-672", "T2-673"),
+                    tester_intent=("End-to-end request-path slice drives the intake write "
+                                   "surface: AZ-01 permitted, denied, cross-owner refused")))
+check("Z11 an ordering edge alone (dependsOn, no collaborator pin) satisfies reach - the drain "
+      "schedules on `dependsOn`, so the guard lands before the surface is frozen",
+      rc_z is None, str(rc_z)[:200])
+z_reset()
+rc_z = emit(z_board(entry_hints=Z_ENTRY_PINNED))
+check("Z12 (y3) wired but the paired stage-1 test never carries the CROSS-OWNER case: REFUSED "
+      "- a rule proven only on its own unit test is a rule no request ever meets",
+      bool(rc_z) and "CROSS-OWNER" in str(rc_z), str(rc_z)[:260])
+for bad_stage in (1, 3):
+    z_reset()
+    rc_z = emit(z_board(guard_stage=bad_stage))
+    check(f"Z13 (y1) a duty claimed only by a stage-{bad_stage} unit is REFUSED: no "
+          "implementation carries it (probe B4/B4b: both were accepted)",
+          bool(rc_z) and "claimed only by" in str(rc_z), str(rc_z)[:260])
+z_reset()
+unowned = z_board(entry_hints=Z_ENTRY_PINNED,
+                  tester_intent=("End-to-end request-path slice drives the intake write "
+                                 "surface: AZ-01 permitted, denied, cross-owner refused"))
+unowned[0]["intent"] = "Generate the surf project root"
+for record in unowned:
+    if record["id"] == "T2-672":
+        record["intent"] = "POST /api/samples accepts the device packet body"  # name dropped
+rc_z = emit(unowned)
+check("Z17 SURFACE OWNERSHIP: a declared surface no inbound unit names is REFUSED - otherwise "
+      "the reach law could be dodged by never mentioning the surface",
+      bool(rc_z) and "named by NO inbound unit" in str(rc_z), str(rc_z)[:240])
+z_reset()
+# The resumed-board shape: units already ON the board (they predate the gate, so they claim
+# nothing) - written straight to the queue, because the emit gate of today would refuse them.
+(settings.QUEUE_DIR / f"T0-671-{Z_SLUG}.json").write_text(json.dumps(
+    z_board()[0]))
+(settings.QUEUE_DIR / f"T2-674-{Z_SLUG}.json").write_text(json.dumps(
+    gtask("T2-674", "Reader", 2, deps=("T0-671",), intent="reads the stored rows back",
+          project=Z_SLUG, path="src/main/java/surf/Reader.java",
+          hints={"package": "com.surf.reader", "implements": [], "dependencies": [],
+                 "methods": [{"signature": "rows()", "returns": "void"}]})))
+_gaps_z = task_queue.security_claim_gaps(Z_SLUG)
+check("Z14 security_claim_gaps reads the LIVE board (the resumed-board shape the emit gate "
+      "structurally cannot police): duties no unit claims are reported for the pipeline to stop on",
+      bool(_gaps_z) and any("security duty AZ-01" in line for line in _gaps_z),
+      str(_gaps_z)[:200])
+z_reset()
+emit(z_board(entry_hints=Z_ENTRY_PINNED,
+             tester_intent=("End-to-end request-path slice drives the intake write surface: "
+                            "AZ-01 permitted, denied, cross-owner refused")))
+moved = task_queue.replan_domain(Z_SLUG)
+check("Z15 --replan archives the PLAN (strategy, spec, stage 1-3 records) and nothing else: "
+      "stage 0 stays so the domain keeps its project root, and the phases re-run because their "
+      "inputs are gone",
+      moved["strategy"] and moved["spec"] and moved["tasks"]
+      and not (settings.COMPLETE_DIR / f"execution-strategy-{Z_SLUG}.json").is_file()
+      and (ROOT / "blackboard" / "archive" / f"execution-strategy-{Z_SLUG}.json").is_file()
+      and (settings.QUEUE_DIR / f"T0-671-{Z_SLUG}.json").is_file()
+      and not (settings.QUEUE_DIR / f"T2-672-{Z_SLUG}.json").is_file()
+      and not (settings.COMPLETE_DIR / f"T2-672-{Z_SLUG}.json").is_file()
+      and not list((settings.COMPLETE_DIR / f"T2-673-{Z_SLUG}.json").parent
+                   .glob(f"T2-90*-{Z_SLUG}.json")),
+      json.dumps(moved)[:200])
+check("Z16 the hint that made a late spec advisory is gone: the pipeline stops the run on "
+      "security claim gaps instead of printing and draining on",
+      "[hint ] security" not in inspect.getsource(pipeline_mod.run)
+      and "security claim gap(s)" in inspect.getsource(pipeline_mod.run))
+z_reset()
+
+_arch_docs = [(SEC_REPO / ".opencode/agents/agent-architect.md").read_text(),
+              (SEC_REPO / ".github/agents/agent-architect.agent.md").read_text()]
+check("S26 the architect's stated budget is the engine's budget, and it covers the calls its "
+      "own phase-2 contract demands (skills, strategy, spec, one draft, one emit)",
+      settings.call_budget(settings.ARCHITECT_AGENT) == 15
+      and all("Budget <=15 calls per phase" in doc for doc in _arch_docs)
+      and all("spring-security-architect: allow" in doc for doc in _arch_docs[:1]),
+      str(settings.call_budget(settings.ARCHITECT_AGENT)))
+
+# --- SA. the risk register stops being a write-only field (2026-11-18).
+#     `risks[]` was required to EXIST, its ids even resolved `spec_ref` citations, and then nothing read
+#     its contents - while rule (y) and the profiles offered "an added unit OR a reported risk" as the
+#     honest answer for a token the stack cannot realize. The risk branch led nowhere twice over: the
+#     claim gate refuses any duty no unit claims, and the architect has no write path to the spec its
+#     refusal message told it to amend.
+
+def sa_risks(mutate=None):
+    """Reset the SEC fixture's register to one control-backed risk, optionally break it."""
+    spec = json.loads((settings.COMPLETE_DIR / f"security-spec-{SEC_SLUG}.json").read_text())
+    entry = {"id": "R-01", "risk": "device credentials outlive their tenant binding",
+             "likelihood": "medium", "impact": "high",
+             "mitigation": "SD-01 rotation", "residual": "the rotation window itself"}
+    spec["risks"] = [dict(entry)]
+    if mutate:
+        mutate(spec["risks"][0])
+    (settings.COMPLETE_DIR / f"security-spec-{SEC_SLUG}.json").write_text(json.dumps(spec))
+    return ddd.validate_security_spec(SEC_SLUG)
+
+check("SA1 a risk backed by a control the spec declares passes (SD-01 exists in this artifact)",
+      sa_risks() is None, str(sa_risks())[:200])
+check("SA2 a risk whose mitigation names no entry in the spec is REFUSED - duty closure covered "
+      "duties only, so a finding could dangle off the edge of the artifact unread",
+      "cites no entry" in str(sa_risks(lambda r: r.update(
+          mitigation="the platform team will handle this somewhere else"))), str(sa_risks())[:200])
+check("SA3 a risk with NEITHER a control nor an accepted posture is REFUSED (an empty mitigation is "
+      "the silent-drop shape: written down, owned by nobody, forgotten by the drain)",
+      "neither a mitigation" in str(sa_risks(lambda r: r.update(mitigation=""))), str(sa_risks())[:200])
+check("SA4 accepting a risk is legal ON THE RECORD: the posture prefix plus a stated residual passes",
+      sa_risks(lambda r: r.update(mitigation="accepted: out-of-scope for this build",
+                                  residual="credentials never rotate inside the boundary")) is None,
+      str(sa_risks())[:200])
+check("SA5 ... and an 'accepted' with no residual is still refused - silence is not acceptance",
+      "must state what remains exposed" in str(sa_risks(lambda r: r.update(
+          mitigation="accepted: we will not rotate here", residual=""))), str(sa_risks())[:200])
+check("SA6 the register is READ by the pipeline on every launch, including the resume path where the "
+      "spec was already valid and the phase printed nothing (an accepted exposure must be a line an "
+      "operator saw, not a field that aged out of a JSON file)",
+      "risk" in str(ddd.security_risks(SEC_SLUG)[0])
+      and inspect.getsource(pipeline_mod.run).count("_surface_security_risks(slug)") >= 2
+      and '[risk  ]' in inspect.getsource(pipeline_mod._surface_security_risks))
+sec_spec()
+_arch_profile = (SEC_REPO / ".opencode/agents/agent-architect.md").read_text()
+_claim_refusal = inspect.getsource(task_queue._security_claim_errors)
+check("SA7 the unclaimed-duty refusal no longer orders the session to amend a file it cannot write "
+      "(its edit grant is the strategy + /tmp only), and it names the lawful landing unit instead",
+      "security-spec-*.json" not in _arch_profile.split("shell:")[0]
+      and "reported risk never substitutes for a claiming unit" in _claim_refusal
+      and "re-run the security phase" in _claim_refusal
+      and "CONFIG unit" in _claim_refusal,
+      _arch_profile.split("shell:")[0][-160:])
+
+# --- SB. security is ALWAYS implemented, with exactly one lawful exception (2026-11-18).
+#     Review question: does the flow implement the security strategy everywhere, and omit it only when
+#     the business description says so? Enforcement was already unconditional (mandatory phase, fatal on
+#     absence, non-empty matrix/duties, claim coverage + (y1)/(y2)/(y3)); what was missing was (a) the
+#     waiver - and a waiver no agent may decide for itself - and (b) a real escape hatch: every later
+#     phase iterates STRATEGY slugs, so a domain the architect never planned lost its spec in silence.
+W_SLUG = "waiv"
+W_SEED = ROOT / "seed-waiv.md"
+W_SEED.write_text("# Bike Ops\n"
+                  "This is an internal single-operator tool: it needs no authentication, "
+                  "authorization or data protection at all.\n"
+                  "Samples are ingested from the bench rig every second.\n")
+
+
+def sb_slice(directive=None, source=True):
+    report = {"schema_version": "1.0", "report_type": "domain-slice",
+              "metadata": {"generated_at": "2026-11-18T00:00:00Z",
+                           "agent": "domain-boundary-discovery"},
+              "subdomain": {"name": "Waiv", "type": "core", "capability": "c", "why_distinct": "w"},
+              "ubiquitous_language": [{"term": "Sample", "context": "In", "definition": "d"}],
+              "bounded_contexts": [{"name": "In", "responsibility": "r", "in_scope": [],
+                                    "out_of_scope": [], "ubiquitous_language": [], "invariants": [],
+                                    "source_of_truth": [], "publishes": [], "consumes": [],
+                                    "actors": ["bench rig"], "confidence": "high"}],
+              "assumptions": []}
+    if source:
+        report["metadata"]["source_description"] = "seed-waiv.md"
+    if directive:
+        report["security_directive"] = directive
+    (settings.DOMAIN_DIR / f"domain-boundary-{W_SLUG}.json").write_text(json.dumps(report))
+
+
+def sb_strategy(slug):
+    (settings.COMPLETE_DIR / f"execution-strategy-{slug}.json").write_text(json.dumps(
+        {"slug": slug, "modules": [slug], "layers": ["domain"], "build_order": ["domain"],
+         "risks": [], "bounded_contexts": ["In"],
+         "surfaces": [{"name": "sample write", "kind": "http", "context": "In",
+                       "operations": ["POST"]}],
+         "observability": FULL_FLOOR}))
+
+
+sb_slice()
+check("SB1 no directive = SECURITY REQUIRED (the default survives: the waiver is an exception an "
+      "agent must argue for with the user's own words, never an absent field)",
+      ddd.security_waived(W_SLUG) is False and ddd.validate_security_directives() is None)
+check("SB2 a strategy missing for a discovered slice is now FATAL: every later phase iterates "
+      "strategy slugs, so the silent loss of one domain used to cancel its security phase too",
+      W_SLUG in str(ddd.validate_strategy_coverage())
+      and "no execution strategy" in str(ddd.validate_strategy_coverage()),
+      str(ddd.validate_strategy_coverage())[:150])
+sb_strategy(W_SLUG)
+check("SB2b writing that one strategy clears the refusal for its domain (the gate names slugs, it "
+      "does not blame the whole board)",
+      W_SLUG not in str(ddd.validate_strategy_coverage() or ""),
+      str(ddd.validate_strategy_coverage())[:150])
+sb_slice(directive={"required": False, "source": "description",
+                    "quote": "it needs no authentication, authorization or data protection at all"})
+waived, note = ddd._waiver_note(W_SLUG)
+check("SB3 a waiver copied VERBATIM from the description is honored, and the note names both the "
+      "sentence and the file it was checked against (so a green run says who decided)",
+      waived and "seed-waiv.md" in note and "no authentication" in note, f"{waived} {note}")
+check("SB3b the waiver also satisfies the discovery post-check",
+      ddd.validate_security_directives() is None, str(ddd.validate_security_directives())[:160])
+sb_slice(directive={"required": False, "source": "description",
+                    "quote": "the operators agreed security is not needed for this tool"})
+waived, note = ddd._waiver_note(W_SLUG)
+check("SB4 a PARAPHRASE is not a quote: refused, and the reason is returned to the session that can "
+      "still fix it (discovery is the only agent holding the description text)",
+      not waived and "not a sentence of" in note
+      and "VERBATIM" in str(ddd.validate_security_directives()), f"{waived} {note}"[:160])
+sb_slice(directive={"required": False, "source": "description",
+                    "quote": "it needs no authentication, authorization or data protection at all"},
+         source=False)
+check("SB5 an unverifiable waiver is no waiver: without metadata.source_description there is no "
+      "witness to grep, so the phase runs and the security strategy is implemented",
+      not ddd.security_waived(W_SLUG)
+      and "source_description" in str(ddd.validate_security_directives()),
+      str(ddd.validate_security_directives())[:160])
+sb_slice()
+src_run = inspect.getsource(pipeline_mod.run)
+src_tree = inspect.getsource(pipeline_mod._terminal_tree_report)
+check("SB6 the flow acts on a verified waiver out loud: the security phase prints WAIVED with the "
+      "quote and the file, the terminal tree verdict carries SECURITY WAIVED by directive, and the "
+      "domain is never left looking defended",
+      "WAIVED by the business description" in src_run and "_waiver_note(slug)" in src_run
+      and "SECURITY WAIVED by directive" in src_tree and ddd.security_waived.__name__ in src_tree
+      # and a waiver that arrives AFTER a spec was written discloses the contradiction instead of
+      # letting the stale spec enforce claims silently (or the waived domain look un-waived)
+      and "it now contradicts" in src_run and "BUT A SPEC IS ON DISK" in src_tree)
+check("SB6b a waiver is never a shortcut past planning: coverage and directive verification run "
+      "BEFORE the security loop can skip anything (an unplanned domain cannot waive its way out), and "
+      "the surfaces contract is untouched by the waiver",
+      src_run.index("validate_strategy_coverage()") < src_run.index("_waiver_note(slug)")
+      and src_run.index("validate_security_directives()") < src_run.index("_waiver_note(slug)")
+      and "validate_security_directives" in inspect.getsource(ddd.validate_domain_files)
+      and "surfaces" in inspect.getsource(ddd.validate_strategy)
+      and "security_directive" not in inspect.getsource(ddd.validate_strategy))
+_backend_src = "".join((SEC_REPO / "orchestrators" / name).read_text()
+                       for name in ("opencode_backend.py", "copilot_backend.py"))
+check("SB7 both backends refuse to finish phase 1 while any discovered slice lacks a strategy - the "
+      "repair happens inside the session that can still write it",
+      _backend_src.count("ddd.validate_strategy_coverage()") == 2
+      and "validate_security_directives" in inspect.getsource(ddd.validate_domain_files))
+for stale in (settings.DOMAIN_DIR / f"domain-boundary-{W_SLUG}.json",
+              settings.COMPLETE_DIR / f"execution-strategy-{W_SLUG}.json", W_SEED):
+    stale.unlink(missing_ok=True)
+
+# --- SD. the plan phase is a token budget: the batch shape and the intent wall (2026-11-18 audit).
+def sd_hints(pkg, methods=None, deps=None):
+    return {"package": pkg, "implements": [], "dependencies": deps or [],
+            "methods": methods or [{"signature": "go()", "returns": "void",
+                                    "semantics": "true ran, false did not"}]}
+
+
+def sd_task(tid, stage, intent, export, deps=(), hints=None, path=None):
+    rec = {"id": tid, "targetAgent": settings.STAGE_AGENTS[stage], "stage": stage,
+           "dependsOn": list(deps), "path": path or f"src/main/java/m/{export}.java",
+           "kind": settings.STAGE_KINDS[stage][0], "layer": "domain", "feature": None,
+           "export": export, "intent": intent, "project": "mult"}
+    if hints is not None:
+        rec["ast_hints"] = hints
+    return rec
+
+
+def sd_emit(*batches):
+    """One --emit call over SEVERAL draft files, exactly as the per-context shape emits."""
+    for folder in (settings.QUEUE_DIR, settings.ERROR_DIR):
+        for stale in folder.glob("*-mult.json"):
+            stale.unlink()
+    files = []
+    for position, batch in enumerate(batches, start=1):
+        file = ROOT / f"sd-draft-{position}.json"
+        file.write_text(json.dumps(batch))
+        files.append(str(file))
+    return task_queue.emit_tasks(files)
+
+
+CONTEXT_A = [sd_task("T2-720", 2, "owns the writer", "Writer", hints=sd_hints("com.m.a"))]
+CONTEXT_B = [sd_task("T2-721", 2, "pins the writer across the file boundary", "Sender",
+                     hints=sd_hints("com.m.b", deps=[{"type": "Writer", "task_id": "T2-720"}]))]
+rc_sd = sd_emit(CONTEXT_A, CONTEXT_B)
+check("SD1 per-context files still arrive as ONE batch: a pin whose producer lives in the other "
+      "file resolves (the cross-context checks see the whole plan), so splitting the draft does not "
+      "split the validation",
+      rc_sd is None and (settings.QUEUE_DIR / "T2-720-mult.json").is_file()
+      and (settings.QUEUE_DIR / "T2-721-mult.json").is_file(), str(rc_sd)[:220])
+rc_sd = sd_emit(CONTEXT_A, CONTEXT_A)
+check("SD1b one shared id space across the files: a duplicate in a sibling draft is refused, not "
+      "silently queued twice",
+      bool(rc_sd) and "already exists" in str(rc_sd), str(rc_sd)[:200])
+for folder in (settings.QUEUE_DIR, settings.ERROR_DIR):
+    for stale in folder.glob("*-mult.json"):
+        stale.unlink()
+long_intent = " ".join(f"word{i}" for i in range(181))
+short_intent = " ".join(f"word{i}" for i in range(180))
+wall = sd_task("T2-722", 2, long_intent, "Verbose", hints=sd_hints("com.m.c"))
+check("SD2 the intent wall bites at PLANNING (23,585 tokens of plan, 52% of them prose; the "
+      "biggest single output turn on record 40,442 tokens) - and only at planning: a resumed board "
+      "with an old long intent stays readable, the same phase-order discipline as every other "
+      "planning-only rule",
+      "intent runs to 181 words" in str(tasks_mod.validate(wall, {}, planning=True))
+      and tasks_mod.validate(wall, {}, planning=False) is None
+      and tasks_mod.validate(sd_task("T2-723", 2, short_intent, "JustUnder",
+                                     hints=sd_hints("com.m.d")), {}, planning=True) is None,
+      str(tasks_mod.validate(wall, {}, planning=True))[:120])
+_remedy = inspect.getsource(task_queue.emit_tasks)
+check("SD3 the refusal text asks for an EDIT pass over the named task objects (measured: an edit "
+      "cost 256-448 output tokens where the demanded rewrite cost 13,288) and still reports every "
+      "error in one message, so the batch-report law that prevents re-emit loops is untouched",
+      "by EDITING the named task objects" in _remedy and "never regenerate the whole plan" in _remedy
+      and "one rewrite of the draft file" not in _remedy
+      and "Every validation error is reported in ONE message" in _remedy)
+_tasks_brief = prompts.build_architect_prompt(ROOT, "runner", phase="tasks")
+_sd_profiles = [(SEC_REPO / ".opencode/agents/agent-architect.md").read_text(),
+                (SEC_REPO / ".github/agents/agent-architect.agent.md").read_text()]
+check("SD4 the generator-script ban lives in every carrier the tasks phase reads (2026-11-18 "
+      "live: the brief demanded 'a single JSON document' while step 3 said per-context files - "
+      "the contradiction itself pushed the architect into gen_telemetry_tasks.py: 91k carried, "
+      "41k worst single-turn output): the brief bans scripts, teaches ONLY the per-context shape, "
+      "and both profiles carry the ban",
+      "generator script" in _tasks_brief and "single JSON document" not in _tasks_brief
+      and "per-context array file" in _tasks_brief
+      and all("generator script" in b for b in _sd_profiles))
+_closeout_src = inspect.getsource(tdd_engine._tester_close_out)
+_sec_plan_skill = (SEC_REPO / ".opencode/skills/tech-stack-architect/spring-security-architect"
+                   / "SKILL.md").read_text()
+_manifest_task = {"id": "T0-799", "targetAgent": settings.STAGE_AGENTS[0], "stage": 0,
+                  "dependsOn": [], "path": "pom.xml", "kind": "bootstrap", "layer": "root",
+                  "feature": None, "export": "build-manifest",
+                  "intent": "Move the verified pom.xml in place: add the security starter and "
+                            "spring-security-test test-scoped; the parent owns versions.",
+                  "project": "mult"}
+_bad_manifest = dict(_manifest_task, dependsOn=["T0-798"])
+check("SD5 the build-manifest duty has a lawful channel in EVERY carrier the security mapping "
+      "reads (2026-11-18 live: spring-security-architect ordered 'schedule the manifest duty "
+      "before any tester runs' while the tasks brief forbade ALL stage 0 output - the architect "
+      "obeyed both, so no coordinate was scheduled and the drain died at the first red compile "
+      "importing org.springframework.security.*): the brief names the ONE exception, the "
+      "profiles teach it, the fatal states the remedy, the planning table names its channel, "
+      "and the validator accepts the exact shape (layer root, empty dependsOn, kind bootstrap) "
+      "while still refusing a staged manifest",
+      "build-manifest duty" in _tasks_brief and "dependsOn empty" in _tasks_brief
+      and all("build-manifest bootstrap" in b for b in _sd_profiles)
+      and "Remedy" in _closeout_src and "build-manifest duty" in _closeout_src
+      and "ONE lawful stage-0 task" in _sec_plan_skill
+      and tasks_mod.validate(_manifest_task, {}, planning=True) is None
+      and bool(tasks_mod.validate(_bad_manifest, {}, planning=True)),
+      str(tasks_mod.validate(_manifest_task, {}, planning=True))[:160])
+_drain_src = inspect.getsource(tdd_engine.drain_queue)
+_sd_manifest = {"id": "T0-900", "targetAgent": settings.STAGE_AGENTS[0], "stage": 0,
+                "dependsOn": [], "path": "pom.xml", "kind": "bootstrap", "layer": "root",
+                "feature": None, "export": "build-manifest", "intent": "move the verified pom",
+                "project": "mult"}
+(settings.QUEUE_DIR / "T0-900-mult.json").write_text(json.dumps(_sd_manifest))
+_sd_pending_manifest = tdd_engine._manifest_duty_pending("mult")
+(settings.QUEUE_DIR / "T0-900-mult.json").unlink()
+_sd_source = dict(_sd_manifest, path="src/main/java/m/Writer.java")
+(settings.QUEUE_DIR / "T0-900-mult.json").write_text(json.dumps(_sd_source))
+_sd_pending_source = tdd_engine._manifest_duty_pending("mult")
+(settings.QUEUE_DIR / "T0-900-mult.json").unlink()
+check("SD6 the resume classpath gate cannot deadlock the lawful remedy (2026-11-18 live: the "
+      "emitted build-manifest duty sat in the queue while the gate re-read the pre-duty pom on "
+      "EVERY relaunch - fataling on a gap the duty exists to fill; and a stale record whose file "
+      "on disk was already reroute-clean was never re-recorded because the repair said 'nothing "
+      "changed', so a package no file imports blocked the drain forever; and the skip-agent "
+      "resume guard 'completed' the manifest duty without a session because the build file "
+      "always already exists): the gate defers while a manifest duty is queued, the re-record "
+      "is unconditional, the deferral predicate keys on a queued stage-0 bootstrap task whose "
+      "path is a real build file, the skip guard exempts exactly that family, and a SCAFFOLD "
+      "task on the same path is NOT a manifest duty",
+      "_manifest_duty_pending" in _drain_src
+      and "if not test_gate.repair_test_imports" not in _drain_src
+      and "not _build_manifest_duty(task)" in _drain_src
+      and _sd_pending_manifest and not _sd_pending_source
+      and tdd_engine._build_manifest_duty(_sd_manifest)
+      and not tdd_engine._build_manifest_duty(dict(_sd_manifest,
+                                                   export=task_queue.SCAFFOLD_EXPORT))
+      and not tdd_engine._build_manifest_duty(_sd_source))
+check("SD7 the build-manifest duty's MUTATION is machine-verified (2026-11-18 live: the "
+      "container halted the duty with the honest report 'T0-007 failed: no pom was moved', the "
+      "session exited 0, the existence guard found the scaffold's own pom, and [done] landed "
+      "against an untouched classpath - the false [done] then re-fataled every relaunch, "
+      "because the deferral predicate had no queued duty to see anymore): the invoke seam "
+      "refuses 'delivered' while the build file was not touched, and a failed duty is named "
+      "as what it is",
+      "build-manifest duty ended with" in _drain_src and "st_mtime < started" in _drain_src
+      and 'what = ("build-manifest duty"' in _drain_src)
+_orig_ext = test_gate.external_type_index
+test_gate.external_type_index = lambda root: {"DatabaseClient": ["org.springframework.r2dbc.core.DatabaseClient"]}
+_hole_task = {"id": "T2-037", "project": "holeproj",
+              "path": "src/test/java/x/SliceTestSupport.java"}
+_hallucinated = {"status": "compile_error", "missing_symbols": ["Parameters"], "member_demands": [],
+                 "excerpt": ["[ERROR] /x/R2dbcTelemetryRecordRepository.java:[13,38] cannot find symbol",
+                             "[ERROR]   symbol:   class Parameters",
+                             "[ERROR]   location: package org.springframework.r2dbc.core"]}
+_unknown_pkg = {"status": "compile_error", "missing_symbols": ["Ghost"], "member_demands": [],
+                "excerpt": ["[ERROR] /x/A.java:[3,29] cannot find symbol",
+                            "[ERROR]   symbol:   class Ghost",
+                            "[ERROR]   location: package com.nosuch.pkg"]}
+_holes_hallucinated = tdd_engine._unresolvable_missing(_hallucinated, _hole_task)
+_holes_unknown = tdd_engine._unresolvable_missing(_unknown_pkg, _hole_task)
+test_gate.external_type_index = _orig_ext
+check("SD8 a class located INSIDE an existing classpath package is a payload defect of the "
+      "importing unit, never a scheduling hole (2026-11-18 live: a coder wrote import "
+      "org.springframework.r2dbc.core.Parameters; javac located the symbol in a RESOLVABLE "
+      "package - no task can export classes into someone else's library - yet the classifier "
+      "aborted a healthy domain at task 8 of ~110 telling the operator to run closure.py; "
+      "with the symbol discarded the established all-foreign-blame rule defers the bystander "
+      "and charges the guilty unit's own gate), while a package the classpath never provides "
+      "stays a possible hole, conservatively",
+      _holes_hallucinated == [] and _holes_unknown == ["Ghost"])
+check("SD10 the wave cache's grammar version is ONE constant shared by the per-unit wave, the "
+      "wave write, and the terminal suite gate (2026-11-18 live: the per-unit memo version moved "
+      "with the widened demands but the three '-v9-' wave literals stayed behind, so every unit "
+      "of the tree was served the PRE-demand verdict by _shared_verdict - full evidence in the "
+      "log, zero member_demands in the field, everyone deferred, zero progress passes forever)",
+      test_gate.WAVE_GRAMMAR not in ("v9",)
+      and "-v9-" not in (SEC_REPO / "orchestrators/test_gate.py").read_text()
+      and "-v9-" not in (SEC_REPO / "orchestrators/tdd_engine.py").read_text()
+      and "WAVE_GRAMMAR" in (SEC_REPO / "orchestrators/tdd_engine.py").read_text())
+_wave_src = inspect.getsource(test_gate.wave_gate_verdict)
+check("SD11 a wave-build environment fault is never served as a unit verdict: it would reach "
+      "green_test_result's memo write and replay under the unit's own fingerprint as 'cached "
+      "verdict' forever (observed live 2026-11-18: a detached probe process with a wrong "
+      "workspace root primed wave-telemetry-ingestion-v10-da39a3ee... - the empty-directory "
+      "hash - with an EXEC_ERROR, teaching the drain a fact about a directory that never "
+      "existed); the wave path now declines to None, leaving the loud EXEC_ERROR abort to the "
+      "unit's scoped gate",
+      "return None" in _wave_src and '"reason": str(exc)' not in _wave_src)
+_sd12_task = {"id": "T2-019", "stage": 2, "project": "multk", "targetAgent": "agent-coder",
+              "kind": "code", "layer": "infrastructure", "feature": None,
+              "path": "src/main/java/x/R2dbcTelemetryRecordRepository.java",
+              "export": "com.x.R2dbcTelemetryRecordRepository", "dependsOn": [],
+              "intent": "append-only store adapter"}
+_sd12_peer = {"id": "T2-780", "stage": 2, "project": "multk", "targetAgent": "agent-coder",
+              "kind": "code", "layer": "application", "feature": None,
+              "path": "src/main/java/x/IngestPacketUseCase.java",
+              "export": "com.x.IngestPacketUseCase", "dependsOn": [], "intent": "the caller"}
+(settings.QUEUE_DIR / "T2-780-multk.json").write_text(json.dumps(_sd12_peer))
+(settings.QUEUE_DIR / "T2-019-multk.json").write_text(json.dumps(_sd12_task))
+_ext11 = test_gate.external_type_index
+test_gate.external_type_index = lambda root: {"DatabaseClient": ["org.springframework.r2dbc.core.DatabaseClient"]}
+_sd12_result = {"status": "compile_error", "exit_code": 1,
+                "missing_symbols": ["Parameters", "LATE"], "bean_demands": [], "problem_kinds": [],
+                "member_demands": [{"member": "LATE", "owner": "ValidationStatus",
+                                    "kind": "variable"}],
+                "excerpt": ["[ERROR] /x/R2dbcTelemetryRecordRepository.java:[13,38] cannot find symbol",
+                            "[ERROR]   symbol:   class Parameters",
+                            "[ERROR]   location: package org.springframework.r2dbc.core",
+                            "[ERROR] /x/IngestPacketUseCase.java:[84,85] cannot find symbol",
+                            "[ERROR]   symbol:   variable LATE",
+                            "[ERROR]   location: class com.x.ValidationStatus"]}
+_sd12_charged = tdd_engine._blocked_by_peers(_sd12_result, _sd12_task)
+_sd12_control = json.loads(json.dumps(_sd12_result))
+_sd12_control["excerpt"][2] = "[ERROR]   location: package com.nosuch.library"
+_sd12_control["missing_symbols"] = ["Ghost"]
+_sd12_deferred = tdd_engine._blocked_by_peers(_sd12_control, _sd12_task)
+test_gate.external_type_index = _ext11
+for _stale in (settings.QUEUE_DIR / "T2-780-multk.json", settings.QUEUE_DIR / "T2-019-multk.json"):
+    _stale.unlink()
+check("SD12 the own-file import of a class that an EXISTING library package does not provide "
+      "is charged to the file's owner even while a peer's blamed file keeps the cascade rule "
+      "true (2026-11-18 live: Parameters at line 13 of R2dbcTelemetryRecordRepository.java - "
+      "T2-019's own file - was starved by the ANY-foreign defer because IngestPacketUseCase "
+      "belonged to T2-017; consumed stayed 0 and the domain stuck forever on 75 blocked); a "
+      "package the classpath never provides does not prove a hallucinated import and keeps the "
+      "classic defer",
+      _sd12_charged is False and _sd12_deferred is True)
+_sd13_root = SEC_REPO / "gauntlet" / ".sd13-fork-corruption"
+_sd13_reports = _sd13_root / "target" / "surefire-reports"
+_sd13_reports.mkdir(parents=True, exist_ok=True)
+_sd13_dump = _sd13_reports / "2026-11-18T17-11-37_934-jvmRun1.dumpstream"
+_sd13_dump.write_text("# Created at 2026-11-18T17:11:39.227\nTruncated class file\n")
+_sd13_detected = test_gate._fork_boot_corruption(_sd13_root)
+_sd13_dump.unlink()
+_sd13_clean = test_gate._fork_boot_corruption(_sd13_root)
+_sd13_reports.rmdir()
+(_sd13_root / "target").rmdir()
+_sd13_root.rmdir()
+check("SD13 the engine recognizes a FORK BOOT death on corrupted build output as a tooling "
+      "wound, not a verdict (2026-11-18 live: an operator SIGTERM during an mvn build left a "
+      "truncated .class; every forked JVM then died before running a single test - status=error, "
+      "tests=0 - and the wave/memo/ledger machinery laundered that empty verdict into a tree-wide "
+      "fact, charging units and closing 'informed' replays on a failure nobody's code caused): "
+      "the detector reads the surefire dumpstreams and distinguishes wound from clean",
+      _sd13_detected and not _sd13_clean)
+_gate_src_sd13 = inspect.getsource(test_gate.green_test_result)
+_wave_src_sd13 = inspect.getsource(test_gate.wave_gate_verdict)
+_term_src_sd13 = inspect.getsource(tdd_engine.terminal_suite_gate)
+check("SD13b the corruption repair path exists at every door: the scoped gate wipes target and "
+      "re-runs BEFORE memo/wave publish; the wave door drops the cached verdict and falls to "
+      "the scoped heal; the terminal gate wipes and rebuilds once",
+      "_fork_boot_corruption" in _gate_src_sd13 and "wiping target" in _gate_src_sd13
+      and _gate_src_sd13.index("_fork_boot_corruption")
+      < _gate_src_sd13.index('if result.get("status") == "passed":')
+      and "_fork_boot_corruption" in _wave_src_sd13
+      and "rmtree" in _term_src_sd13 and "_fork_boot_corruption" in _term_src_sd13)
+_sd14_err = settings.ERROR_DIR / "T2-791-multipoison.json"
+_sd14_err.write_text(json.dumps({"id": "T2-791", "error": "test gate: ... [WOVEN-CLEAN: payload "
+                                 "compiles and the suite completes with it in the tree]"}))
+_sd14_behavioral = tdd_engine._source_is_proven_poison("T2-791")
+_sd14_err.write_text(json.dumps({"id": "T2-791", "error": "dependsOn T2-790 not resolvable"}))
+_sd14_cascade = tdd_engine._source_is_proven_poison("T2-791")
+_sd14_err.write_text(json.dumps({"id": "T2-791", "error": "test gate: status=compile_error; ..."}))
+_sd14_real_poison = tdd_engine._source_is_proven_poison("T2-791")
+_sd14_err.unlink()
+_quar_src = inspect.getsource(tdd_engine.quarantine_dependents)
+check("SD14 a cascade-quarantined dependent keeps its woven payload unless the BLOCKER's own "
+      "evidence proves tree-breaking poison (2026-11-18 live: T2-035 was re-quarantined with a "
+      "WOVEN-CLEAN behavioral failure, the cascade logic still reverted T2-037's SliceTestSupport, "
+      "and the vanished class broke EVERY sibling's WOVEN-CLEAN probe - each revert re-poisoned "
+      "the compile, a rollback chain through mutual destruction; reverting a victim of a "
+      "scheduling stall is how one quarantine becomes forty blocked units)",
+      not _sd14_behavioral and not _sd14_cascade and _sd14_real_poison
+      and "_source_is_proven_poison(source)" in _quar_src
+      and "woven payload kept through the cascade" in _quar_src
+      and 'startswith("dependsOn")' in inspect.getsource(tdd_engine.drain_queue))
+_te_export = "com.x.TelemetryEvent"
+check("SD9 the demand-owner grammar covers every javac spelling of the surface (nested "
+      "OUTER.Inner, package-qualified, simple) - the exact owner!=export comparison charged "
+      "nobody for a constant demanded on TelemetryEvent.Type and 75 units deferred on each "
+      "other in a two-node deferral cycle (caller defers: symbol miss = cascade; callee "
+      "defers: all blamed files foreign), while a package never on the classpath is still "
+      "nobody's type",
+      tdd_engine._owner_matches_export("TelemetryEvent.Type", _te_export)
+      and tdd_engine._owner_matches_export("com.x.TelemetryEvent.Type", _te_export)
+      and tdd_engine._owner_matches_export("com.x.TelemetryEvent", _te_export)
+      and tdd_engine._owner_matches_export("TelemetryEvent", _te_export)
+      and not tdd_engine._owner_matches_export("OtherEvent.Type", _te_export)
+      and not tdd_engine._owner_matches_export("com.other.Helper", _te_export))
+_sd9_peer = {"id": "T2-777", "targetAgent": "agent-coder", "stage": 2, "dependsOn": [],
+             "path": "src/main/java/x/Caller.java", "kind": "code", "layer": "domain",
+             "feature": None, "export": "com.x.Caller", "intent": "calls the enum constant",
+             "project": "mult9"}
+_sd9_self = {"id": "T2-778", "targetAgent": "agent-coder", "stage": 2, "dependsOn": [],
+             "path": "src/main/java/x/Color.java", "kind": "code", "layer": "domain",
+             "feature": None, "export": "com.x.Color", "intent": "the enum itself",
+             "project": "mult9"}
+(settings.QUEUE_DIR / "T2-777-mult9.json").write_text(json.dumps(_sd9_peer))
+_sd9_result = {"status": "compile_error", "exit_code": 1, "missing_symbols": ["LATE"],
+               "member_demands": [{"owner": "com.x.Color", "kind": "variable", "member": "LATE"}],
+               "problem_kinds": [], "bean_demands": [],
+               "excerpt": ["[ERROR] /x/Caller.java:[7,99] cannot find symbol",
+                           "[ERROR]   symbol:   variable LATE",
+                           "[ERROR]   location: class com.x.Color"]}
+_sd9_method = json.loads(json.dumps(_sd9_result))
+_sd9_method["member_demands"][0]["kind"] = "method"
+_sd9_blocked_const = tdd_engine._blocked_by_peers(_sd9_result, _sd9_self)
+_sd9_blocked_method = tdd_engine._blocked_by_peers(_sd9_method, _sd9_self)
+(settings.QUEUE_DIR / "T2-777-mult9.json").unlink()
+check("SD9 a javac-proven MEMBER (variable/property) demanded on this unit's own exported "
+      "type is charged to the type's owner even when every blamed file is a peer's call site "
+      "(the constant cannot be repaired at the caller - deferring the owner while the caller "
+      "also defers is the cycle that blocked all 75 units live 2026-11-18), while a METHOD "
+      "demand keeps the seed-002 rule (its spelling is proven only by the callers' own-file "
+      "attempts, so the callee still waits)",
+      _sd9_blocked_const is False and _sd9_blocked_method is True)
+
+# --- SF. rule (z): shared literals are tabled, not prose (2026-11-19, the R1/R2 roots).
+#     R1 froze the metrics facade's delivered spelling against the consumer test's planned
+#     spelling - both artifacts were frozen law, the coder between them died 3/3. R2 froze a
+#     controller test posting a route no contract served. The two `ast_hints` fields plus this
+#     gate are the repair; every case below is the live shape, kept stack-neutral.
+VOC_SLUG = "voc"
+(settings.COMPLETE_DIR / f"execution-strategy-{VOC_SLUG}.json").write_text(json.dumps({
+    "slug": VOC_SLUG, "language": "Java 21", "modules": [VOC_SLUG],
+    "layers": ["domain", "application"], "build_order": ["domain"],
+    "bounded_contexts": ["Voc"],
+    "surfaces": [{"name": "voc ingest", "kind": "http", "context": "Voc",
+                  "operations": ["POST"]}],
+    "contexts_without_inbound": [],
+    "persistence": {"data_model": "voc_row (id, value)"},
+    "observability": {"correlation_key": "cid", "step_logs": ["voc accepted"],
+                      "audit_trail": {"port": "Audit.record(A)"},
+                      "metrics": [{"name": "voc.accepted", "type": "counter", "tags": []}],
+                      "export": {"logs": "structured file sink"}}}))
+
+
+def voc_reset():
+    for folder in (settings.QUEUE_DIR, settings.ERROR_DIR, settings.COMPLETE_DIR):
+        for stale in folder.glob(f"T[0-4]-6[45][0-9]-{VOC_SLUG}.json"):
+            stale.unlink()
+
+
+VOC_SCAFFOLD = gtask("T0-640", "Scaffold", 0, project=VOC_SLUG, path="pom.xml",
+                     intent="Generate the voc project root")
+VOC_SCAFFOLD["layer"] = "root"
+VOC_SCAFFOLD["export"] = task_queue.SCAFFOLD_EXPORT
+VOC_FACADE_OK = {"package": "com.voc.obs", "implements": [], "dependencies": [],
+                 "methods": [{"signature": "accepted()", "returns": "void"}],
+                 "meters": [{"name": "voc.accepted", "duty": "owns"}]}
+VOC_CONS_OK = {"package": "com.voc.app", "implements": [],
+               "dependencies": [{"type": "Facade", "task_id": "T2-641"}],
+               "methods": [{"signature": "run()", "returns": "void"}],
+               "meters": [{"name": "voc.accepted", "duty": "uses"}],
+               "routes": [{"method": "POST", "path": "/voc/ingest", "duty": "serves"}]}
+
+
+def voc_pair(num, facade_hints, cons_hints, cons_intent=None, cons_sem=None):
+    cons_intent = cons_intent or ("answers POST /voc/ingest, counting each accepted sample")
+    facade_t = gtask(f"T1-{num}", "FacadeTest", 1, deps=("T0-640",), project=VOC_SLUG,
+                     path=f"src/test/java/voc/Facade{num}Test.java", hints=facade_hints)
+    facade = gtask(f"T2-{num}", "Facade", 2, deps=(f"T1-{num}",), project=VOC_SLUG,
+                   hints=facade_hints)
+    cons_t = gtask(f"T1-{num + 1}", "UseCaseTest", 1, deps=("T0-640",), project=VOC_SLUG,
+                   path=f"src/test/java/voc/UseCase{num + 1}Test.java",
+                   intent=cons_intent, hints=cons_hints)
+    cons = gtask(f"T2-{num + 1}", "UseCase", 2, deps=(f"T1-{num + 1}", f"T2-{num}"),
+                 project=VOC_SLUG, intent=cons_intent, hints=cons_hints)
+    cons["observability"] = {"step_logs": ["voc accepted"]}
+    return [VOC_SCAFFOLD, facade_t, facade, cons_t, cons]
+
+
+# R1 exact shape: the facade registers one spelling, the plan/floor/consumer use another.
+facade_drift = json.loads(json.dumps(VOC_FACADE_OK))
+facade_drift["meters"] = [{"name": "voc.validation.failed", "duty": "owns"}]
+cons_floor = json.loads(json.dumps(VOC_CONS_OK))
+cons_floor["meters"] = [{"name": "voc.samples.validation_failed", "duty": "uses"}]
+voc_reset()
+rc_sf = emit(voc_pair(641, facade_drift, cons_floor))
+check("SF1 the R1 pair is REFUSED at emit: a meter 'uses' no unit owns, naming the closest "
+      "tabled spelling and the off-plan owned name (2026-11-18 live: both spellings became "
+      "frozen law and the coder between them died 3/3)",
+      bool(rc_sf) and "voc.samples.validation_failed" in str(rc_sf)
+      and "OWNED by none" in str(rc_sf) and "closest tabled spelling" in str(rc_sf)
+      and "voc.validation.failed" in str(rc_sf) and "never planned it" in str(rc_sf),
+      str(rc_sf)[:300])
+voc_reset()
+rc_sf = emit(voc_pair(641, VOC_FACADE_OK, VOC_CONS_OK))
+check("SF2 the same plan with ONE verbatim spelling (facade owns, consumer uses, twins "
+      "mirror, floor claimed) is ACCEPTED - the law refuses the drift, not the vocabulary",
+      rc_sf is None, str(rc_sf)[:300])
+
+facade2 = json.loads(json.dumps(VOC_FACADE_OK))
+own_two = voc_pair(651, VOC_FACADE_OK, VOC_CONS_OK)
+for record in own_two:
+    if record["id"] == "T2-652":
+        other = json.loads(json.dumps(VOC_FACADE_OK))
+        record["ast_hints"] = other
+        record["path"] = "src/main/java/voc/Second.java"
+        record["export"] = "Second"
+voc_reset()
+rc_sf = emit(own_two)
+check("SF3 a meter OWNED by two units is REFUSED - rule (l)'s one owner is now machine-checkable "
+      "(the double registration the plan could hide in prose)",
+      bool(rc_sf) and "OWNED by units" in str(rc_sf), str(rc_sf)[:220])
+
+(settings.COMPLETE_DIR / f"execution-strategy-{VOC_SLUG}.json").write_text(json.dumps({
+    "slug": VOC_SLUG, "observability": {
+        "correlation_key": "cid", "step_logs": ["voc accepted"],
+        "audit_trail": {"port": "Audit.record(A)"},
+        "metrics": [{"name": "voc.accepted", "type": "counter", "tags": []},
+                    {"name": "voc.rejected", "type": "counter", "tags": []}],
+        "export": {"logs": "structured file sink"}}}))
+voc_reset()
+rc_sf = emit(voc_pair(641, VOC_FACADE_OK, VOC_CONS_OK))
+check("SF4 a floor meter NO unit owns is REFUSED once the whole domain carries the fields - "
+      "completeness, the half rule (u)'s fuzzy pairing could not see verbatim",
+      bool(rc_sf) and "voc.rejected" in str(rc_sf) and "tables it" in str(rc_sf),
+      str(rc_sf)[:260])
+
+# R2 exact shape: the test posts a route no table serves, while the unit's prose spells it.
+cons_r2 = json.loads(json.dumps(VOC_CONS_OK))
+r2_batch = voc_pair(641, VOC_FACADE_OK, cons_r2)
+for record in r2_batch:
+    if record["id"] == "T1-642":
+        record["intent"] = "posts /voc/packets and expects 202"
+(settings.COMPLETE_DIR / f"execution-strategy-{VOC_SLUG}.json").write_text(json.dumps({
+    "slug": VOC_SLUG, "observability": {
+        "correlation_key": "cid", "step_logs": ["voc accepted"],
+        "audit_trail": {"port": "Audit.record(A)"},
+        "metrics": [{"name": "voc.accepted", "type": "counter", "tags": []}],
+        "export": {"logs": "structured file sink"}}}))
+voc_reset()
+rc_sf = emit(r2_batch)
+check("SF5 the R2 pair is REFUSED: a staged unit spells a route ('/voc/packets') its own table "
+      "does not carry - the frozen test of 2026-11-18 posted a URI no contract served and the "
+      "deny-by-default chain answered 500 for every one of its six cases",
+      bool(rc_sf) and "/voc/packets" in str(rc_sf) and "ast_hints.routes does not carry it"
+      in str(rc_sf), str(rc_sf)[:260])
+
+guard_hints = {"package": "com.voc.guard", "implements": [], "dependencies": [],
+               "methods": [{"signature": "admits(String cid)", "returns": "boolean",
+                            "semantics": "true admits the caller, false denies it"}],
+               "routes": [{"method": "POST", "path": "/voc/ingest", "duty": "uses"}]}
+guard_batch = voc_pair(641, VOC_FACADE_OK, VOC_CONS_OK) + [
+    gtask("T1-643", "GuardTest", 1, deps=("T0-640",), project=VOC_SLUG,
+          path="src/test/java/voc/Guard1203Test.java",
+          intent="the guard admits POST /voc/ingest callers, denies the rest",
+          hints=guard_hints),
+    gtask("T2-643", "Guard", 2, deps=("T1-643",), project=VOC_SLUG,
+          intent="the guard admits POST /voc/ingest callers, denies the rest",
+          hints=guard_hints)]
+voc_reset()
+rc_sf = emit(guard_batch)
+check("SF6 a guard citing the served (method, path) VERBATIM with duty 'uses' ACCEPTS - the "
+      "citation is the join, not a second claim of the route", rc_sf is None, str(rc_sf)[:260])
+unserved = json.loads(json.dumps(guard_hints))
+unserved["routes"] = [{"method": "POST", "path": "/voc/gone", "duty": "uses"}]
+for record in unserved if isinstance(unserved, list) else []:
+    pass
+guard_batch2 = voc_pair(645, VOC_FACADE_OK, VOC_CONS_OK)
+guard_batch2[-2]["ast_hints"] = unserved
+guard_batch2[-1]["ast_hints"] = unserved
+guard_batch2[-2]["intent"] = "the guard admits POST /voc/gone callers, denies the rest"
+guard_batch2[-1]["intent"] = "the guard admits POST /voc/gone callers, denies the rest"
+voc_reset()
+rc_sf = emit(guard_batch2)
+check("SF6b a cited route SERVED by no unit is REFUSED naming the route (the (y2) reach "
+      "doctrine, generalized to every request-path literal)",
+      bool(rc_sf) and "/voc/gone" in str(rc_sf) and "SERVED by none" in str(rc_sf),
+      str(rc_sf)[:260])
+
+double = json.loads(json.dumps(VOC_CONS_OK))
+pair = voc_pair(651, VOC_FACADE_OK, VOC_CONS_OK)
+second = gtask("T2-653", "SecondIn", 2, deps=("T2-1221", "T2-652"), project=VOC_SLUG,
+               intent="answers POST /voc/ingest with summary counts", hints=double)
+second_t = gtask("T1-653", "SecondInTest", 1, deps=("T0-640",), project=VOC_SLUG,
+                 path="src/test/java/voc/Second1231Test.java",
+                 intent="answers POST /voc/ingest with summary counts", hints=double)
+voc_reset()
+rc_sf = emit(pair + [second_t, second])
+check("SF7 a route `serves`ed by TWO units is REFUSED - two handlers, one path, is the same "
+      "double-ownership class SF3 refuses for meters",
+      bool(rc_sf) and "/voc/ingest" in str(rc_sf) and "serves`ed by units" in str(rc_sf),
+      str(rc_sf)[:260])
+
+twin_bad = voc_pair(641, VOC_FACADE_OK, VOC_CONS_OK)
+for record in twin_bad:
+    if record["id"] == "T1-642":
+        record["ast_hints"] = json.loads(json.dumps(VOC_CONS_OK))
+        record["ast_hints"]["routes"] = [{"method": "POST", "path": "/voc/ingest",
+                                          "duty": "uses"}]
+voc_reset()
+rc_sf = emit(twin_bad)
+check("SF8 the test/code twins of one unit carrying DIFFERENT tables is REFUSED (z4) - the "
+      "prompt said IDENTICAL since the table existed; nothing enforced it, and the seed-002 "
+      "regen proved what a divergent twin freezes",
+      bool(rc_sf) and "DIFFERENT ast_hints" in str(rc_sf), str(rc_sf)[:220])
+
+board_twin = voc_pair(641, VOC_FACADE_OK, VOC_CONS_OK)
+for record in board_twin:
+    if record["stage"] == 1 or str(record.get("id")) == "T0-640":
+        continue
+late = voc_pair(641, VOC_FACADE_OK, VOC_CONS_OK)
+late = [r for r in late if str(r.get("id")) != "T1-642"]
+for record in late:
+    if record["id"] == "T2-642":
+        record["ast_hints"] = json.loads(json.dumps(VOC_CONS_OK))
+        record["ast_hints"]["meters"] = [{"name": "voc.accepted", "duty": "owns"}]
+voc_reset()
+(settings.COMPLETE_DIR / "T1-642-voc.json").write_text(json.dumps(
+    gtask("T1-642", "UseCaseTest", 1, deps=("T0-640",), project=VOC_SLUG,
+          path="src/test/java/voc/UseCase642Test.java",
+          intent="asserts the recorded facts", hints=VOC_CONS_OK)))
+rc_sf = emit(late)
+check("SF9 a staged task contradicting the table its twin ALREADY carries on the board is "
+      "REFUSED naming the delivered twin and --replan (a regen may add the vocabulary keys, "
+      "never re-spell the shared ones)",
+      bool(rc_sf) and "T1-642" in str(rc_sf) and "--replan" in str(rc_sf), str(rc_sf)[:260])
+(settings.COMPLETE_DIR / "T1-642-voc.json").unlink()
+
+prose_safe = json.loads(json.dumps(VOC_CONS_OK))
+safe_batch = voc_pair(641, VOC_FACADE_OK, prose_safe,
+                      cons_intent=("answers POST /voc/ingest; consumes application/json and "
+                                   "produces text/event-stream; reads ${DB_URL} from the "
+                                   "environment"))
+voc_reset()
+rc_sf = emit(safe_batch)
+check("SF10 the route scan does NOT fire on media types, env placeholders or relative paths "
+      "(over-refusing a lawful plan is the same defect wearing the other uniform)",
+      rc_sf is None, str(rc_sf)[:260])
+
+bad_duty = json.loads(json.dumps(VOC_CONS_OK))
+bad_duty["meters"] = [{"name": "voc.accepted", "duty": "records"}]
+voc_reset()
+rc_sf = emit(voc_pair(641, VOC_FACADE_OK, bad_duty))
+check("SF11 an off-schema vocabulary duty is refused at SHAPE time ('records' is not a duty: "
+      "the enums are the closed set)",
+      bool(rc_sf) and "duty in ['owns', 'uses']" in str(rc_sf), str(rc_sf)[:200])
+
+prose_meter = voc_pair(641, VOC_FACADE_OK, VOC_CONS_OK)
+for record in prose_meter:
+    if record["id"] in ("T1-641", "T2-641"):
+        record["ast_hints"] = json.loads(json.dumps(VOC_FACADE_OK))
+        record["ast_hints"]["meters"] = []
+voc_reset()
+rc_sf = emit(prose_meter)
+check("SF12 a unit whose COLLABORATOR table was emptied while consumers still cite the meter "
+      "is caught by the ownership half, not by silence: 'uses' with an empty owner list is "
+      "'OWNED by none' (the D15 regen could launder a name only while prose was the join)",
+      bool(rc_sf) and "OWNED by none" in str(rc_sf), str(rc_sf)[:260])
+# SF19/SF20: THE WRITABLE CHANNEL (2026-11-19 operator review - the prompt-contract trap:
+#     a stage-2 unit whose path is a template file has no writer on this board - the weaver
+#     splices source, the text route serves configuration documents, and no agent authors
+#     .st/.txt; the plan must move the artifact into a type or a config document).
+WCH = "wch"
+def wch_units(path):
+    s = gtask("T0-655", "Scaffold", 0, project=WCH, path="pom.xml", intent="Generate the wch root")
+    s["layer"] = "root"
+    s["export"] = task_queue.SCAFFOLD_EXPORT
+    h = {"package": "com.wch.p", "implements": [], "dependencies": [],
+         "methods": [{"signature": "system()", "returns": "String"}]}
+    t1 = gtask("T1-656", "PromptContractTest", 1, deps=("T0-655",), project=WCH,
+               path="src/test/java/wch/PromptContractTest.java", hints=h,
+               intent="asserts the five contract members")
+    t2 = gtask("T2-656", "PromptContract", 2, deps=("T1-656",), project=WCH, hints=h,
+               path=path, intent="the versioned prompt contract: role, placeholders, "
+                                  "output-schema ref, refusal text")
+    t2["layer"] = "application"
+    return [s, t1, t2]
+
+for _f in list(settings.QUEUE_DIR.glob("T?-65*-wch.json")) + list(settings.ERROR_DIR.glob("T?-65*-wch.json")):
+    _f.unlink()
+rc_sf = emit(wch_units("src/main/resources/prompts/system.st"))
+check("SF19 a stage-2 unit planned onto a template file is REFUSED at emit - no writer on "
+      "this board authors .st/.txt/.md, so the duty would deadlock at its first red gate "
+      "(the D4 class: a duty with no lawful channel)",
+      bool(rc_sf) and "system.st" in str(rc_sf)
+      and "no agent of this board authors template or text files" in str(rc_sf),
+      str(rc_sf)[:220])
+for _f in list(settings.QUEUE_DIR.glob("T?-65*-wch.json")) + list(settings.ERROR_DIR.glob("T?-65*-wch.json")):
+    _f.unlink()
+rc_sf = emit(wch_units("src/main/java/com/wch/p/PromptContract.java"))
+check("SF20 the SAME unit ACCEPTS as a source type (the Java-home remedy named by the "
+      "refusal) - the contract becomes tabled members the tester asserts and the weaver "
+      "lands", rc_sf is None, str(rc_sf)[:220])
+for _f in list(settings.QUEUE_DIR.glob("T?-65*-wch.json")):
+    _f.unlink()
+
+voc_reset()
+
+# --- z5: property paths are shared literals (R4), and z6: a guard's products are
+#     visible to the surface it guards (R3). Both joins ride _shared_literal_errors.
+CFG_SLUG = "cfg"
+
+
+def cfg_scaffold():
+    s = gtask("T0-631", "Scaffold", 0, project=CFG_SLUG, path="pom.xml",
+              intent="Generate the cfg project root")
+    s["layer"] = "root"
+    s["export"] = task_queue.SCAFFOLD_EXPORT
+    return s
+
+
+def cfg_reset():
+    for folder in (settings.QUEUE_DIR, settings.ERROR_DIR, settings.COMPLETE_DIR):
+        for stale in folder.glob(f"T[0-9]-63[0-9]-{CFG_SLUG}.json"):
+            stale.unlink()
+
+
+CFG_BIND = {"package": "com.cfg.creds", "implements": [], "dependencies": [],
+            "methods": [],
+            "config": [{"path": "demo.creds", "kind": "list",
+                        "fields": ["id", "secret-hash", "scope"]}]}
+CFG_WRITE_BAD = {"package": "com.cfg", "implements": [], "dependencies": [], "methods": [],
+                 "config": [{"path": "demo.creds.secret-hash", "kind": "value"}]}
+CFG_WRITE_OK = {"package": "com.cfg", "implements": [], "dependencies": [], "methods": [],
+                "config": [{"path": "demo.creds", "kind": "list",
+                            "fields": ["id", "secretHash", "scope"]}]}
+
+
+def cfg_units(num, write_hints):
+    """binder family `num` + config-writer family `num+1` (twins share tables)."""
+    bind_t = gtask(f"T1-{num}", "Creds", 1, deps=("T0-631",), project=CFG_SLUG,
+                   path=f"src/test/java/cfg/Creds{num}Test.java", hints=CFG_BIND,
+                   intent="the credential list binds demo.creds entries (id, secret-hash, scope)")
+    bind = gtask(f"T2-{num}", "Creds", 2, deps=(f"T1-{num}",), project=CFG_SLUG,
+                 hints=CFG_BIND,
+                 intent="the credential list binds demo.creds entries (id, secret-hash, scope)")
+    bind["layer"] = "application"
+    bind_t["layer"] = "application"
+    w_t = gtask(f"T1-{num + 1}", "AppYml", 1, deps=("T0-631",), project=CFG_SLUG,
+                path=f"src/test/java/cfg/AppYml{num + 1}Test.java", hints=write_hints,
+                intent="the loader binds the seeded credential entries")
+    w = gtask(f"T2-{num + 1}", "AppYml", 2, deps=(f"T1-{num + 1}",), project=CFG_SLUG,
+              path="src/main/resources/application.yml", hints=write_hints,
+              intent="runtime config application.yml seeds the credential entries "
+                     "for every profile the plan names")
+    w["layer"] = "shared"
+    w_t["layer"] = "shared"
+    w["export"] = "application.yml"
+    return [cfg_scaffold(), bind_t, bind, w_t, w]
+
+
+cfg_reset()
+rc_sf = emit(cfg_units(632, CFG_WRITE_BAD))
+check("SF13 the R4 pair is REFUSED: the record tables `demo.creds` as a LIST while the config "
+      "contract seeds a dotted child `demo.creds.secret-hash` - no binder reads a scalar child "
+      "of a list and no writer can satisfy both (2026-11-19 live: devices list vs "
+      "devices.secret-hash, the credential store booted empty forever)",
+      bool(rc_sf) and "demo.creds.secret-hash" in str(rc_sf) and "tabled as a LIST" in str(rc_sf),
+      str(rc_sf)[:260])
+cfg_reset()
+rc_sf = emit(cfg_units(632, CFG_WRITE_OK))
+check("SF14 the citation pair ACCEPTS across relaxed-binding spellings (the writer's camel "
+      "field `secretHash` IS the binder's kebab `secret-hash` - the canonical form is the "
+      "runtime's own), one path, one kind, one field set",
+      rc_sf is None, str(rc_sf)[:260])
+cfg_reset()
+rc_sf = emit(cfg_units(632, {"package": "com.cfg", "implements": [], "dependencies": [],
+                             "methods": []}))
+check("SF15 once the domain tables property paths, the config-artifact unit MUST table what its "
+      "document seeds - an untabled writer is a key a later reader may reshape unseen (z5)",
+      bool(rc_sf) and "carries none" in str(rc_sf), str(rc_sf)[:260])
+cfg_reset()
+
+CHN_SLUG = "chn"
+
+
+def chn_batch(entry_extra_deps, guard_methods, guard_deps):
+    s = gtask("T0-678", "Scaffold", 0, project=CHN_SLUG, path="pom.xml",
+              intent="Generate the chn project root")
+    s["layer"] = "root"
+    s["export"] = task_queue.SCAFFOLD_EXPORT
+    mgr_h = {"package": "com.chn.auth", "implements": [], "dependencies": [],
+             "methods": [{"signature": "authenticate(String id, String secret)",
+                          "returns": "Mono<String>"}]}
+    guard_h = {"package": "com.chn.sec", "implements": [], "dependencies": guard_deps,
+               "methods": guard_methods,
+               "routes": [{"method": "POST", "path": "/chn/ing", "duty": "uses"}]}
+    entry_deps = ["T1-677"] + [str(d["task_id"]) for d in entry_extra_deps]
+    entry_h = {"package": "com.chn.app", "implements": [], "dependencies": entry_extra_deps,
+               "methods": [{"signature": "run()", "returns": "void"}],
+               "routes": [{"method": "POST", "path": "/chn/ing", "duty": "serves"}]}
+    units = [s,
+             gtask("T1-675", "ManagerBeanTest", 1, deps=("T0-678",), project=CHN_SLUG,
+                   path="src/test/java/chn/ManagerBeanTest.java", hints=mgr_h,
+                   intent="asserts the credential check answers both branches"),
+             gtask("T2-675", "ManagerBean", 2, deps=("T1-675",), project=CHN_SLUG,
+                   hints=mgr_h, intent="authenticates per-device credentials, admits or denies"),
+             gtask("T1-676", "GuardCfgTest", 1, deps=("T0-678",), project=CHN_SLUG,
+                   path="src/test/java/chn/GuardCfgTest.java", hints=guard_h,
+                   intent="the chain admits POST /chn/ing scoped callers and denies the rest"),
+             gtask("T2-676", "GuardCfg", 2, deps=("T1-676", "T2-675"), project=CHN_SLUG,
+                   hints=guard_h,
+                   intent="the chain configuration builds the guard for POST /chn/ing"),
+             gtask("T1-677", "IngressTest", 1, deps=("T0-678",), project=CHN_SLUG,
+                   path="src/test/java/chn/IngressTest.java", hints=entry_h,
+                   intent="the ingress adapter answers POST /chn/ing"),
+             ]
+    entry = gtask("T2-677", "Ingress", 2, deps=tuple(entry_deps), project=CHN_SLUG,
+                  hints=entry_h, intent="the ingress adapter answers POST /chn/ing")
+    return units + [entry]
+
+
+CHAIN_METHODS = [{"signature": "chain(Httpish http, ManagerBean manager)",
+                  "returns": "ChainHandle"}]
+CHAIN_DEPS = [{"type": "ManagerBean", "task_id": "T2-675"}]
+
+
+def chn_reset():
+    for folder in (settings.QUEUE_DIR, settings.ERROR_DIR, settings.COMPLETE_DIR):
+        for stale in folder.glob(f"T[0-9]-67[5-9]-{CHN_SLUG}.json"):
+            stale.unlink()
+
+
+chn_reset()
+rc_sf = emit(chn_batch([{"type": "GuardCfg", "task_id": "T2-676"}],
+                       CHAIN_METHODS, CHAIN_DEPS))
+check("SF16 the R3 shape is REFUSED at emit: the surface pins its guard but not the guard's "
+      "own concrete product (the manager its bean method builds from) - the slice importing "
+      "the chain died NoSuchBeanDefinition 3/3 while its twin, which pinned the manager, "
+      "loaded (rule (z6))",
+      bool(rc_sf) and "managerbean" in str(rc_sf).lower() and "T2-676" in str(rc_sf)
+      and "T2-677" in str(rc_sf), str(rc_sf)[:300])
+chn_reset()
+rc_sf = emit(chn_batch([{"type": "GuardCfg", "task_id": "T2-676"},
+                        {"type": "ManagerBean", "task_id": "T2-675"}],
+                       CHAIN_METHODS, CHAIN_DEPS))
+check("SF17 the same plan ACCEPTS once the surface also pins the guard's product - the pin is "
+      "the contract that lets the tester double what the container must build (the live "
+      "T2-025 pattern, generalized)", rc_sf is None, str(rc_sf)[:300])
+chn_reset()
+rc_sf = emit(chn_batch([{"type": "GuardCfg", "task_id": "T2-676"}],
+                       [{"signature": "chain(Httpish http)", "returns": "ChainHandle"}], []))
+check("SF18 the law does not fire on framework-only parameters: no PROJECT product is named, "
+      "nothing more to pin - over-refusing a lawful plan is the same defect wearing the "
+      "other uniform", rc_sf is None, str(rc_sf)[:300])
+chn_reset()
+
+
+# --- PG. the performance and AI phases (2026-11-19): two more stack-agnostic spec gates
+#     cloned from the security contract - verbatim keying to phase 1, closed measurement
+#     kinds (the R5 lesson: deterministic or unclaimed), duty closure, leak refusal - and
+#     the AI directive, the mirror of the security waiver with flipped polarity.
+PFS = "pfs"
+settings.DOMAIN_DIR.mkdir(parents=True, exist_ok=True)
+settings.CONTEXT_MAP_DIR.mkdir(parents=True, exist_ok=True)
+(settings.COMPLETE_DIR / f"execution-strategy-{PFS}.json").write_text(json.dumps({
+    "slug": PFS, "language": "Java 21", "modules": [PFS],
+    "bounded_contexts": ["Intake"],
+    "surfaces": [{"name": "intake write", "kind": "http", "context": "Intake",
+                  "operations": ["POST"]}],
+    "contexts_without_inbound": [],
+    "persistence": {"data_model": "telemetry_record (device_key, value)"},
+    "observability": FULL_FLOOR, "risks": []}))
+
+
+def perf_spec(**over):
+    spec = {
+        "schema_version": "1.0", "report_type": "performance-spec", "slug": PFS,
+        "metadata": {"generated_at": "2026-11-19T00:00:00-03:00",
+                     "agent": "agent-performance-architect", "inputs": ["execution-strategy"],
+                     "confidence": "high"},
+        "assumptions": [{"id": "PA-01", "text": "bursty device traffic, tenfold peaks",
+                         "source": "intake write"}],
+        "workload": {"entries": [{"id": "WB-01", "surface": "intake write",
+                                  "driver": "peak arrival, bounded payload",
+                                  "data": ["telemetry_record"]}],
+                     "surfaces_exempt": []},
+        "budgets": [{"id": "PB-01", "target": "in-flight packets per instance",
+                     "limit": "a finite admission bound with a declared rejection",
+                     "capability": "bounded-admission",
+                     "measurement": {"kind": "status-code",
+                                     "assertion": "saturation answers the declared status"}}],
+        "invariants": [{"id": "PI-01", "rule": "no unbounded queue or buffer on any path",
+                        "capability": "backpressure-posture"}],
+        "duties": [
+            {"spec_ref": "PB-01", "obligation": "admit up to the bound, refuse above",
+             "capability": "bounded-admission", "unit_kind": "admission-control"},
+            {"spec_ref": "PI-01", "obligation": "every queue ships with its bound and policy",
+             "capability": "backpressure-posture", "unit_kind": "resource-ceiling"}],
+        "risks": [], "open_questions": []}
+    spec.update(over)
+    (settings.COMPLETE_DIR / f"performance-spec-{PFS}.json").write_text(json.dumps(spec))
+    return spec
+
+
+perf_spec()
+check("PG1 a lawful performance spec passes the gate (workload keyed VERBATIM to the surface "
+      "table, deterministic measurements, duties closed)",
+      ddd.validate_performance_spec(PFS) is None, str(ddd.validate_performance_spec(PFS))[:220])
+bad = perf_spec(); bad["budgets"][0]["measurement"]["kind"] = "latency-p99"
+(settings.COMPLETE_DIR / f"performance-spec-{PFS}.json").write_text(json.dumps(bad))
+check("PG2 a wall-clock measurement is REFUSED naming the closed kind set - the R5 class "
+      "prevented at the spec, not discovered at the gate ('p99 under 200ms' flakes in CI)",
+      "latency-p99" in str(ddd.validate_performance_spec(PFS))
+      and "clock" in str(ddd.validate_performance_spec(PFS)).lower(),
+      str(ddd.validate_performance_spec(PFS))[:240])
+bad = perf_spec(); bad["workload"]["entries"][0]["surface"] = "the big intake endpoint"
+bad["workload"]["surfaces_exempt"] = [{"surface": "ghost read"}]
+(settings.COMPLETE_DIR / f"performance-spec-{PFS}.json").write_text(json.dumps(bad))
+reason_pg = str(ddd.validate_performance_spec(PFS))
+check("PG3 paraphrased surface names, an exemption for an undeclared surface, and the covered "
+      "surface losing its row are ALL refused - the verbatim join-key law, security's, reused",
+      "the big intake endpoint" in reason_pg and "ghost read" in reason_pg
+      and "NO workload entry" in reason_pg, reason_pg[:280])
+bad = perf_spec(); bad["duties"] = [d for d in bad["duties"] if d["spec_ref"] != "PI-01"]
+(settings.COMPLETE_DIR / f"performance-spec-{PFS}.json").write_text(json.dumps(bad))
+check("PG4 an invariant with no owning duty is REFUSED (duty closure is one contract, not a "
+      "per-section option)", "PI-01" in str(ddd.validate_performance_spec(PFS)),
+      str(ddd.validate_performance_spec(PFS))[:180])
+bad = perf_spec(); bad["budgets"][0]["limit"] = "pool sized by hikaricp defaults"
+(settings.COMPLETE_DIR / f"performance-spec-{PFS}.json").write_text(json.dumps(bad))
+check("PG5 a vendor name in the artifact is REFUSED (the leak law is not security-only - a "
+      "performance spec that names a product decided the architect's job)",
+      "hikaricp" in str(ddd.validate_performance_spec(PFS)),
+      str(ddd.validate_performance_spec(PFS))[:180])
+perf_spec()
+
+AIS = "ais"
+(settings.COMPLETE_DIR / f"execution-strategy-{AIS}.json").write_text(json.dumps({
+    "slug": AIS, "language": "Java 21", "modules": [AIS],
+    "bounded_contexts": ["Ask"],
+    "surfaces": [{"name": "ask surface", "kind": "http", "context": "Ask",
+                  "operations": ["POST"]}],
+    "persistence": {"data_model": "answer_record (question)"},
+    "observability": FULL_FLOOR, "risks": []}))
+(settings.CONTEXT_MAP_DIR / f"context-map-{AIS}.json").write_text(json.dumps(
+    {"slug": AIS, "cross_boundary_flows": [{"name": "question to model", "from": "Ask",
+                                            "to": "Model"}]}))
+DESC_PG = ROOT / "desc-ais.md"
+DESC_PG.write_text("The service answers operator questions with generated text over its own "
+                   "telemetry data. Everything else is ordinary ingestion.\n")
+(settings.DOMAIN_DIR / f"domain-boundary-{AIS}.json").write_text(json.dumps({
+    "schema_version": "1.0", "report_type": "domain-slice",
+    "metadata": {"generated_at": "2026-11-19T00:00:00-03:00",
+                 "agent": "domain-boundary-discovery-specialist",
+                 "source_description": str(DESC_PG)},
+    "subdomain": {"name": "ais", "type": "core", "capability": "ask", "why_distinct": "x"},
+    "ubiquitous_language": [], "bounded_contexts": [], "assumptions": [],
+    "ai_directive": {"required": True,
+                     "quote": "The service answers operator questions with generated text over "
+                              "its own telemetry data.",
+                     "source": "description"}}))
+check("PG7 the AI trigger is honored ONLY on a VERBATIM sentence of the description (the "
+      "waiver's witness law, flipped polarity)",
+      ddd.ai_required(AIS)[0] is True and "answers operator questions" in ddd.ai_required(AIS)[1]
+      and ddd.validate_ai_directives() is None, str(ddd.ai_required(AIS))[:200])
+slice_pg = json.loads((settings.DOMAIN_DIR / f"domain-boundary-{AIS}.json").read_text())
+slice_pg["ai_directive"]["quote"] = "the users obviously wanted chatbots"
+(settings.DOMAIN_DIR / f"domain-boundary-{AIS}.json").write_text(json.dumps(slice_pg))
+check("PG7b a PARAPHRASE is no trigger - required:false-equivalent by force: the phase must "
+      "not run on a sentence the user never wrote, and the reason is fatal, not silent",
+      ddd.ai_required(AIS)[0] is False
+      and ddd.validate_ai_directives() is not None, str(ddd.ai_required(AIS))[:160])
+slice_pg["ai_directive"]["quote"] = ("The service answers operator questions with generated "
+                                     "text over its own telemetry data.")
+(settings.DOMAIN_DIR / f"domain-boundary-{AIS}.json").write_text(json.dumps(slice_pg))
+
+
+def ai_spec(**over):
+    spec = {
+        "schema_version": "1.0", "report_type": "ai-spec", "slug": AIS,
+        "metadata": {"generated_at": "2026-11-19T00:00:00-03:00",
+                     "agent": "agent-ai-architect", "inputs": ["execution-strategy"],
+                     "confidence": "high"},
+        "assumptions": [{"id": "AA-01", "text": "answers cite only the caller-visible rows",
+                         "source": "ask surface"}],
+        "model_roles": [{"id": "AR-01", "role": "answer generation",
+                         "statefulness": "session", "memory_technique": "sliding-window", "memory_technique": "sliding-window", "data_classes": ["answer_record"]}],
+        "capabilities": [{"id": "AC-01", "surface_or_flow": "ask surface",
+                          "requirement": "every prompt is the versioned contract, never an "
+                                         "ad-hoc string",
+                          "capability": "prompt-contract",
+                          "measurement": {"kind": "stub-call-count",
+                                          "assertion": "the stub port is called exactly once "
+                                                       "per request"}},
+                         {"id": "AC-02", "surface_or_flow": "question to model",
+                          "requirement": "model output is schema-validated before trusted",
+                          "capability": "structured-output-guard",
+                          "measurement": {"kind": "schema-validation",
+                                          "assertion": "a violating output answers the declared "
+                                                       "refusal"}}],
+        "invariants": [{"id": "AM-01",
+                        "rule": "no test path reaches a live endpoint; every port answers "
+                                "from its stub",
+                        "capability": "offline-model-port"}],
+        "duties": [
+            {"spec_ref": "AC-01", "obligation": "own the versioned prompt contract",
+             "capability": "prompt-contract", "unit_kind": "prompt-contract"},
+            {"spec_ref": "AC-02", "obligation": "validate the output schema at the port",
+             "capability": "structured-output-guard", "unit_kind": "output-validator"},
+            {"spec_ref": "AM-01", "obligation": "ship the offline stand-in with the port",
+             "capability": "offline-model-port", "unit_kind": "offline-stub"}],
+        "risks": [], "open_questions": []}
+    spec.update(over)
+    (settings.COMPLETE_DIR / f"ai-spec-{AIS}.json").write_text(json.dumps(spec))
+    return spec
+
+
+ai_spec()
+check("PG8 a lawful AI spec passes: closed tokens, roles with statefulness AND data classes, "
+      "flow-keyed capability (verbatim against the context map), deterministic measurements, "
+      "the offline invariant present, duties closed",
+      ddd.validate_ai_spec(AIS) is None, str(ddd.validate_ai_spec(AIS))[:240])
+bad = ai_spec(); bad["invariants"] = []
+(settings.COMPLETE_DIR / f"ai-spec-{AIS}.json").write_text(json.dumps(bad))
+check("PG8b an AI spec without the offline-port invariant is REFUSED: a plan that CAN call "
+      "the world from CI will, billing real tokens - the mandatory law, not a suggestion",
+      "offline-model-port" in str(ddd.validate_ai_spec(AIS)), str(ddd.validate_ai_spec(AIS))[:180])
+bad = ai_spec(); bad["capabilities"][0]["capability"] = "hallucination-guard"
+bad["duties"][0]["capability"] = "hallucination-guard"
+(settings.COMPLETE_DIR / f"ai-spec-{AIS}.json").write_text(json.dumps(bad))
+reason_pg = str(ddd.validate_ai_spec(AIS))
+check("PG8c a token OUTSIDE the closed AI vocabulary is REFUSED (the mapping table has no "
+      "row for an invented capability - the honest channel is the skill's list or "
+      "open_questions)", "hallucination-guard" in reason_pg
+      and "CLOSED" in reason_pg.upper() or "closed" in reason_pg, reason_pg[:200])
+bad = ai_spec(); bad["capabilities"][0]["surface_or_flow"] = "the chat thing"
+(settings.COMPLETE_DIR / f"ai-spec-{AIS}.json").write_text(json.dumps(bad))
+check("PG8d a capability keyed to no declared surface and no context-map flow is REFUSED - "
+      "floating AI behavior is invented behavior", "the chat thing" in
+      str(ddd.validate_ai_spec(AIS)), str(ddd.validate_ai_spec(AIS))[:200])
+ai_spec()
+
+# PG14: the multi-agent trio (operator review 2026-11-19): topology, termination, human
+# custody, role bindings - and the spec_ref restriction the schema's "SAME closed token"
+# clause demanded (AR-/AA- rows carry no capability; a duty citing them was undefined law).
+def ma_spec():
+    spec = json.loads(json.dumps(ai_spec()))
+    spec["model_roles"][0]["statefulness"] = "durable"
+    spec["model_roles"] += [
+        {"id": "AR-02", "role": "worker generation", "statefulness": "none",
+         "data_classes": ["answer_record"]}]
+    spec["capabilities"] += [
+        {"id": "AC-03", "surface_or_flow": "ask surface",
+         "requirement": "delegation edges are closed",
+         "capability": "agent-handoff", "roles": ["AR-01", "AR-02"],
+         "measurement": {"kind": "deterministic-count",
+                         "assertion": "an unlisted edge is refused by the router"}},
+        {"id": "AC-04", "surface_or_flow": "ask surface",
+         "requirement": "irreversible actions wait for approval",
+         "capability": "human-approval-gate", "roles": ["AR-01"],
+         "measurement": {"kind": "status-code",
+                         "assertion": "unapproved execution refused"}},
+        {"id": "AC-05", "surface_or_flow": "ask surface",
+         "requirement": "tools stay guarded while gated", "capability": "tool-call-guard",
+         "measurement": {"kind": "deterministic-count",
+                         "assertion": "only enumerated operations run"}}]
+    spec["invariants"] += [
+        {"id": "AM-02", "rule": "at most 8 turns, then the declared cycle-break outcome",
+         "capability": "loop-budget-cap", "roles": ["AR-01", "AR-02"]}]
+    spec["duties"] += [
+        {"spec_ref": "AC-03", "obligation": "the router enumerates AR-01 -> AR-02 edges",
+         "capability": "agent-handoff", "unit_kind": "orchestration-router"},
+        {"spec_ref": "AC-04", "obligation": "propose/execute split persisted",
+         "capability": "human-approval-gate", "unit_kind": "approval-gate"},
+        {"spec_ref": "AC-05", "obligation": "tools delegate only",
+         "capability": "tool-call-guard", "unit_kind": "tool-guard"},
+        {"spec_ref": "AM-02", "obligation": "governor counts turns on the cycle",
+         "capability": "loop-budget-cap", "unit_kind": "loop-governor"}]
+    (settings.COMPLETE_DIR / f"ai-spec-{AIS}.json").write_text(json.dumps(spec))
+    return spec
+
+
+check("PG14 a lawful multi-agent spec passes: handoff over declared roles, its termination "
+      "invariant, an approval bound to a guard, duties on rule rows only",
+      ma_spec() is not None and ddd.validate_ai_spec(AIS) is None,
+      str(ddd.validate_ai_spec(AIS))[:240])
+_ma = ma_spec()
+_ma["duties"][0]["spec_ref"] = "AR-01"
+(settings.COMPLETE_DIR / f"ai-spec-{AIS}.json").write_text(json.dumps(_ma))
+check("PG14b a duty citing a MODEL ROLE is REFUSED - 'the SAME closed token as the rule it "
+      "discharges' is undefined for a row without a capability (the schema bug of the "
+      "review): roles are context, cited inside obligations, never discharged",
+      "AR-01" in str(ddd.validate_ai_spec(AIS))
+      and "not a dischargeable rule" in str(ddd.validate_ai_spec(AIS)),
+      str(ddd.validate_ai_spec(AIS))[:200])
+_ma = ma_spec()
+_ma["duties"][1]["spec_ref"] = "AA-01"
+(settings.COMPLETE_DIR / f"ai-spec-{AIS}.json").write_text(json.dumps(_ma))
+check("PG14c a duty citing an ASSUMPTION is refused by the same law",
+      "AA-01" in str(ddd.validate_ai_spec(AIS))
+      and "not a dischargeable rule" in str(ddd.validate_ai_spec(AIS)),
+      str(ddd.validate_ai_spec(AIS))[:160])
+_ma = ma_spec()
+_ma["invariants"] = [i for i in _ma["invariants"] if i["capability"] != "loop-budget-cap"]
+_ma["duties"] = [d for d in _ma["duties"] if d["capability"] != "loop-budget-cap"]
+(settings.COMPLETE_DIR / f"ai-spec-{AIS}.json").write_text(json.dumps(_ma))
+check("PG14d the TOPOLOGY TERMINATION law: an agent-handoff capability with no "
+      "loop-budget-cap invariant is REFUSED - each call valid and small while the LOOP "
+      "spins forever, the AI class of the unbounded queue no per-unit gate could see",
+      "spin forever" in str(ddd.validate_ai_spec(AIS)), str(ddd.validate_ai_spec(AIS))[:200])
+_ma = ma_spec()
+_ma["capabilities"] = [c for c in _ma["capabilities"] if c["capability"] != "tool-call-guard"]
+_ma["duties"] = [d for d in _ma["duties"] if d["capability"] != "tool-call-guard"]
+(settings.COMPLETE_DIR / f"ai-spec-{AIS}.json").write_text(json.dumps(_ma))
+check("PG14e a human-approval-gate with no tool-call-guard is REFUSED - an approval gate "
+      "around nothing is ceremony; the gate must guard the high-impact tool",
+      "ceremony" in str(ddd.validate_ai_spec(AIS)), str(ddd.validate_ai_spec(AIS))[:180])
+_ma = ma_spec()
+_ma["capabilities"][2]["roles"] = ["AR-99"]
+(settings.COMPLETE_DIR / f"ai-spec-{AIS}.json").write_text(json.dumps(_ma))
+check("PG14f a role binding to an undeclared agent is REFUSED - every agent in the "
+      "topology must be an agent in the plan (a model_roles row)",
+      "AR-99" in str(ddd.validate_ai_spec(AIS))
+      and "model_roles" in str(ddd.validate_ai_spec(AIS)),
+      str(ddd.validate_ai_spec(AIS))[:180])
+_ma = ma_spec()
+_ma["invariants"][-1]["roles"] = ["AR-77"]
+(settings.COMPLETE_DIR / f"ai-spec-{AIS}.json").write_text(json.dumps(_ma))
+check("PG14g the same binding law covers the INVARIANT rows: a loop-budget-cap naming an "
+      "agent the plan never declared is refused - the cycle it caps involves a ghost "
+      "(roles bind on capability AND invariant rows, schema 2026-11-19 alignment)",
+      "AR-77" in str(ddd.validate_ai_spec(AIS))
+      and "model_roles" in str(ddd.validate_ai_spec(AIS)),
+      str(ddd.validate_ai_spec(AIS))[:180])
+_ma = ma_spec()
+_ma["capabilities"].append(
+    {"id": "AC-09", "surface_or_flow": "ask surface",
+     "requirement": "the answer streams incremental chunks then a terminal completion",
+     "capability": "incremental-progress-stream", "roles": ["AR-01", "AR-02"],
+     "measurement": {"kind": "stub-call-count",
+                     "assertion": "N chunk events precede the terminal completion event"}})
+_ma["duties"].append(
+    {"spec_ref": "AC-09", "obligation": "the port emits chunk events then completion",
+     "capability": "incremental-progress-stream", "unit_kind": "stream-delivery"})
+(settings.COMPLETE_DIR / f"ai-spec-{AIS}.json").write_text(json.dumps(_ma))
+check("PG15 the DELIVERY-SHAPE token passes the whole gate: closed vocabulary, deterministic "
+      "measurement, role binding, duty on a rule row - the spec can now tell phase 2 "
+      "stream-vs-hold without naming any transport",
+      ddd.validate_ai_spec(AIS) is None, str(ddd.validate_ai_spec(AIS))[:240])
+_ma["capabilities"][-1]["requirement"] = ("the handler returns SSE events for the answer "
+                                          "chunks")
+(settings.COMPLETE_DIR / f"ai-spec-{AIS}.json").write_text(json.dumps(_ma))
+check("PG16 naming the TRANSPORT in the spec is REFUSED: SSE/websocket/gRPC belong to the "
+      "mapping tier - the spec states the shape (events then completion), phase 2 picks the "
+      "protocol of the concrete surface (an internal consumer may not be HTTP at all)",
+      "SSE" in str(ddd.validate_ai_spec(AIS)) and "TRANSPORT" in str(ddd.validate_ai_spec(AIS)),
+      str(ddd.validate_ai_spec(AIS))[:200])
+ai_spec()
+
+# PG17-PG19: memory tier & technique laws (2026-11-19 operator review): the tier is decided
+# by triggers, three of them machine-checked; the technique is required with any memory.
+_ma = ma_spec()
+del _ma["model_roles"][0]["memory_technique"]
+(settings.COMPLETE_DIR / f"ai-spec-{AIS}.json").write_text(json.dumps(_ma))
+check("PG17 a session/durable role with NO memory_technique is REFUSED - a tier without a "
+      "compaction/retrieval rule leaves context-budget-cap unpaired (what is truncated?) and "
+      "phase 2 naming a store from memory; statefulness is half a decision",
+      "memory_technique" in str(ddd.validate_ai_spec(AIS)), str(ddd.validate_ai_spec(AIS))[:220])
+_ma = ma_spec()
+_ma["model_roles"][1]["memory_technique"] = "sliding-window"
+(settings.COMPLETE_DIR / f"ai-spec-{AIS}.json").write_text(json.dumps(_ma))
+check("PG17b a STATELESS role declaring a technique is refused the other way - none has no "
+      "memory to manage (an envelope-complete worker states no technique)",
+      "statelessness declares no memory" in str(ddd.validate_ai_spec(AIS)),
+      str(ddd.validate_ai_spec(AIS))[:180])
+_ma = ma_spec()
+_ma["model_roles"][0]["statefulness"] = "session"
+(settings.COMPLETE_DIR / f"ai-spec-{AIS}.json").write_text(json.dumps(_ma))
+check("PG18 the approval trigger, machine-enforced: a `human-approval-gate` bound to a "
+      "session-state role is REFUSED - an awaiting_approval that resumes through an inbound "
+      "surface cannot live in a process that may restart or rebalance (in-memory approval is "
+      "a workflow that silently forgets it was waiting)",
+      "durable by law" in str(ddd.validate_ai_spec(AIS)), str(ddd.validate_ai_spec(AIS))[:220])
+_ma = ma_spec()
+_ma["model_roles"][0]["memory_technique"] = "semantic-episodic"
+(settings.COMPLETE_DIR / f"ai-spec-{AIS}.json").write_text(json.dumps(_ma))
+check("PG19a semantic-episodic WITHOUT a retrieval-scope-guard capability is REFUSED - "
+      "embedded recall reaches across sessions by design; unscoped it reaches across tenants "
+      "(a disclosure with good recall)",
+      "retrieval-scope-guard" in str(ddd.validate_ai_spec(AIS)), str(ddd.validate_ai_spec(AIS))[:200])
+_ma = ma_spec()
+_ma["model_roles"][0]["data_classes"] = ["chat_history"]
+(settings.COMPLETE_DIR / f"ai-spec-{AIS}.json").write_text(json.dumps(_ma))
+check("PG19b durable memory whose data classes match no concept in the strategy's "
+      "`persistence.data_model` is REFUSED with the open_questions route named - durable "
+      "without a persisted concept is the shared-blackboard/audit trigger decided twice and "
+      "stored nowhere",
+      "chat_history" in str(ddd.validate_ai_spec(AIS)) and "open_questions" in str(ddd.validate_ai_spec(AIS)),
+      str(ddd.validate_ai_spec(AIS))[:240])
+_ma = ma_spec()
+_ma["model_roles"][0]["memory_technique"] = "semantic-episodic"
+_ma["capabilities"].append(
+    {"id": "AC-09", "surface_or_flow": "ask surface",
+     "requirement": "semantic recall is tenant-scoped before hydration",
+     "capability": "retrieval-scope-guard", "roles": ["AR-01"],
+     "measurement": {"kind": "deterministic-count",
+                     "assertion": "a foreign-scope query returns nothing"}})
+_ma["duties"].append(
+    {"spec_ref": "AC-09", "obligation": "the store re-checks permits before hydrating recall",
+     "capability": "retrieval-scope-guard", "unit_kind": "retrieval-adapter"})
+(settings.COMPLETE_DIR / f"ai-spec-{AIS}.json").write_text(json.dumps(_ma))
+check("PG19c the lawful semantic memory ACCEPTS: durable role + semantic-episodic + "
+      "retrieval-scope-guard capability + a duty on the rule row - all four memory laws "
+       "satisfied at once",
+      ddd.validate_ai_spec(AIS) is None, str(ddd.validate_ai_spec(AIS))[:220])
+ai_spec()
+
+ai_spec()
+
+# PG9/PG10: the claim channel - performance duties must be claimed at emit, (y1)-form.
+CLM = "clm"
+(settings.COMPLETE_DIR / f"execution-strategy-{CLM}.json").write_text(json.dumps({
+    "slug": CLM, "language": "Java 21", "modules": [CLM], "bounded_contexts": ["C"],
+    "surfaces": [{"name": "c write", "kind": "http", "context": "C", "operations": ["POST"]}],
+    "persistence": {"data_model": "c_row (id)"},
+    "observability": FULL_FLOOR, "risks": []}))
+(settings.COMPLETE_DIR / f"performance-spec-{CLM}.json").write_text(json.dumps({
+    "schema_version": "1.0", "report_type": "performance-spec", "slug": CLM,
+    "metadata": {"agent": "agent-performance-architect"},
+    "assumptions": [],
+    "workload": {"entries": [{"id": "WB-01", "surface": "c write", "driver": "bursty",
+                              "data": ["c_row"]}], "surfaces_exempt": []},
+    "budgets": [{"id": "PB-07", "target": "in-flight", "limit": "bounded",
+                 "capability": "bounded-admission",
+                 "measurement": {"kind": "status-code", "assertion": "429 under saturation"}}],
+    "invariants": [], "duties": [
+        {"spec_ref": "PB-07", "obligation": "admit up to the bound, refuse above",
+         "capability": "bounded-admission", "unit_kind": "admission-control"}],
+    "risks": [], "open_questions": []}))
+_clm_scaffold = gtask("T0-681", "Scaffold", 0, project=CLM, path="pom.xml",
+                      intent="Generate the clm root")
+_clm_scaffold["layer"] = "root"
+_clm_scaffold["export"] = task_queue.SCAFFOLD_EXPORT
+_clm_h = {"package": "com.clm.a", "implements": [], "dependencies": [],
+          "methods": [{"signature": "run()", "returns": "void"}]}
+_clm_t = gtask("T1-682", "Admit", 1, deps=("T0-681",), project=CLM,
+               path="src/test/java/clm/AdmitTest.java", hints=_clm_h,
+               intent="asserts admission")
+_clm_steplog_claim = ["packet received (IngressPacket)"]
+_clm_u = gtask("T2-682", "Admit", 2, deps=("T1-682",), project=CLM, hints=_clm_h,
+               intent="the guard admits the flow")
+_clm_u["observability"] = {"step_logs": _clm_steplog_claim}
+settings.QUEUE_DIR.glob("*.json")
+for _f in list(settings.QUEUE_DIR.glob("T?-68*-clm.json")):
+    _f.unlink()
+rc_pg = emit([_clm_scaffold, _clm_t, _clm_u])
+check("PG9 emit REFUSES a plan whose stage-2 units never claim the performance duty "
+      "(spec_ref + capability verbatim, the (y1) claim form reused): an advisory spec is "
+      "the C-gap story repeating for load rules",
+      bool(rc_pg) and "PB-07" in str(rc_pg) and "bounded-admission" in str(rc_pg)
+      and "claimed by no stage-2 unit" in str(rc_pg), str(rc_pg)[:280])
+_clm_u["intent"] = ("the guard admits the flow: PB-07 bounded-admission, saturation answers "
+                    "the declared status")
+_clm_t["intent"] = "asserts PB-07 bounded-admission refuses above the bound"
+for _f in list(settings.QUEUE_DIR.glob("T?-68*-clm.json")) + \
+        list(settings.ERROR_DIR.glob("T?-68*-clm.json")):
+    _f.unlink()
+rc_pg = emit([_clm_scaffold, _clm_t, _clm_u])
+check("PG10 the SAME plan ACCEPTS once the pair is spelled inside the enforcing stage-2 "
+      "unit - the gate refuses the gap, not a style (and the claim line carries --replan "
+      "as the operator remedy for a spec that arrived late)",
+      rc_pg is None, str(rc_pg)[:280])
+check("PG11 planning_claim_gaps reads the LIVE board with the same reading the emit gate "
+      "applied: the claimed duty clears (the resume branch's question is discharge, "
+      "not parseability)",
+      task_queue.planning_claim_gaps(CLM) == []
+      and (settings.QUEUE_DIR / "T2-682-clm.json").is_file(),
+      str(task_queue.planning_claim_gaps(CLM))[:200])
+# PG12: replan now archives the two new specs beside security's
+(settings.COMPLETE_DIR / f"performance-spec-pg2x.json").write_text(json.dumps({"slug": "pg2x"}))
+(settings.COMPLETE_DIR / f"ai-spec-pg2x.json").write_text(json.dumps({"slug": "pg2x"}))
+moved_pg = task_queue.replan_domain("pg2x")
+check("PG12 --replan archives the performance and AI specs beside the strategy and security "
+      "spec - a late or stale spec now has the ONE lawful remedy, not operator file surgery",
+      moved_pg["performance"] and moved_pg["ai"]
+      and not (settings.COMPLETE_DIR / "performance-spec-pg2x.json").exists()
+      and not (settings.COMPLETE_DIR / "ai-spec-pg2x.json").exists())
+_pg_src = inspect.getsource(pipeline_mod.run)
+check("PG13 the pipeline runs BOTH new phases between the specs' inputs and decomposition, "
+      "stops on their refusals and open questions, fatals on planning claim gaps, and "
+      "discloses the directive in the terminal verdict (source-order assertion, zero "
+      "billed sessions)",
+      _pg_src.index("validate_ai_directives") < _pg_src.index("run_performance")
+      < _pg_src.index("run_ai") < _pg_src.index("architect writing application tasks")
+      and "planning_claim_gaps" in _pg_src
+      and "AI BY DIRECTIVE" in inspect.getsource(pipeline_mod._terminal_tree_report))
 
 bad_names = [n for n, c in CHECKS if not c]
 print(f"\nENGINE-DECISIONS SUITE: {len(CHECKS) - len(bad_names)}/{len(CHECKS)}")

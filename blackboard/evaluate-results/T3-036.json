@@ -1,0 +1,29 @@
+{
+  "project": "telemetry-ingestion",
+  "targetFile": "src/main/resources/application.yml",
+  "stack": "java-springboot3",
+  "skill": "java-springboot3",
+  "summary": "Audit found no duplication, secrets, or hacks; secrets are env-injected, error details suppressed, only health exposed. No edits; frozen ApplicationConfigTest stays green.",
+  "findings": [],
+  "changes": [],
+  "reverts": [],
+  "final_test": {
+    "status": "passed",
+    "exit_code": 0,
+    "counts": {
+      "run": 10,
+      "failures": 0,
+      "errors": 0
+    },
+    "classes": {
+      "com.pulsestream.telemetry.shared.config.ApplicationConfigTest": "passed"
+    },
+    "evidence": "gate-cache T2-036 (no newer files)"
+  },
+  "task_id": "T3-036",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-18T21:02:34.753557+00:00",
+  "engine_diff": [],
+  "engine_diff_files": 0
+}

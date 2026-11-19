@@ -1,28 +1,31 @@
 {
   "id": "T2-010",
-  "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/eventlog/domain/EventRecord.java",
-  "export": "EventRecord",
-  "method": "EventRecord",
+  "project": "telemetry-ingestion",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ingestion/infrastructure/Sha256RedactionAdapter.java",
+  "export": "Sha256RedactionAdapter",
+  "kind": "class",
+  "method": "mask",
   "language": "java",
-  "framework": "springboot",
+  "framework": "spring-boot",
   "skill": "java-springboot",
-  "signature": "EventRecord(TelemetrySample sample, int revision, String kind)",
-  "returns": "void",
-  "body": "",
+  "signature": "String mask(String value)",
+  "returns": "String",
+  "implements": [
+    "RedactionPort"
+  ],
+  "methodAnnotations": [
+    "Override"
+  ],
+  "body": "try {\n    byte[] digest = MessageDigest.getInstance(\"SHA-256\").digest((value == null ? \"\" : value).getBytes(StandardCharsets.UTF_8));\n    return HexFormat.of().formatHex(digest).substring(0, 12);\n} catch (NoSuchAlgorithmException e) {\n    throw new IllegalStateException(\"digest unavailable\");\n}",
   "imports": [
-    "com.pulsestream.telemetry.validation.domain.TelemetrySample"
+    "java.nio.charset.StandardCharsets",
+    "java.security.MessageDigest",
+    "java.security.NoSuchAlgorithmException",
+    "java.util.HexFormat",
+    "com.pulsestream.telemetry.ingestion.application.RedactionPort"
   ],
   "missing": [],
-  "kind": "record",
-  "members": [
-    "TelemetrySample sample",
-    "int revision",
-    "String kind",
-    "public static final String KIND_RECORD = \"RECORD\";",
-    "public static final String KIND_REVISION = \"REVISION\";"
-  ],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-17T15:30:59.114812+00:00"
+  "recorded_at": "2026-11-18T18:03:36.958909+00:00"
 }

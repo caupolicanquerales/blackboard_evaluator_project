@@ -1,7 +1,7 @@
 """Backend-agnostic pipeline: CLI shape and the full phase order.
 
 The same flow runs over any backend module that exposes ``run_discovery``,
-``run_mapping``, ``run_architect``, ``run_database`` and ``run_pass``.
+``run_mapping``, ``run_architect``, ``run_database``, ``run_security`` and ``run_pass``.
 """
 import argparse
 import builtins
@@ -68,6 +68,12 @@ def build_parser(description):
     parser.add_argument("--emit", nargs="+", metavar="FILE", help="validate and emit task JSON files to queue, then exit")
     parser.add_argument("--retry", nargs="*", metavar="ID", default=None,
                         help="move quarantined tasks back to the queue (all, or only ids matching these patterns), then continue")
+    parser.add_argument("--replan", nargs="+", metavar="SLUG",
+                        help="archive one or more domains' plan (execution strategy, security, "
+                             "performance and AI specs, and stage 1-3 records, all to "
+                             "blackboard/archive/) so the phases re-run for them on this "
+                             "launch: the fix when a strategy names no inbound surface or a "
+                             "spec arrived after its decomposition")
     parser.add_argument("--skip-docker-check", action="store_true",
                         help="do not gate the queue drain on a reachable Docker daemon")
     return parser
@@ -96,6 +102,58 @@ def _database_reason(slug):
     if not _migration_files(slug):
         return "database architect wrote no migration scripts"
     return None
+
+
+def _security_reason(slug):
+    """None when the security phase produced a lawful spec.
+
+    The spec is mandatory for every domain: the strategy already carries the persistence
+    and observability floors, and a plan with no permission table leaves every later unit
+    to guess who may call what. Nothing is queued here on purpose - the security step
+    decides WHAT must hold, the architect decides HOW and schedules it (rule (y)), so this
+    phase has no task-shaped success criterion to be graded against.
+    """
+    return ddd.validate_security_spec(slug)
+
+
+def _surface_security_risks(slug):
+    """Print the domain's risk register - every entry, every launch, including the resume path    where the spec was already valid and the phase printed nothing at all.
+
+    A risk is the spec's own record of a conflict it refused to soften (posture rule: never weaken a
+    control to fit an implementation, record it). Until now the array was written, machine-checked for
+    shape, and then read by nobody: the gate requires a control's entry id or an accepted posture, and
+    this prints which of the two the run is living with, so an accepted exposure is a line an operator
+    saw, not a field that aged out of a JSON file."""
+    accepted = 0
+    for entry in ddd.security_risks(slug):
+        rid = str(entry.get("id", "R-??"))
+        mitigation = str(entry.get("mitigation", "")).strip()
+        is_accepted = ddd._risk_is_accepted(mitigation)
+        accepted += 1 if is_accepted else 0
+        print(f"[risk  ] {slug} {rid}: {str(entry.get('risk', ''))[:150]} -> "
+              f"{'ACCEPTED, not mitigated:' if is_accepted else 'control'} {mitigation[:110]}"
+              f" | residual: {str(entry.get('residual', ''))[:110]}")
+    if accepted:
+        print(f"[risk  ] {slug}: {accepted} of {len(ddd.security_risks(slug))} recorded risks are "
+              "accepted postures - the run is defended against the rest by choice, not by accident")
+
+
+def _surface_spec_risks(slug, label, risks):
+    """The same disclosure channel the security register has (A2/SA6): a risk that is only
+    WRITTEN is a risk nobody read. Performance and AI specs carry the register law, so the
+    pipeline prints their entries on every launch too - fresh phase, skipped phase, resume."""
+    accepted = 0
+    for entry in risks:
+        rid = str(entry.get("id", "R-??"))
+        mitigation = str(entry.get("mitigation", "")).strip()
+        is_accepted = ddd._risk_is_accepted(mitigation)
+        accepted += 1 if is_accepted else 0
+        print(f"[risk  ] {slug}/{label} {rid}: {str(entry.get('risk', ''))[:150]} -> "
+              f"{'ACCEPTED, not mitigated:' if is_accepted else 'control'} {mitigation[:110]}"
+              f" | residual: {str(entry.get('residual', ''))[:110]}")
+    if accepted:
+        print(f"[risk  ] {slug}/{label}: {accepted} of {len(risks)} recorded risks are accepted "
+              "postures - sized/planned against the rest by choice, not by accident")
 
 
 def _application_tasks_queued():
@@ -179,6 +237,15 @@ def _terminal_tree_report(gate=None):
             if isinstance(rec, dict) and rec.get("project") == slug:
                 record = rec
                 break
+        if (ddd.ai_directive(slug) or {}).get("required") is True:
+            lines.append(f"[tree   ] {slug}: AI BY DIRECTIVE - {ddd.ai_required(slug)[1]}"
+                          + ("" if ddd.ai_spec_path(slug).is_file()
+                             else " BUT NO SPEC ON DISK (the phase never landed)"))
+        if ddd.security_waived(slug):
+            lines.append(f"[tree   ] {slug}: SECURITY WAIVED by directive in the business description "
+                         f"- {ddd._waiver_note(slug)[1]}"
+                         + (" BUT A SPEC IS ON DISK (stale: it predates the waiver)"
+                            if ddd.security_spec_path(slug).is_file() else ""))
         if record is None:
             lines.append(f"[tree   ] {slug}: RED - NEVER BOOTED: no completed stage-4 assembly "
                          "task exists for this domain - the boot gate never ran, so NOTHING "
@@ -267,6 +334,17 @@ def run(args, backend):
             return 1
         print("[ddd ] context maps ready")
 
+    for slug in getattr(args, "replan", None) or []:
+        # BEFORE the phase-1 skip decision: archiving the strategy is what makes phase 1 see
+        # this domain as un-planned and re-run. Stage 0 (scaffold, migrations) and stage 4
+        # (assembly) records stay: the plan is re-issued over the same project root.
+        moved = task_queue.replan_domain(slug)
+        print(f"[replan] {slug}: strategy={moved['strategy']} spec={moved['spec']} "
+              f"performance={moved['performance']} ai={moved['ai']} "
+              f"tasks={len(moved['tasks'])} archived to blackboard/archive/ - this launch "
+              "re-runs the strategy, security, performance, AI and task phases for this domain "
+              "(delivered sources are untouched)")
+
     slugs = ddd.database_slugs()
     missing_scaffold = _strategy_phase_gaps(slugs)
     if slugs and not missing_scaffold:
@@ -290,6 +368,21 @@ def run(args, backend):
     for slug in missing_scaffold:
         print(f"[fatal] architect strategy: no scaffold task for domain {slug}")
         return 1
+    # A board that skipped phase 1 (or an architect that wrote 3 of 4 strategies) must not proceed:
+    # every later loop iterates STRATEGY slugs, so an unstrategised domain loses its security spec and
+    # its tasks in total silence.
+    reason = ddd.validate_strategy_coverage()
+    if reason:
+        print(f"[fatal] strategy coverage: {reason}")
+        return 1
+    reason = ddd.validate_security_directives()
+    if reason:
+        print(f"[fatal] security directive: {reason}")
+        return 1
+    reason = ddd.validate_ai_directives()
+    if reason:
+        print(f"[fatal] AI directive: {reason}")
+        return 1
     for slug in ddd.database_slugs():
         migrations = workspace.project_root_for(slug) / "db" / "migrations"
         if task_queue.database_task_ids(slug) and _migration_files(slug):
@@ -307,6 +400,151 @@ def run(args, backend):
         if not ok:
             print(f"[fatal] database {slug}: {reason}")
             return 1
+    for slug in ddd.database_slugs():
+        # database_slugs() is the board's list of PLANNED domains (one per strategy file).
+        # The security phase runs over the same set, after the store is chosen (the spec
+        # classifies what that store persists) and before decomposition claims its duties.
+        reason = ddd.validate_strategy(slug)
+        if reason:
+            # A FRESH plan is judged by phase 1's own post-check, so arriving here means the
+            # strategy predates the surface contract: the security step would table rows for
+            # the surfaces it was told about and never see the rest.
+            print(f"[fatal] strategy {slug}: {reason}")
+            print(f"[hint ] relaunch with --replan {slug} to archive this domain's plan and "
+                  "re-run the phases that read it")
+            return 1
+        waived, note = ddd._waiver_note(slug)
+        if waived:
+            # The ONE lawful omission, and it is the user's own sentence, engine-verified verbatim
+            # against the description file the slice cites - never an agent's inference.
+            print(f"[sec   ] {slug}: WAIVED by the business description - {note}")
+            print(f"[sec   ] {slug}: no spec, no duties, nothing to claim; the domain's `surfaces` "
+                  "table still ships (it is architecture, not a control) and every later gate reports "
+                  "this domain as un-defended by directive, not by oversight")
+            if ddd.security_spec_path(slug).is_file():
+                # A spec written BEFORE the waiver was recorded must not keep enforcing claims in
+                # silence: the phase is waived, so the artifact is stale, and staleness is disclosed.
+                print(f"[sec   ] {slug}: a spec is on disk from an earlier run - it now contradicts "
+                      f"the directive; remove {ddd.security_spec_path(slug).name} or relaunch with "
+                      f"--replan {slug} to archive it (until then the emit gate still demands its "
+                      "duties be claimed, which is the conservative reading)")
+            continue
+        spec = ddd.security_spec_path(slug).name
+        if ddd.validate_security_spec(slug) is None:
+            print(f"[skip] security {slug}: {spec} already valid")
+            _surface_security_risks(slug)
+            continue
+        ok, reason = backend.run_security(args, slug)
+        if ok:
+            reason = _security_reason(slug)
+            ok = reason is None
+        print(f"[sec   ] {slug}: {'done' if ok else 'failed: ' + reason}")
+        if not ok:
+            print(f"[fatal] security {slug}: {reason}")
+            return 1
+        _surface_security_risks(slug)
+        questions = ddd.security_open_questions(slug)
+        if questions:
+            # The spec author's honest escape hatch: an entrant or surface its inputs never
+            # declared. Nothing else in the engine reads that array, so an open question was
+            # filed away and the drain continued over an undefended surface.
+            print(f"[fatal] security {slug}: the spec leaves {len(questions)} open question(s) - "
+                  "an undecided posture is an unprotected surface, and the answer is an input "
+                  "phase 1 never wrote")
+            for question in questions[:5]:
+                print(f"[fatal]   {slug}: {question[:200]}")
+            print(f"[hint ] name the missing surface or persisted concept in "
+                  f"{ddd.strategy_path(slug).name} (blackboard/complete/), or relaunch with "
+                  f"--replan {slug} to re-run the phases that read it")
+            return 1
+        if _application_tasks_queued():
+            gaps = task_queue.security_claim_gaps(slug)
+            if gaps:
+                print(f"[fatal] security {slug}: {len(gaps)} security claim gap(s) on a board "
+                      "whose application tasks predate the spec - the plan cannot claim duties "
+                      "it was never shown, so this spec is advisory and a green drain would "
+                      "read as defended")
+                for line in gaps[:5]:
+                    print(f"[fatal]   {line[:300]}")
+                print(f"[hint ] relaunch with --replan {slug} to archive this domain's plan and "
+                      "re-issue its units against the spec")
+                return 1
+    for slug in ddd.database_slugs():
+        # the performance floor: unconditional, like security - every executable context has
+        # a load side, and a domain nobody sized is sized by framework defaults in the dark
+        perf = ddd.performance_spec_path(slug).name
+        if ddd.validate_performance_spec(slug) is None:
+            print(f"[skip] performance {slug}: {perf} already valid")
+            _surface_spec_risks(slug, "performance", ddd.performance_risks(slug))
+            continue
+        ok, reason = backend.run_performance(args, slug)
+        if ok:
+            reason = ddd.validate_performance_spec(slug)
+            ok = reason is None
+        print(f"[perf  ] {slug}: {'done' if ok else 'failed: ' + reason}")
+        if not ok:
+            print(f"[fatal] performance {slug}: {reason}")
+            return 1
+        _surface_spec_risks(slug, "performance", ddd.performance_risks(slug))
+        questions = ddd.performance_open_questions(slug)
+        if questions:
+            print(f"[fatal] performance {slug}: the spec leaves {len(questions)} open "
+                  "question(s) - an undecided load model is a surface the plan sized by "
+                  "default, and only phase 1 can answer it")
+            for question in questions[:5]:
+                print(f"[fatal]   {slug}: {question[:200]}")
+            print(f"[hint ] name the missing surface or volume in "
+                  f"{ddd.strategy_path(slug).name}, or relaunch with --replan {slug}")
+            return 1
+    for slug in ddd.database_slugs():
+        # the AI phase runs ONLY on the description-verified directive; absent is the
+        # default state (no capability was asked for), never a hole to fill
+        directive = ddd.ai_directive(slug)
+        if not directive or directive.get("required") is not True:
+            if directive:
+                print(f"[ai    ] {slug}: directive present but not required=true - no AI phase")
+            continue
+        verified, note = ddd.ai_required(slug)
+        if not verified:
+            print(f"[fatal] AI {slug}: {note}")
+            return 1
+        spec = ddd.ai_spec_path(slug).name
+        if ddd.validate_ai_spec(slug) is None:
+            print(f"[skip] ai {slug}: {spec} already valid - directed by the description")
+            _surface_spec_risks(slug, "AI", ddd.ai_risks(slug))
+            continue
+        print(f"[ai    ] {slug}: RUNNING by directive - {note}")
+        ok, reason = backend.run_ai(args, slug)
+        if ok:
+            reason = ddd.validate_ai_spec(slug)
+            ok = reason is None
+        print(f"[ai    ] {slug}: {'done' if ok else 'failed: ' + reason}")
+        if not ok:
+            print(f"[fatal] AI {slug}: {reason}")
+            return 1
+        _surface_spec_risks(slug, "AI", ddd.ai_risks(slug))
+        questions = ddd.ai_open_questions(slug)
+        if questions:
+            print(f"[fatal] AI {slug}: the spec leaves {len(questions)} open question(s) - "
+                  "an AI behavior no input declared, and inventing one is how a directed "
+                  "capability becomes an undirected product")
+            for question in questions[:5]:
+                print(f"[fatal]   {slug}: {question[:200]}")
+            print(f"[hint ] name the missing flow in the context map, or relaunch with "
+                  f"--replan {slug}")
+            return 1
+    if _application_tasks_queued():
+        for slug in ddd.database_slugs():
+            gaps = task_queue.planning_claim_gaps(slug)
+            if gaps:
+                print(f"[fatal] planning duties {slug}: {len(gaps)} performance/AI claim gap(s) "
+                      "on a board whose application tasks predate the specs - a spec no unit "
+                      "claims is advisory, and a green drain would read as sized/planned")
+                for line in gaps[:5]:
+                    print(f"[fatal]   {line[:300]}")
+                print(f"[hint ] relaunch with --replan {slug} to archive this domain's plan "
+                      "and re-issue its units against the specs")
+                return 1
     if _application_tasks_queued():
         print("[skip] application tasks already queued")
     else:
@@ -315,7 +553,8 @@ def run(args, backend):
         if not ok:
             print(f"[fatal] architect tasks: {reason}")
             return 1
-    print("[plan] strategy, database, and task phases finished; processing queue")
+    print("[plan] strategy, database, security, performance, AI, and task phases finished; "
+          "processing queue")
 
     blocked_by_docker = docker_gate()
     if blocked_by_docker:

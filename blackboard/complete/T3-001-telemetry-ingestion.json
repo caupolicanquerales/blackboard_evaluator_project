@@ -1,0 +1,15 @@
+{
+  "id": "T3-001",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-001"
+  ],
+  "path": "pom.xml",
+  "kind": "refactor",
+  "intent": "Refactor PomManifest: keep the ast_hints table, behavior and frozen tests unchanged; remove duplication, tighten naming, keep layer import rules.",
+  "feature": null,
+  "export": "pom.xml",
+  "project": "telemetry-ingestion",
+  "layer": "root"
+}

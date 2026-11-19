@@ -1,0 +1,55 @@
+{
+  "id": "T1-031",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/distribution/application/BroadcastServiceTest.java",
+  "kind": "test",
+  "intent": "Frozen test of BroadcastService asserting only its ast_hints table. StepVerifier: subscriber receives window after start; overflow without demand counts drop; stop disposes; two subscribers both receive.",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.distribution.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ValidatedEventConsumer",
+        "task_id": "T2-030"
+      },
+      {
+        "type": "TelemetryEventSource",
+        "task_id": "T2-027"
+      },
+      {
+        "type": "TelemetryMetrics",
+        "task_id": "T2-015"
+      },
+      {
+        "type": "TelemetryWindowBroadcast",
+        "task_id": "T2-026"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "BroadcastService(ValidatedEventConsumer buffer, TelemetryEventSource source, TelemetryMetrics metrics, int sinkCapacity)",
+        "returns": ""
+      },
+      {
+        "signature": "Flux<TelemetryWindowBroadcast> subscribe()",
+        "returns": "Flux<TelemetryWindowBroadcast>"
+      },
+      {
+        "signature": "void start()",
+        "returns": ""
+      },
+      {
+        "signature": "void stop()",
+        "returns": ""
+      }
+    ]
+  },
+  "feature": null,
+  "export": "com.pulsestream.telemetry.distribution.application.BroadcastService",
+  "project": "telemetry-ingestion",
+  "layer": "application"
+}

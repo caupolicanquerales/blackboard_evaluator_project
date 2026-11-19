@@ -1,0 +1,19 @@
+# Fragment for the consuming config unit: src/main/resources/application.yml (base document).
+# Scripts V1..V3 must be packaged under src/main/resources/db/migration (byte-identical to this directory).
+spring:
+  r2dbc:
+    url: ${TELEMETRY_R2DBC_URL}
+  flyway:
+    enabled: true
+    url: ${TELEMETRY_JDBC_URL}
+    locations: classpath:db/migration
+---
+# Test profile document (activated by src/test/resources/application.properties: spring.profiles.active=test)
+spring:
+  config:
+    activate:
+      on-profile: test
+  r2dbc:
+    url: r2dbc:h2:mem:///telemetry;DB_CLOSE_DELAY=-1;NON_KEYWORDS=VALUE
+  flyway:
+    enabled: false

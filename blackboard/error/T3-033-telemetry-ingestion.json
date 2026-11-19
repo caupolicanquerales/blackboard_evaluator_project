@@ -1,0 +1,16 @@
+{
+  "id": "T3-033",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-033"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/distribution/api/WindowBroadcastController.java",
+  "kind": "refactor",
+  "intent": "Refactor WindowBroadcastController: keep the ast_hints table, behavior and frozen tests unchanged; remove duplication, tighten naming, keep layer import rules.",
+  "feature": null,
+  "export": "com.pulsestream.telemetry.distribution.api.WindowBroadcastController",
+  "project": "telemetry-ingestion",
+  "layer": "interface",
+  "error": "dependsOn T2-033 not resolvable in queue or complete"
+}

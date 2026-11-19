@@ -3,16 +3,62 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "EventLogRepository",
-    "constructors": [],
+    "type": "IngestSummary",
+    "constructors": [
+      [
+        "3",
+        "2",
+        "1",
+        "4",
+        "false"
+      ],
+      [
+        "0",
+        "0",
+        "0",
+        "0",
+        "true"
+      ]
+    ],
     "static_calls": [],
-    "calls": [],
+    "calls": [
+      {
+        "receiver": "summary",
+        "method": "appended",
+        "args": []
+      },
+      {
+        "receiver": "summary",
+        "method": "rejectedValidation",
+        "args": []
+      },
+      {
+        "receiver": "summary",
+        "method": "revisions",
+        "args": []
+      },
+      {
+        "receiver": "summary",
+        "method": "duplicates",
+        "args": []
+      },
+      {
+        "receiver": "summary",
+        "method": "refused",
+        "args": []
+      }
+    ],
     "verified": [],
     "usage_lines": [
-      "class EventLogRepositoryTest {",
-      "Method method = EventLogRepository.class.getMethod(\"append\", TelemetrySample.class);",
-      "Method method = EventLogRepository.class.getMethod(\"findLatest\", String.class, String.class, Instant.class);",
-      "Method method = EventLogRepository.class.getMethod(\"append\", TelemetrySample.class);"
+      "class IngestSummaryTest {",
+      "IngestSummary summary = new IngestSummary(3, 2, 1, 4, false);",
+      "assertThat(summary.appended()).isEqualTo(3);",
+      "assertThat(summary.rejectedValidation()).isEqualTo(2);",
+      "assertThat(summary.revisions()).isEqualTo(1);",
+      "assertThat(summary.duplicates()).isEqualTo(4);",
+      "assertThat(summary.refused()).isFalse();",
+      "IngestSummary summary = new IngestSummary(0, 0, 0, 0, true);",
+      "assertThat(summary.refused()).isTrue();"
     ]
   },
   "stderr": "",

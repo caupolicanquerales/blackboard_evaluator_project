@@ -1,0 +1,41 @@
+{
+  "id": "T2-034",
+  "project": "telemetry-ingestion",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/shared/config/TelemetryProperties.java",
+  "export": "TelemetryProperties",
+  "kind": "record",
+  "method": "devices",
+  "language": "java",
+  "framework": "spring-boot",
+  "skill": "java-springboot",
+  "signature": "List<Credential> devices()",
+  "returns": "List<Credential>",
+  "annotations": [
+    "ConfigurationProperties(prefix = \"telemetry\")"
+  ],
+  "members": [
+    "Duration reorderWindow",
+    "int reorderBufferCapacity",
+    "Duration windowDuration",
+    "int windowMaxEvents",
+    "int busCapacity",
+    "int broadcastCapacity",
+    "String publisherId",
+    "String dataKey",
+    "List<Credential> devices",
+    "List<Credential> consumers",
+    "public List<Credential> consumers() { return consumers == null ? List.of() : consumers; }",
+    "public record Credential(String id, String secretHash, String scope) { }"
+  ],
+  "methodAnnotations": [],
+  "body": "return devices == null ? List.of() : devices;",
+  "imports": [
+    "java.time.Duration",
+    "java.util.List",
+    "org.springframework.boot.context.properties.ConfigurationProperties"
+  ],
+  "missing": [],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-18T18:03:37.097723+00:00"
+}

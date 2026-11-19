@@ -1,0 +1,31 @@
+{
+  "id": "T1-006",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/ingestion/domain/SensorMetricBoundaryTest.java",
+  "kind": "test",
+  "intent": "Frozen test of SensorMetricBoundary asserting only its ast_hints table. Cases: swim_pace 45 -> VALIDATION_FAILED, 45.1 -> VALIDATED, NaN -> VALIDATION_FAILED, other metric any finite value -> VALIDATED.",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.domain",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ValidationStatus",
+        "task_id": "T2-002"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "ValidationStatus check(String metric, double value)",
+        "returns": "ValidationStatus"
+      }
+    ]
+  },
+  "feature": null,
+  "export": "com.pulsestream.telemetry.ingestion.domain.SensorMetricBoundary",
+  "project": "telemetry-ingestion",
+  "layer": "domain"
+}

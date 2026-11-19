@@ -1,35 +1,24 @@
 {
   "id": "T2-002",
-  "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/shared/config/TelemetryProperties.java",
-  "export": "TelemetryProperties",
-  "method": "TelemetryProperties",
+  "project": "telemetry-ingestion",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ingestion/domain/ValidationStatus.java",
+  "export": "ValidationStatus",
+  "kind": "enum",
+  "method": "values",
   "language": "java",
   "framework": "springboot",
-  "skill": "java-springboot",
-  "signature": "TelemetryProperties(long reorderWindowSeconds, int bufferCapacity, double heartRateMin, double heartRateMax, double powerMin, double powerMax, double cadenceMin, double cadenceMax, double swimPaceMinExclusive)",
-  "returns": "void",
+  "skill": "java-standard-best-practices",
+  "signature": "static ValidationStatus[] values()",
+  "returns": "ValidationStatus[]",
   "body": "",
-  "imports": [
-    "org.springframework.boot.context.properties.ConfigurationProperties"
-  ],
-  "missing": [],
-  "kind": "record",
   "members": [
-    "long reorderWindowSeconds",
-    "int bufferCapacity",
-    "double heartRateMin",
-    "double heartRateMax",
-    "double powerMin",
-    "double powerMax",
-    "double cadenceMin",
-    "double cadenceMax",
-    "double swimPaceMinExclusive"
+    "VALIDATED",
+    "VALIDATION_FAILED",
+    "LATE"
   ],
-  "annotations": [
-    "ConfigurationProperties(prefix = \"telemetry\")"
-  ],
+  "imports": [],
+  "missing": [],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-17T15:30:59.047742+00:00"
+  "recorded_at": "2026-11-18T18:56:44.716519+00:00"
 }

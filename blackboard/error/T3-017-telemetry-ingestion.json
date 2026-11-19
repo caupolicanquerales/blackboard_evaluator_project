@@ -1,0 +1,16 @@
+{
+  "id": "T3-017",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-017"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/application/IngestPacketUseCase.java",
+  "kind": "refactor",
+  "intent": "Refactor IngestPacketUseCase: keep the ast_hints table, behavior and frozen tests unchanged; remove duplication, tighten naming, keep layer import rules.",
+  "feature": null,
+  "export": "com.pulsestream.telemetry.ingestion.application.IngestPacketUseCase",
+  "project": "telemetry-ingestion",
+  "layer": "application",
+  "error": "dependsOn T2-017 not resolvable in queue or complete"
+}

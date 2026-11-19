@@ -1,0 +1,16 @@
+{
+  "id": "T3-035",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-035"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/shared/config/TelemetryConfiguration.java",
+  "kind": "refactor",
+  "intent": "Refactor TelemetryConfiguration: keep the ast_hints table, behavior and frozen tests unchanged; remove duplication, tighten naming, keep layer import rules.",
+  "feature": null,
+  "export": "com.pulsestream.telemetry.shared.config.TelemetryConfiguration",
+  "project": "telemetry-ingestion",
+  "layer": "shared",
+  "error": "dependsOn T2-035 not resolvable in queue or complete"
+}

@@ -1,31 +1,39 @@
 {
-  "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/shared/observability/StepLog.java",
+  "project": "telemetry-ingestion",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ingestion/domain/SensorMetricBoundary.java",
   "stack": "java-springboot3",
   "skill": "java-springboot3",
-  "summary": "Audit found StepLog minimal and contract-conformant: no-arg instance, single INFO structured event via SLF4J key-values step and correlationId. No edits.",
-  "findings": [],
-  "changes": [],
+  "summary": "Extracted magic literals into named constants and merged duplicate failure returns into a single predicate.",
+  "findings": [
+    "Magic values 'swim_pace' and 45.0 inlined",
+    "Duplicate VALIDATION_FAILED return branches"
+  ],
+  "changes": [
+    "Added SWIM_PACE_METRIC and SWIM_PACE_EXCLUSIVE_MINIMUM constants",
+    "Introduced private isAcceptable predicate; check has a single return"
+  ],
   "reverts": [],
   "final_test": {
     "status": "passed",
-    "exit_code": 0,
-    "missing_symbols": [],
-    "missing_packages": [],
-    "failures": [],
+    "command": "./mvnw -Dtest=SensorMetricBoundaryTest test",
     "counts": {
-      "run": 4,
+      "run": 8,
       "failures": 0,
       "errors": 0
-    },
-    "classes": {
-      "com.pulsestream.telemetry.shared.observability.StepLogTest": "passed"
     }
   },
   "task_id": "T3-006",
   "stage": 3,
   "executed": true,
-  "recorded_at": "2026-11-17T16:33:45.815836+00:00",
-  "engine_diff": [],
-  "engine_diff_files": 0
+  "recorded_at": "2026-11-18T20:50:43.296089+00:00",
+  "engine_diff": [
+    {
+      "file": "src/main/java/com/pulsestream/telemetry/ingestion/domain/SensorMetricBoundary.java",
+      "added": 9,
+      "removed": 5,
+      "capped": false,
+      "patch": "--- a/src/main/java/com/pulsestream/telemetry/ingestion/domain/SensorMetricBoundary.java\n+++ b/src/main/java/com/pulsestream/telemetry/ingestion/domain/SensorMetricBoundary.java\n@@ -2,13 +2,17 @@\n \n public class SensorMetricBoundary {\n \n+    private static final String SWIM_PACE_METRIC = \"swim_pace\";\n+    private static final double SWIM_PACE_EXCLUSIVE_MINIMUM = 45.0;\n+\n     public ValidationStatus check(String metric, double value) {\n+        return isAcceptable(metric, value) ? ValidationStatus.VALIDATED : ValidationStatus.VALIDATION_FAILED;\n+    }\n+\n+    private static boolean isAcceptable(String metric, double value) {\n         if (!Double.isFinite(value)) {\n-            return ValidationStatus.VALIDATION_FAILED;\n+            return false;\n         }\n-        if (\"swim_pace\".equals(metric) && value <= 45.0) {\n-            return ValidationStatus.VALIDATION_FAILED;\n-        }\n-        return ValidationStatus.VALIDATED;\n+        return !SWIM_PACE_METRIC.equals(metric) || value > SWIM_PACE_EXCLUSIVE_MINIMUM;\n     }\n }"
+    }
+  ],
+  "engine_diff_files": 1
 }

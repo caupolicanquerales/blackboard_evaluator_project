@@ -3,15 +3,14 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "EventBroadcast",
+    "type": "TelemetryRecordRepository",
     "constructors": [],
     "static_calls": [],
     "calls": [],
     "verified": [],
     "usage_lines": [
-      "class EventBroadcastTest {",
-      "Method method = EventBroadcast.class.getMethod(\"publish\", EventRecord.class);",
-      "Method method = EventBroadcast.class.getMethod(\"stream\");"
+      "class TelemetryRecordRepositoryTest {",
+      "private static final class InMemoryRepository implements TelemetryRecordRepository {"
     ]
   },
   "stderr": "",

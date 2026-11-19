@@ -3,69 +3,67 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "SinkEventBroadcast",
+    "type": "CorrelationWebFilter",
     "constructors": [
-      [
-        "new TelemetryProperties(60, capacity, 30, 220, 0, 2000, 0, 200, 0)"
-      ]
+      []
     ],
-    "static_calls": [],
-    "calls": [
+    "static_calls": [
       {
-        "receiver": "broadcast",
-        "method": "stream",
+        "method": "contextKey",
         "args": []
       },
       {
-        "receiver": "broadcast",
-        "method": "publish",
+        "method": "headerName",
+        "args": []
+      }
+    ],
+    "calls": [
+      {
+        "receiver": "filter",
+        "method": "filter",
         "args": [
-          "first"
+          "exchange",
+          "capturing(captured)"
         ]
       },
       {
-        "receiver": "broadcast",
-        "method": "publish",
+        "receiver": "filter",
+        "method": "filter",
         "args": [
-          "second"
+          "exchange",
+          "capturing(new AtomicReference<>())"
         ]
       },
       {
-        "receiver": "broadcast",
-        "method": "publish",
+        "receiver": "filter",
+        "method": "filter",
         "args": [
-          "record(1)"
+          "MockServerWebExchange.from(MockServerHttpRequest.get(\"/x\").build())",
+          "capturing(first)"
         ]
       },
       {
-        "receiver": "broadcast",
-        "method": "publish",
+        "receiver": "filter",
+        "method": "filter",
         "args": [
-          "record(2)"
-        ]
-      },
-      {
-        "receiver": "broadcast",
-        "method": "publish",
-        "args": [
-          "record(3)"
+          "MockServerWebExchange.from(MockServerHttpRequest.get(\"/x\").build())",
+          "capturing(second)"
         ]
       }
     ],
     "verified": [],
     "usage_lines": [
-      "class SinkEventBroadcastTest {",
-      "private static SinkEventBroadcast broadcast(int capacity) {",
-      "return new SinkEventBroadcast(",
-      "SinkEventBroadcast broadcast = broadcast(4);",
-      "StepVerifier.create(broadcast.stream().take(2))",
-      "broadcast.publish(first);",
-      "broadcast.publish(second);",
-      "assertThat(broadcast(2).publish(record(1))).isTrue();",
-      "SinkEventBroadcast broadcast = broadcast(2);",
-      "broadcast.publish(record(1));",
-      "broadcast.publish(record(2));",
-      "assertThat(broadcast.publish(record(3))).isFalse();"
+      "class CorrelationWebFilterTest {",
+      "private final CorrelationWebFilter filter = new CorrelationWebFilter();",
+      "captured.set(ctx.getOrDefault(CorrelationWebFilter.contextKey(), null));",
+      "assertThat(CorrelationWebFilter.contextKey()).isEqualTo(\"requestId\");",
+      "assertThat(CorrelationWebFilter.headerName()).isEqualTo(\"X-Request-Id\");",
+      "StepVerifier.create(filter.filter(exchange, capturing(captured))).verifyComplete();",
+      "StepVerifier.create(filter.filter(exchange, capturing(new AtomicReference<>()))).verifyComplete();",
+      "StepVerifier.create(filter.filter(exchange, capturing(captured))).verifyComplete();",
+      "StepVerifier.create(filter.filter(exchange, capturing(captured))).verifyComplete();",
+      "filter.filter(MockServerWebExchange.from(MockServerHttpRequest.get(\"/x\").build()), capturing(first)).block();",
+      "filter.filter(MockServerWebExchange.from(MockServerHttpRequest.get(\"/x\").build()), capturing(second)).block();"
     ]
   },
   "stderr": "",

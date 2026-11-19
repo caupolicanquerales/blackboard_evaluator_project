@@ -1,23 +1,17 @@
 {
-  "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/eventlog/infrastructure/R2dbcAuditTrail.java",
+  "project": "telemetry-ingestion",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ingestion/application/AuditEntry.java",
   "stack": "java-springboot3",
   "skill": "java-springboot3",
-  "summary": "Extracted insert pipeline and constants; behavior unchanged, append-only insert, failure swallowed and counted.",
-  "findings": [
-    "Single 400-char method chain was hard to read",
-    "Magic strings inline"
-  ],
-  "changes": [
-    "Extracted private insert(AuditEntry)",
-    "Extracted INSERT_SQL, counter and stage constants",
-    "Added @Override"
-  ],
+  "summary": "CLEAN: AuditEntry is a framework-free immutable record; no duplication, hacks or naming issues.",
+  "findings": [],
+  "changes": [],
   "reverts": [],
   "final_test": {
+    "command": "./mvnw -Dtest=AuditEntryTest test",
     "status": "passed",
     "counts": {
-      "run": 3,
+      "run": 1,
       "failures": 0,
       "errors": 0
     }
@@ -25,15 +19,7 @@
   "task_id": "T3-007",
   "stage": 3,
   "executed": true,
-  "recorded_at": "2026-11-17T16:30:26.156870+00:00",
-  "engine_diff": [
-    {
-      "file": "src/main/java/com/pulsestream/telemetry/eventlog/infrastructure/R2dbcAuditTrail.java",
-      "added": 26,
-      "removed": 4,
-      "capped": false,
-      "patch": "--- a/src/main/java/com/pulsestream/telemetry/eventlog/infrastructure/R2dbcAuditTrail.java\n+++ b/src/main/java/com/pulsestream/telemetry/eventlog/infrastructure/R2dbcAuditTrail.java\n@@ -10,6 +10,14 @@\n \n public class R2dbcAuditTrail implements AuditTrail {\n \n+    private static final String INSERT_SQL = \"INSERT INTO audit_trail \"\n+            + \"(actor, action, outcome, occurred_at, correlation_id) \"\n+            + \"VALUES (:actor, :action, :outcome, :occurredAt, :correlationId)\";\n+\n+    private static final String DROPPED_COUNTER = \"telemetry.pipeline.dropped\";\n+\n+    private static final String AUDIT_STAGE = \"audit\";\n+\n     private final DatabaseClient databaseClient;\n \n     private final MeterRegistry meterRegistry;\n@@ -19,10 +27,24 @@\n         this.meterRegistry = meterRegistry;\n     }\n \n+    @Override\n     public Mono<Void> record(AuditEntry entry) {\n-        return Mono.defer(() -> databaseClient.sql(\"INSERT INTO audit_trail (actor, action, outcome, occurred_at, correlation_id) VALUES (:actor, :action, :outcome, :occurredAt, :correlationId)\").bind(\"actor\", entry.actor()).bind(\"action\", entry.action()).bind(\"outcome\", entry.outcome()).bind(\"occurredAt\", OffsetDateTime.ofInstant(entry.timestamp(), ZoneOffset.UTC)).bind(\"correlationId\", entry.correlationId()).fetch().rowsUpdated().then()).onErrorResume(error -> {\n-            meterRegistry.counter(\"telemetry.pipeline.dropped\", \"stage\", \"audit\").increment();\n-            return Mono.empty();\n-        });\n+        return Mono.defer(() -> insert(entry))\n+                .onErrorResume(error -> {\n+                    meterRegistry.counter(DROPPED_COUNTER, \"stage\", AUDIT_STAGE).increment();\n+                    return Mono.empty();\n+                });\n+    }\n+\n+    private Mono<Void> insert(AuditEntry entry) {\n+        return databaseClient.sql(INSERT_SQL)\n+                .bind(\"actor\", entry.actor())\n+                .bind(\"action\", entry.action())\n+                .bind(\"outcome\", entry.outcome())\n+                .bind(\"occurredAt\", OffsetDateTime.ofInstant(entry.timestamp(), ZoneOffset.UTC))\n+                .bind(\"correlationId\", entry.correlationId())\n+                .fetch()\n+                .rowsUpdated()\n+                .then();\n     }\n }"
-    }
-  ],
-  "engine_diff_files": 1
+  "recorded_at": "2026-11-18T20:47:36.963483+00:00",
+  "engine_diff": [],
+  "engine_diff_files": 0
 }

@@ -1,0 +1,18 @@
+{
+  "id": "T2-036",
+  "project": "telemetry-ingestion",
+  "targetFile": "src/main/resources/application.yml",
+  "export": "application.yml",
+  "method": "application.yml",
+  "language": "yaml",
+  "framework": "spring-boot",
+  "skill": "java-springboot3",
+  "signature": "application.yml",
+  "returns": "void",
+  "imports": [],
+  "missing": [],
+  "body": "spring:\n  application:\n    name: telemetry-ingestion\n  flyway:\n    enabled: true\n    locations: classpath:db/migration\n    url: ${TELEMETRY_JDBC_URL}\n  r2dbc:\n    url: ${TELEMETRY_R2DBC_URL}\n  codec:\n    max-in-memory-size: 256KB\n  ssl:\n    bundle:\n      watch:\n        file:\n          quiet-period: 10s\ntelemetry:\n  reorder-window: 60s\n  reorder-buffer-capacity: 1000\n  window-duration: 1s\n  window-max-events: 500\n  bus-capacity: 1024\n  broadcast-capacity: 256\n  publisher-id: telemetry-ingestion-publisher\n  data-key: ${TELEMETRY_DATA_KEY:}\n  devices:\n    secret-hash: ${TELEMETRY_DEVICE_SECRET_HASH}\n  consumers:\n    secret-hash: ${TELEMETRY_CONSUMER_SECRET_HASH}\nlogging:\n  file:\n    name: logs/telemetry-ingestion.log\n  structured:\n    format:\n      file: ecs\n  logback:\n    rollingpolicy:\n      max-file-size: 10MB\n      max-history: 7\n  level:\n    root: INFO\nmanagement:\n  endpoints:\n    web:\n      exposure:\n        include: health\nserver:\n  error:\n    include-message: never\n    include-stacktrace: never\n    include-binding-errors: never\n  ssl:\n    client-auth: want\n---\nspring:\n  config:\n    activate:\n      on-profile: test\n  flyway:\n    enabled: true\n    url: jdbc:h2:mem:telemetry;DB_CLOSE_DELAY=-1;MODE=PostgreSQL\n  r2dbc:\n    url: r2dbc:h2:mem:///telemetry;DB_CLOSE_DELAY=-1;MODE=PostgreSQL\n",
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-18T20:06:56.052941+00:00"
+}

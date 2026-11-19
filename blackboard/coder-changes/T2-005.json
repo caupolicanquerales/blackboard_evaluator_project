@@ -1,24 +1,35 @@
 {
   "id": "T2-005",
-  "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/shared/observability/AuditTrail.java",
-  "export": "AuditTrail",
-  "kind": "interface",
-  "method": "record",
+  "project": "telemetry-ingestion",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ingestion/domain/TelemetryEvent.java",
+  "export": "TelemetryEvent",
+  "kind": "record",
+  "method": "keyOf",
   "language": "java",
   "framework": "springboot",
-  "skill": "java-springboot",
-  "signature": "Mono<Void> record(AuditEntry entry)",
-  "returns": "Mono<Void>",
+  "skill": "java-standard-best-practices",
+  "signature": "public static String keyOf(String deviceId, String metric, Instant tDevice, int revision)",
+  "returns": "String",
   "members": [
-    "Mono<Void> record(AuditEntry entry);"
+    "int schemaVersion",
+    "Type type",
+    "String eventKey",
+    "String deviceId",
+    "String metric",
+    "Instant tDevice",
+    "int revision",
+    "double value",
+    "ValidationStatus status",
+    "String publisherId",
+    "public TelemetryEvent { if (revision < 1) { throw new IllegalArgumentException(\"revision must be >= 1\"); } }",
+    "public enum Type { SAMPLE, TELEMETRY_VALIDATED, SAMPLE_VALIDATED, SAMPLE_VALIDATION_FAILED, BACKFILL_REORDERED, REVISION_APPENDED }"
   ],
-  "body": "",
+  "body": "return deviceId + \"|\" + metric + \"|\" + tDevice + \"|\" + revision;",
   "imports": [
-    "reactor.core.publisher.Mono"
+    "java.time.Instant"
   ],
   "missing": [],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-17T15:33:23.995848+00:00"
+  "recorded_at": "2026-11-18T19:11:21.485528+00:00"
 }

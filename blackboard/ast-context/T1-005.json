@@ -3,37 +3,103 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "AuditTrail",
-    "constructors": [],
-    "static_calls": [],
-    "calls": [
+    "type": "TelemetryEvent",
+    "constructors": [
+      [
+        "1",
+        "type",
+        "\"key\"",
+        "\"dev-1\"",
+        "\"heart_rate\"",
+        "T_DEVICE",
+        "revision",
+        "60.5"
+      ]
+    ],
+    "static_calls": [
       {
-        "receiver": "trail",
-        "method": "record",
+        "method": "keyOf",
         "args": [
-          "ENTRY"
-        ],
-        "stubbed_to": "Mono.empty()"
-      },
-      {
-        "receiver": "trail",
-        "method": "record",
-        "args": [
-          "ENTRY"
+          "\"dev-1\"",
+          "\"heart_rate\"",
+          "T_DEVICE",
+          "3"
         ]
       }
     ],
-    "verified": [
-      "record"
+    "calls": [
+      {
+        "receiver": "e",
+        "method": "schemaVersion",
+        "args": []
+      },
+      {
+        "receiver": "e",
+        "method": "type",
+        "args": []
+      },
+      {
+        "receiver": "e",
+        "method": "eventKey",
+        "args": []
+      },
+      {
+        "receiver": "e",
+        "method": "deviceId",
+        "args": []
+      },
+      {
+        "receiver": "e",
+        "method": "metric",
+        "args": []
+      },
+      {
+        "receiver": "e",
+        "method": "tDevice",
+        "args": []
+      },
+      {
+        "receiver": "e",
+        "method": "revision",
+        "args": []
+      },
+      {
+        "receiver": "e",
+        "method": "value",
+        "args": []
+      },
+      {
+        "receiver": "e",
+        "method": "status",
+        "args": []
+      },
+      {
+        "receiver": "e",
+        "method": "publisherId",
+        "args": []
+      }
     ],
+    "verified": [],
     "usage_lines": [
-      "class AuditTrailTest {",
-      "Method[] methods = AuditTrail.class.getDeclaredMethods();",
-      "assertThat(AuditTrail.class.isInterface()).isTrue();",
-      "AuditTrail trail = mock(AuditTrail.class);",
-      "when(trail.record(ENTRY)).thenReturn(Mono.empty());",
-      "StepVerifier.create(trail.record(ENTRY)).verifyComplete();",
-      "verify(trail).record(ENTRY);"
+      "class TelemetryEventTest {",
+      "private static TelemetryEvent event(int revision) {",
+      "TelemetryEvent.Type type = TelemetryEvent.Type.values()[0];",
+      "return new TelemetryEvent(1, type, \"key\", \"dev-1\", \"heart_rate\", T_DEVICE, revision, 60.5,",
+      "TelemetryEvent e = event(2);",
+      "assertThat(e.schemaVersion()).isEqualTo(1);",
+      "assertThat(e.type()).isEqualTo(TelemetryEvent.Type.values()[0]);",
+      "assertThat(e.eventKey()).isEqualTo(\"key\");",
+      "assertThat(e.deviceId()).isEqualTo(\"dev-1\");",
+      "assertThat(e.metric()).isEqualTo(\"heart_rate\");",
+      "assertThat(e.tDevice()).isEqualTo(T_DEVICE);",
+      "assertThat(e.revision()).isEqualTo(2);",
+      "assertThat(e.value()).isEqualTo(60.5);",
+      "assertThat(e.status()).isEqualTo(ValidationStatus.VALIDATED);",
+      "assertThat(e.publisherId()).isEqualTo(\"pub-1\");",
+      "assertThat(TelemetryEvent.keyOf(\"dev-1\", \"heart_rate\", T_DEVICE, 3))",
+      "assertThatThrownBy(() -> event(0)).isInstanceOf(IllegalArgumentException.class);",
+      "assertThat(event(1).revision()).isEqualTo(1);",
+      "assertThat(TelemetryEvent.Type.values()).isNotEmpty();"
     ]
   },
   "stderr": "",

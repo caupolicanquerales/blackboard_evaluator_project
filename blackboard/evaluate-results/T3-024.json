@@ -1,0 +1,39 @@
+{
+  "project": "telemetry-ingestion",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ingestion/infrastructure/TelemetrySecurityConfiguration.java",
+  "stack": "java-springboot3",
+  "skill": "java-springboot3",
+  "summary": "Removed duplicated lazy-init logic in deferUnwiredControllers; normalized modifier order.",
+  "findings": [
+    "Duplicate conditional blocks in BeanFactoryPostProcessor",
+    "Non-standard 'static public' modifier order"
+  ],
+  "changes": [
+    "Extracted private static deferWhenMissing helper",
+    "Reordered to 'public static'"
+  ],
+  "reverts": [],
+  "final_test": {
+    "status": "passed",
+    "command": "./mvnw -q -Dtest=TelemetrySecurityConfigurationTest test",
+    "counts": {
+      "run": 8,
+      "failures": 0,
+      "errors": 0
+    }
+  },
+  "task_id": "T3-024",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-18T21:00:14.289587+00:00",
+  "engine_diff": [
+    {
+      "file": "src/main/java/com/pulsestream/telemetry/ingestion/infrastructure/TelemetrySecurityConfiguration.java",
+      "added": 10,
+      "removed": 7,
+      "capped": false,
+      "patch": "--- a/src/main/java/com/pulsestream/telemetry/ingestion/infrastructure/TelemetrySecurityConfiguration.java\n+++ b/src/main/java/com/pulsestream/telemetry/ingestion/infrastructure/TelemetrySecurityConfiguration.java\n@@ -24,6 +24,7 @@\n import com.pulsestream.telemetry.ingestion.application.AuditTrail;\n import com.pulsestream.telemetry.shared.observability.TelemetryMetrics;\n import org.springframework.beans.factory.config.BeanFactoryPostProcessor;\n+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;\n import com.pulsestream.telemetry.distribution.application.BroadcastService;\n import com.pulsestream.telemetry.ingestion.application.IngestPacketUseCase;\n \n@@ -56,14 +57,16 @@\n     }\n \n     @Bean\n-    static public BeanFactoryPostProcessor deferUnwiredControllers() {\n+    public static BeanFactoryPostProcessor deferUnwiredControllers() {\n         return factory -> {\n-            if (factory.containsBeanDefinition(\"windowBroadcastController\") && factory.getBeanNamesForType(BroadcastService.class, true, false).length == 0) {\n-                factory.getBeanDefinition(\"windowBroadcastController\").setLazyInit(true);\n-            }\n-            if (factory.containsBeanDefinition(\"ingressPacketController\") && factory.getBeanNamesForType(IngestPacketUseCase.class, true, false).length == 0) {\n-                factory.getBeanDefinition(\"ingressPacketController\").setLazyInit(true);\n-            }\n+            deferWhenMissing(factory, \"windowBroadcastController\", BroadcastService.class);\n+            deferWhenMissing(factory, \"ingressPacketController\", IngestPacketUseCase.class);\n         };\n     }\n+\n+    private static void deferWhenMissing(ConfigurableListableBeanFactory factory, String controllerName, Class<?> dependency) {\n+        if (factory.containsBeanDefinition(controllerName) && factory.getBeanNamesForType(dependency, true, false).length == 0) {\n+            factory.getBeanDefinition(controllerName).setLazyInit(true);\n+        }\n+    }\n }"
+    }
+  ],
+  "engine_diff_files": 1
+}

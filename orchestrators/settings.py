@@ -35,6 +35,9 @@ DISCOVERY_AGENT = "domain-boundary-discovery-specialist"
 MAPPING_AGENT = "domain-context-mapping-specialist"
 ARCHITECT_AGENT = "agent-architect"
 DATABASE_AGENT = "agent-database-architect"
+SECURITY_AGENT = "agent-security-architect"
+PERFORMANCE_AGENT = "agent-performance-architect"
+AI_AGENT = "agent-ai-architect"
 
 STAGE_AGENTS = {
     0: "agent-container",
@@ -60,8 +63,15 @@ AGENT_CALL_BUDGETS = {
     STAGE_AGENTS[2]: 6,
     STAGE_AGENTS[3]: 12,
     STAGE_AGENTS[4]: 12,
-    ARCHITECT_AGENT: 12,
-    DATABASE_AGENT: 14,
+    ARCHITECT_AGENT: 15,   # +1 spring-security table, +1 performance table, +1 AI table -
+                           # each conditional on its spec being on disk; the budget covers
+                           # all three mapping tables plus the phase-2 reads (2026-11-19)
+    DATABASE_AGENT: 12,    # 14 was needed ONLY because the profile had no exact skill
+                           # paths and the agent globbed tech-stack/** (A4, 2026-11-18);
+                           # with paths given, 12 is the honest ceiling and it is pinned
+    SECURITY_AGENT: 8,
+    PERFORMANCE_AGENT: 8,
+    AI_AGENT: 8,
     DISCOVERY_AGENT: 10,
     MAPPING_AGENT: 10,
 }
@@ -112,6 +122,27 @@ REQUIRED_KEYS = (
 # assertions ONLY against this table; boards recorded before it existed remain readable.
 OPTIONAL_KEYS = ("ast_hints", "observability")
 AST_HINT_KEYS = ("package", "implements", "dependencies", "methods")
+# THE SHARED-LITERAL VOCABULARY (rule (z), 2026-11-19 - R1/R2 roots): meter names and
+# request-path routes are literals used by >= 2 units (owner, consumers, the frozen test
+# pair). While they lived ONLY in intent prose, two frozen contracts could spell one
+# meter or one route differently and every per-unit gate stayed green - a coder then died
+# 3/3 on a pair no payload can satisfy. The machine fields below are their only lawful
+# home; the emit gate joins them across units (owner per literal, consumers verbatim,
+# prose spelled into the table). Optional keys: boards recorded before they existed stay
+# readable (subset validation, planning-time-only demands).
+AST_HINT_OPTIONAL_KEYS = ("meters", "routes", "config")
+METER_DUTIES = ("owns", "uses")     # owns = this unit registers the name (exactly one per name)
+ROUTE_DUTIES = ("serves", "uses")   # serves = this unit answers the (method, path) (exactly one per pair)
+# z5 (2026-11-19, R4): a property path is a shared literal too. The seed-002 board carried
+# one prefix in two incompatible shapes - the binding record declared `devices` as a LIST of
+# (id, secret-hash, scope) entries while the config unit's contract seeded
+# `devices.secret-hash` as a SCALAR - and no document or gate could see the pair until two
+# frozen tests paid for it. kind is the shape; fields lists the element/entry keys of a
+# structured path (kebab or camel - relaxed binding canonicalizes both). The join: units
+# table the SAME path with the SAME kind and fields, a value/map child of a list path is an
+# impossible shape, and once any unit tables a path, the config-artifact unit tables every
+# path its document seeds.
+CONFIG_KINDS = ("value", "list", "map")
 # The step-log CLAIM surface (2026-11-13): a task record that owns planned observability
 # step logs declares them verbatim here; emit refuses strategies whose entries have no
 # owner. Optional on the schema: legacy boards carry neither key nor claim, and the
@@ -120,6 +151,13 @@ PROMPT_KEYS = ("id", "path", "kind", "layer", "feature", "export", "intent", "de
                "project", "ast_hints", "observability")
 PROJECTS_SUBDIR = "services"
 LAYERS = ("root", "domain", "application", "infrastructure", "interface", "shared", "features")
+# The build manifest of each supported stack. A stage-0 bootstrap task whose path names one of
+# these files is a BUILD-MANIFEST duty: it rewrites the classpath the red-phase gap check reads.
+# The resume gate defers such a project's fatal to the per-task close-out, which re-checks AFTER
+# stage 0 ran (heap order) - fataling on a gap the duty itself would fill is a deadlock
+# (2026-11-18 live: the manifest duty the security mapping owed could be emitted, but the gate
+# read the pre-duty pom on every relaunch and died before the drain could run it).
+BUILD_FILE_NAMES = ("pom.xml", "build.gradle", "build.gradle.kts", "package.json")
 ID_PATTERN = re.compile(r"^T([0-4])-(\d{3})$")
 
 VERIFY_MODES = ("none", "typecheck", "build")

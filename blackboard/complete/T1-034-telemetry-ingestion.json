@@ -1,0 +1,82 @@
+{
+  "id": "T1-034",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/shared/config/TelemetryPropertiesTest.java",
+  "kind": "test",
+  "intent": "Frozen test of TelemetryProperties asserting only its ast_hints table. Bind from a map: all fields read; Credential accessors.",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.shared.config",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "TelemetryProperties(Duration reorderWindow, int reorderBufferCapacity, Duration windowDuration, int windowMaxEvents, int busCapacity, int broadcastCapacity, String publisherId, String dataKey, List<Credential> devices, List<Credential> consumers)",
+        "returns": ""
+      },
+      {
+        "signature": "Duration reorderWindow()",
+        "returns": "Duration"
+      },
+      {
+        "signature": "int reorderBufferCapacity()",
+        "returns": "int"
+      },
+      {
+        "signature": "Duration windowDuration()",
+        "returns": "Duration"
+      },
+      {
+        "signature": "int windowMaxEvents()",
+        "returns": "int"
+      },
+      {
+        "signature": "int busCapacity()",
+        "returns": "int"
+      },
+      {
+        "signature": "int broadcastCapacity()",
+        "returns": "int"
+      },
+      {
+        "signature": "String publisherId()",
+        "returns": "String"
+      },
+      {
+        "signature": "String dataKey()",
+        "returns": "String"
+      },
+      {
+        "signature": "List<Credential> devices()",
+        "returns": "List<Credential>"
+      },
+      {
+        "signature": "List<Credential> consumers()",
+        "returns": "List<Credential>"
+      },
+      {
+        "signature": "Credential(String id, String secretHash, String scope)",
+        "returns": ""
+      },
+      {
+        "signature": "String id()",
+        "returns": "String"
+      },
+      {
+        "signature": "String secretHash()",
+        "returns": "String"
+      },
+      {
+        "signature": "String scope()",
+        "returns": "String"
+      }
+    ]
+  },
+  "feature": null,
+  "export": "com.pulsestream.telemetry.shared.config.TelemetryProperties",
+  "project": "telemetry-ingestion",
+  "layer": "shared"
+}

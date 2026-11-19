@@ -1,0 +1,46 @@
+{
+  "id": "T2-024",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-024",
+    "T2-023",
+    "T2-008",
+    "T2-015"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/infrastructure/TelemetrySecurityConfiguration.java",
+  "kind": "code",
+  "intent": "Single @Configuration(proxyBeanMethods=false) @EnableWebFluxSecurity self-registered; SecurityWebFilterChain springSecurityFilterChain: httpBasic with DeviceCredentialAuthenticationManager for POST /telemetry/ingress requiring hasAuthority SCOPE_telemetry:ingest (scope-check); AZ-03 mutual-tls-proof and SI-07 mutual-tls-proof: x509 with SubjectX500PrincipalExtractor and ReactivePreAuthenticatedAuthenticationManager for GET /telemetry/stream requiring SCOPE_telemetry:subscribe; deny-by-default via anyExchange().denyAll(); csrf off; ServerAuthenticationEntryPoint and ServerAccessDeniedHandler (error-code-only: code, message, correlation key) audit authentication-failure / authorization-denied via AuditTrail and count denial (REFUSED on ingress, broadcastDropped unauthenticated on stream). Missing scope refused identically to missing credential.",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.infrastructure",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "DeviceCredentialAuthenticationManager",
+        "task_id": "T2-023"
+      },
+      {
+        "type": "AuditTrail",
+        "task_id": "T2-008"
+      },
+      {
+        "type": "TelemetryMetrics",
+        "task_id": "T2-015"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "TelemetrySecurityConfiguration()",
+        "returns": ""
+      },
+      {
+        "signature": "SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http, DeviceCredentialAuthenticationManager deviceManager, ReactiveUserDetailsService users, AuditTrail auditTrail, TelemetryMetrics metrics)",
+        "returns": "SecurityWebFilterChain"
+      }
+    ]
+  },
+  "feature": null,
+  "export": "com.pulsestream.telemetry.ingestion.infrastructure.TelemetrySecurityConfiguration",
+  "project": "telemetry-ingestion",
+  "layer": "infrastructure"
+}

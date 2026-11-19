@@ -1,0 +1,25 @@
+{
+  "id": "T2-022",
+  "project": "telemetry-ingestion",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ingestion/api/IngressPacketResponse.java",
+  "export": "IngressPacketResponse",
+  "method": "IngressPacketResponse",
+  "language": "java",
+  "framework": "springboot",
+  "skill": "java-springboot",
+  "kind": "record",
+  "signature": "IngressPacketResponse(int appended, int rejectedValidation, int revisions, int duplicates)",
+  "returns": "void",
+  "body": "",
+  "imports": [],
+  "missing": [],
+  "members": [
+    "int appended",
+    "int rejectedValidation",
+    "int revisions",
+    "int duplicates"
+  ],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-18T17:55:08.893606+00:00"
+}

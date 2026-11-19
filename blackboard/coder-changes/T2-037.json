@@ -1,0 +1,29 @@
+{
+  "id": "T2-037",
+  "project": "telemetry-ingestion",
+  "targetFile": "src/test/java/com/pulsestream/telemetry/support/SliceTestSupport.java",
+  "export": "SliceTestSupport",
+  "kind": "class",
+  "method": "basicAuthHeader",
+  "language": "java",
+  "framework": "springboot3",
+  "skill": "java-springboot3",
+  "signature": "public static String basicAuthHeader(String deviceId, String secret)",
+  "returns": "String",
+  "body": "String token = Base64.getEncoder().encodeToString((deviceId + \":\" + secret).getBytes(StandardCharsets.UTF_8));\nreturn \"Basic \" + token;",
+  "imports": [
+    "java.nio.charset.StandardCharsets",
+    "java.security.SecureRandom",
+    "java.util.Base64",
+    "org.springframework.security.crypto.factory.PasswordEncoderFactories",
+    "org.springframework.security.crypto.password.PasswordEncoder",
+    "org.springframework.test.context.DynamicPropertyRegistry"
+  ],
+  "members": [
+    "public static void registerProperties(DynamicPropertyRegistry registry) {\n        PasswordEncoder encoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();\n        byte[] key = new byte[32];\n        new SecureRandom().nextBytes(key);\n        String dataKey = Base64.getEncoder().encodeToString(key);\n        String deviceHash = encoder.encode(\"device-secret\");\n        String consumerHash = encoder.encode(\"stream-secret\");\n        registry.add(\"TELEMETRY_DATA_KEY\", () -> dataKey);\n        registry.add(\"TELEMETRY_DEVICE_SECRET_HASH\", () -> deviceHash);\n        registry.add(\"TELEMETRY_CONSUMER_SECRET_HASH\", () -> consumerHash);\n        registry.add(\"telemetry.data-key\", () -> dataKey);\n        registry.add(\"telemetry.devices[0].id\", () -> \"device-1\");\n        registry.add(\"telemetry.devices[0].secret-hash\", () -> deviceHash);\n        registry.add(\"telemetry.devices[0].scope\", () -> \"telemetry:ingest\");\n        registry.add(\"telemetry.consumers[0].id\", () -> \"stream-consumer\");\n        registry.add(\"telemetry.consumers[0].secret-hash\", () -> consumerHash);\n        registry.add(\"telemetry.consumers[0].scope\", () -> \"telemetry:subscribe\");\n    }"
+  ],
+  "missing": [],
+  "stage": 2,
+  "executed": true,
+  "recorded_at": "2026-11-18T20:39:58.666969+00:00"
+}

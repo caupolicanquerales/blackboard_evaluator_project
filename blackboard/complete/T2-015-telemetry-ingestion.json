@@ -1,0 +1,54 @@
+{
+  "id": "T2-015",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-015"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/shared/observability/TelemetryMetrics.java",
+  "kind": "code",
+  "intent": "SI-09 metric-tag-bound: sole owner of meter names over MeterRegistry with CLOSED tag values and a MeterFilter (installed in the constructor) rejecting tag keys other than status, metric, reason, outcome; unknown tag values collapse to other. Never device ids. Meters: telemetry.samples.ingested(status VALIDATED|VALIDATION_FAILED|DUPLICATE|REFUSED), telemetry.samples.validation_failed(metric), telemetry.backfill.reordered, telemetry.revisions.appended(reason), telemetry.broadcast.windows(outcome buffered|broadcast), telemetry.broadcast.dropped(reason), telemetry.ingest.duration timer(outcome).",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.shared.observability",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "TelemetryMetrics(MeterRegistry registry)",
+        "returns": ""
+      },
+      {
+        "signature": "void samplesIngested(String status)",
+        "returns": ""
+      },
+      {
+        "signature": "void validationFailed(String metric)",
+        "returns": ""
+      },
+      {
+        "signature": "void backfillReordered()",
+        "returns": ""
+      },
+      {
+        "signature": "void revisionAppended(String reason)",
+        "returns": ""
+      },
+      {
+        "signature": "void windowBroadcast(String outcome)",
+        "returns": ""
+      },
+      {
+        "signature": "void broadcastDropped(String reason)",
+        "returns": ""
+      },
+      {
+        "signature": "void ingestDuration(String outcome, Duration elapsed)",
+        "returns": ""
+      }
+    ]
+  },
+  "feature": null,
+  "export": "com.pulsestream.telemetry.shared.observability.TelemetryMetrics",
+  "project": "telemetry-ingestion",
+  "layer": "shared"
+}

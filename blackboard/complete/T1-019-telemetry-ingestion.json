@@ -1,0 +1,61 @@
+{
+  "id": "T1-019",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T0-002",
+    "T0-003"
+  ],
+  "path": "src/test/java/com/pulsestream/telemetry/ingestion/infrastructure/R2dbcTelemetryRecordRepositoryTest.java",
+  "kind": "test",
+  "intent": "Frozen test of R2dbcTelemetryRecordRepository asserting only its ast_hints table. REAL-SUBSTRATE: H2 executing the actual Flyway migrations V1-V3; assert durable rows, stored payload column is not plaintext, duplicate identity returns false with one row, latest revision lookup, revision 1 present, NOT NULL violation fails; mocked client only as extra.",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.infrastructure",
+    "implements": [
+      "TelemetryRecordRepository"
+    ],
+    "dependencies": [
+      {
+        "type": "TelemetryRecordRepository",
+        "task_id": "T2-013"
+      },
+      {
+        "type": "AesGcmPayloadCipher",
+        "task_id": "T2-018"
+      },
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-003"
+      },
+      {
+        "type": "TelemetryRevision",
+        "task_id": "T2-004"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "R2dbcTelemetryRecordRepository(DatabaseClient client, AesGcmPayloadCipher cipher)",
+        "returns": ""
+      },
+      {
+        "signature": "Mono<Boolean> appendRecord(TelemetrySample sample)",
+        "returns": "Mono<Boolean>",
+        "semantics": "true appended; false duplicate identity"
+      },
+      {
+        "signature": "Mono<Void> appendRevision(TelemetryRevision revision)",
+        "returns": "Mono<Void>"
+      },
+      {
+        "signature": "Mono<TelemetryRevision> findLatestRevision(String deviceId, String metric, Instant tDevice)",
+        "returns": "Mono<TelemetryRevision>",
+        "semantics": "empty when unknown"
+      }
+    ]
+  },
+  "feature": null,
+  "export": "com.pulsestream.telemetry.ingestion.infrastructure.R2dbcTelemetryRecordRepository",
+  "project": "telemetry-ingestion",
+  "layer": "infrastructure"
+}

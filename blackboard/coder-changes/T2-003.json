@@ -1,34 +1,30 @@
 {
   "id": "T2-003",
-  "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/validation/domain/TelemetrySample.java",
+  "project": "telemetry-ingestion",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ingestion/domain/TelemetrySample.java",
   "export": "TelemetrySample",
   "kind": "record",
-  "method": "withStatus",
+  "method": "TelemetrySample",
   "language": "java",
   "framework": "springboot",
   "skill": "java-standard-best-practices",
-  "signature": "public TelemetrySample withStatus(String status)",
-  "returns": "TelemetrySample",
-  "body": "return new TelemetrySample(deviceId, metric, tDevice, tIngress, value, status, correlationId);",
-  "imports": [
-    "java.time.Instant"
-  ],
+  "signature": "TelemetrySample(String deviceId, String metric, Instant tDevice, Instant tIngress, double value, ValidationStatus status, String payload)",
+  "returns": "void",
   "members": [
     "String deviceId",
     "String metric",
     "Instant tDevice",
     "Instant tIngress",
     "double value",
-    "String status",
-    "String correlationId",
-    "public static final String STATUS_PENDING = \"PENDING\"",
-    "public static final String STATUS_VALID = \"VALID\"",
-    "public static final String STATUS_VALIDATION_FAILED = \"VALIDATION_FAILED\"",
-    "public TelemetrySample withIngress(Instant tIngress) { return new TelemetrySample(deviceId, metric, tDevice, tIngress, value, status, correlationId); }"
+    "ValidationStatus status",
+    "String payload"
+  ],
+  "body": "",
+  "imports": [
+    "java.time.Instant"
   ],
   "missing": [],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-17T15:34:10.074202+00:00"
+  "recorded_at": "2026-11-18T17:58:10.443829+00:00"
 }

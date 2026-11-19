@@ -1,0 +1,38 @@
+{
+  "project": "telemetry-ingestion",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ingestion/infrastructure/R2dbcAuditTrail.java",
+  "stack": "java-springboot3",
+  "skill": "java-springboot3",
+  "summary": "Extracted repeated VARCHAR parameter binding into a private helper and formatted the bind chain; behavior unchanged.",
+  "findings": [
+    "Duplicated Parameters.in(VARCHAR, ...) calls",
+    "Single long-line bind chain"
+  ],
+  "changes": [
+    "Added varchar() helper; reformatted record() chain"
+  ],
+  "reverts": [],
+  "final_test": {
+    "status": "passed",
+    "command": "./mvnw -q -Dtest=R2dbcAuditTrailTest test",
+    "counts": {
+      "run": 5,
+      "failures": 0,
+      "errors": 0
+    }
+  },
+  "task_id": "T3-020",
+  "stage": 3,
+  "executed": true,
+  "recorded_at": "2026-11-18T20:54:07.289240+00:00",
+  "engine_diff": [
+    {
+      "file": "src/main/java/com/pulsestream/telemetry/ingestion/infrastructure/R2dbcAuditTrail.java",
+      "added": 12,
+      "removed": 1,
+      "capped": false,
+      "patch": "--- a/src/main/java/com/pulsestream/telemetry/ingestion/infrastructure/R2dbcAuditTrail.java\n+++ b/src/main/java/com/pulsestream/telemetry/ingestion/infrastructure/R2dbcAuditTrail.java\n@@ -4,6 +4,7 @@\n import java.util.Objects;\n import com.pulsestream.telemetry.ingestion.application.AuditEntry;\n import com.pulsestream.telemetry.ingestion.application.AuditTrail;\n+import io.r2dbc.spi.Parameter;\n import io.r2dbc.spi.Parameters;\n import io.r2dbc.spi.R2dbcType;\n import org.springframework.r2dbc.core.DatabaseClient;\n@@ -20,6 +21,16 @@\n     }\n \n     public Mono<Void> record(AuditEntry entry) {\n-        return client.sql(INSERT).bind(\"actor\", Parameters.in(R2dbcType.VARCHAR, entry.actor())).bind(\"action\", Parameters.in(R2dbcType.VARCHAR, entry.action())).bind(\"outcome\", Parameters.in(R2dbcType.VARCHAR, entry.outcome())).bind(\"occurredAt\", entry.timestamp().atOffset(ZoneOffset.UTC)).bind(\"correlationId\", Parameters.in(R2dbcType.VARCHAR, entry.correlationId())).then();\n+        return client.sql(INSERT)\n+                .bind(\"actor\", varchar(entry.actor()))\n+                .bind(\"action\", varchar(entry.action()))\n+                .bind(\"outcome\", varchar(entry.outcome()))\n+                .bind(\"occurredAt\", entry.timestamp().atOffset(ZoneOffset.UTC))\n+                .bind(\"correlationId\", varchar(entry.correlationId()))\n+                .then();\n+    }\n+\n+    private static Parameter varchar(String value) {\n+        return Parameters.in(R2dbcType.VARCHAR, value);\n     }\n }"
+    }
+  ],
+  "engine_diff_files": 1
+}

@@ -1,28 +1,29 @@
 {
   "id": "T2-004",
-  "project": "telemetry-ingestion-processing",
-  "targetFile": "src/main/java/com/pulsestream/telemetry/shared/observability/AuditEntry.java",
-  "export": "AuditEntry",
+  "project": "telemetry-ingestion",
+  "targetFile": "src/main/java/com/pulsestream/telemetry/ingestion/domain/TelemetryRevision.java",
+  "export": "TelemetryRevision",
   "kind": "record",
-  "method": "AuditEntry",
+  "method": "TelemetryRevision",
   "language": "java",
-  "framework": "spring-boot",
-  "skill": "java-springboot",
-  "signature": "AuditEntry(String actor, String action, String outcome, Instant timestamp, String correlationId)",
+  "framework": "springboot",
+  "skill": "java-standard-best-practices",
+  "signature": "TelemetryRevision(String deviceId, String metric, Instant tDevice, int revisionNumber, double value, String reason)",
   "returns": "void",
-  "body": "",
+  "members": [
+    "String deviceId",
+    "String metric",
+    "Instant tDevice",
+    "int revisionNumber",
+    "double value",
+    "String reason"
+  ],
+  "body": "if (revisionNumber < 1) {\n    throw new IllegalArgumentException(\"revisionNumber must be >= 1\");\n}",
   "imports": [
     "java.time.Instant"
-  ],
-  "members": [
-    "String actor",
-    "String action",
-    "String outcome",
-    "Instant timestamp",
-    "String correlationId"
   ],
   "missing": [],
   "stage": 2,
   "executed": true,
-  "recorded_at": "2026-11-17T15:31:58.070723+00:00"
+  "recorded_at": "2026-11-18T17:58:10.245293+00:00"
 }

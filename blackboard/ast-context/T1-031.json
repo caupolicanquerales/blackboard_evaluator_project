@@ -1,0 +1,67 @@
+{
+  "task_id": "T1-031",
+  "status": "test_contract",
+  "exit_code": 0,
+  "context": {
+    "type": "BroadcastService",
+    "constructors": [
+      [
+        "buffer",
+        "source",
+        "metrics",
+        "16"
+      ],
+      [
+        "buffer",
+        "source",
+        "metrics",
+        "1"
+      ]
+    ],
+    "static_calls": [],
+    "calls": [
+      {
+        "receiver": "service",
+        "method": "subscribe",
+        "args": []
+      },
+      {
+        "receiver": "service",
+        "method": "stop",
+        "args": []
+      },
+      {
+        "receiver": "service",
+        "method": "subscribe",
+        "args": [],
+        "returns": "Flux<TelemetryWindowBroadcast>"
+      },
+      {
+        "receiver": "service",
+        "method": "start",
+        "args": []
+      }
+    ],
+    "verified": [],
+    "usage_lines": [
+      "class BroadcastServiceTest {",
+      "BroadcastService service = new BroadcastService(buffer, source, metrics, 16);",
+      "StepVerifier.create(service.subscribe())",
+      ".then(service::start)",
+      "service.stop();",
+      "BroadcastService service = new BroadcastService(buffer, source, metrics, 16);",
+      "Flux<TelemetryWindowBroadcast> flux = service.subscribe();",
+      "service.start();",
+      "service.stop();",
+      "BroadcastService service = new BroadcastService(buffer, source, metrics, 1);",
+      "StepVerifier.create(service.subscribe(), 0)",
+      ".then(service::start)",
+      "service.stop();",
+      "BroadcastService service = new BroadcastService(buffer, source, metrics, 16);",
+      "service.start();",
+      "service.stop();"
+    ]
+  },
+  "stderr": "",
+  "executed": true
+}

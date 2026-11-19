@@ -28,8 +28,27 @@ class JavaASTWeaverGenericShapesTest {
     Path tempDir;
 
     @Test
-    void weave_newEnumWithConstantsAndMethod_compilesAndSurvivesRewrite() throws IOException {
-        Path file = typedTarget("com.x.Status");
+    void weave_methodNamedPermits_isLegalAsAJlsRestrictedIdentifier() throws IOException {
+        // JLS: `permits`/`sealed` are RESTRICTED identifiers - reserved only in the type-declaration
+        // position, always legal as method names. Live 2026-11-18: the security plan pinned the
+        // mechanism TrustedPublisherPolicy.permits(TelemetryEvent); the parser's reserved-identifier
+        // table (BLEEDING_EDGE, javaparser < 3.26) rejected the javac-legal payload, and one unit
+        // quarantined 14 dependents down its DAG edge.
+        Path file = givenSource("com.x.TrustedPublisherPolicy",
+                "package com.x;\n\npublic class TrustedPublisherPolicy {\n"
+                        + "    public boolean permits(String event) { return false; }\n}\n");
+
+        JavaASTWeaver.weave(file, payload("com.x.TrustedPublisherPolicy", "permits",
+                "permits(String)", "boolean", "class",
+                List.of("public boolean permits(String event) { return event != null; }"), ""));
+
+        assertThat(Files.readString(file)).contains("event != null");
+        assertThat(countOf(Files.readString(file), "boolean permits(")).isEqualTo(1L);
+        assertCompiles(file);
+    }
+
+    @Test
+    void weave_newEnumWithConstantsAndMethod_compilesAndSurvivesRewrite() throws IOException {        Path file = typedTarget("com.x.Status");
 
         JavaASTWeaver.weave(file, payload("com.x.Status", "pretty", "pretty()", "String", "enum",
             List.of("NEW", "public String pretty() { return name().toLowerCase(); }"), ""));

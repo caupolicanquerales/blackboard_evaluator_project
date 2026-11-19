@@ -1,0 +1,32 @@
+{
+  "id": "T2-008",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-008",
+    "T2-007"
+  ],
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/application/AuditTrail.java",
+  "kind": "code",
+  "intent": "Outbound audit port; append-only facts, correlationId passed explicitly in each entry.",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "AuditEntry",
+        "task_id": "T2-007"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> record(AuditEntry entry)",
+        "returns": "Mono<Void>"
+      }
+    ]
+  },
+  "feature": null,
+  "export": "com.pulsestream.telemetry.ingestion.application.AuditTrail",
+  "project": "telemetry-ingestion",
+  "layer": "application"
+}

@@ -282,8 +282,16 @@ def parse(output, root=None):
     mocks = []
 
     def owner_of(type_name):
-        head = type_name.split("<", 1)[0]
-        return head.rsplit(".", 1)[-1].rstrip(";,)")
+        head = type_name.split("<", 1)[0].rstrip(";,)")
+        parts = [p for p in head.split(".") if p]
+        # A nested spelling `OUTER.Inner` (or `com.x.OUTER.Inner`) loses its OWNER when
+        # collapsed to the last segment: the surface that must change is OUTER (its
+        # producer, its file, its unit). The collapse to `Inner` made nested demands
+        # unattributable (2026-11-18 live: `location: class ...TelemetryEvent.Type`
+        # became owner `Type` - nobody exports Type, every unit deferred).
+        if len(parts) >= 2 and parts[-1][:1].isupper() and parts[-2][:1].isupper():
+            return ".".join(parts[-2:])
+        return parts[-1] if parts else head
 
     def declared_supertypes(path_text):
         import os
@@ -352,8 +360,17 @@ def parse(output, root=None):
                 if m:
                     missing.append(m.group(1))
                 member = RE_JAVAC_MEMBER.match(follow)
-                if member and member.group(1) in ("method", "constructor", "class"):
+                if member and member.group(1) in ("method", "constructor", "class", "variable"):
                     owner = javac_location_owner(i + offset + 1)
+                    # `symbol: variable X located in class Y` reads two ways: Y is the top type
+                    # of the FAILING FILE itself (a local/import gap inside Y - its producer's
+                    # own defect, never a demand on another surface) or Y is a DIFFERENT type
+                    # whose constant/field X is missing. The blanket exclusion of `variable`
+                    # from demands hid the second reading - enum-constant gaps charged nobody
+                    # and the domain livelocked in mutual deferral (2026-11-18).
+                    if (owner and member.group(1) == "variable" and head and
+                            owner == head.group(1).rsplit("/", 1)[-1].rsplit(".", 1)[0]):
+                        owner = None
                     if owner:
                         entry = {"member": member.group(2), "owner": owner,
                                  "kind": member.group(1)}

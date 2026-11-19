@@ -45,6 +45,11 @@ STARTER_TEST = ("\n\t\t<dependency>\n\t\t\t<groupId>org.springframework.boot</gr
 REQUIRED_ARTIFACTS = {  # plan-side name -> (groupId, artifactId) written without version (BOM-managed)
     "test": ("org.springframework.boot", "spring-boot-starter-test"),
     "reactor-test": ("io.projectreactor", "reactor-test"),
+    # The security test aggregate: named by the architect-tier security table's Build
+    # coordinates, absent from the Initializr catalog - the SAME class of artifact this
+    # table exists for (2026-11-18 live: its absence made the container halt a build-manifest
+    # duty mid-flight and a false [done] followed).
+    "spring-security-test": ("org.springframework.security", "spring-security-test"),
 }
 
 # 4.x-only coordinates -> Boot-3 equivalents, PROVEN live against start.spring.io (2026-11)
@@ -172,7 +177,8 @@ def main() -> int:
     ap.add_argument("--project-root", required=True)
     ap.add_argument("--major", required=True, help="planned framework major, e.g. 3")
     ap.add_argument("--require", default="", help="comma list of test artifacts the plan names"
-                                                  " but the generator catalog may lack (test, reactor-test)")
+                                                  " but the generator catalog may lack"
+                                                  " (test, reactor-test, spring-security-test)")
     ap.add_argument("--surefire-timeout", type=int, default=0,
                     help="seconds for maven-surefire forkedProcessTimeoutInSeconds (the"
                          " scaffold-intent test-run guardrail); 0 = leave the pom untouched")

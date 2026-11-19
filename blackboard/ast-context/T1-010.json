@@ -3,57 +3,42 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "EventRecord",
+    "type": "Sha256RedactionAdapter",
     "constructors": [
-      [
-        "sample",
-        "3",
-        "\"REVISION\""
-      ],
-      [
-        "sample()",
-        "1",
-        "\"RECORD\""
-      ],
-      [
-        "sample()",
-        "2",
-        "\"RECORD\""
-      ]
+      []
     ],
     "static_calls": [],
     "calls": [
       {
-        "receiver": "record",
-        "method": "sample",
-        "args": []
+        "receiver": "adapter",
+        "method": "mask",
+        "args": [
+          "\"dev-secret\""
+        ]
       },
       {
-        "receiver": "record",
-        "method": "revision",
-        "args": []
+        "receiver": "adapter",
+        "method": "mask",
+        "args": [
+          "\"dev-a\""
+        ]
       },
       {
-        "receiver": "record",
-        "method": "kind",
-        "args": []
+        "receiver": "adapter",
+        "method": "mask",
+        "args": [
+          "\"dev-b\""
+        ]
       }
     ],
     "verified": [],
     "usage_lines": [
-      "class EventRecordTest {",
-      "EventRecord record = new EventRecord(sample, 3, \"REVISION\");",
-      "assertThat(record.sample()).isEqualTo(sample);",
-      "assertThat(record.revision()).isEqualTo(3);",
-      "assertThat(record.kind()).isEqualTo(\"REVISION\");",
-      "EventRecord a = new EventRecord(sample(), 1, \"RECORD\");",
-      "EventRecord b = new EventRecord(sample(), 1, \"RECORD\");",
-      "assertThat(a).isEqualTo(b).hasSameHashCodeAs(b);",
-      "EventRecord a = new EventRecord(sample(), 1, \"RECORD\");",
-      "EventRecord b = new EventRecord(sample(), 2, \"RECORD\");",
-      "assertThat(a).isNotEqualTo(b);",
-      "assertThat(EventRecord.KIND_RECORD).isEqualTo(\"RECORD\");",
-      "assertThat(EventRecord.KIND_REVISION).isEqualTo(\"REVISION\");"
+      "class Sha256RedactionAdapterTest {",
+      "private final Sha256RedactionAdapter adapter = new Sha256RedactionAdapter();",
+      "assertThat(adapter.mask(\"dev-secret\")).isEqualTo(adapter.mask(\"dev-secret\"));",
+      "assertThat(adapter.mask(\"dev-secret\")).isNotEqualTo(\"dev-secret\");",
+      "assertThat(adapter.mask(\"dev-secret\")).doesNotContain(\"dev-secret\");",
+      "assertThat(adapter.mask(\"dev-a\")).isNotEqualTo(adapter.mask(\"dev-b\"));"
     ]
   },
   "stderr": "",

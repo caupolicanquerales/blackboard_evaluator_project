@@ -3,20 +3,62 @@
   "status": "test_contract",
   "exit_code": 0,
   "context": {
-    "type": "StepLog",
+    "type": "SensorMetricBoundary",
     "constructors": [
       []
     ],
     "static_calls": [],
-    "calls": [],
+    "calls": [
+      {
+        "receiver": "boundary",
+        "method": "check",
+        "args": [
+          "\"swim_pace\"",
+          "45.0"
+        ]
+      },
+      {
+        "receiver": "boundary",
+        "method": "check",
+        "args": [
+          "\"swim_pace\"",
+          "45.1"
+        ]
+      },
+      {
+        "receiver": "boundary",
+        "method": "check",
+        "args": [
+          "\"swim_pace\"",
+          "10.0"
+        ]
+      },
+      {
+        "receiver": "boundary",
+        "method": "check",
+        "args": [
+          "\"swim_pace\"",
+          "Double.NaN"
+        ]
+      },
+      {
+        "receiver": "boundary",
+        "method": "check",
+        "args": [
+          "metric",
+          "value"
+        ]
+      }
+    ],
     "verified": [],
     "usage_lines": [
-      "class StepLogTest {",
-      "logger = (Logger) LoggerFactory.getLogger(StepLog.class);",
-      "new StepLog().emit(\"ingest-received\", \"corr-1\");",
-      "new StepLog().emit(\"ingest-received\", \"corr-1\");",
-      "new StepLog().emit(\"ingest-received\", \"corr-1\");",
-      "new StepLog().emit(\"ingest-received\", \"corr-1\");"
+      "class SensorMetricBoundaryTest {",
+      "private final SensorMetricBoundary boundary = new SensorMetricBoundary();",
+      "assertThat(boundary.check(\"swim_pace\", 45.0)).isEqualTo(ValidationStatus.VALIDATION_FAILED);",
+      "assertThat(boundary.check(\"swim_pace\", 45.1)).isEqualTo(ValidationStatus.VALIDATED);",
+      "assertThat(boundary.check(\"swim_pace\", 10.0)).isEqualTo(ValidationStatus.VALIDATION_FAILED);",
+      "assertThat(boundary.check(\"swim_pace\", Double.NaN)).isEqualTo(ValidationStatus.VALIDATION_FAILED);",
+      "assertThat(boundary.check(metric, value)).isEqualTo(ValidationStatus.VALIDATED);"
     ]
   },
   "stderr": "",

@@ -1,0 +1,46 @@
+{
+  "id": "T1-030",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T0-007",
+    "T1-029"
+  ],
+  "kind": "test",
+  "layer": "application",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/test/java/com/blackboard/telemetry/distribution/application/SubscriberLimiterTest.java",
+  "export": "com.blackboard.telemetry.distribution.application.SubscriberLimiterTest",
+  "intent": "With limit N: the first N acquisitions succeed, the N+1th is refused, and after a release the next acquisition succeeds again; releasing more than acquired never exceeds N permits. Assert each boolean outcome.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.distribution.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "DistributionProperties",
+        "task_id": "T2-024"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "boolean tryAcquire()",
+        "returns": "boolean",
+        "semantics": "TRUE: permit acquired, caller may stream; FALSE: limit reached, caller answers 503 with Retry-After"
+      },
+      {
+        "signature": "void release()",
+        "returns": ""
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "telemetry.distribution.max-subscribers",
+        "kind": "value"
+      }
+    ]
+  }
+}

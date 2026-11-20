@@ -1,0 +1,15 @@
+{
+  "id": "T3-025",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-025"
+  ],
+  "kind": "refactor",
+  "layer": "shared",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/main/java/com/blackboard/telemetry/shared/DistributionMetrics.java",
+  "export": "com.blackboard.telemetry.shared.DistributionMetrics",
+  "intent": "Refactor the distribution metrics facade for readability and tag-bucket constants without changing behaviour; keep every test green."
+}

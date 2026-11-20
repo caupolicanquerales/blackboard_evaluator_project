@@ -1,0 +1,15 @@
+{
+  "id": "T3-035",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-035"
+  ],
+  "kind": "refactor",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/main/java/com/blackboard/telemetry/distribution/infrastructure/SubscriberAuthenticationManager.java",
+  "export": "com.blackboard.telemetry.distribution.infrastructure.SubscriberAuthenticationManager",
+  "intent": "Refactor the subscriber authentication manager for clarity without changing behaviour; keep every test green."
+}

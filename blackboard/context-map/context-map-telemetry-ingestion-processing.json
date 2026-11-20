@@ -1,0 +1,56 @@
+{
+  "schema_version": "1.0",
+  "report_type": "context-map",
+  "metadata": {
+    "generated_at": "2026-11-20T16:30:00-03:00",
+    "agent": "domain-context-mapping",
+    "source_report": "blackboard/domain"
+  },
+  "context_map": [
+    {
+      "upstream": "external",
+      "downstream": "Telemetry Ingestion",
+      "relationship": "Conformist",
+      "direction": "external -> Telemetry Ingestion",
+      "exchanged_information": "Ingress Packets carrying 1Hz Telemetry Samples with t_device from IoT edge devices, bike computers and smart wearables; device-initiated, immediate.",
+      "boundary_protection": "Device payload model is adopted as-is; Sensor Metric Boundary validation, VALIDATION_FAILED tagging and t_device ordering protect internals; t_ingress never used for ordering. Open: delivery posture/retry identity undefined."
+    },
+    {
+      "upstream": "Telemetry Ingestion",
+      "downstream": "Telemetry Stream Distribution",
+      "relationship": "Customer-supplier",
+      "direction": "Telemetry Ingestion -> Telemetry Stream Distribution",
+      "exchanged_information": "Events TelemetrySampleIngested, TelemetrySampleValidationFailed, TelemetrySampleBackfilled, TelemetryRevisionAppended; eventual, backpressure-aware.",
+      "boundary_protection": "Only published events cross; raw append-only store, revision history and reorder internals never leak. Distribution holds derived window buffers only. Flag: Distribution invariant says only validated samples propagate, yet it consumes TelemetrySampleValidationFailed; filtering rule needs owner decision."
+    },
+    {
+      "upstream": "Telemetry Stream Distribution",
+      "downstream": "external",
+      "relationship": "Open host service / published language",
+      "direction": "Telemetry Stream Distribution -> external",
+      "exchanged_information": "WindowedTelemetryBroadcast to downstream event streams / streaming analytics (PulseStream Engine).",
+      "boundary_protection": "Stable windowed-stream contract; consumers do not access raw records or ingestion internals; broadcast honours downstream demand without blocking I/O."
+    }
+  ],
+  "cross_boundary_flows": [
+    {
+      "business_process": "Sample ingestion, validation and revision",
+      "contexts_involved": [
+        "external",
+        "Telemetry Ingestion"
+      ],
+      "consistency_expectation": "immediate for validation and append; late/backfilled data within 60s reordered by t_device",
+      "notes": "Open: handling of packets later than 60s; bounds missing for ground contact time, respiration, swim stroke, swim pace upper bound."
+    },
+    {
+      "business_process": "Windowed telemetry broadcast",
+      "contexts_involved": [
+        "Telemetry Ingestion",
+        "Telemetry Stream Distribution",
+        "external"
+      ],
+      "consistency_expectation": "eventual",
+      "notes": "Failure posture: demand-driven backpressure; consumers idempotent on revision/backfill events. All 4 published events consumed; no unmatched terms. No coupling cycles (one-way flow). Context split is a low-confidence assumption."
+    }
+  ]
+}

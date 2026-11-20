@@ -1,0 +1,15 @@
+{
+  "id": "T3-004",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-004"
+  ],
+  "kind": "refactor",
+  "layer": "shared",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/main/java/com/blackboard/telemetry/shared/MetricsFacade.java",
+  "export": "com.blackboard.telemetry.shared.MetricsFacade",
+  "intent": "Refactor the facade for clarity; method table and meter registrations unchanged."
+}

@@ -1,6 +1,6 @@
 ---
 name: java-reactive-patterns
-description: "Use when the agent-architect plans Spring Boot WebFlux/Reactor/R2DBC/messaging components. Import-contract rules, explicit wiring tasks, and non-blocking patterns only."
+description: "Use when the agent-planner-architect plans Spring Boot WebFlux/Reactor/R2DBC/messaging components. Import-contract rules, explicit wiring tasks, and non-blocking patterns only."
 ---
 # Import contracts
 Ports (domain/application) import only `reactor.core.publisher.*` + `java.*`; never org.springframework.{web,data.r2dbc,kafka,amqp}. Adapters (infrastructure) implement ports; api depends on application only. I/O contracts return Mono<T>/Flux<T>; never Optional/List/void/Iterable as I/O types. Declare every cross-layer type in the task imports.

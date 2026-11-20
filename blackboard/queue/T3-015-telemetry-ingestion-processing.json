@@ -1,0 +1,15 @@
+{
+  "id": "T3-015",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-015"
+  ],
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/main/java/com/blackboard/telemetry/ingestion/application/TelemetryEventPublisher.java",
+  "export": "com.blackboard.telemetry.ingestion.application.TelemetryEventPublisher",
+  "intent": "Refactor port documentation; signature unchanged."
+}

@@ -275,9 +275,12 @@ def _steplog_claim_errors(staged, index):
                 "metrics, export) are required: an incomplete promise becomes incomplete "
                 "code (2026-11-13: 5 step logs planned, 0 owned, 0 logged, all gates green)")
             continue
-        entries = obs.get("step_logs") or []
+        # BOTH strategy spellings flatten (tasks.step_log_entries): the per-context
+        # dict is what agent-strategy-architect actually writes - the list-only reader
+        # let a dict floor skip the whole completeness law (2026-11-20, V9)
+        entries = tasks.step_log_entries(obs.get("step_logs"))
         wanted = {}
-        for entry in entries if isinstance(entries, list) else []:
+        for entry in entries:
             key = _claim_norm(entry)
             if key:
                 wanted.setdefault(key, str(entry).strip())
@@ -1135,6 +1138,15 @@ def replan_domain(slug):
             shutil.move(str(file), str(archive / file.name))
             moved["tasks"].append(str(record.get("id", file.stem)))
     moved["tasks"] = sorted(set(moved["tasks"]))
+    # /tmp planning state of the archived plan is stale by definition: drafts, the digest,
+    # every per-context slice and every symbol table join the archive decision (the loop
+    # rebuilds them; leaving the old bytes would let a next launch's claim step number
+    # itself against a plan that no longer exists).
+    for stale in (DRAFT_DIR.glob(f"{slug}-*.json"),
+                  Path("/tmp").glob(f"phase2-digest-{slug}.json"),
+                  Path("/tmp").glob(f"phase2-slice-{slug}-*.json")):
+        for file in stale:
+            file.unlink(missing_ok=True)
     return moved
 
 
@@ -1150,6 +1162,56 @@ def replan_domain(slug):
 # class), discovered at its first red gate - so emit refuses it and the plan moves the
 # artifact where it can live: a prompt contract becomes a Java TYPE whose tabled members
 # carry the contract elements; other facts belong to a source type or the config document.
+def _manifest_order_errors(staged, index):
+    """BUILD-MANIFEST PRECEDES EVERY RED COMPILE (2026-11-20 root fix - AS15's prose law
+    promoted to the machine tier): a stage-0 task whose export is `build-manifest` means
+    the plan ADDS coordinates the scaffold build file lacks, and a module's test compile
+    pulls the WHOLE module's classpath - the same fact in Maven, Gradle, npm and pip.
+    So EVERY stage-1 and stage-2 task of that project must reach the manifest through
+    `dependsOn`, transitively: without the edge, the unit's first red gate is the D4
+    import storm (live 2026-11-18; repeated on the 2026-11-20 board, where T2-019's
+    chain never depended on T0-007). The rule reads ONLY structural board facts - the
+    export marker and the dependency closure - never an annotation, artifact or
+    framework name: the engine stays stack-agnostic, and the mapping table keeps its
+    monopoly on mechanism vocabulary."""
+    world = dict(index)
+    world.update({str(task.get("id")): task for task in staged
+                  if isinstance(task, dict) and task.get("id")})
+    manifests = {}
+    for tid, task in world.items():
+        if not isinstance(task, dict) or int(task.get("stage") or 0) != 0:
+            continue
+        if str(task.get("export", "")).strip() == BUILD_MANIFEST_EXPORT:
+            manifests.setdefault(str(task.get("project", "")), []).append(str(tid))
+    errors = []
+    for task in staged:
+        if not isinstance(task, dict) or int(task.get("stage") or 0) not in (1, 2):
+            continue
+        targets = manifests.get(str(task.get("project", "")))
+        if not targets:
+            continue
+        seen, stack = set(), [str(task.get("id", ""))]
+        reached = None
+        while stack:
+            for dep in world.get(stack.pop(), {}).get("dependsOn") or []:
+                dep = str(dep)
+                if dep in targets:
+                    reached = dep
+                    break
+                if dep not in seen:
+                    seen.add(dep)
+                    stack.append(dep)
+            if reached:
+                break
+        if not reached:
+            errors.append(
+                f"{task.get('id')}: the project schedules build-manifest {targets} - new "
+                "coordinates must be in the build file BEFORE the first compile of the "
+                "module its tests build - add the manifest id to `dependsOn` (the pair's "
+                "twin then inherits it through the pair)")
+    return errors
+
+
 def _writable_channel_errors(staged):
     errors = []
     for task in staged:
@@ -1234,7 +1296,12 @@ def emit_tasks(paths):
                 return reason
             batch = loaded if isinstance(loaded, list) else [loaded]
             for position, task in enumerate(batch, start=1):
-                label = f"{source}" if isinstance(loaded, dict) else f"{source}[{position}]"
+                # The POINTER is the label: a task id where one exists, else file[entry].
+                # The LLM does not have to memorize the contract to heal a plan: the
+                # refusal names the exact object and the field, and the remedy is an edit
+                # (2026-11-20: the profile stopped restating rules (a)-(z) for this).
+                label = (task.get("id") if isinstance(task, dict) and task.get("id")
+                         else f"{source.name}[{position}]")
                 if not isinstance(task, dict):
                     errors.append(f"{label}: task must be a JSON object")
                     continue
@@ -1265,8 +1332,9 @@ def emit_tasks(paths):
         for producer_id, consumers in producers.items():
             producer = index.get(producer_id)
             if producer is None:
-                errors.append(f"collaborator pin {producer_id} (by {sorted(consumers)[:2]}) "
-                              "references no task in the batch, queue or complete")
+                errors.append(f"{producer_id}: collaborator pin by "
+                              f"{sorted(consumers)[:2]} references no task in the batch, "
+                              "queue or complete")
                 continue
             if int(producer.get("stage") or 0) not in (1, 2):
                 continue
@@ -1289,8 +1357,10 @@ def emit_tasks(paths):
                 if isinstance(record, dict) and str(record.get("project", "")) == _slug]))
         errors.extend(_reserved_segment_errors(staged))
         errors.extend(_writable_channel_errors(staged))
+        errors.extend(_stage0_family_errors([], index))
+        errors.extend(_manifest_order_errors(staged, index))
         if errors:
-            reason = "\n".join(errors + [
+            reason = "\n".join([_format_error(e) for e in errors] + [
                 "Fix EVERY error above by EDITING the named task objects in the draft file that "
                 "holds them - never re-emit an unchanged file, never regenerate the whole plan "
                 "(one rewrite of a domain plan is 10-30k output tokens; the same fix as an edit is "
@@ -1319,6 +1389,449 @@ def emit_tasks(paths):
         if current is not None:
             current.set_attribute("tasks.emitted", len(staged))
     return None
+
+
+def _format_error(line):
+    """One refusal = one `ERR [pointer]: reason` line. A line naming a task id (as its
+    first token or as the subject of a batch rule) or a file[entry] gets that text as its
+    pointer; multi-line details keep their follow-up lines verbatim (they carry the fix
+    instruction, not a new error)."""
+    if line.startswith(("ERR ", "Fix EVERY", "DEFERRED", "LINT-CLEAN")):
+        return line
+    match = re.match(r"^([^\n:]{1,110}):([\s\S]*)$", line)
+    if not match:
+        return line
+    pointer = match.group(1).strip()
+    head = pointer.split(".", 1)[0].split("/", 1)[0]
+    if (settings.ID_PATTERN.match(head)
+            or re.search(r"\bT\d-\d{3}\b", pointer)
+            or pointer.endswith("]") or ".json" in pointer):
+        return f"ERR [{pointer}]:{match.group(2)}"
+    return line
+
+
+# ---------------------------------------------------------------------------
+# PER-CONTEXT PLANNING (2026-11-20 architect split). The planner agent now runs ONE
+# session per bounded context: it drafts exactly one file and lints it. The engine
+# owns the rest of the lifecycle it used to leave to the session's memory:
+#   claim_draft      - id-collision renumbering after each session (deterministic,
+#                      so a mis-numbered context never bills a repair turn)
+#   draft_symbol_table - the exported surface of the drafted contexts, the only
+#                      lawful pin source for the NEXT context's session
+#   emit_draft_batch - the SINGLE batch emit, run in-process after every context:
+#                      cross-context pins, provider closure and the claim law each
+#                      still see every file, and the price is zero sessions.
+DRAFT_DIR = Path("/tmp") / "tasks"
+
+
+def draft_path(slug, context):
+    return DRAFT_DIR / f"{slug}-{ddd.context_stem(context)}.json"
+
+
+def clear_drafts(slug):
+    """A stale draft of a previous (aborted) plan must not join this one's batch."""
+    removed = []
+    for path in sorted(DRAFT_DIR.glob(f"{slug}-*.json")):
+        if path.name.startswith(f"T0-{slug}"):
+            continue
+        path.unlink(missing_ok=True)
+        removed.append(path.name)
+    return removed
+
+
+def draft_world(slug, exclude=None):
+    """Ids of everything a session may lawfully pin: queue + complete + the drafted
+    context files already claimed for this domain (excluding one path when told)."""
+    world = load_index()
+    for path in sorted(DRAFT_DIR.glob(f"{slug}-*.json")):
+        if path == exclude or path.name.startswith(f"T0-{slug}") \
+                or path.name.endswith(".gaps.json"):
+            continue
+        try:
+            loaded = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        for task in (loaded if isinstance(loaded, list) else [loaded]):
+            if isinstance(task, dict) and task.get("id"):
+                world[str(task["id"])] = task
+    return world
+
+
+BUILD_MANIFEST_EXPORT = "build-manifest"
+
+
+def _stage0_family_errors(staged, world=None):
+    """ONE scaffold and ONE build-manifest per domain (2026-11-20 split edge): the
+    per-context sessions share a single build file, so a coordinate two contexts each
+    notice would be scheduled twice and the container would mutate the same file in two
+    stage-0 sessions - last writer wins, first duty silently lost. The families are
+    keyed by their export marker (never by path shape, the S16 lesson): a second task
+    with the same family export in the same project is refused naming the FIRST one,
+    because the lawful remedy is to amend that task (a repair pass may edit it; a
+    planning session may not touch another context's draft) - or to read the symbol
+    table's `build_manifest` before emitting at all."""
+    seen = {}
+    for record in list(staged) + list((world or {}).values()):
+        if not isinstance(record, dict) or int(record.get("stage") or 0) != 0:
+            continue
+        export = str(record.get("export", "")).strip()
+        if export not in (SCAFFOLD_EXPORT, BUILD_MANIFEST_EXPORT):
+            continue
+        ids = seen.setdefault((str(record.get("project", "")), export), [])
+        tid = str(record.get("id", "?"))
+        if tid not in ids:
+            ids.append(tid)
+    problems = []
+    for (project, export), ids in sorted(seen.items()):
+        if len(ids) > 1:
+            problems.append(
+                f"ERR [{', '.join(sorted(ids[1:]))}]: a second '{export}' stage-0 task for "
+                f"project '{project}' - the domain ships ONE scaffold and ONE build-manifest "
+                f"mutation of the build file (the first is {sorted(ids)[0]}); if its intent "
+                "lacks a coordinate you need, report the gap and the repair pass amends the "
+                "ONE task - never schedule a twin over the same file")
+    return problems
+
+
+def lint_draft(path):
+    """The agent-facing single-file check: `python3 <runner> --lint <draft file>`.
+
+    Strict where one file can be judged alone - schema, per-task contract, dangling
+    pins (a forward pin into an undrafted context is unlawful: the pin source is the
+    symbol table), reserved segments, the writable channel - and explicitly DEFERRED
+    where the batch is the unit of truth - duty claims, step-log ownership, the cross-unit
+    literal join, provider closure across contexts. The batch emit after the last context
+    is the authority; the repair session carries its refusals.
+    """
+    source = Path(path)
+    try:
+        loaded = json.loads(source.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return f"ERR [{source.name}]: unreadable JSON: {exc}"
+    batch = loaded if isinstance(loaded, list) else [loaded]
+    task = batch[0] if isinstance(loaded, dict) else None
+    slug = str((task or {}).get("project") or source.name.split("-", 1)[0])
+    world = draft_world(slug, exclude=source)
+    index = dict(world)
+    staged = []
+    errors = []
+    reasons = {}
+    for position, entry in enumerate(batch, start=1):
+        label = (entry.get("id") if isinstance(entry, dict) and entry.get("id")
+                 else f"{source.name}[{position}]")
+        if not isinstance(entry, dict):
+            errors.append(f"{label}: task must be a JSON object")
+            continue
+        reason = tasks.validate(entry, index, planning=True)
+        if reason:
+            errors.append(f"{label}: {reason}")
+        reasons[label] = reason or ""
+        if isinstance(entry.get("id"), str) and entry["id"] not in index:
+            index[entry["id"]] = entry
+        staged.append(entry)
+    # Forward pins are the split's one new temptation: name them exactly, with the
+    # lawful alternative (the symbol table, or draft the provider first). A dependsOn
+    # the per-task validator already called unresolvable is not reported twice - the
+    # extra value here is the FIELD pointer and the pin law, not a second refusal.
+    for entry in staged:
+        if not isinstance(entry, dict):
+            continue
+        tid = str(entry.get("id") or "?")
+        seen = reasons.get(tid, "")
+        refs = [(str(d), "dependsOn") for d in (entry.get("dependsOn") or []) if str(d).strip()]
+        for dep in (entry.get("ast_hints") or {}).get("dependencies", []) if isinstance(
+                entry.get("ast_hints"), dict) else []:
+            if isinstance(dep, dict) and str(dep.get("task_id", "")).strip():
+                refs.append((str(dep["task_id"]), "ast_hints.dependencies"))
+        for ref, field in refs:
+            if ref not in index:
+                if field == "dependsOn" and f"dependsOn {ref}" in seen:
+                    continue
+                errors.append(
+                    f"{tid}.{field}/{ref}: references no task in the queue, the drafted "
+                    "contexts, or this file - a context not yet drafted cannot be pinned; "
+                    "pin only through the symbol table, or let the provider context's units "
+                    "depend on yours")
+    errors.extend(_reserved_segment_errors(staged))
+    errors.extend(_writable_channel_errors(staged))
+    errors.extend(_stage0_family_errors(staged, world))
+    errors.extend(_manifest_order_errors(staged, world))
+    if errors:
+        return "\n".join([_format_error(e) for e in errors])
+    return ("LINT-CLEAN (batch laws DEFERRED to the engine's single --emit after the last "
+            "context: duty-claim coverage, step-log ownership, the shared-literal join, "
+            "provider closure).")
+
+
+def claim_draft(slug, context):
+    """Engine step after one planning session: the draft file joins the domain's id space.
+
+    An id that collides with the queue, complete, or an already-drafted context is
+    RENUMBERED here deterministically (the references inside the same file follow), so a
+    session that miscounted never burns a repair turn on arithmetic the machine can do.
+    Returns (problems, renames): problems are what the session still owns (malformed JSON,
+    dangling pins); renames are reported for the symbol table's sake."""
+    path = draft_path(slug, context)
+    if not path.is_file():
+        return [f"draft file missing: {path}"], {}
+    try:
+        loaded = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return [f"{path.name}: unreadable JSON: {exc}"], {}
+    batch = loaded if isinstance(loaded, list) else [loaded]
+    if not batch or not all(isinstance(task, dict) for task in batch):
+        return [f"{path.name}: must be a JSON array of task objects"], {}
+    world = draft_world(slug, exclude=path)
+    problems, renames = [], {}
+    counters = {}
+    originals = []  # (task, old id) recorded BEFORE any rename - the reference pass needs both spaces
+    for task in batch:
+        stage_match = settings.ID_PATTERN.match(str(task.get("id", "")))
+        if not stage_match:
+            problems.append(f"ERR [{path.name}]: task without a valid id")
+            continue
+        stage = int(stage_match.group(1))
+        old = task["id"]
+        originals.append((task, old))
+        if old in world:
+            numbers = [int(m.group(2)) for tid in world
+                       if (m := settings.ID_PATTERN.match(tid)) and int(m.group(1)) == stage]
+            numbers += [int(m.group(2)) for m in (
+                settings.ID_PATTERN.match(str(t.get("id", ""))) for t in batch)
+                if m and int(m.group(1)) == stage]
+            counters.setdefault(stage, max(numbers) + 1)
+            new_id = f"T{stage}-{counters[stage]:03d}"
+            counters[stage] += 1
+            renames[old] = new_id
+            task["id"] = new_id
+    if renames:
+        own_export = {old: str(task.get("export") or "") for task, old in originals
+                      if old in renames}
+        for task, _old in originals:
+            task["dependsOn"] = [renames.get(str(dep), str(dep)) for dep in task["dependsOn"]]
+            hints = task.get("ast_hints")
+            if isinstance(hints, dict):
+                for dep in hints.get("dependencies", []):
+                    if not (isinstance(dep, dict) and str(dep.get("task_id", "")) in renames):
+                        continue
+                    ref = str(dep["task_id"])
+                    # A pinned type is attributed by its NAME first: a reference whose type
+                    # matches an OWN renamed unit follows the rename; one whose type belongs
+                    # to the drafted world (the valid backward pin through the symbol table)
+                    # keeps the world id. Only a reference no world task answers stays self.
+                    if str(dep.get("type") or "") == own_export.get(ref) or ref not in world:
+                        dep["task_id"] = renames[ref]
+        path.write_text(json.dumps(batch, indent=1), encoding="utf-8")
+    ids_here = {str(task.get("id")) for task in batch if isinstance(task, dict)}
+    for task in batch:
+        if not isinstance(task, dict):
+            continue
+        for ref in [str(d) for d in (task.get("dependsOn") or [])]:
+            if ref not in world and ref not in ids_here:
+                problems.append(f"ERR [{task.get('id')}].dependsOn: dangling reference {ref} "
+                                "- not in the queue, the drafted contexts, or this file")
+    return problems, renames
+
+
+def draft_symbol_table(slug, contexts, path):
+    """The pin source for the NEXT context's session: every exported unit of the
+    already-drafted contexts, plus the next-free ids. Small by construction - ids,
+    signatures, and the shared-literal tables (meters/routes/config), never prose.
+
+    The table-pair fold (2026-11-20 context audit: 46K symbols file for one provider
+    context, because 57 drafted units meant 57 COPIES of 23 tables): the T1/T2 pair
+    carries the IDENTICAL ast_hints by law (z4), so a non-stage-2 unit whose table
+    equals its same-suffix stage-2 task's is listed as a POINTER ("table_of"), and the
+    tables themselves become lists of strings, not objects. A session still resolves
+    every id, export, signature, owned meter, served route and config path it may pin."""
+    units, drafted = [], []
+    build_manifest, scaffolds = [], []
+    drafted_tasks = []
+    for context in contexts:
+        draft = draft_path(slug, context)
+        if not draft.is_file():
+            continue
+        try:
+            loaded = json.loads(draft.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        drafted.append(context)
+        for task in (loaded if isinstance(loaded, list) else [loaded]):
+            if not isinstance(task, dict):
+                continue
+            if int(task.get("stage") or 0) == 0:
+                export = str(task.get("export", "")).strip()
+                if export == BUILD_MANIFEST_EXPORT:
+                    build_manifest.append({"id": task.get("id"), "path": task.get("path"),
+                                           "intent": task.get("intent")})
+                elif export == SCAFFOLD_EXPORT:
+                    scaffolds.append(str(task.get("id")))
+                # stage-0 tasks join the families above, never the unit list: a
+                # drafted scaffold/manifest is not a collaborator pin - it is the
+                # duplication risk the two fields exist to kill.
+                continue
+            drafted_tasks.append((context, task))
+    t2_tables = {}
+    for _context, task in drafted_tasks:
+        if int(task.get("stage") or 0) == 2:
+            suffix = str(task.get("id", "")).rsplit("-", 1)[-1]
+            t2_tables[suffix] = json.dumps(task.get("ast_hints"), sort_keys=True)
+    for context, task in drafted_tasks:
+        suffix = str(task.get("id", "")).rsplit("-", 1)[-1]
+        hints = task.get("ast_hints") if isinstance(task.get("ast_hints"), dict) else {}
+        if int(task.get("stage") or 0) != 2 and t2_tables.get(suffix) == \
+                json.dumps(task.get("ast_hints"), sort_keys=True):
+            units.append({"id": task.get("id"), "stage": task.get("stage"),
+                          "context": context, "export": task.get("export"),
+                          "path": task.get("path"), "table_of": f"T2-{suffix}"})
+            continue
+        units.append({
+            "id": task.get("id"),
+            "stage": task.get("stage"),
+            "context": context,
+            "export": task.get("export"),
+            "path": task.get("path"),
+            "layer": task.get("layer"),
+            "package": hints.get("package"),
+            "methods": [str(m.get("signature") or "")
+                        for m in (hints.get("methods") or []) if isinstance(m, dict)],
+            "meters": [str(m.get("name")) for m in (hints.get("meters") or [])
+                       if isinstance(m, dict) and m.get("duty") == "owns"],
+            "routes": [f"{r.get('method', '')} {r.get('path', '')}".strip()
+                       for r in (hints.get("routes") or [])
+                       if isinstance(r, dict) and r.get("duty") == "serves"],
+            "config": [str(c.get("path")) for c in (hints.get("config") or [])
+                       if isinstance(c, dict)],
+        })
+    stages = {}
+    world = draft_world(slug)
+    for stage in (1, 2, 3):
+        numbers = [int(m.group(2)) for tid in world
+                   if (m := settings.ID_PATTERN.match(tid)) and int(m.group(1)) == stage]
+        numbers += [int(m.group(2)) for m in (
+            settings.ID_PATTERN.match(str(unit["id"])) for unit in units)
+            if m and int(m.group(1)) == stage]
+        stages[f"T{stage}"] = f"T{stage}-{(max(numbers) + 1 if numbers else 1):03d}"
+    payload = {"slug": slug, "drafted_contexts": drafted, "next_free": stages,
+               "scaffold": scaffolds, "build_manifest": build_manifest, "units": units}
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(payload, indent=1), encoding="utf-8")
+    except OSError as exc:
+        return None, [f"symbol table write failed: {exc}"]
+    return path, []
+
+
+def draft_is_fresh(slug, context):
+    """Resume economics (2026-11-20 live): a draft that an aborted session left behind is
+    that session's RESULT - kept when it is newer than every input the plan was drafted
+    from (the strategy and the specs on disk). Re-spawning a session to re-produce a
+    clean, current draft would bill the whole cost again for bytes already on disk.
+    Fresh = parses as a non-empty array of task objects AND its mtime is not older than
+    any plan input."""
+    path = draft_path(slug, context)
+    if not path.is_file():
+        return False
+    try:
+        batch = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    if not (isinstance(batch, list) and batch and all(isinstance(t, dict) for t in batch)):
+        return False
+    inputs = [ddd.strategy_path(slug)] + \
+        [settings.COMPLETE_DIR / f"{prefix}{slug}.json"
+         for prefix in ("security-spec-", "performance-spec-", "ai-spec-")]
+    # the CONTRACT file: a rewritten task-decomposition-dag SKILL.md (normative law)
+    # older-dates every draft written under the previous one - resume then re-plans, and
+    # a draft that predates a law fix never survives into the batch (2026-11-20: the
+    # killed session's draft was lint-clean AND stage-3-less under the OLD skill lie).
+    # The QUICKREF is deliberately NOT an input: it is the derivative MAP (the profile's
+    # own hierarchy), and mtime-gating a map rewrite would re-bill a provably compliant
+    # draft for wording edits - map drift is caught by the batch laws (lint/emit), the
+    # same guarantee that let the (a)-(z) wall leave the profiles: the gate is the law.
+    inputs.append(Path(__file__).resolve().parents[1]
+                  / ".opencode/skills/architect-practices/task-decomposition-dag/SKILL.md")
+    stamps = [f.stat().st_mtime for f in inputs if f.is_file()]
+    return bool(stamps) and path.stat().st_mtime >= max(stamps)
+
+
+def gaps_path(slug, context):
+    """The structured gap channel of ONE planning session: the brief names this exact
+    path; the session writes only what it may not schedule itself (a coordinate the ONE
+    build-manifest task lacks). The engine consumes it BEFORE the batch emit - prose in
+    a session transcript is not a hand-off, a validated file is (the board's own law)."""
+    return DRAFT_DIR / f"{slug}-{ddd.context_stem(context)}.gaps.json"
+
+
+def _read_gaps(slug, contexts):
+    """Coordinates reported by the drafted contexts, deduped in first-seen order."""
+    coordinates, problems = [], []
+    for context in contexts:
+        gp = gaps_path(slug, context)
+        if not gp.is_file():
+            continue
+        try:
+            payload = json.loads(gp.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            problems.append(f"ERR [{gp.name}]: unreadable gaps file: {exc}")
+            continue
+        entries = payload if isinstance(payload, list) else \
+            ((payload or {}).get("missing_coordinates") or [])
+        for entry in (entries if isinstance(entries, list) else []):
+            coordinate = str(entry).strip()
+            if coordinate and coordinate not in coordinates:
+                coordinates.append(coordinate)
+    return coordinates, problems
+
+
+def apply_coordinate_gaps(slug, contexts):
+    """X11 (2026-11-20 operator catch): the split's 'report the gap' branch is only honest
+    if the report lands somewhere the machine reads. Context B may NOT duplicate or edit
+    context A's build-manifest task - so B writes its missing coordinates into its gaps
+    file, and THIS step appends them verbatim to the ONE task's intent, idempotently
+    (a coordinate the intent already carries is skipped), before the batch emit. A reported
+    gap with no build-manifest task to amend is a plan defect at claim grade: the bounded
+    repair session schedules the ONE task; the engine never authors planning intent."""
+    coordinates, problems = _read_gaps(slug, contexts)
+    notes = []
+    if not coordinates:
+        return problems, notes
+    for context in contexts:
+        path = draft_path(slug, context)
+        if not path.is_file():
+            continue
+        try:
+            batch = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        for task in (batch if isinstance(batch, list) else [batch]):
+            if not isinstance(task, dict) or int(task.get("stage") or 0) != 0 \
+                    or str(task.get("export", "")).strip() != BUILD_MANIFEST_EXPORT:
+                continue
+            intent = str(task.get("intent") or "")
+            missing = [c for c in coordinates if c not in intent]
+            if missing:
+                task["intent"] = intent.rstrip() + "; also add " + ", ".join(missing)
+                path.write_text(json.dumps(batch, indent=1), encoding="utf-8")
+                notes.append(f"coordinate(s) {', '.join(missing)} appended to {task.get('id')} "
+                             f"({path.name}) - the ONE build-manifest task")
+            else:
+                notes.append(f"{task.get('id')} already carries every reported coordinate")
+            return problems, notes
+    problems.append(
+        f"ERR [gaps/{slug}]: {len(coordinates)} build coordinate(s) reported missing "
+        f"({', '.join(coordinates[:4])}) but the domain schedules NO build-manifest task - "
+        "the ONE lawful stage-0 manifest bootstrap task must be scheduled (repair pass: add "
+        "it to the drafting context's file with the reported coordinates; never one per context)")
+    return problems, notes
+
+
+def emit_draft_batch(slug, contexts):
+    """The ONE batch emit, run by the ENGINE after every context file is drafted:
+    cross-context pins, provider closure and the claim law each see every file (the law
+    F1 kept), at zero sessions. Returns the emit_tasks reason (None on success)."""
+    paths = [draft_path(slug, context) for context in contexts]
+    return emit_tasks([str(p) for p in paths if p.is_file()])
 
 
 class ScaffoldUnresolved(RuntimeError):

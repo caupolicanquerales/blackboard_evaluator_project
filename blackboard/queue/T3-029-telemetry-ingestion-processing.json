@@ -1,0 +1,15 @@
+{
+  "id": "T3-029",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-029"
+  ],
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/main/java/com/blackboard/telemetry/distribution/application/WindowBuffer.java",
+  "export": "com.blackboard.telemetry.distribution.application.WindowBuffer",
+  "intent": "Refactor the window buffer for clarity and thread-safety without changing behaviour; keep every test green."
+}

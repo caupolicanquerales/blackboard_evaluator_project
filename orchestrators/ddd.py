@@ -148,6 +148,484 @@ def strategy_surfaces(slug):
     return surfaces if isinstance(surfaces, list) else []
 
 
+def strategy_contexts(slug):
+    """The strategy's declared bounded-context names (exact spellings), or None when the
+    strategy is not readable. Duty `owner_context` join keys resolve against this list:
+    one (capability, unit_kind) enforced in two contexts is TWO duties."""
+    strategy = strategy_for(slug)
+    if strategy is None:
+        return []
+    contexts = strategy.get("bounded_contexts")
+    if not isinstance(contexts, list):
+        return []
+    return [str(name).strip() for name in contexts if str(name).strip()]
+
+
+# ---------------------------------------------------------------------------
+# PHASE 2 DUTY DIGEST (2026-11-20 context-blow-up fix)
+# The architect's tasks phase used to read three raw specs (matrix rows, classifications,
+# secrets, error policy, workload, risks - sections it never maps) plus three markdown
+# mapping tables, and hand-join every duty's covers back to its rule row. The digest does
+# that join in Python: ONE compact file with each duty carrying its own rule row, its
+# expanded covers, and its mapping-table rows pre-attached. A token with no table row is
+# recorded in `gaps` - visible, so the architect reads THAT table section instead of the
+# whole file, and a missing row can never silently degrade into recall.
+PHASE2_DIGEST_PREFIX = "phase2-digest-"
+PHASE2_TABLES = {  # spec file prefix -> mapping table (the spring stack is the only one today)
+    "security-spec-": ".opencode/skills/tech-stack-architect/spring-security-architect/SKILL.md",
+    "performance-spec-": ".opencode/skills/tech-stack-architect/spring-performance-architect/SKILL.md",
+    "ai-spec-": ".opencode/skills/tech-stack-architect/spring-ai-architect/SKILL.md",
+}
+
+
+def phase2_digest_path(slug):
+    """Same /tmp channel the drafts use (edit grants already cover it; the repo stays clean)."""
+    return Path("/tmp") / f"{PHASE2_DIGEST_PREFIX}{slug}.json"
+
+
+def _digest_rule_index(spec, sections):
+    """id -> (section, entry) for every rule row a duty may reference in this spec."""
+    index = {}
+    for label, entries in sections:
+        if label == "secrets.inventory":
+            entries = ((spec.get("secrets") or {}).get("inventory") or [])
+        elif label == "workload.entries":
+            entries = ((spec.get("workload") or {}).get("entries") or [])
+        else:
+            entries = spec.get(label) or []
+        for entry in entries:
+            if isinstance(entry, dict) and str(entry.get("id", "")).strip():
+                index[str(entry["id"]).strip()] = (label, entry)
+    return index
+
+
+def _digest_table_rows(table_path, wanted_tokens, wanted_kinds):
+    """The mapping table (the first pipe table whose header names a token/family column AND
+    a unit column) reduced to rows a duty actually claims. Returns None when no such table
+    parses - the architect must then read the file itself, and the digest says so.
+    The mapping table is a CARRIER (source tree), not board state: resolve it against this
+    module's repository root, so a rebased settings.ROOT (gauntlet sandbox) cannot starve
+    the digest - the specs it joins remain board paths.
+
+    Each kept row carries its own token/kind sets (2026-11-20): the digest attaches the
+    MATCHED row to the duty that asked for it, so the planner copies a mechanism without
+    ever opening the table - the reading is Python's, the mapping stays the architect's."""
+    repo_base = Path(__file__).resolve().parents[1]
+    try:
+        lines = (repo_base / table_path).read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return None
+    table, best = [], None
+    for line in lines + [""]:
+        if line.startswith("|"):
+            cells = [c.strip().strip("`*") for c in line.strip().strip("|").split("|")]
+            if set("".join(cells)) <= set("-: ") or not any(cells):
+                continue
+            table.append(cells)
+            continue
+        if table:
+            head = " ".join(c.lower() for c in table[0])
+            if ("token" in head or "family" in head) and "unit" in head:
+                best = table
+                break
+            table = []
+    if best is None:
+        return None
+    header, rows, seen_tokens, seen_kinds = best[0], [], set(), set()
+    head = " ".join(c.lower() for c in header)
+    by_token = "family" not in head  # security/AI tables key rows on the token cell;
+    # the performance table keys on unit_kind (its first cell is a family LABEL, never a token)
+    for cells in best[1:]:
+        # mapping tables may merge several tokens in one cell ("a / b") or several
+        # unit kinds ("x + y") - match on the split members, not the whole cell
+        keys = {t.strip().strip("`*").lower() for t in re.split(r"[/,]", cells[0]) if t.strip()}
+        kind_cell = cells[1] if len(cells) > 1 else ""
+        kinds = {k.strip().strip("`*").lower() for k in re.split(r"[+,/]", kind_cell) if k.strip()}
+        hit = bool(keys & wanted_tokens) if by_token else bool(kinds & wanted_kinds)
+        if hit:
+            rows.append({"cells": cells, "tokens": sorted(keys), "kinds": sorted(kinds)})
+            seen_tokens |= keys
+            seen_kinds |= kinds
+    return {"table": table_path, "header": header, "rows": rows,
+            "seen_tokens": seen_tokens, "seen_kinds": seen_kinds}
+
+
+def _digest_duty_row(table_info, duty):
+    """The one mapping-table row a duty claims: the FIRST kept row whose token or kind set
+    contains the duty's capability / unit_kind. None is honest - the duty then appears in
+    `unmapped_duties` and only THAT sends the architect to the raw table."""
+    if table_info is None:
+        return None
+    cap = str(duty.get("capability", "")).strip().lower()
+    kind = str(duty.get("unit_kind", "")).strip().lower()
+    for row in table_info["rows"]:
+        if cap in row["tokens"] or kind in row["kinds"]:
+            return row
+    return None
+
+
+BUILD_COORDINATES_RE = re.compile(r"^#+\s*Build coordinates.*?$", re.M | re.I)
+
+
+def _digest_build_coordinates(table_path):
+    """The table's Build-coordinates pipe rows, extracted ONCE per spec phase (2026-11-20):
+    a coordinate the scaffold lacks becomes the ONE lawful stage-0 manifest task, and the
+    planner must be able to schedule it without opening the table - the coordinates are
+    plan inputs, not prose. [] when the table has no such section or is unreadable."""
+    repo_base = Path(__file__).resolve().parents[1]
+    try:
+        text = (repo_base / table_path).read_text(encoding="utf-8")
+    except OSError:
+        return []
+    match = BUILD_COORDINATES_RE.search(text)
+    if not match:
+        return []
+    rows, started = [], False
+    for line in text[match.end():].splitlines():
+        if line.startswith("|"):
+            started = True
+            cells = [c.strip().strip("`*") for c in line.strip().strip("|").split("|")]
+            if set("".join(cells)) <= set("-: ") or not any(cells):
+                continue
+            if cells[0].lower().startswith("coordinate"):
+                continue
+            rows.append(cells)
+        elif started:
+            break
+        # a '#' line before the first pipe is the header's comment continuation - keep scanning
+    return rows
+
+
+def write_phase2_digest(slug):
+    """Build /phase2-digest-<slug>.json for the architect's tasks phase. Returns (path,
+    problems): a digest is only lawful when EVERY claimed capability found its table row
+    set or was listed as a gap, and a duty whose spec_ref/covers id resolves to nothing
+    here is a spec the emit gate would refuse later - surface it now, not in the session."""
+    strategy = strategy_for(slug)
+    if strategy is None:
+        return None, [f"no readable execution strategy for {slug}"]
+    sections = {
+        "security": ("authorization_matrix", "invariants", "data_classification",
+                     "trust_boundaries", "secrets.inventory", "principals"),
+        "performance": ("workload.entries", "budgets", "invariants", "assumptions"),
+        "ai": ("capabilities", "invariants", "model_roles"),
+    }
+    problems, duties, mechanisms, specs, rules = [], [], {}, {}, {}
+    build_coordinates = {}
+    for phase, prefix in (("security", "security-spec-"),
+                          ("performance", "performance-spec-"),
+                          ("ai", "ai-spec-")):
+        path = settings.COMPLETE_DIR / f"{prefix}{slug}.json"
+        specs[phase] = "present" if path.is_file() else \
+            ("waived" if phase == "security" and _waiver_note(slug)[0] else "absent")
+        if not path.is_file():
+            continue
+        spec = _read_json(path)
+        if spec is None:
+            problems.append(f"{path.name} is not readable JSON")
+            continue
+        index = _digest_rule_index(spec, [(k, None) for k in sections[phase]])
+        phase_duties = [d for d in (spec.get("duties") or []) if isinstance(d, dict)]
+        wanted_tokens = {str(d.get("capability", "")).strip().lower() for d in phase_duties}
+        wanted_kinds = {str(d.get("unit_kind", "")).strip().lower() for d in phase_duties}
+        table = _digest_table_rows(PHASE2_TABLES[prefix], wanted_tokens, wanted_kinds)
+        gaps = []
+        if table is None:
+            problems.append(f"{path.name}: mapping table {PHASE2_TABLES[prefix]} unreadable - "
+                            "the architect must read it directly")
+        else:
+            for duty in phase_duties:
+                cap = str(duty.get("capability", "")).strip().lower()
+                kind = str(duty.get("unit_kind", "")).strip().lower()
+                if cap not in table["seen_tokens"] and kind not in table["seen_kinds"]:
+                    gaps.append(f"{duty.get('spec_ref')}:{cap}/{kind}")
+            mechanisms[phase] = {"table": table["table"], "header": table["header"],
+                                 "rows": table["rows"]}
+        coordinates = _digest_build_coordinates(PHASE2_TABLES[prefix])
+        if coordinates:
+            build_coordinates[phase] = {"table": PHASE2_TABLES[prefix], "rows": coordinates}
+        if gaps:
+            mechanisms.setdefault(phase, {"table": PHASE2_TABLES[prefix], "rows": []})
+            mechanisms[phase]["unmapped_duties"] = sorted(gaps)
+        for duty in phase_duties:
+            ref = str(duty.get("spec_ref", "")).strip()
+            entry = index.get(ref)
+            if entry is None:
+                problems.append(f"{path.name} duty {ref}: spec_ref resolves to no rule row here")
+            covered = []
+            for cid in (duty.get("covers") or []):
+                cid = str(cid).strip()
+                centry = index.get(cid)
+                if centry is None:
+                    problems.append(f"{path.name} duty {ref}: covers id {cid!r} resolves to no rule row")
+                    continue
+                covered.append(cid)
+                if cid not in rules:
+                    rules[cid] = {"section": centry[0], "entry": centry[1]}
+            if ref in index and ref not in rules:
+                rules[ref] = {"section": entry[0], "entry": index[ref][1]}
+            row = _digest_duty_row(table, duty)
+            duties.append({"spec": phase, "spec_ref": ref,
+                           "obligation": duty.get("obligation"),
+                           "capability": duty.get("capability"),
+                           "unit_kind": duty.get("unit_kind"),
+                           "owner_context": duty.get("owner_context") or None,
+                           "covers": covered,
+                           # 2026-11-20: the mechanism travels WITH the duty - the planner
+                           # copies cells[3]/cells[4] (identifier, key) from here and never
+                           # opens the table unless this duty is listed under unmapped_duties.
+                           "table_row": {"header": (table or {}).get("header"),
+                                         "cells": (row or {}).get("cells")} if row else None})
+    persistence = strategy.get("persistence") or {}
+    contexts = strategy_contexts(slug)
+    digest = {
+        "slug": slug,
+        "specs": specs,
+        "surfaces": strategy.get("surfaces") or [],
+        "bounded_contexts": contexts,
+        "draft_order": context_draft_order(slug),
+        "data_model": persistence.get("data_model") or [],
+        "observability": strategy.get("observability") or {},
+        "duties": duties,
+        "rules": rules,
+        "mechanisms": mechanisms,
+        "build_coordinates": build_coordinates,
+    }
+    path = phase2_digest_path(slug)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(digest, indent=1), encoding="utf-8")
+    except OSError as exc:
+        problems.append(f"digest write failed: {exc}")
+    # stale slices of SUPERSEDED context names must not linger (2026-11-20 audit: /tmp
+    # held slices of two contexts this board no longer has - a wrong-path read could
+    # have loaded a dead generation's duties)
+    keep = {context_stem(c) for c in digest["draft_order"]}
+    for prefix in (PHASE2_SLICE_PREFIX, STRATEGY_SLICE_PREFIX):
+        for stale_slice in Path("/tmp").glob(f"{prefix}{slug}-*.json"):
+            stem = stale_slice.name[len(prefix) + len(slug) + 1:-len(".json")]
+            if stem not in keep:
+                stale_slice.unlink(missing_ok=True)
+    return path, problems
+
+
+# ---------------------------------------------------------------------------
+# PER-CONTEXT PLANNING (2026-11-20 architect split): the planner agent runs ONE
+# session per bounded context, so the digest is sliced per context and the draft
+# order is decided HERE, deterministically, from the context map: providers draft
+# before consumers, because a session may only pin ids that already exist on disk
+# (the symbol table) - a forward pin into an undrafted context is unlawful by
+# construction, and the final batch emit is the only full-plan gate.
+PHASE2_SLICE_PREFIX = "phase2-slice-"
+STRATEGY_SLICE_PREFIX = "strategy-slice-"
+# the flattened duty - everything a claim needs travels ON the duty (2026-11-20 context
+# audit round 2: the slice's rules map repeated 5.2KB of spec rows the duties already
+# joined; the planner session never needs authorization_matrix, principals, assumptions,
+# trust_boundaries, secrets, error_policy or risks - the FULL digest keeps all of that
+# for the repair pass, which is the only session that reads forensics)
+SLICE_DUTY_JOIN_KEYS = ("surface", "test_duty", "measurement", "effect_on_deny",
+                        "statement", "operation", "class", "threat")
+SLICE_DUTY_KEYS = ("spec", "spec_ref", "capability", "unit_kind", "obligation",
+                   "owner_context", "covers", "table_row") + SLICE_DUTY_JOIN_KEYS
+
+
+def strategy_slice_path(slug, context):
+    return Path("/tmp") / f"{STRATEGY_SLICE_PREFIX}{slug}-{context_stem(context)}.json"
+
+
+def write_strategy_slice(slug, context):
+    """Write /tmp/strategy-slice-<slug>-<context>.json - the planner's ONLY view of phase 1.
+
+    Context-scoped by field: surfaces and step logs carry a context key, so they filter
+    exactly; packages filter to shared + this context's own; risks and build_order are
+    phase-1 output for the OPERATOR, never a planning input, and drop. persistence stays
+    in full: one domain ships one schema, and a context that reads what another wrote is
+    the normal shape - null-ing it out would delete the store law the repository units
+    need, so the honest slice keeps it and drops only the prose. (2026-11-20 audit: the
+    full strategy rode every per-context session; this file is ~half of it.)"""
+    strategy = strategy_for(slug)
+    if strategy is None:
+        return None, [f"no readable execution strategy for {slug}"]
+    persistence = strategy.get("persistence") or {}
+    data_model = persistence.get("data_model") or []
+    owned = bool(data_model) or bool(persistence.get("drivers"))
+    observability = dict(strategy.get("observability") or {})
+    if isinstance(observability.get("step_logs"), dict):
+        observability["step_logs"] = {context: (observability["step_logs"].get(context) or [])}
+    if isinstance(observability.get("contexts"), list):
+        observability["contexts"] = [context]
+    module_layout = strategy.get("module_layout") or {}
+    surfaces = [s for s in (strategy.get("surfaces") or [])
+                if isinstance(s, dict) and str(s.get("context", "")).strip() == context]
+    payload = {
+        "slug": slug,
+        "context": context,
+        "project_root": strategy.get("project_root"),
+        "tech_stack": strategy.get("tech_stack"),
+        "layers": strategy.get("layers"),
+        "module_layout": module_layout,
+        "surfaces": surfaces,
+        "contexts_without_inbound": [c for c in (strategy.get("contexts_without_inbound") or [])
+                                     if isinstance(c, dict)
+                                     and str(c.get("context", "")).strip() == context],
+        "persistence": {k: v for k, v in persistence.items()
+                        if k in ("drivers", "storage_paradigm", "data_model", "queries",
+                                 "migration_plan")} if owned else None,
+        "observability": observability,
+    }
+    path = strategy_slice_path(slug, context)
+    try:
+        path.write_text(json.dumps(payload, indent=1), encoding="utf-8")
+    except OSError as exc:
+        return None, [f"strategy slice write failed: {exc}"]
+    return path, []
+
+
+def context_stem(context):
+    """File-safe form of a bounded-context name (the strategy spells them in English)."""
+    return "-".join(re.sub(r"[^a-z0-9]+", " ", str(context or "").lower()).split()) or "shared"
+
+
+def phase2_slice_path(slug, context):
+    return Path("/tmp") / f"{PHASE2_SLICE_PREFIX}{slug}-{context_stem(context)}.json"
+
+
+def context_draft_order(slug):
+    """Bounded contexts in DRAFT order: context-map relationship edges point provider ->
+    consumer, so a Kahn pass over them (ties broken by the strategy's own order) drafts
+    every provider before its consumers. A cycle (or a map without relationships) keeps
+    the strategy order for the remainder: the repair pass after the batch emit owns any
+    pin a cycle made unavoidable."""
+    contexts = strategy_contexts(slug)
+    if not contexts:
+        return []
+    known = set(contexts)
+    edges = {name: set() for name in contexts}
+    indegree = {name: 0 for name in contexts}
+    report = _read_json(settings.CONTEXT_MAP_DIR / f"context-map-{slug}.json") or {}
+    for entry in (report.get("context_map") or []):
+        if not isinstance(entry, dict):
+            continue
+        up = str(entry.get("upstream", "")).strip()
+        down = str(entry.get("downstream", "")).strip()
+        if up in known and down in known and up != down and down not in edges[up]:
+            edges[up].add(down)
+            indegree[down] += 1
+    order, remaining = [], dict(indegree)
+    pool = [name for name in contexts if remaining[name] == 0]
+    while pool:
+        pick = min(pool, key=lambda name: contexts.index(name))
+        pool.remove(pick)
+        order.append(pick)
+        for nxt in sorted(edges[pick], key=lambda name: contexts.index(name)):
+            remaining[nxt] -= 1
+            if remaining[nxt] == 0:
+                pool.append(nxt)
+    order.extend(name for name in contexts if name not in order)
+    return order
+
+
+def _duty_context(duty, rules, surfaces):
+    """The bounded context a digest duty belongs to: the duty's own owner_context, else
+    the surface of its rule row mapped through the strategy's surfaces table. None means
+    UNATTRIBUTED - the first context's slice carries it (a duty nobody may claim is a
+    duty nobody defends)."""
+    owner = str(duty.get("owner_context") or "").strip()
+    if owner:
+        return owner
+    entry = (rules.get(str(duty.get("spec_ref", ""))) or {}).get("entry") or {}
+    surface = str(entry.get("surface") or "").strip()
+    if surface:
+        norm = norm_surface(surface)
+        for s in surfaces:
+            if isinstance(s, dict) and norm_surface(s.get("name")) == norm:
+                ctx = str(s.get("context") or "").strip()
+                if ctx:
+                    return ctx
+    return None
+
+
+def write_phase2_digest_slice(slug, context):
+    """Build /phase2-slice-<slug>-<stem>.json for ONE context's planning session: the
+    duties attributable to it (plus the deterministic unattributed share), only the rule
+    rows those duties cite, only the mechanism rows those duties claim, and the context's
+    own surfaces. Every byte of it is joinable from the full digest, and the full digest
+    stays the repair pass's input. Returns (path, problems)."""
+    full_path, problems = write_phase2_digest(slug)
+    if problems:
+        return None, problems
+    try:
+        full = json.loads(full_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return None, [f"{full_path.name}: unreadable after write: {exc}"]
+    order = full.get("draft_order") or []
+    first = order[0] if order else None
+    surfaces = full.get("surfaces") or []
+    duties = []
+    for duty in full.get("duties") or []:
+        owner = _duty_context(duty, full.get("rules") or {}, surfaces)
+        if owner is not None and owner != context:
+            continue
+        if owner is None and context != first:
+            continue  # unattributed duties ride the FIRST slice: one lawful home, no race
+        # the duty arrives COMPLETE (2026-11-20 audit round 2): the fields the planner
+        # cites - surface, test_duty, measurement, effect_on_deny, statement, class,
+        # operation, threat - are JOINED OFF the rule row INTO the duty, so the slice
+        # needs no rules map at all and never sees authorization_matrix, principals,
+        # assumptions or trust_boundaries whole; the prose keys (rationale, notes,
+        # description) stay in the full digest, which is the repair pass's input
+        rule = ((full.get("rules") or {}).get(str(duty.get("spec_ref", ""))) or {}).get("entry") or {}
+        flat = {k: duty[k] for k in ("spec", "spec_ref", "capability", "unit_kind",
+                                     "obligation", "owner_context")
+                if k in duty and duty[k] not in (None, "", [], {})}
+        flat["covers"] = duty.get("covers") or []
+        for jk in SLICE_DUTY_JOIN_KEYS:
+            if jk in rule and rule[jk] not in (None, "", [], {}):
+                flat[jk] = rule[jk]
+        if isinstance(duty.get("table_row"), dict):
+            flat["table_row"] = {"cells": (duty["table_row"] or {}).get("cells")}
+        else:
+            flat["table_row"] = None
+        duties.append(flat)
+    mechanisms = {}
+    for phase, mech in (full.get("mechanisms") or {}).items():
+        phase_duties = [d for d in duties if d.get("spec") == phase]
+        if not phase_duties:
+            continue  # a phase with no duty in this slice carries no table bytes here
+        entry = {"table": mech.get("table"), "header": mech.get("header")}
+        gaps = mech.get("unmapped_duties") or []
+        refs = {str(d.get("spec_ref", "")) for d in phase_duties}
+        keep = [gap for gap in gaps if str(gap).split(":", 1)[0] in refs]
+        if keep:
+            entry["unmapped_duties"] = keep
+        mechanisms[phase] = entry
+    coordinates = {phase: value for phase, value in
+                   (full.get("build_coordinates") or {}).items()
+                   if any(d.get("spec") == phase for d in duties)}
+    slice_digest = {
+        "slug": slug,
+        "context": context,
+        "draft_order": order,
+        "drafted_before": [name for name in order if order.index(name) < order.index(context)]
+        if context in order else [],
+        "specs": full.get("specs") or {},
+        "duties": duties,
+        "mechanisms": mechanisms,
+        "build_coordinates": coordinates,
+    }
+    # the two slices are the planner's complete world - generate them together so no
+    # session can see one generation of the plan with the other generation's bytes
+    strategy_slice, str_problems = write_strategy_slice(slug, context)
+    path = phase2_slice_path(slug, context)
+    try:
+        path.write_text(json.dumps(slice_digest, indent=1), encoding="utf-8")
+    except OSError as exc:
+        return None, [f"slice write failed: {exc}"]
+    if str_problems:
+        return path, str_problems
+    return path, []
+
+
 def _risk_is_accepted(mitigation):
     """True when a risk is closed by an explicit accepted posture rather than by a control."""
     return str(mitigation or "").strip().lower().startswith(RISK_ACCEPTED_PREFIXES)
@@ -289,6 +767,30 @@ def validate_strategy(slug):
                             "`contexts_without_inbound` reason: a context nobody surfaced "
                             "gets no authorization row, and an undefended surface is found "
                             "by its first caller, not by this run")
+    # STEP-LOG FLOOR SHAPE LAW (2026-11-20 root fix): the floor may be spelled as a flat
+    # list of step strings OR as the per-context mapping {context: [logs]} - and NOTHING
+    # ELSE. Every consumer flattens both shapes, but an ambiguous contract at the WRITE
+    # boundary is where a silent skip is born: the live board's dict floor passed a
+    # list-only reader and four promised logs went unclaimed with every gate green. A
+    # shape the flattener cannot read is refused HERE, while the strategy is still the
+    # only file the session owns.
+    obs = strategy.get("observability")
+    logs = (obs or {}).get("step_logs") if isinstance(obs, dict) else None
+    if isinstance(logs, dict):
+        for key, value in logs.items():
+            if not (isinstance(value, list)
+                    and all(isinstance(step, str) and step.strip() for step in value)):
+                problems.append(
+                    f"observability.step_logs[{key!r}] must be a list of non-empty step "
+                    "strings (or step_logs itself a flat list) - two lawful spellings, "
+                    "no third shape")
+    elif isinstance(logs, list):
+        if not all(isinstance(step, str) and step.strip() for step in logs):
+            problems.append("observability.step_logs entries must be non-empty strings")
+    elif logs is not None:
+        problems.append(
+            "observability.step_logs must be a list of step strings or a "
+            "{context: [logs]} mapping - the claim law flattens exactly these two shapes")
     if problems:
         return "; ".join(problems)
     return None
@@ -509,11 +1011,36 @@ def validate_security_spec(slug):
     duties = [duty for duty in (spec.get("duties") or []) if isinstance(duty, dict)]
     if not duties:
         problems.append("duties is empty: nothing in the spec reaches a scheduled unit")
+    pair_owner = {}
     for duty in duties:
         ref = str(duty.get("spec_ref", "")).strip()
         if ref not in declared:
             problems.append(f"duty {ref or '?'}: spec_ref resolves to no entry in this spec")
         claimed.add(ref)
+        for covered in (duty.get("covers") or []):
+            cid = str(covered).strip()
+            if cid not in declared:
+                problems.append(f"duty {ref or '?'}: covers entry {cid!r} resolves to no entry "
+                                "in this spec")
+            claimed.add(cid)
+        # one duty per unique obligation: a second duty repeating (capability, unit_kind)
+        # IN THE SAME OWNER CONTEXT re-spells the same enforceable fact with a new id -
+        # merge it via covers. The same pair in two DIFFERENT contexts is two duties, each
+        # naming its owner_context: two semaphores in two contexts are two enforcing units.
+        owner = str(duty.get("owner_context", "")).strip()
+        if owner and owner not in strategy_contexts(slug):
+            problems.append(f"duty {ref}: owner_context {owner!r} is not one of the strategy's "
+                            "bounded_contexts - spell the name exactly, or omit the field for "
+                            "a duty that spans contexts")
+        pair = (str(duty.get("capability", "")).strip(),
+                str(duty.get("unit_kind", "")).strip(), owner)
+        if all(pair[:2]) and pair in pair_owner:
+            problems.append(f"duty {ref}: repeats the (capability, unit_kind, owner_context) "
+                            f"{pair} of duty {pair_owner[pair]} - discharge both rules from "
+                            "ONE duty: keep the primary spec_ref and list the other rule ids "
+                            "in its `covers`")
+        else:
+            pair_owner.setdefault(pair, ref)
     for rule in rows + [e for e in (spec.get("invariants") or []) if isinstance(e, dict)]:
         rid = str(rule.get("id", "")).strip()
         if rid and rid not in claimed:
@@ -676,6 +1203,12 @@ def _duty_closure_errors(spec, declared):
         if ref not in declared:
             problems.append(f"duty {ref or '?'}: spec_ref resolves to no entry in this spec")
         claimed.add(ref)
+        for covered in (duty.get("covers") or []):
+            cid = str(covered).strip()
+            if cid not in declared:
+                problems.append(f"duty {ref or '?'}: covers entry {cid!r} resolves to no entry "
+                                "in this spec")
+            claimed.add(cid)
         token = str(duty.get("capability", "")).strip()
         if not SECURITY_CAPABILITY_RE.match(token):
             problems.append(f"duty {ref or '?'}: capability {token!r} is not an abstract token "
@@ -774,11 +1307,33 @@ def validate_performance_spec(slug):
                 if isinstance(entry, dict) and str(entry.get("id", "")).strip()}
     duty_problems, claimed = _duty_closure_errors(spec, declared)
     problems.extend(duty_problems)
+    pair_owner = {}
     for duty in (d for d in (spec.get("duties") or []) if isinstance(d, dict)):
         kind = str(duty.get("unit_kind", "")).strip()
         if kind not in PERFORMANCE_UNIT_KINDS:
             problems.append(f"duty {duty.get('spec_ref', '?')}: unit_kind {kind!r} must be "
                             f"one of {list(PERFORMANCE_UNIT_KINDS)}")
+        ref = str(duty.get("spec_ref", "")).strip()
+        if ref.startswith("PA-"):
+            problems.append(f"duty {ref}: a baseline assumption is CONTEXT, never a duty "
+                            "target - the budgets derived from it carry the duties")
+        # one duty per unique obligation, same law as the security spec: budgets are the
+        # duty rows; rules sharing (capability, unit_kind) IN THE SAME owner context join
+        # the discharging duty's `covers`; the same pair in DIFFERENT contexts is two
+        # duties - one semaphore per bounded context, each naming its owner_context.
+        owner = str(duty.get("owner_context", "")).strip()
+        if owner and owner not in strategy_contexts(slug):
+            problems.append(f"duty {ref}: owner_context {owner!r} is not one of the strategy's "
+                            "bounded_contexts - spell the name exactly, or omit the field for "
+                            "a duty that spans contexts")
+        pair = (str(duty.get("capability", "")).strip(), kind, owner)
+        if all(pair[:2]) and pair in pair_owner:
+            problems.append(f"duty {ref}: repeats the (capability, unit_kind, owner_context) "
+                            f"{pair} of duty {pair_owner[pair]} - discharge both rules from "
+                            "ONE duty: keep the primary spec_ref and list the other rule ids "
+                            "in its `covers`")
+        else:
+            pair_owner.setdefault(pair, ref)
     for entry in invariants:
         rid = str(entry.get("id", "")).strip()
         if rid and rid not in claimed:

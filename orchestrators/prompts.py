@@ -36,27 +36,77 @@ def build_mapping_prompt():
     )
 
 
-def build_architect_prompt(project_root, runner, phase="tasks"):
-    template = ARCHITECT_STRATEGY_PROMPT if phase == "strategy" else ARCHITECT_TASKS_PROMPT
-    draft_rule = ("DRAFT FILES, WRITTEN DIRECTLY: create each per-context array file yourself with "
-                  "your edit tool (it creates the file), then call `--emit` ONCE with every file of the batch. NEVER "
-                  "create a generator script - no python/shell/heredoc that produces or patches "
-                  "the drafts: the script rides the transcript on every later turn, its blind "
-                  "patches never see the emit errors it is answering, and running it re-emits the "
-                  "same JSON through your costliest class (measured 2026-11-18: one "
-                  "gen_telemetry_tasks.py = 91k tokens carried, 41k worst single-turn output). "
-                  "One create call per task file is forbidden too: each extra call is another "
-                  "turn, and every turn re-sends the whole transcript."
-                  if phase == "tasks" else
-                  "One strategy file per domain, one scaffold draft, one `--emit`.")
+def build_architect_prompt(project_root, runner, phase="strategy"):
+    """Phase 1 (strategy) brief - the split planner has its own builders
+    (`build_planner_prompt` / `build_planner_repair_prompt`); the two phases share no
+    bytes, each agent's context window starts clean (2026-11-20 architect split)."""
+    if phase != "strategy":
+        raise ValueError("phase 2 briefs moved to build_planner_prompt (architect split)")
     return (
-        template.replace("{project_root}", str(project_root))
-        .replace("{db_ids}", task_queue.stage_task_summary(0))
+        ARCHITECT_STRATEGY_PROMPT.replace("{project_root}", str(project_root))
         .replace("{domain_dir}", str(settings.DOMAIN_DIR.relative_to(settings.ROOT)))
         .replace("{context_map_dir}", str(settings.CONTEXT_MAP_DIR.relative_to(settings.ROOT)))
         .replace("{strategy_dir}", str(settings.COMPLETE_DIR.relative_to(settings.ROOT)))
         .replace("{runner}", runner)
-        + _discipline(settings.ARCHITECT_AGENT, extra=draft_rule)
+        + _discipline(settings.ARCHITECT_STRATEGY_AGENT, extra=(
+            "One strategy file per domain, one scaffold draft, one `--emit`."))
+    )
+
+
+def build_planner_prompt(project_root, runner, slug, context, draft, slice_path,
+                         symbols_path, next_free, undrafted, gaps_path=None,
+                         strategy_slice_path=None):
+    """Phase 2 brief for ONE bounded context (2026-11-20 architect split). Every path the
+    session reads or writes is computed by the engine and spelled here in full: the
+    transcript of a short per-context session must contain decisions, not hunting.
+    `gaps_path` defaults to the draft's own name with .gaps.json - the structured channel
+    for coordinates the ONE build-manifest task lacks (X11: the engine consumes it)."""
+    if gaps_path is None:
+        gaps_path = str(draft).rsplit(".json", 1)[0] + ".gaps.json"
+    if strategy_slice_path is None:
+        strategy_slice_path = ddd.strategy_slice_path(slug, context)
+    drafted_line = (f"{symbols_path} - the symbol table of the contexts already drafted "
+                    "for this domain: their task ids, exports, signatures, owned meters, "
+                    "served routes, config paths, the next-free numbers, and the stage-0 "
+                    "families already scheduled (`build_manifest` with each task's verbatim "
+                    "intent - a coordinate it carries is NOT yours to re-schedule)"
+                    if symbols_path else
+                    "(none yet - you draft the FIRST context of this domain: pins go only to "
+                    "queued/complete ids and to ids inside your own draft file)")
+    undrafted_line = (f"Undrafted contexts (their ids do not exist yet): {', '.join(undrafted)}."
+                      if undrafted else
+                      "You draft the LAST context of this domain: every other context is "
+                      "already in the symbol table.")
+    return (
+        ARCHITECT_PLANNER_PROMPT.replace("{project_root}", str(project_root))
+        .replace("{slug}", slug)
+        .replace("{context}", str(context))
+        .replace("{draft}", str(draft))
+        .replace("{gaps}", str(gaps_path))
+        .replace("{slice}", str(slice_path))
+        .replace("{strategy_path}",
+                  str(settings.COMPLETE_DIR / f"execution-strategy-{slug}.json"))
+        .replace("{strategy_slice}", str(strategy_slice_path))
+        .replace("{symbols_line}", drafted_line)
+        .replace("{undrafted_line}", undrafted_line)
+        .replace("{next_free}", ", ".join(f"{stage}: {tid}" for stage, tid in next_free.items()))
+        .replace("{db_ids}", task_queue.stage_task_summary(0))
+        .replace("{runner}", runner)
+        + _discipline(settings.ARCHITECT_PLANNER_AGENT)
+    )
+
+
+def build_planner_repair_prompt(runner, slug, problems, drafts, digest_path):
+    """The bounded remedy after an engine-run refusal: the error text and the named files,
+    nothing else - the repair window starts EMPTY of the planning turns that produced the
+    defect (each of which would re-send the transcript it failed on)."""
+    return (
+        ARCHITECT_PLANNER_REPAIR_PROMPT.replace("{slug}", slug)
+        .replace("{problems}", problems.strip()[:8000])
+        .replace("{drafts}", " ".join(str(d) for d in drafts))
+        .replace("{digest}", str(digest_path))
+        .replace("{runner}", runner)
+        + _discipline(settings.ARCHITECT_PLANNER_AGENT)
     )
 
 
@@ -428,7 +478,10 @@ Do not write application code.
 Finish by confirming the report paths.
 """
 
-ARCHITECT_STRATEGY_PROMPT = """You are the blackboard architect for this repository. Phase 1 of 2: strategy only.
+ARCHITECT_STRATEGY_PROMPT = """You are the blackboard strategy architect for this repository. Phase 1 of 2 (the
+split planner flow): strategy only. A separate planning session per bounded context
+decomposes the tasks after the database, security, performance and AI phases - you write
+the plan they read.
 The generated project root is {project_root}.
 
 For every slice `{domain_dir}/domain-boundary-<slug>.json`, read it together with its context map
@@ -501,268 +554,125 @@ Do not create other task files and do not write application code in this phase.
 Finish by listing the strategy file paths and the scaffold task id of each domain.
 """
 
-ARCHITECT_TASKS_PROMPT = """You are the blackboard architect for this repository. Phase 2 of 2: tasks.
-Each domain is a separate project under {project_root}/services/<slug>/. Every task `path` resolves
-relative to the root of its own project (the task `project` field).
-Database tasks already queued (stage 0; list them in dependsOn when a unit uses the store):
+ARCHITECT_PLANNER_PROMPT = """You are the blackboard planning architect for this repository.
+Phase 2 of 2 (the split planner): the tasks of ONE bounded context, in this session.
+Domain: {slug} - project root {project_root}/services/{slug}/; every task `path` is relative to it.
+Context: {context} - draft file: {draft}.
+
+READ EXACTLY THESE, once each - they are the whole input; nothing else is:
+1. {strategy_slice} - phase 1's plan FILTERED to this context by Python: your surfaces
+   (the `surfaces[].name` join keys), your persistence, your step logs, the module layout.
+   The full file at {strategy_path} stays CLOSED - a fact the slice lacks is a reported
+   gap for phase 1, never a silent re-read. Paths in this brief are repository paths;
+   only a task `path` INSIDE your JSON is domain-root-relative. Do not rewrite the
+   strategy; the ONE lawful edit: a mechanism the strategy promised ("via <mechanism>")
+   that this plan will not install - amend the promise to what ships (the skill's rule
+   (t)) and report the amendment.
+2. {slice} - this context's duty digest, and every duty arrives COMPLETE: `surface`,
+   `test_duty`, `measurement` are joined ONTO the duty (the specs' own sections -
+   principals, assumptions, trust boundaries, risks - are not here and nothing in them is
+   needed to claim), `covers` is expanded, and the matched mapping-table row rides as the
+   duty's `table_row` (the identifier the intent must spell and the key the config unit
+   owns, copied, not recalled). `build_coordinates` names the stage-0 manifest duty's
+   dependencies when the scaffold lacks one. The raw specs and the mapping tables STAY
+   CLOSED unless this file lists `unmapped_duties` - then open ONLY that spec's table.
+3. {symbols_line}
+
+DRAFT one JSON array at {draft} - the stage 1-3 units of context "{context}" - created with
+your edit tool. A generator script is forbidden: no python/shell/heredoc that produces or
+patches drafts (it rides every later turn, patches blind, and re-emits through your
+costliest class - measured 2026-11-18: 91k carried, 41k worst single-turn output). Never
+touch another context's file.
+
+Id and pin law (the split makes this exact): number from {next_free}; the suffix matches
+the stage. A pin goes ONLY to queue/complete ids, to ids inside this file, or to the symbol
+table - a context not yet drafted cannot be referenced, because its ids do not exist yet:
+{undrafted_line} Units that use the store list these queued database ids in `dependsOn`:
 {db_ids}
 
-Process each domain separately. Your inputs are `{strategy_dir}/execution-strategy-<slug>.json`
-(phase 1, written by you) and `{strategy_dir}/security-spec-<slug>.json` (the security phase) -
-NOT the DDD slice and the context map: those were phase 1's input, and re-reading them costs ~6k
-tokens that then ride every remaining turn of this session for information the strategy already
-carries. Read a slice only when a surface, a persisted concept or an invariant you must decompose
-is missing from the strategy - then report the gap, because the fix belongs to phase 1.
+Stage shape - the graph is law, because the drain orders units ONLY by dependsOn and
+red must precede green: every unit of work is a T1+T2+T3 TRIPLE. stage 1 -> agent-tester
+(path = the TEST file it creates, never a production file); stage 2 -> agent-coder (path =
+the production file); stage 3 -> agent-evaluator (stage 2's file, kind refactor). A T1
+dependsOn the domain scaffold + earlier units' T1 tasks - NEVER a stage-2 task (emit
+refuses the inverted edge); a T2 dependsOn its own T1 + the T2 tasks of pinned producers;
+a T3 dependsOn its own T2. The T1/T2 pair carries the IDENTICAL ast_hints table: the single API truth, shared literals TABLED - meter names only in
+`ast_hints.meters`, request paths only in `ast_hints.routes`, property paths only in
+`ast_hints.config` (rule (z)), one owner each, everyone else cites VERBATIM. intent
+40-80 words (180 refused at emit): the claim, the config literals, both branches of a
+signal - a fact `ast_hints` pins is never re-spelled in prose.
 
-Follow these steps exactly, once per domain:
+Build coordinates: consult the symbol table's `build_manifest` FIRST - a coordinate its
+intent already carries is SCHEDULED, emit nothing for it. If none is scheduled yet and the
+slice's `build_coordinates` names a coordinate the scaffold build file lacks, schedule the
+ONE lawful stage-0 build-manifest duty as a bootstrap task (layer root, feature null,
+targetAgent agent-container, kind bootstrap, layer root, feature null, export
+build-manifest, dependsOn empty, path = the stack's build file, intent = the
+generator-native ids). If the ONE manifest task exists but lacks YOUR coordinate, write it
+VERBATIM into {gaps} - JSON: {"missing_coordinates": ["<coordinate string>", ...]},
+spelled exactly as the slice's build_coordinates spells it: the ENGINE reads that file and
+appends every reported coordinate to the ONE task before the batch emit. Never emit a
+second manifest (the linter refuses it), never edit another context's file, and never
+settle for prose in your output - a report the machine cannot read is an unscheduled
+coordinate, and the first red compile dies in that hole. A unit whose copied mechanism
+needs such a coordinate lists the build-manifest task id in its `dependsOn` (its T1
+twin inherits it through the pair): the tester compiles against a classpath that must
+exist first.
 
-1. The execution strategy for this domain was written in phase 1 at
-   {strategy_dir}/execution-strategy-<slug>.json. Read it; do not rewrite it.
-   The security spec was written after it at {strategy_dir}/security-spec-<slug>.json (when the
-   file exists). Read it too and decompose FROM it; do not rewrite it either - a decision the
-   spec got wrong is a reported risk, never a silent edit, because the spec's author, not you,
-   owns the posture. Its ABSENCE has two meanings and you report which one: the domain's slice
-   carries `security_directive` {required:false} - the business description waived security for
-   this domain, a decision, so state it and decompose normally - or the security phase did not
-   run, which is a flow defect you name, never paper over.
-   The performance spec rides the same channel at
-   {strategy_dir}/performance-spec-<slug>.json - MANDATORY like security, read it when present.
-   The AI spec at {strategy_dir}/ai-spec-<slug>.json exists ONLY when the domain's slice carries
-   a verified `ai_directive` {required:true}: present means decompose the AI capability too;
-   absent without a directive is correct silence, absent WITH a directive is a flow defect you
-   name. Where a spec is present, its mapping table (loaded only then, per your profile) is the
-   mechanism source: performance duties from
-   `tech-stack-architect/<stack>-performance-architect` and AI duties from
-   `tech-stack-architect/<stack>-ai-architect` (for Java: spring-performance-architect,
-   spring-ai-architect), copied from those tables - never recalled, never invented.
-   Claim law for BOTH new specs, machine-enforced: every `duties` entry of the performance and
-   AI specs must be discharged inside a STAGE-2 unit object by spelling its `spec_ref` (WB-,
-   PB-, PI- for performance; AC-, AM- for AI - rule rows only, roles/assumptions are
-   context) AND its `capability` token VERBATIM, beside the copied mechanism.
-   Emit refuses an unclaimed duty exactly as rule (y) does for security duties; the surface
-   reach/assertion sub-laws ((y2)/(y3)) are security's - a load-shed or model-port duty may
-   sit anywhere the plan can defend, but never nowhere. HOME OF THE ARTIFACT: a
-   prompt-contract duty is a SOURCE unit (its path is the Java type; the five contract
-   elements are `ast_hints.methods`/members and its intent states them, 40-80 words, so
-   the coder needs no other source); THE WRITABLE CHANNEL - a stage-1/2 unit may only
-   `path` a language source or a configuration document (.yml/.yaml/.properties): no
-   agent on this board authors template or text files, and emit refuses the path.
+Lead duties: every aggregate root / event / read endpoint of this context gets its
+API/UseCase unit; repository port + adapter (DDL is the database phase's); the strategy's
+observability floor decomposes into its units here as the skill directs - audit ports
+tabled, one correlation middleware unit unless the symbol table already shows one, an
+externalized-config unit ONCE per domain (skip it if the symbol table already has one).
 
-2. Decompose the plan into blackboard tasks. Every task is a JSON object with exactly
-   these keys and no others:
-   id, targetAgent, stage, dependsOn, path, kind, layer, feature, export, intent, project,
-   ast_hints (required for stage 1-2; optional for the other stages).
+DUTY CLAIMS, machine-enforced at emit: every duty of the slice is discharged INSIDE the
+enforcing STAGE-2 unit by spelling its `spec_ref` AND `capability` VERBATIM beside the
+mechanism copied from that duty's `table_row`. Security duties add the reach geometry: the
+unit that IS a surface (its intent names the strategy's `surfaces[].name`) pins the
+enforcing unit in `ast_hints.dependencies` + `dependsOn`, and that entry unit's stage-1
+pair carries the row id and its `test_duty` CROSS-OWNER case. Performance (PB-/PI-, WB-
+only where no PB- covers the capability) and AI (AC-/AM-) duties ride the same (y1) form
+without the reach law; PA- assumptions and AI roles/assumptions never carry claims. The
+HOME OF THE ARTIFACT is a SOURCE unit and the writable channel is language source or
+configuration document ONLY - a template file has no writer on this board.
 
-   Fixed stage/agent/kind mapping:
-   - stage 0 -> agent-container, kind "bootstrap": generate the project root/scaffold.
-   - stage 1 -> agent-tester, kind "test": read the task and create the test.
-   - stage 2 -> agent-coder, kind "code": read the task and create the implementation.
-   - stage 3 -> agent-evaluator, kind "refactor": inspect the implementation and refactor it.
+The FULL contract (a)-(z) is `task-decomposition-dag` SKILL.md - load it once, do not
+memorize it: the linter and the batch emit quote the violated rule by letter.
 
-   Field rules:
-   - id: "T<stage>-<3 digits>" (for example T0-001, T1-001); the suffix must match stage.
-     Numbers are unique across all domains; continue the sequence, never reuse an id.
-   - dependsOn: ids of earlier tasks. Stage 1 depends on the stage 0 scaffold of the same project; stage 2 depends
-     on the matching stage 1 task; stage 3 depends on the matching stage 2 task.
-   - project: the domain slug <slug>; every task of this domain uses the same project.
-   - path: path relative to that domain's project root; the file the agent must create or modify. For a stage 1 TEST task this is the TEST file the tester creates (a separate test artifact, never the production file of the unit under test, and never the paired stage 2 task's path - the emit gate refuses the collision: a @Test class written at a production path lands outside the test classpath and the coder's weave overwrites the frozen contract).
-   - layer: one of root, domain, application, infrastructure, interface, shared, features.
-   - feature: required only when layer is "features"; otherwise null.
-   - export: the primary type, class, or symbol name.
-   - intent: precise and implementation-ready. State the bounded context, the invariants
-     it must protect, and the expected behavior. The tester, coder, and evaluator tasks
-     for the same unit must describe the same unit and stay consistent.
-     AN INTENT IS A SPECIFICATION, NOT AN ESSAY: aim at 40-80 words, hard ceiling 180 (refused at
-     emit, on planning only). Anything `ast_hints` already pins - a signature, a type, a
-     collaborator - is not re-spelled in prose, because prose that duplicates a table eventually
-     disagrees with it and rule (e) refuses the pair. Keep what the gates demand (the security
-     `spec_ref` + `capability` + mechanism, the config literals, both branches of a signal);
-     drop the narration. The plan of one domain is 57 units and one assistant turn: prose volume is
-     paid for in output tokens, then re-paid on every later turn and again after every rejection.
-   - ast_hints (stage 1-2; the test task and code task of one unit carry the IDENTICAL
-     table - the emit gate refuses a pair that differs, rule (z4)): {"package": the unit's namespace as its language spells it - every segment a
-     legal identifier in the pinned language, NEVER a reserved word (a driver layer is
-     "api" or "adapters", never "interface"; emit refuses the collision); "implements":
-     supertype names the unit must satisfy; "dependencies": [{"type", "task_id"}] one per
-     collaborator, pinned to the task that produces it; "methods": [{"signature",
-     "returns"} - or {"signature", "returns", "semantics"} where rule (d) below
-     requires the note -] every boundary method the unit must provide, with parameter and return
-     types spelled exactly as the language's own declaration for that unit - including
-     the methods of every implemented supertype; "returns" is "" when there is none.
-     Pure value objects may leave "methods" empty - UNLESS another task pins that unit
-     as a collaborator: a consumed type's own table must then spell every member its
-     consumers touch (accessors included), or the consumers improvise it.
-     "meters": [{"name", "duty"}] - the strategy-floor meter names this unit's contract
-     touches: duty "owns" for the ONE unit that registers the name, "uses" for every unit
-     that records or asserts it; "routes": [{"method", "path", "duty"}] - the request-path
-     literals: duty "serves" for the ONE inbound unit that answers the pair, "uses" for a
-     guard, a caller, or a slice driving it. These two keys are the ONLY lawful home of a
-     meter name or a route (rule (z)): a literal spelled in a unit's intent or `semantics`
-     while its table omits it is refused at emit, and a name two units own - or two
-     spellings of one literal across the plan - is refused naming both (2026-11-19 seed-002:
-     prose-only vocabulary froze `telemetry.validation.failed` against
-     `telemetry.samples.validation_failed`, and a controller test against a route its own
-     unit did not serve; both coders died 3/3 on pairs no payload satisfies).
-     "config": [{"path", "kind": value|list|map, "fields"?}] - dotted property paths the unit's
-     contract binds or seeds: the BINDING record tables the path with its true shape (a list of
-     entries carries their element `fields`), and the config-artifact unit cites path, kind and
-     fields VERBATIM - one path, one shape (rule (z5): 2026-11-19 R4 froze a `devices` list in a
-     record against a `devices.secret-hash` scalar in the config contract; no file binds both).
-     A slice that imports a guard's chain must be able to construct it: the surface unit pins
-     not only the guard but EVERY project product the guard's own table declares (its
-     dependencies and method parameters) - an untabled one is a bean the slice cannot supply
-     (rule (z6): the controller test imported the chain whose concrete manager only the wiring
-     factory registered; NoSuchBeanDefinition, 3/3, while the twin test that pinned the manager
-     loaded).
-     This table is the single API truth:
-     the tester asserts ONLY against it and the coder implements exactly it. A signature
-     missing from the table gets improvised twice, and two frozen artifacts contradict.
+FINISH with the lint, then stop:
+    python3 {runner} --lint {draft}
+EDIT every ERR [id]: line into existence-proof (one lint pass of edits costs hundreds of
+tokens; a rewrite costs 10-30k), lint again. If ONE defect shape repeats across tasks it
+is a law you missed, not N typos: reread that rule, rewrite the WHOLE file in ONE create
+call, lint once - a 20-edit cascade re-sends the transcript 20 times and costs the
+session its budget (measured live 2026-11-20). A `LINT-CLEAN` line is your exit. Do NOT run
+`--emit`: when every context of the domain is drafted, the ENGINE emits the batch in one
+command and only a refusal then comes back to a repair session.
 
-   Architecture invariants (the tester/coder conflict class these prevent is unresolvable
-   later - frozen tests cannot be edited by any agent):
-   - Port / in-use-case method signatures speak DOMAIN types only. REST/DTO shapes live in
-     the interface layer; no application port may return an interface-layer DTO.
-   - Every collaborator a unit's consumers construct or stub - records, enums, events, DTO
-     shapes, constructor arities - MUST have exactly one producing task whose intent pins
-     that surface. If two units need the same type, one task produces it and the other
-     `dependsOn` it; never leave the shape implicit and hope the testers converge.
-   - Config-driven operational values (timeouts, windows, capacities) bind through the
-     externalized-config unit; task intents must not hardcode fallback durations a test can
-     contradict. When any intent assigns such values, a CONFIG UNIT whose `path` is the
-     stack's runtime configuration artifact (application.yml / config.ts / settings.py per
-     the tech-stack skill) MUST be scheduled carrying the seed's literal values - without
-     it every runtime default is fiction (emit refuses). Format rule (plan rule (v)): the
-     tabled KEY/VALUE pairs are SEMANTIC PROPERTY PATHS - lookup names, not file layout;
-     the artifact is serialized in the NATIVE FORM OF ITS KIND (structured-document kinds
-     nest; flat key-value kinds spell dotted keys with their assignment token - the shape
-     comes from the tech-stack skill). Never demand or emit a flattened dotted-key list
-     inside a structured document: that is one kind's syntax smuggled into another's
-     file, and the assembly gate re-serializes it back (same keys, same values, no test
-     edits).
-   - Duty ownership: a file artifact named in an intent (config, migration, manifest...)
-     must be that unit's own `path` or another task's `path`. "Also provide <other file>"
-     inside an intent is prose, not a plan - the engine cannot weave two files from one unit.
-   - Request-encoding alignment: a pinned request-parameter type and the body shape the
-     paired test intent mandates must agree - a streamed collection type binds with
-     streamed-document bodies, an array/collection type with one-array bodies. A decoder
-     can never satisfy both; the pair is refused at emit.
-   - Nullability semantics: when an intent rejects null on mandatory fields, EVERY entry of
-     that unit's ast_hints.methods must carry `semantics` naming the initial-state encoding
-     (a shipped constant such as UNVALIDATED, or the nullable alternative). A null-intolerant
-     value with no legal way to represent its pre-use state freezes tester and coder on
-     contradictory contracts nobody can edit. The same holds for ARGUMENT RANGES: an intent
-     spelling a bound like `revision (>=1 ...)` is refused unless the constructor's table
-     entry carries that bound in `semantics` - consumer units' testers receive the injected
-     collaborator TABLE, never this unit's prose, and a prose-only bound invites a foreign
-     fixture to fabricate the illegal literal and die on a frozen test.
-   - Duties the emit gates refuse mechanically - plan them in from the start: every unit whose
-     contract executes SQL/DML against a schema gets a paired test intent demanding the
-     REAL-SUBSTRATE run (the embedded substitute executing the actual migration DDL, asserting
-     the durable row; a mocked-client case may be extra, never the only substrate proof);
-     every inbound adapter surface comes with ONE end-to-end request-path slice task driving
-     the entry and asserting durable effects; an at-least-once inbound over an append-only
-     revision chain names its dedup identity (client-supplied key or natural identity) in the
-     receiving contracts, or the strategy declares the at-most-once posture beside the inbound
-     words; a config unit enabling a migration runner references the PACKAGED location form
-     (classpath: + the stack's packaged resources root), never a CWD-relative filesystem: path -
-     portability is a plan-time decision, never relitigated at the assembly gate against the
-     config unit's own frozen test; a rule-implementing service is reachable in the pin graph
-     by a consumer unit (the
-     wiring unit's factory pin proves production, never consumption); a MAPPED inbound
-     handler names the ONE registration mechanism its framework can actually execute - the
-     stack skill's handler marker on its own class (wiring supplies collaborators), or a
-     functional router bean owned by the wiring unit - never a demand that no marker may
-     appear while the factory alone registers it: an unmarked handler is constructed, never
-     mapped, and the green app answers 404 on its own endpoint (the emit gate refuses the
-     pair for the planned language). THREE MORE, BORN FROM
-     THE 2026-11-16 PART III INSPECTION (G2/G3/G4 - each was a plan that satisfied every rule
-     and shipped a silent gap):
-   - (s) DEDUP + CORRECTIONS = NAME THE VALUE AXIS: once an at-least-once inbound chain over
-     an append-only history names its dedup identity (rule (q)) AND the vocabulary speaks of
-     corrections/backfills, some contract sentence must state whether the mutable payload is
-     part of that identity or excluded - and if excluded, what separates a retry (no-op) from
-     a correction (revision appended): comparison, client-supplied version, correction flag.
-     Table BOTH resend classes as test duties of the receiving unit. A value-excluding identity
-     with no discriminator reclassifies every correction as a duplicate in silence.
-   - (t) PROMISED MECHANISM = SCHEDULED DUTY: if the strategy's observability wording promises
-     correlation (or any floor surface) "via <mechanism>", a unit must declare the duty that
-     INSTALLS the mechanism (dependency + enablement at wiring/boot, the concrete shape from
-     the active tech-stack skill, written with the strategy's own token). If the plan will not
-     install it, amend the strategy first - the emit gate refuses the mismatch, and a negated
-     mention ("no <mechanism> is used") is detected as the divergence, not as the duty.
-   - (u) NO ACKNOWLEDGED OUTCOME UNMETERED: every strategy step log pairs with a metric (or an
-     explicit `uncounted_steps` reason), and every failure/drop/rejection/overflow outcome
-     spelled in tabled `semantics` pairs with a counting meter in the floor, claimed by its
-     owning unit (or a declared `uncounted_failures` posture). Audited-but-uncounted failures
-     are how a losing pipeline reports a healthy dashboard.
-   - Prose may never be the only place a signature exists: every method an intent describes
-     must also appear in that unit's ast_hints.methods, spelled identically, so prose and
-     table can never disagree.
-   - Observability obligations from the strategy's `observability` object decompose into THEIR
-     OWN units, like domain logic, and every `step_logs` entry is ALSO claimed VERBATIM in
-     exactly one implementation unit's `observability.step_logs` field - the emit gate refuses
-     strategies without the floor and plans with unowned, double-owned or off-plan claims: an audit trail is a tabled port (+ adapter, + migration when
-     queryable); correlation keys get one middleware unit; every metric name and audit record
-     field lives in some unit's ast_hints so the tester can assert the captured surface - a
-     metric name ONLY lawfully in `ast_hints.meters` (one owner, consumers verbatim, rule (z)),
-     a route ONLY lawfully in `ast_hints.routes`. "Log it
-     properly" as scattered prose or raw logger calls in business units is forbidden - levels and
-     formats belong to the config unit, facts belong to planned ports. The strategy's `export`
-     (structured schema + sink an external tool like Elasticsearch can consume) is config-unit
-     literal keys and at most one sink-wiring unit: the app never talks to the external tool
-     directly unless the description names it, and even then the boot gate must pass without it.
+Output: task ids + deps, the duty-by-duty closure (`spec_ref -> claiming unit ids ->
+mechanism named -> surface unit`), any `unmapped_duties` you had to open, risks.
+"""
 
-   Do not emit stage 0 tasks; the scaffold and database tasks are already queued - the ONE
-   exception is the build-manifest duty: when a mechanism you copied from the architect-tier
-   security table needs a coordinate the scaffold build file does not carry, queue a stage-0
-   bootstrap task for it in the same batch (layer root, feature null, dependsOn empty, path =
-   the stack's build file, export = its base name, intent = the generator-native dependency ids
-   plus any catalog-absent artifact required test-scoped, the parent owns versions, and the
-   container moves the verified build file only). A duty you never schedule becomes a
-   classpath hole the drain can only fatal at the first red compile.
-   Units that use a store list the matching database ids from the list above in `dependsOn`.
-   SECURITY DECOMPOSITION DUTY - you own every HOW. The spec at
-   {strategy_dir}/security-spec-<slug>.json names capability tokens only, so mapping them onto real
-   mechanisms is YOUR duty - and for Java it is a TABLE you copy, not a recall:
-   `tech-stack-architect/spring-security-architect` (token -> unit + layer + the identifier the
-   intent must spell + config key); bodies and test syntax live in `tech-stack/spring-security`.
-   Copy nothing the table lacks: an unrealizable token becomes an added UNIT (config unit for
-   custody and lifetimes, store or domain unit for identifier and crypto shapes) - never an
-   invention, never a rewrite of the spec, and never a risk in place of a unit, because a duty no
-   unit claims is refused at emit while the risk is recorded BESIDE its unit.
-   Claim law: every `duties` entry is claimed inside a unit object of this domain's drafts by
-   spelling BOTH its `spec_ref` token (AZ-03, SI-01, DC-02, TB-01, SD-01) and its `capability` token
-   (`tenant-scoped-query`) VERBATIM, beside the mechanism chosen. Emit refuses an unclaimed duty, a
-   claim carrying the id without the capability (a citation is not a mapping), and a token the spec
-   never declared.
-   Placement law, machine-enforced - memorize the shape, not the prose: (y1) the claim sits on the
-   STAGE-2 unit that enforces it; (y2) REACH - the unit whose intent names the strategy's
-   `surfaces[].name` pins the enforcing unit in `ast_hints.dependencies` and lists it in
-   `dependsOn`, or the predicate is a tabled method on the lookup unit; (y3) ASSERTION AT THE
-   SURFACE - that entry unit's own stage-1 pair carries the row id AND the CROSS-OWNER case its
-   `test_duty` names (a valid identifier owned by someone else, refused): a role check that still
-   fetches another tenant's row by id is the IDOR the spec forbids. Decomposition shapes (port +
-   adapter, redaction as a tabled surface, audit events on the strategy's audit port, custody as
-   config literals) are in `task-decomposition-dag` rule (y).
-   For every unit of work emit a stage 1 test task, a stage 2 code task, and a stage 3
-   evaluator task.
+ARCHITECT_PLANNER_REPAIR_PROMPT = """You are the blackboard planning architect for this repository. Repair
+pass for domain `{slug}`: the engine validated the planning drafts and REFUSED the batch -
+no planning session ran yet in this context window, these lines are your only input besides
+the named files.
 
-3. Write ONE array file PER BOUNDED CONTEXT - /tmp/tasks/<slug>-<context>.json - and queue them
-   ALL in one command:
-   python3 {runner} --emit /tmp/tasks/<slug>-intake.json /tmp/tasks/<slug>-store.json ...
-   One command is mandatory (the batch is validated as a whole: cross-context pins, provider closure
-   and the security reach law each see every file); the per-context files only bound how much you
-   must WRITE in one turn. On rejection: EDIT the task objects the errors name - never re-emit an
-   unchanged file, never regenerate the whole draft (one plan rewrite is 10-30k output tokens; the
-   same fix as an edit is a few hundred) - then re-emit once with the same files. Never write into
-   blackboard/queue/ directly, and never one draft file per task.
+ERRORS (each `ERR [pointer]` names the exact task object and field):
+{problems}
 
-4. Do not create or modify application source files.
+Files of this domain's plan: {drafts}
+The full duty digest (duties, rule rows, matched mechanism rows): {digest}
+The contract (a)-(z): task-decomposition-dag SKILL.md.
 
-5. Finish by listing the queued task ids per context file, stages and target agents - plus the
-   security closure, duty by duty: `spec_ref -> claiming unit ids -> mechanism named -> the surface
-   unit that carries it`. A duty missing from that list is a duty you did not schedule, and the emit
-   gate says so before you finish.
+Work: read ONLY the files the pointers name. Locate every object one pointer SHAPE
+covers with ONE grep over the named draft files - then fix them: a repeating shape is ONE
+defect, not N typos, so batch the repairs (several edits in one pass, or one rewrite of
+the affected file), never one edit per task object across a dozen turns. Re-lint each
+edited file ONCE with `python3 {runner} --lint <file>`; never re-lint a file you did not
+change; then stop - the ENGINE re-runs the batch emit.
+A refusal that contradicts a spec (a duty the mechanism rows cannot realize) is a reported
+flow defect you NAME, never a spec rewrite: the operator re-runs the phase that wrote it.
 """
 
 DATABASE_PROMPT = """You are the blackboard database architect for this repository.
@@ -813,8 +723,13 @@ Run your workflow for the domain `{slug}` only.
    VERBATIM, and `invariants[].owner_context` names a `bounded_contexts` entry exactly as the
    strategy spells it.
 4. Write {spec_path} with your edit tool, exactly in the reference shape: same keys in the same
-   order, closed enumerations, ids sorted, one sentence per string. Every rule names the capability
-   token that holds it, its enforcement point, its test duty, and a duty that discharges it.
+   order, closed enumerations, ids sorted, one telegraphic sentence per string (<=15 words, no
+   because/so/therefore filler). Every rule names the capability token that holds it, its
+   enforcement point, its test duty, and a duty that discharges it; rules sharing one
+   (`capability`, `unit_kind`, `owner_context`) are discharged by ONE duty that lists the
+   other rule ids in its `covers` - a duplicate triple is refused, while the same pair in
+   two bounded contexts is TWO duties, each naming its `owner_context` (exact
+   `bounded_contexts` spelling).
    A `risks[]` entry cites the control in THIS spec that answers it, or states an accepted posture
    (`accepted:` / `none:` / `operator:`) WITH the exposure that remains: a risk that does neither
    is refused, and the pipeline prints every one of them, so nothing you record goes unread.
@@ -867,9 +782,15 @@ Run your workflow for the domain `{slug}` only.
      flaking;
    - invariants that hold at worst case (no unbounded queue anywhere, one bounded policy per
      path), each naming an abstract capability token;
-   - a duty discharging EVERY budget and invariant: obligation, capability token, unit_kind
-     from the closed set. Never the mechanism, never the vendor, never the library.
-4. Write {spec_path} with your edit tool, exactly in the reference shape. A `risks[]` entry
+   - a duty discharging EVERY budget and invariant, ONE duty per unique (capability,
+     unit_kind, owner_context): obligation, capability token, unit_kind from the closed set,
+     owner_context an exact bounded_contexts name - the same pair in two contexts is TWO
+     duties;
+     WB- workload rows and PA- assumptions are context, their ids riding a PB duty's
+     `covers`, never duplicate duty rows. Never the mechanism, never the vendor, never the
+     library.
+4. Write {spec_path} with your edit tool, exactly in the reference shape, one telegraphic
+   sentence per string (<=15 words, no because/so/therefore filler). A `risks[]` entry
    cites an entry this spec declares or states an accepted posture (`accepted:` / `none:` /
    `operator:`) with a non-empty `residual`. Anything you cannot decide from the inputs goes
    to `open_questions` - never an invented answer; an entry there STOPS the run.

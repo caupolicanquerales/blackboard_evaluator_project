@@ -1,0 +1,49 @@
+{
+  "id": "T1-023",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T0-002",
+    "T0-003",
+    "T0-004",
+    "T0-005",
+    "T1-022"
+  ],
+  "kind": "test",
+  "layer": "interface",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/test/java/com/blackboard/telemetry/ingestion/api/IngestIngressSliceTest.java",
+  "export": "com.blackboard.telemetry.ingestion.api.IngestIngressSliceTest",
+  "intent": "Request-path slice: full context, embedded H2 running the real migrations, WebTestClient posts packets to the surface. Each case uses a UNIQUE device identity and asserts its own rows: stored sample row and audit_trail row present, payload not plaintext, foreign identity 403 with zero rows, over-cap 413 with zero rows, no credential 401.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.ingestion.api",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "IngestIngressController",
+        "task_id": "T2-022"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "String basicAuthHeader(String deviceId, String secret)",
+        "returns": "String"
+      },
+      {
+        "signature": "String uniqueDeviceId()",
+        "returns": "String"
+      }
+    ],
+    "meters": [],
+    "routes": [
+      {
+        "method": "POST",
+        "path": "/api/v1/telemetry/ingress-packets",
+        "duty": "uses"
+      }
+    ],
+    "config": []
+  }
+}

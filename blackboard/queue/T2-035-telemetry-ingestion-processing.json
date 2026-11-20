@@ -1,0 +1,49 @@
+{
+  "id": "T2-035",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T0-001",
+    "T0-007",
+    "T1-035",
+    "T2-024"
+  ],
+  "kind": "code",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/main/java/com/blackboard/telemetry/distribution/infrastructure/SubscriberAuthenticationManager.java",
+  "export": "com.blackboard.telemetry.distribution.infrastructure.SubscriberAuthenticationManager",
+  "intent": "Claims SI-09 mutual-tls-proof device-credential-proof credential-handling: httpBasic plus a per-subscriber ReactiveAuthenticationManager over the tabled credential list, verifying subscriber identity before any stream opens. Boot posture: fail-fast when unseeded (test profile seeds entries); hash comparison, never an invented placeholder principal.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.distribution.infrastructure",
+    "implements": [
+      "ReactiveAuthenticationManager"
+    ],
+    "dependencies": [
+      {
+        "type": "DistributionProperties",
+        "task_id": "T2-024"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Authentication> authenticate(Authentication authentication)",
+        "returns": "Mono<Authentication>"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "telemetry.distribution.subscribers",
+        "kind": "list",
+        "fields": [
+          "id",
+          "secret-hash",
+          "scope"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "id": "T2-012",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T0-001",
+    "T1-012",
+    "T2-001"
+  ],
+  "kind": "code",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/main/java/com/blackboard/telemetry/ingestion/infrastructure/AesGcmPayloadCipher.java",
+  "export": "com.blackboard.telemetry.ingestion.infrastructure.AesGcmPayloadCipher",
+  "intent": "SI-14 envelope-encryption: no framework mechanism, the plan's OWN AesGcmPayloadCipher at the store boundary with encrypt(...) and decrypt(...), AES-GCM with a random nonce prefix. SI-15 key-separation: the key is read lazily through SslBundles.getBundle on telemetry.encryption.bundle, a bundle of its own under spring.ssl.bundle.pem, never beside the data.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.ingestion.infrastructure",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetryProperties",
+        "task_id": "T2-001"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "byte[] encrypt(String plaintext)",
+        "returns": "byte[]"
+      },
+      {
+        "signature": "String decrypt(byte[] ciphertext)",
+        "returns": "String"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "telemetry.encryption.bundle",
+        "kind": "value"
+      },
+      {
+        "path": "spring.ssl.bundle.pem",
+        "kind": "map"
+      }
+    ]
+  }
+}

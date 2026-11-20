@@ -1,0 +1,15 @@
+{
+  "id": "T3-020",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-020"
+  ],
+  "kind": "refactor",
+  "layer": "interface",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/main/java/com/blackboard/telemetry/ingestion/api/PayloadCeilingFilter.java",
+  "export": "com.blackboard.telemetry.ingestion.api.PayloadCeilingFilter",
+  "intent": "Refactor the ceiling filter; status and threshold unchanged."
+}

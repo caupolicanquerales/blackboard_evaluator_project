@@ -1,0 +1,15 @@
+{
+  "id": "T3-034",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-034"
+  ],
+  "kind": "refactor",
+  "layer": "interface",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/main/java/com/blackboard/telemetry/distribution/api/WindowedTelemetryMessage.java",
+  "export": "com.blackboard.telemetry.distribution.api.WindowedTelemetryMessage",
+  "intent": "Refactor the stream message DTO for clarity without changing its contract; keep every test green."
+}

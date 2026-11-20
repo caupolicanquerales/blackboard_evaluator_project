@@ -1,0 +1,15 @@
+{
+  "id": "T3-021",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-021"
+  ],
+  "kind": "refactor",
+  "layer": "interface",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/main/java/com/blackboard/telemetry/ingestion/api/RateLimitFilter.java",
+  "export": "com.blackboard.telemetry.ingestion.api.RateLimitFilter",
+  "intent": "Refactor the rate guard; bucket arithmetic and statuses unchanged."
+}

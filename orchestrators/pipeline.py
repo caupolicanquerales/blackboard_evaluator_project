@@ -1,7 +1,11 @@
 """Backend-agnostic pipeline: CLI shape and the full phase order.
 
 The same flow runs over any backend module that exposes ``run_discovery``,
-``run_mapping``, ``run_architect``, ``run_database``, ``run_security`` and ``run_pass``.
+``run_mapping``, ``run_strategy``, ``run_planner``, ``run_planner_repair``,
+``run_database``, ``run_security`` and ``run_pass``. The 2026-11-20 architect split made
+phase 2 a PIPELINE loop, not one agent call: one short planner session per bounded
+context (digest slice + symbol table), then the engine itself runs the single batch
+`--emit` and, on refusal, bounded repair sessions carrying only the error text.
 """
 import argparse
 import builtins
@@ -12,6 +16,7 @@ import time
 import assembly
 import closure
 import ddd
+import prompts
 import settings
 import task_queue
 import tdd_engine
@@ -24,7 +29,10 @@ _REAL_PRINT = builtins.print
 
 def _stamp_print(*args, **kwargs):
     """Tagged `[phase ] ...` lines get a wall clock so a resume's replay flood and
-    live progress are distinguishable in the log; passthrough output untouched."""
+    live progress are distinguishable in the log; passthrough output untouched.
+    ALWAYS flush (2026-11-20): a block-buffered log loses every line when a run is
+    stopped - and a supervisor that cannot see the last line cannot diagnose a stop."""
+    kwargs.setdefault("flush", True)
     first = args[0] if args else ""
     if isinstance(first, str) and first.lstrip().startswith("["):
         _REAL_PRINT(time.strftime("%H:%M:%S") + " " + first, *args[1:], **kwargs)
@@ -66,6 +74,11 @@ def build_parser(description):
     parser.add_argument("--parallel", type=int, default=1,
                         help="concurrent domains during drain (one task per project in flight)")
     parser.add_argument("--emit", nargs="+", metavar="FILE", help="validate and emit task JSON files to queue, then exit")
+    parser.add_argument("--lint", metavar="FILE",
+                        help="validate ONE planning draft file against the single-file law "
+                             "(schema, dangling pins, writable channel); batch laws - duty "
+                             "claims, step-log ownership, the shared-literal join, provider "
+                             "closure - are DEFERRED to the engine's batch --emit, then exit")
     parser.add_argument("--retry", nargs="*", metavar="ID", default=None,
                         help="move quarantined tasks back to the queue (all, or only ids matching these patterns), then continue")
     parser.add_argument("--replan", nargs="+", metavar="SLUG",
@@ -74,6 +87,12 @@ def build_parser(description):
                              "blackboard/archive/) so the phases re-run for them on this "
                              "launch: the fix when a strategy names no inbound surface or a "
                              "spec arrived after its decomposition")
+    parser.add_argument("--plan-only", action="store_true",
+                        help="run every PLAN phase (discovery, mapping, strategy, database, "
+                             "security, performance, AI, planner sessions, gaps, batch "
+                             "emit) and STOP before the docker gate and the drain - the "
+                             "supervised way to measure plan cost: zero execution sessions "
+                             "are billed, the queue holds the finished plan")
     parser.add_argument("--skip-docker-check", action="store_true",
                         help="do not gate the queue drain on a reachable Docker daemon")
     return parser
@@ -160,6 +179,153 @@ def _application_tasks_queued():
     """True when any stage 1..3 task is already in queue or complete (restart guard)."""
     return any((match := settings.ID_PATTERN.match(task_id)) and int(match.group(1)) >= 1
                for task_id in task_queue.load_index())
+
+
+PLANNER_REPAIR_ROUNDS = 2  # engine-side refusals get TWO bounded repair passes, then the
+# run stops: a third pass over the same ERR text is the retry-storm shape the drain pays
+# for in sessions; the operator's --replan is the lawful third try.
+
+
+def _plan_domain_tasks(args, backend, slug):
+    """The 2026-11-20 architect split in one function: ONE planner session per bounded
+    context, the ENGINE emitting the batch.
+
+    The session sees only what it needs - the strategy, ITS digest slice (duties with
+    their rule rows and matched mechanism rows pre-attached), and the symbol table of
+    already-drafted contexts - so the draft of context N never rides the turns of
+    context N+1 (the per-turn transcript re-send is what made the monolith burn: one
+    40,442-token single turn measured 2026-11-16). The batch laws survive untouched:
+    claims, provider closure and cross-context pins still see every file at once,
+    because the batch `--emit` is a Python call, not an agent turn. Id arithmetic,
+    collisions and dangling joins are repaired by Python first (claim_draft); only a
+    real plan defect costs a repair session, and at most two."""
+    digest, problems = ddd.write_phase2_digest(slug)
+    for line in problems[:5]:
+        print(f"[fatal] digest {slug}: {line}")
+    if problems:
+        return False, ("the phase-2 digest refused - a duty or covers id resolves to no "
+                       "rule row; relaunch with --replan " + slug)
+    print(f"[digst] {slug}: {digest.name} carries duties, joined rules, matched table rows")
+    contexts = ddd.context_draft_order(slug)
+    if not contexts:
+        return False, f"{slug}: the strategy declares no bounded contexts to plan"
+    # selective clear (2026-11-20 resume economics): drafts newer than every plan input
+    # are the previous (crashed or budget-killed) run's RESULT and are claimed without a
+    # session; only stale bytes - written before a spec/strategy rewrite - are dropped.
+    removed = []
+    for context in contexts:
+        path = task_queue.draft_path(slug, context)
+        if path.is_file() and not task_queue.draft_is_fresh(slug, context):
+            path.unlink()
+            removed.append(path.name)
+        gaps = task_queue.gaps_path(slug, context)
+        if gaps.is_file() and not path.is_file():
+            removed.append(gaps.unlink() or gaps.name)
+    if removed:
+        print(f"[draft ] {slug}: cleared stale drafts {', '.join(removed)}")
+    drafted = []
+    for context in contexts:
+        slice_path, slice_problems = ddd.write_phase2_digest_slice(slug, context)
+        if slice_problems:
+            return False, f"{slug}/{context}: " + "; ".join(slice_problems[:3])
+        if task_queue.draft_is_fresh(slug, context):
+            print(f"[resume] {slug}/{ddd.context_stem(context)}: draft kept - newer than "
+                  "every plan input; claimed without a session")
+        else:
+            symbols_path = None
+            if drafted:
+                symbols_path = (task_queue.DRAFT_DIR
+                                / f"{slug}-symbols-{ddd.context_stem(context)}.json")
+                symbols_path, write_problems = task_queue.draft_symbol_table(
+                    slug, drafted, symbols_path)
+                if write_problems:
+                    return False, "; ".join(write_problems)
+            message = prompts.build_planner_prompt(
+                workspace.get_project_root(), getattr(backend, "RUNNER_SCRIPT", ""),
+                slug, context, task_queue.draft_path(slug, context), slice_path,
+                symbols_path, _next_free_for(slug),
+                [c for c in contexts if c not in drafted and c != context],
+                task_queue.gaps_path(slug, context))
+            ok, reason = backend.run_planner(args, slug, context, message)
+            if not ok:
+                return False, f"{slug}/{context}: {reason}"
+        claim_problems, renames = task_queue.claim_draft(slug, context)
+        for old, new in sorted(renames.items()):
+            print(f"[id    ] {slug}: {old} -> {new} (draft ids joined to the board's number space)")
+        round_left = PLANNER_REPAIR_ROUNDS
+        while claim_problems and round_left:
+            round_left -= 1
+            print(f"[repair] {slug}/{context}: {len(claim_problems)} draft problem(s), "
+                  f"{round_left} repair session(s) left")
+            backend.run_planner_repair(
+                args, slug, prompts.build_planner_repair_prompt(
+                    getattr(backend, "RUNNER_SCRIPT", ""), slug, "\n".join(claim_problems[:40]),
+                    [task_queue.draft_path(slug, context)], digest))
+            claim_problems, more = task_queue.claim_draft(slug, context)
+            renames.update(more)
+        if claim_problems:
+            return False, (f"{slug}/{context}: the draft still refuses after "
+                           f"{PLANNER_REPAIR_ROUNDS} repair session(s): "
+                           + "\n".join(claim_problems[:5]))
+        drafted.append(context)
+    # X11 close (2026-11-20 operator catch): consume the structured gap reports BEFORE the
+    # batch emit - a coordinate reported by context B lands on the ONE build-manifest task
+    # by Python append; only a gap with no manifest to amend reaches a repair session.
+    gap_problems, gap_notes = task_queue.apply_coordinate_gaps(slug, drafted)
+    for note in gap_notes:
+        print(f"[gap   ] {slug}: {note}")
+    round_left = PLANNER_REPAIR_ROUNDS
+    while gap_problems and round_left:
+        round_left -= 1
+        print(f"[gap   ] {slug}: {len(gap_problems)} unapplied coordinate problem(s), "
+              f"{round_left} repair session(s) left")
+        backend.run_planner_repair(
+            args, slug, prompts.build_planner_repair_prompt(
+                getattr(backend, "RUNNER_SCRIPT", ""), slug, "\n".join(gap_problems[:40]),
+                [task_queue.draft_path(slug, c) for c in drafted]
+                + [task_queue.gaps_path(slug, c) for c in drafted
+                   if task_queue.gaps_path(slug, c).is_file()], digest))
+        gap_problems, more_notes = task_queue.apply_coordinate_gaps(slug, drafted)
+        for note in more_notes:
+            print(f"[gap   ] {slug}: {note}")
+    if gap_problems:
+        return False, ("build coordinates were reported with no lawful place to land: "
+                       + "\n".join(gap_problems[:3]))
+    reason = task_queue.emit_draft_batch(slug, drafted)
+    round_left = PLANNER_REPAIR_ROUNDS
+    while reason and round_left:
+        round_left -= 1
+        errors = len([line for line in reason.splitlines() if line.startswith("ERR")])
+        print(f"[emit  ] {slug}: the batch refused ({errors} error line(s)); "
+              f"{round_left} repair session(s) left")
+        backend.run_planner_repair(
+            args, slug, prompts.build_planner_repair_prompt(
+                getattr(backend, "RUNNER_SCRIPT", ""), slug, reason,
+                [task_queue.draft_path(slug, c) for c in drafted], digest))
+        reason = task_queue.emit_draft_batch(slug, drafted)
+    if reason:
+        first = [line for line in reason.splitlines() if line.startswith("ERR")][:5]
+        return False, ("the batch still refuses after "
+                       f"{PLANNER_REPAIR_ROUNDS} repair session(s); relaunch with --replan "
+                       f"{slug} - " + " | ".join(first))
+    if not any((match := settings.ID_PATTERN.match(task_id)) and int(match.group(1)) >= 1
+               for task_id in task_queue.load_index()):
+        return False, f"{slug}: the planner queued no application tasks"
+    print(f"[plan  ] {slug}: {len(drafted)} bounded-context session(s), one batch emit")
+    return True, ""
+
+
+def _next_free_for(slug):
+    """The next-free ids the planner's file starts from: the board's index plus every
+    drafted file already claimed for THIS domain (the symbol table carries the same
+    numbers; stating them in the brief is the one id rule the session must see early)."""
+    world = task_queue.draft_world(slug)
+    stages = {}
+    for stage in (1, 2, 3):
+        numbers = [int(m.group(2)) for tid in world
+                   if (m := settings.ID_PATTERN.match(tid)) and int(m.group(1)) == stage]
+        stages[f"T{stage}"] = f"T{stage}-{(max(numbers) + 1 if numbers else 1):03d}"
+    return stages
 
 
 def _strategy_phase_gaps(slugs):
@@ -275,6 +441,21 @@ def run(args, backend):
             return 1
         return 0
 
+    if args.lint:
+        reason = task_queue.lint_draft(args.lint)
+        print(reason)
+        return 1 if reason.startswith("ERR") else 0
+
+    # Carrier preflight (2026-11-20 live-line stop): a profile whose YAML header does not
+    # parse is SILENTLY skipped by the Copilot CLI, and the failure then surfaces mid-run
+    # as "No such agent" - only when that carrier is first spawned, after every earlier
+    # planning session was already billed. Headers must be parseable BEFORE phase 0.
+    header_problems = settings.agent_profiles_problems()
+    if header_problems:
+        for line in header_problems:
+            print(f"[fatal] profile header: {line}")
+        return 1
+
     description = workspace.resolve_seed(args.seed)
     if args.retry is not None:
         restored = task_queue.retry_error_tasks(args.retry)
@@ -359,7 +540,7 @@ def run(args, backend):
                   f"{', '.join(missing_scaffold)}: re-running phase 1")
         else:
             print("[plan] architect writing execution strategies")
-        ok, reason = backend.run_architect(args, "strategy")
+        ok, reason = backend.run_strategy(args)
         if not ok:
             print(f"[fatal] architect strategy: {reason}")
             return 1
@@ -549,12 +730,19 @@ def run(args, backend):
         print("[skip] application tasks already queued")
     else:
         print("[plan] architect writing application tasks")
-        ok, reason = backend.run_architect(args, "tasks")
-        if not ok:
-            print(f"[fatal] architect tasks: {reason}")
-            return 1
+        for slug in ddd.database_slugs():
+            ok, reason = _plan_domain_tasks(args, backend, slug)
+            if not ok:
+                print(f"[fatal] architect tasks: {reason}")
+                return 1
     print("[plan] strategy, database, security, performance, AI, and task phases finished; "
           "processing queue")
+
+    if args.plan_only:
+        # the drain never starts: a supervised plan measurement bills PLAN sessions only
+        print("[plan  ] --plan-only: the plan is queued, the drain was NOT started - "
+              f"inspect with blackboard/queue, then relaunch without the flag to drain")
+        return 0
 
     blocked_by_docker = docker_gate()
     if blocked_by_docker:

@@ -48,12 +48,12 @@
       "at_rest": "none|envelope-encryption|field-encryption|hashing|tokenization",
       "in_transit": "none|mutual-tls|tls",
       "masking": "none|partial|redact|hash",
-      "retention": "<duty>",
-      "deletion": "<duty>",
+      "retention": "<short phrase>",
+      "deletion": "<short phrase>",
       "log_visibility": "allowed|masked|forbidden",
       "error_visibility": "allowed|masked|forbidden",
       "export_visibility": "allowed|masked|forbidden",
-      "reason": "<why this class>"
+      "reason": "<why this class, <=8 words>"
     }
   ],
   "authorization_matrix": [
@@ -85,19 +85,18 @@
       "capability": "<abstract token, e.g. tenant-scoped-query>",
       "enforcement_layer": "edge|application|domain|store|pipeline",
       "owner_context": "<bounded context name, exactly as the strategy spells it>",
-      "failure_mode": "closed|open",
-      "verification": "<the one observation that proves it false>"
+      "failure_mode": "closed|open"
     }
   ],
   "secrets": {
+    "must_not_appear_in": ["source", "logs", "error responses", "test fixtures", "build artifacts"],
     "inventory": [
       {
         "id": "SD-01",
         "name": "<capability, never a value>",
         "owner": "<context>",
         "custody": "external-key-store|runtime-injection|operator-supplied",
-        "rotation": "<duty>",
-        "must_not_appear_in": ["source", "logs", "error responses", "test fixtures", "build artifacts"]
+        "rotation": "<short phrase>"
       }
     ],
     "handling_rules": ["<abstract duty>"]
@@ -105,19 +104,25 @@
   "error_policy": {
     "allowed_fields": ["code", "message", "correlation_key"],
     "never_expose": ["stack traces", "internal identifiers", "queries", "paths", "secrets", "input echo"],
-    "security_audit_events": [
-      {
-        "event": "<class, e.g. authorization-denied>",
-        "fields": ["actor", "action", "resource", "outcome", "reason", "timestamp", "correlation_key"]
-      }
-    ]
+    "security_audit_events": {
+      "classes": ["authentication-failure", "authorization-denied", "bulk-export", "service-credential-use"],
+      "fields": ["actor", "action", "resource", "outcome", "reason", "timestamp", "correlation_key"]
+    }
   },
   "duties": [
     {
       "spec_ref": "AZ-01",
-      "obligation": "<one implementable sentence>",
+      "obligation": "<one telegraphic sentence, <=15 words>",
       "capability": "<declared abstract token>",
       "unit_kind": "policy-port|policy-adapter|ownership-predicate|validator|redaction|audit-event|credential-handling|key-custody|classification-rule"
+    },
+    {
+      "spec_ref": "AZ-02",
+      "obligation": "<same obligation as another rule - merge, never duplicate>",
+      "capability": "<declared abstract token>",
+      "unit_kind": "<the same shape as AZ-01's duty>",
+      "owner_context": "<a strategy bounded_contexts name, exactly as spelled; omit when the duty spans contexts>",
+      "covers": ["SI-02", "DC-03"]
     }
   ],
   "risks": [

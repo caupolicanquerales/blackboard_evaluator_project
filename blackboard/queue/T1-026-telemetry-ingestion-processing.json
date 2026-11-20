@@ -1,0 +1,43 @@
+{
+  "id": "T1-026",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T0-007",
+    "T1-025"
+  ],
+  "kind": "test",
+  "layer": "domain",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/test/java/com/blackboard/telemetry/distribution/domain/StreamAuditEventTest.java",
+  "export": "com.blackboard.telemetry.distribution.domain.StreamAuditEventTest",
+  "intent": "Value record test: accessors return the actor, action, outcome and correlation id given at construction; a null or blank field is refused. Assert each accessor and the refusal on every field.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.distribution.domain",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "String actor()",
+        "returns": "String"
+      },
+      {
+        "signature": "String action()",
+        "returns": "String"
+      },
+      {
+        "signature": "String outcome()",
+        "returns": "String"
+      },
+      {
+        "signature": "String correlationId()",
+        "returns": "String"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

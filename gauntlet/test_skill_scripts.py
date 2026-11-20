@@ -531,40 +531,75 @@ check("Q11 the skills symlink resolves the skill AND its machine reference for C
       and (REPO / ".github/skills/architect-practices/security-strategy/references/"
            "security-spec.schema.json").is_file())
 
-# --- Q12-Q15: the consumer of the spec. The security step's output is only real once the
-#     architect ingests it: these cases fail if the profile forgets the phase order, the
-#     artifact, or the duty-claim law - the integration gap that made the whole phase decorative.
-ARCH_PROFILES = (REPO / ".opencode/agents/agent-architect.md",
-                 REPO / ".github/agents/agent-architect.agent.md")
-arch_bodies = [path.read_text().split("---\n", 2)[2] for path in ARCH_PROFILES]
-arch_fronts = [path.read_text().split("---\n", 2)[1] for path in ARCH_PROFILES]
-check("Q12 both architect profiles carry the same body (the workflow is one contract, not two "
-      "dialects that drift apart per backend)", arch_bodies[0].strip() == arch_bodies[1].strip())
-for index, arch in enumerate(arch_bodies):
+# --- Q12-Q15: the consumer of the specs. The security step's output is only real once the
+#     PLANNING agent ingests it: these cases fail if a profile forgets the phase order, the
+#     artifact, or the duty-claim law - the integration gap that made the whole phase
+#     decorative. The 2026-11-20 architect split re-homed each law onto exactly one pair of
+#     mirror profiles: phase 1's onto agent-strategy-architect, phase 2's onto agent-planner-architect.
+STRATEGY_PROFILES = (REPO / ".opencode/agents/agent-strategy-architect.md",
+                     REPO / ".github/agents/agent-strategy-architect.agent.md")
+PLANNER_PROFILES = (REPO / ".opencode/agents/agent-planner-architect.md",
+                    REPO / ".github/agents/agent-planner-architect.agent.md")
+ARCH_PROFILES = STRATEGY_PROFILES + PLANNER_PROFILES  # the four carrier files, pairs in order
+strategy_bodies = [path.read_text().split("---\n", 2)[2] for path in STRATEGY_PROFILES]
+planner_bodies = [path.read_text().split("---\n", 2)[2] for path in PLANNER_PROFILES]
+strategy_fronts = [path.read_text().split("---\n", 2)[1] for path in STRATEGY_PROFILES]
+planner_fronts = [path.read_text().split("---\n", 2)[1] for path in PLANNER_PROFILES]
+arch_bodies = strategy_bodies + planner_bodies
+arch_fronts = strategy_fronts + planner_fronts
+check("Q12 each split agent keeps ONE body across both backends (the workflow is one "
+      "contract, not two dialects that drift per backend) and the monolith is gone: the "
+      "profile that put BOTH phases' bytes into EVERY turn of EVERY phase is exactly what "
+      "the split deleted",
+      strategy_bodies[0].strip() == strategy_bodies[1].strip()
+      and planner_bodies[0].strip() == planner_bodies[1].strip()
+      and not (REPO / ".opencode/agents/agent-architect.md").exists()
+      and not (REPO / ".github/agents/agent-architect.agent.md").exists()
+      and "agent-architect" not in (REPO / "orchestrators/settings.py").read_text()
+      and '"agent-architect"' not in (REPO / "orchestrators/prompts.py").read_text())
+for index, arch in enumerate(strategy_bodies):
     FLAT = " ".join(arch.split())          # wrap-proof: rules wrap mid-clause by design
-    check(f"Q13.{index + 1} architect profile {index} states the real phase order, reads the "
-          "security spec in phase 2, and owns the mapping the security step is denied",
-          "then the database and security steps run" in FLAT
-          and "security-spec-<slug>.json" in FLAT
-          and "(y) SECURITY DUTY CLAIM COVERAGE" in FLAT
-          and "spec_ref" in FLAT and "tech-stack" in FLAT)
-    check(f"Q13.{index + 2} architect profile {index} demands the PAIR inside the one draft "
-          "(spec_ref + capability, mechanism named), names the file the claim must live in, and "
-          "closes with the per-duty mapping report - a bare token would otherwise satisfy the law "
-          "in prose while realizing nothing",
-          "BOTH its `spec_ref` token" in FLAT and "its `capability` token" in FLAT
-          and "citation is not a mapping" in FLAT
-          and "/tmp/tasks/<slug>-<context>.json" in FLAT and "SINGLE" in FLAT
-          and "spec_ref -> claiming unit ids -> mechanism named" in FLAT)
-ARCH_MARKERS = re.findall(r"^\s+\(([a-z])\) ", arch_bodies[0], re.M)
-ARCH_WIDEST = max(len(line) for line in arch_bodies[0].splitlines())
-check("Q14 the refusal classes are one scannable line each in order ((a) through (z)), the "
-      "lead duties and the observability duty are their own lines, and nothing is left at the "
-      "old 7.5k-character paragraph size - an agent under a 12-call budget must be able to "
-      "point at a rule, not re-read a wall to find whether it exists",
-      ARCH_MARKERS == list(string.ascii_lowercase[:26]) and ARCH_WIDEST < 600
-      and arch_bodies[0].count("OBSERVABILITY DESIGN DUTY") == 1,
-      f"{ARCH_MARKERS} widest={ARCH_WIDEST}")
+    check(f"Q13.{index + 1} strategy profile {index} states the split boundary as hard law "
+          "(its output is the strategy file plus the ONE scaffold task; decomposition is the "
+          "planner's), owns the observability floor, and carries NONE of the phase-2 contract "
+          "- the 2026-11-20 compression cut even the narrative of who runs after whom: the "
+          "boundary line is the only ordering text a phase-1 session needs, and the negative "
+          "half (no planner law here) is what the token audit charged",
+          "Output: execution-strategy-<slug>.json + ONE T0 scaffold task" in FLAT
+          and "No code, no task decomposition" in FLAT
+          and "OBSERVABILITY DESIGN DUTY" in FLAT
+          and "spec_ref" not in FLAT and "task-decomposition" not in FLAT
+          and "table_row" not in FLAT)
+for index, arch in enumerate(planner_bodies):
+    FLAT = " ".join(arch.split())
+    check(f"Q13.{index + 3} planner profile {index} demands the PAIR inside the draft "
+          "(spec_ref + capability VERBATIM beside the mechanism copied from the duty's own "
+          "table_row), names the reach law and the CROSS-OWNER case, gates the mapping tables "
+          "on the slice's unmapped_duties, and closes with the per-duty mapping report - a "
+          "bare token would otherwise satisfy the law in prose while realizing nothing",
+          "digest slice" in FLAT
+          and "`spec_ref` AND `capability` VERBATIM" in FLAT
+          and "`table_row`" in FLAT and "CROSS-OWNER case" in FLAT
+          and "unmapped_duties" in FLAT and "never run `--emit` yourself" in FLAT
+          and "spec_ref ->" in FLAT and "claiming unit ids" in FLAT)
+DAG_TEXT = (REPO / ".opencode/skills/architect-practices/task-decomposition-dag/SKILL.md").read_text()
+DAG_MARKERS = re.findall(r"^- \(([a-z])\) ", DAG_TEXT, re.M)
+check("Q14 the split moved the refusal restatement OUT of both profiles and INTO the skill "
+      "plus the linter: neither profile enumerates the 26 letters (the planner carries the "
+      "five-law breath it most breaks), task-decomposition-dag still lists (a) through (z) "
+      "in order, and every batch refusal arrives as an `ERR [pointer]` line whose remedy is "
+      "an EDIT pass - the gate is the contract, memorization was the burn (2026-11-18 audit: "
+      "the profiles' restatement cost ~3.3K tokens on EVERY turn while the skill carried the "
+      "same law once). The 2026-11-20 compression deleted even that breath: letters survive "
+      "ONLY as inline cross-reference tags inside the Draft-law bullets - never as line-"
+      "start wall material in either profile",
+      not re.findall(r"^\s+\(([a-z])\) ", planner_bodies[0], re.M)
+      and not re.findall(r"^\s+\(([a-z])\) ", strategy_bodies[0], re.M)
+      and "five laws" not in planner_bodies[0].lower()
+      and all(tag in planner_bodies[0] for tag in ("(y)", "(z)", "(b)"))
+      and DAG_MARKERS == list(string.ascii_lowercase[:26])
+      and "ERR [" in (REPO / "orchestrators/task_queue.py").read_text()
+      and "by EDITING the named task objects" in (REPO / "orchestrators/task_queue.py").read_text())
 
 check("Q15 the architect is NOT granted the security rulebook: its interface to that phase is "
       "the artifact, so loading the authoring skill would duplicate a contract and pull another "
@@ -719,10 +754,10 @@ check("Q24 every Boot property key the table cites exists in the configuration m
                              for key in _property_names),
       f"unverified {sorted(k for k in _property_names if k.rstrip('.') not in _known_keys)[:6]}"
       f" of {len(_known_keys)} known")
-check("Q25 the architect is GRANTED the table (a skill it cannot load is not documentation) and "
-      "both of its profiles name the path it copies from",
-      "spring-security-architect: allow" in arch_fronts[0]
-      and all("tech-stack-architect/spring-security" in body for body in arch_bodies))
+check("Q25 the PLANNER is GRANTED the table (a skill it cannot load is not documentation) and "
+      "both of its profiles name the path it copies from (the strategy agent is denied it by design)",
+      "spring-security-architect: allow" in planner_fronts[0]
+      and all("tech-stack-architect/spring-security" in body for body in planner_bodies))
 
 
 # --- Q26-Q27: the tier split, and the id collision it exposed. The architect's table is loaded by a
@@ -761,7 +796,7 @@ check("Q27 discovery + collision law: the coder and tester framework skills each
       and "name: spring-security-architect\n" in sec_map
       and SPRING_IMPL.parent.name == "spring-security"
       and SEC_MAP.parent.name == "spring-security-architect"
-      and "spring-security-architect: allow" in arch_fronts[0])
+      and "spring-security-architect: allow" in planner_fronts[0])
 check("Q32 the bootability law is taught in BOTH security tiers (live 2026-11-18: the plan claimed "
       "mutual-tls-proof and the config unit wrote server.ssl.* keys, but no unit contract owned the "
       "test-boot substitute - every @SpringBootTest boot died 'SSL is enabled but no trust material' "
@@ -991,9 +1026,12 @@ check("SC6 discovery is told BOTH directives and their opposite defaults in ever
       and "ai_directive" in (REPO / ".opencode/skills/architect-practices/"
                              "domain-boundary-discovery/SKILL.md").read_text()
       and "ai_directive" not in prompts.ARCHITECT_STRATEGY_PROMPT
-      # phase 2 may READ the directive's consequence, it must never be taught to WRITE one
-      and "record `ai_directive`" not in prompts.ARCHITECT_TASKS_PROMPT
-      and "verified `ai_directive`" in prompts.ARCHITECT_TASKS_PROMPT
+      # Neither split agent records or re-decides the directive: the planner sees only its
+      # CONSEQUENCE - the spec's presence in its digest slice - and the ENGINE, not any
+      # agent, reads the quote back against the description file
+      and "ai_directive" not in prompts.ARCHITECT_PLANNER_PROMPT
+      and "ai_directive" not in prompts.ARCHITECT_PLANNER_REPAIR_PROMPT
+      and all("ai_directive" not in body for body in planner_bodies)
       and 'directive.get("required") is not True' in inspect.getsource(ddd.ai_required))
 
 # --- Q30-Q31: the plan phase is a budget, not a bottomless pen.
@@ -1003,41 +1041,55 @@ check("SC6 discovery is told BOTH directives and their opposite defaults in ever
 #     and 4 sessions that escaped the contract by writing generator scripts. These pins hold the
 #     fixes: per-context emission, edit-not-rewrite, the intent wall, and paths that resolve.
 arch_docs = [path.read_text() for path in ARCH_PROFILES]
+strategy_docs, planner_docs = arch_docs[:2], arch_docs[2:]
 dag_skill = (REPO / ".opencode/skills/architect-practices/task-decomposition-dag/SKILL.md").read_text()
-_arch_paths = sorted({literal for doc in arch_docs
-                      for literal in re.findall(r"`(\.opencode/skills/[\w./<>-]+/SKILL\.md)`", doc)})
-check("Q30 the architect is given EXACT skill paths per phase (no folder hunting: an unused skill "
-      "costs every later turn and a hunt costs turns outright), every path resolves on disk, and the "
-      "phase split is explicit - the decomposition contract and the security table are phase 2, the "
-      "DDD/layering/persistence rules are phase 1",
-      len(_arch_paths) >= 7
+_strategy_paths = sorted({literal for doc in strategy_docs
+                          for literal in re.findall(r"`(\.opencode/skills/[\w./<>-]+/SKILL\.md)`", doc)})
+_planner_paths = sorted({literal for doc in planner_docs
+                         for literal in re.findall(r"`(\.opencode/skills/[\w./<>-]+/SKILL\.md)`", doc)})
+check("Q30 each split agent is given EXACT skill paths for ITS phase (no folder hunting: an "
+      "unused skill costs every later turn and a hunt costs turns outright), every path "
+      "resolves on disk, and the split is enforced in BOTH directions: the decomposition "
+      "contract and the three mapping tables appear only in the planner profiles, the "
+      "DDD/layering/persistence skills only in the strategy profiles - each agent starts "
+      "with a clean context that carries no bytes for the other phase's work (2026-11-20)",
+      len(_strategy_paths) >= 4 and len(_planner_paths) >= 6
       and all((REPO / literal).is_file() or "<stack>" in literal or "<lang>" in literal
-              for literal in _arch_paths)
-      and all("PHASE 1 (strategy)" in doc and "PHASE 2 (tasks)" in doc for doc in arch_docs)
-      and all("task-decomposition-dag/SKILL.md" in doc[doc.index("PHASE 2"):] for doc in arch_docs)
-      and all("spring-security-architect/SKILL.md" in doc[doc.index("PHASE 2"):] for doc in arch_docs)
-      and all("spring-performance-architect/SKILL.md" in doc[doc.index("PHASE 2"):]
-              and "spring-ai-architect/SKILL.md" in doc[doc.index("PHASE 2"):]
-              for doc in arch_docs)
-      and all("domain-driven-architecture/SKILL.md" in doc[:doc.index("PHASE 2")] for doc in arch_docs))
-check("Q31 the emission shape is a batch of per-context files, the remedy is an edit, and the "
-      "intent wall is stated in all three carriers the architect reads (profile, prompt, skill) - "
-      "measured: plan 23,585 tok, largest context ~8k, refusal rewrite 13,288 tok vs 256-448 tok for "
-      "an edit, intent = 52% of the plan",
-      all("PER BOUNDED" in doc.upper() and "--emit" in doc for doc in arch_docs)
-      and "EDIT" in arch_docs[0] and "output tokens" in arch_docs[0]
-      and "ONE array file PER BOUNDED CONTEXT" in prompts.ARCHITECT_TASKS_PROMPT
-      and "One command is mandatory" in prompts.ARCHITECT_TASKS_PROMPT
-      and "AN INTENT IS A SPECIFICATION, NOT AN ESSAY" in prompts.ARCHITECT_TASKS_PROMPT
-      and "180" in prompts.ARCHITECT_TASKS_PROMPT
+              for literal in _strategy_paths + _planner_paths)
+      and not any("task-decomposition" in p or "spring-security-architect" in p
+                  or "spring-performance-architect" in p or "spring-ai-architect" in p
+                  for p in _strategy_paths)
+      and not any("domain-driven-architecture" in p or "software-layering" in p
+                  or "database-persistence" in p for p in _planner_paths)
+      and all("task-decomposition-dag/SKILL.md" in doc
+              and "spring-security-architect/SKILL.md" in doc
+              and "spring-performance-architect/SKILL.md" in doc
+              and "spring-ai-architect/SKILL.md" in doc for doc in planner_docs))
+_pf = " ".join(planner_bodies[0].split())
+_pb = " ".join(prompts.ARCHITECT_PLANNER_PROMPT.split())
+check("Q31 the emission shape is ONE planning session per BOUNDED CONTEXT writing exactly "
+      "one draft file, the ENGINE runs the single batch `--emit` in-process after the last "
+      "context (F1's law survives: the batch still validates as a whole, at zero sessions), "
+      "the remedy is an EDIT over the objects the ERR pointers name, and the intent wall is "
+      "stated in every phase-2 carrier (planner profile, per-context brief, skill) - "
+      "measured: plan 23,585 tok, largest context ~8k, refusal rewrite 13,288 tok vs "
+      "256-448 tok for an edit, intent = 52% of the plan",
+      "ONE bounded context" in _pf and "--lint" in _pf
+      and "never run `--emit` yourself" in _pf
+      and "hundreds of tokens; a rewrite 10-30k" in _pf
+      and "READ EXACTLY THESE" in _pb and "40-80 words (180 refused at emit)" in _pb
+      and "LINT-CLEAN" in _pb and "the ENGINE emits the batch" in _pb
+      and "generator script" in _pb
       and "ONE JSON array **per bounded context**" in dag_skill
-      # and phase 2 stops re-reading phase 1's inputs (the 2026-11-18 burn report's LARGEST item:
-      # 44,943 raw tokens of slice re-reads carried 381,965 tokens - 11% of all architect input)
-      and "Your inputs are" in prompts.ARCHITECT_TASKS_PROMPT
-      and "read it together with its context map" not in prompts.ARCHITECT_TASKS_PROMPT
+      # and phase 2 never re-reads phase 1's inputs: the brief's input list is strategy +
+      # digest + symbols, and the slice/map phrase belongs to the strategy prompt alone
+      # (2026-11-18 burn report: 44,943 raw tokens of slice re-reads carried 381,965 - 11%)
+      and "read it together with its context map" not in prompts.ARCHITECT_PLANNER_PROMPT
       and "read it together with its context map" in prompts.ARCHITECT_STRATEGY_PROMPT
       and "hard ceiling 180" in dag_skill
-      and "**edit**" in dag_skill)
+      and "**edit**" in dag_skill
+      and "emit_draft_batch" in (REPO / "orchestrators/pipeline.py").read_text()
+      and "run_planner" in (REPO / "orchestrators/pipeline.py").read_text())
 
 # --- SE. rule (z) is taught in EVERY carrier and nothing sends the architect to a tool
 #     it does not have (2026-11-19, the R1/R2 fix). The fields without the law in the
@@ -1047,12 +1099,14 @@ check("Q31 the emission shape is a batch of per-context files, the remedy is an 
 import settings  # noqa: E402
 import task_queue  # noqa: E402
 JAVA_JUNIT5 = (REPO / ".opencode/skills/tester-framework/java-junit5/SKILL.md").read_text()
-_z_docs = arch_docs + [prompts.ARCHITECT_TASKS_PROMPT, dag_skill]
+QUICKREF_TEXT = (REPO / ".opencode/skills/architect-practices/"
+                 "task-decomposition-dag/QUICKREF.md").read_text()
+_z_docs = planner_bodies + [prompts.ARCHITECT_PLANNER_PROMPT, QUICKREF_TEXT, dag_skill]
 check("SE1 the two vocabulary fields (`ast_hints.meters`, `ast_hints.routes`) and rule (z) "
-      "are named by every carrier the architect phase reads - both profiles, the tasks "
-      "prompt, the decomposition skill: a field only the validator knows is a field never "
-      "emitted (the null-pointer of 'the meter NAME is the contract from ast_hints' while "
-      "ast_hints carried no names)",
+      "are named by every carrier the phase-2 planner reads - both planner profiles, the "
+      "per-context brief, the QUICKREF (the default contract read since the 2026-11-20 "
+      "audit round 3) and the full decomposition skill (the strategy agent never sees a "
+      "literal it must table): a field only the validator knows is a field never emitted",
       all("ast_hints.meters" in doc and "ast_hints.routes" in doc and "(z)" in doc
           for doc in _z_docs),
       [doc[-60:] for doc in _z_docs if "ast_hints.meters" not in doc])
@@ -1072,8 +1126,8 @@ check("SE4 no architect carrier sends the session to a tool the profiles do not 
       "Copilot tool list has no write) - 'your write tool' would strand the phase on a "
       "missing capability",
       not any("write tool" in doc for doc in _z_docs)
-      and "your edit tool" in inspect.getsource(prompts.build_architect_prompt)
-      and "your edit tool" in arch_bodies[0] and "your edit tool" in arch_bodies[1])
+      and "your edit tool" in prompts.ARCHITECT_PLANNER_PROMPT
+      and "your edit tool" in planner_bodies[0] and "your edit tool" in planner_bodies[1])
 check("SE5 the emit gate's refusals carry the remedy shape the SD3 doctrine demands: every "
       "(z) message names the literal, the offending unit ids, and the exact edit (the duty "
       "word, the field) - not a rewrite",
@@ -1172,9 +1226,9 @@ for table in ("spring-performance-architect", "spring-ai-architect"):
           len(text.split("---", 2)[2].split()) < 620 and len(text.split()) < 700
           and "no framework mechanism" in text.lower()
           and f"tech-stack-architect/{table}/SKILL.md" in
-          (REPO / ".opencode/agents/agent-architect.md").read_text()
+          (REPO / ".opencode/agents/agent-planner-architect.md").read_text()
           and f"{table}: allow" in
-          (REPO / ".opencode/agents/agent-architect.md").read_text(),
+          (REPO / ".opencode/agents/agent-planner-architect.md").read_text(),
           f"{len(text.split())} words")
 def _z28b_violations(table_path):
     """Every mechanism cell (4th column) of a mapping table names a backticked REAL
@@ -1454,21 +1508,22 @@ check("PF11 (2026-11-19 review) the tier split has both legs for the new domains
               (".opencode/skills/tech-stack/spring-performance/SKILL.md",
                ".opencode/skills/tech-stack/spring-ai/SKILL.md")))
 
-check("PF7b the phase-2 prompt's table paths follow the REAL directory pattern "
-      "(`<stack>-performance-architect`, `<stack>-ai-architect`) - a prompt that names "
-      "`<stack>-performance` is a folder hunt wearing a path (F4's lesson, applied to the "
-      "new tables), and the claim law demands the mechanism beside the pair",
-      "<stack>-performance-architect" in prompts.ARCHITECT_TASKS_PROMPT
-      and "<stack>-ai-architect" in prompts.ARCHITECT_TASKS_PROMPT
-      and "beside the copied mechanism" in prompts.ARCHITECT_TASKS_PROMPT)
+check("PF7b the planner carriers' table paths follow the REAL directory pattern "
+      "(spring-performance-architect, spring-ai-architect) - a path that does not name the "
+      "real directory is a folder hunt wearing a path (F4's lesson, applied to the "
+      "new tables), and the claim law demands the mechanism copied beside the spec_ref pair",
+      "tech-stack-architect/spring-performance-architect/SKILL.md" in planner_bodies[0]
+      and "tech-stack-architect/spring-ai-architect/SKILL.md" in planner_bodies[0]
+      and "mechanism copied from" in " ".join(prompts.ARCHITECT_PLANNER_PROMPT.split()))
 
-check("PF4b the architect loads each mapping table ONLY when its spec exists (three tables are "
-      "priced into the 15-call budget, but reading a table whose spec is absent is the F4-era "
-      "folder-hunt reborn as a skill-hunt) and the claim law reaches the new specs in (y1) form",
-      "ONLY when its spec exists" in (REPO / ".opencode/agents/agent-architect.md").read_text()
-      and "WB-/PB-/PI-" in (REPO / ".opencode/agents/agent-architect.md").read_text()
-      and "AC-/AM- for AI" in (REPO / ".opencode/agents/agent-architect.md").read_text()
-      and "never nowhere" in (REPO / ".opencode/agents/agent-architect.md").read_text())
+check("PF4b the planner loads each mapping table ONLY when its digest slice lists "
+      "unmapped duties (three tables were priced into the 15-call monolith budget; reading "
+      "a table whose rows the digest already carries is the F4-era folder-hunt reborn as a "
+      "skill-hunt) and the claim law reaches the new specs in (y1) form",
+      "ONLY when your digest slice lists `unmapped_duties`" in planner_bodies[0]
+      and "PB-/PI-" in planner_bodies[0]
+      and "AC-/AM-" in planner_bodies[0]
+      and "without the surface reach law" in " ".join(planner_bodies[0].split()))
 _db_text = (REPO / ".opencode/agents/agent-database-architect.md").read_text()
 _db_paths = sorted(set(re.findall(r"`(\.opencode/skills/[\w./<>-]+/SKILL\.md)`", _db_text)))
 check("PF5 the database profile got the A4 fix: every skill it must read is named by an "
@@ -1487,18 +1542,19 @@ check("SE10 the prompt-contract channel law is carried wherever a plan author or
       "refusal text - the intent states them so the coder loads no other skill, and the "
       "WRITABLE CHANNEL (language source or configuration document only; no template-file "
       "writer exists) is named by the authoring skill, the AI prompt, both AI profiles, the "
-      "tasks prompt and both architect profiles",
+      "per-context planner brief and both planner profiles",
       "SOURCE TYPE" in (REPO / ".opencode/skills/architect-practices/ai-strategy/SKILL.md").read_text()
       and "template FILE" in (REPO / ".opencode/skills/architect-practices/ai-strategy/SKILL.md").read_text()
       and "SOURCE TYPE as its home" in prompts.AI_PROMPT
       and all("SOURCE TYPE as its home" in (REPO / f).read_text()
               for f in (".opencode/agents/agent-ai-architect.md",
                         ".github/agents/agent-ai-architect.agent.md"))
-      and "HOME OF THE ARTIFACT" in prompts.ARCHITECT_TASKS_PROMPT
-      and "WRITABLE CHANNEL" in prompts.ARCHITECT_TASKS_PROMPT
-      and all("writable channel" in (REPO / f).read_text()
-              for f in (".opencode/agents/agent-architect.md",
-                        ".github/agents/agent-architect.agent.md")))
+      and "HOME OF THE ARTIFACT" in prompts.ARCHITECT_PLANNER_PROMPT
+      and "writable channel" in prompts.ARCHITECT_PLANNER_PROMPT
+      and all("HOME OF THE ARTIFACT" in (REPO / f).read_text()
+              and "writable channel" in (REPO / f).read_text()
+              for f in (".opencode/agents/agent-planner-architect.md",
+                        ".github/agents/agent-planner-architect.agent.md")))
 
 check("SE11 the memory tier/technique law is taught in every carrier that decides or maps "
       "it (2026-11-19 review): the trigger list and the three techniques appear in the "
@@ -1539,6 +1595,237 @@ check("PF6 the deterministic-measurement law is the spine of BOTH authoring skil
       "wall" in _pf_doc.lower() and "deterministic" in _pf_doc
       and "closed" in _pf_doc and "offline-model-port" in _pf_doc
       and "NO unit test" in _pf_doc.upper().replace("NO UNIT TEST", "NO unit test"))
+
+_ddd_src = (REPO / "orchestrators/ddd.py").read_text()
+check("SF1 the phase-2 duty digest is held by EVERY carrier the split planner reads, in its "
+      "per-context form (2026-11-20: the context-blow-up fix, then the architect split): the "
+      "engine exposes the whole-domain builder AND the per-context slicer, the pipeline calls "
+      "the slicer before each planner session, the brief routes the session to strategy + "
+      "slice + symbol table ('READ EXACTLY THESE'), both planner profiles gate the mapping "
+      "tables on the slice's unmapped_duties, and every duty arrives pre-joined to its "
+      "matched `table_row` - the raw specs and tables are closed to a session by default",
+      "def write_phase2_digest(" in _ddd_src
+      and "def write_strategy_slice(" in _ddd_src
+      and "def write_phase2_digest_slice(" in _ddd_src
+      and "write_strategy_slice(slug, context)" in _ddd_src
+      and "{strategy_slice}" in prompts.ARCHITECT_PLANNER_PROMPT
+      and "write_phase2_digest_slice" in (REPO / "orchestrators/pipeline.py").read_text()
+      and "{slice}" in prompts.ARCHITECT_PLANNER_PROMPT
+      and "{symbols_line}" in prompts.ARCHITECT_PLANNER_PROMPT
+      and all("unmapped_duties" in body for body in planner_bodies)
+      and all("`table_row`" in body for body in planner_bodies)
+      and '"table_row"' in _ddd_src)
+# --- AS. the 2026-11-20 architect split itself: the monolithic agent-architect became
+#     agent-strategy-architect (phase 1) + agent-planner-architect (phase 2, ONE per bounded
+#     context, ENGINE-run batch emit). Every root of the token audit (PROJECT-INSPECTION
+#     section 9: profiles re-sending both phases' law every turn; one session accumulating
+#     every context's draft; a 26-letter invariant wall the linter already enforced) is
+#     pinned to a carrier here, so no later edit can quietly re-fuse the agents or
+#     re-prose the gate.
+_oc_src = (REPO / "orchestrators/opencode_backend.py").read_text()
+_cp_src = (REPO / "orchestrators/copilot_backend.py").read_text()
+_tq_src = (REPO / "orchestrators/task_queue.py").read_text()
+_pl_src = (REPO / "orchestrators/pipeline.py").read_text()
+check("AS1 the split is structural, not cosmetic: settings names the two agents; BOTH "
+      "backends expose run_strategy/run_planner/run_planner_repair and no longer expose the "
+      "monolith's run_architect; the pipeline's phase-2 block is the per-context loop",
+      settings.ARCHITECT_STRATEGY_AGENT == "agent-strategy-architect"
+      and settings.ARCHITECT_PLANNER_AGENT == "agent-planner-architect"
+      and all("def run_strategy" in s and "def run_planner" in s
+              and "def run_planner_repair" in s and "def run_architect" not in s
+              for s in (_oc_src, _cp_src))
+      and "_plan_domain_tasks" in _pl_src and "run_architect" not in _pl_src
+      and settings.call_budget(settings.ARCHITECT_STRATEGY_AGENT) == 12
+      and settings.call_budget(settings.ARCHITECT_PLANNER_AGENT) == 12)
+check("AS2 stated budget == engine budget for BOTH split agents (S26's law re-homed: the "
+      "phase that broke it pays for every unstayed extra call), in all four mirror profiles",
+      all("Budget <=12" in body for body in (strategy_bodies + planner_bodies))
+      and all("Budget <=12" in (REPO / f).read_text()
+              for f in (".github/agents/agent-strategy-architect.agent.md",
+                        ".github/agents/agent-planner-architect.agent.md")))
+check("AS3 the deterministic linter ships as the contract's enforcement tier: --lint is a "
+      "CLI verb that runs the SINGLE-FILE law (schema, forward-pin refusal) and names the "
+      "batch laws DEFERRED to the engine's emit; every refusal is an `ERR [pointer]` line; "
+      "claim_draft renumbers colliding ids and remaps the file's own references IN PYTHON - "
+      "arithmetic is never billed to a session or a repair turn",
+      '"--lint"' in _pl_src and "lint_draft" in _pl_src
+      and "def lint_draft" in _tq_src and "DEFERRED" in _tq_src
+      and "def _format_error" in _tq_src and "ERR [" in _tq_src
+      and "def claim_draft" in _tq_src and "renumber" in _tq_src
+      and "def draft_symbol_table" in _tq_src and "def emit_draft_batch" in _tq_src)
+check("AS4 the planner profile teaches by ONE positive example instead of a prose wall: a "
+      "valid stage-1 + stage-2 pair carrying ast_hints (meters/routes/config tabled) and "
+      "the verbatim spec_ref+capability claim beside the copied mechanism (2026-11-20 item "
+      "4: one clean example replaces ~400 tokens of stacked 'never X, never Y' warnings the "
+      "monolith re-sent every turn of every phase)",
+      "Valid pair" in planner_bodies[0]
+      and '"T1-021"' in planner_bodies[0] and '"T2-021"' in planner_bodies[0]
+      and '"telemetry.ingest.accepted"' in planner_bodies[0]
+      and "AZ-02 tenant-scoped-query" in planner_bodies[0]
+      and "IDENTICAL" in planner_bodies[0])
+_pair_json = re.search(r"```json\n(.*?)\n```", planner_bodies[0], re.S)
+_pl = json.loads(_pair_json.group(1)) if _pair_json else []
+check("AS4b the profile's Valid pair is not just present but VALID and LAWFUL: the fenced "
+      "block parses as JSON (no placeholder strings), the T1/T2 ast_hints tables are "
+      "byte-identical (rule (z4) practiced as it is preached), the route is tabled duty "
+      "`serves` on the ONE unit that answers it, the meter duty `owns` on its registering "
+      "unit, the T2 intent carries `spec_ref` + capability beside the copied mechanism, "
+      "and the T1 intent carries the row id and the cross-owner case - (live 2026-11-20 "
+      "operator review: the shipped example was invalid JSON - ast_hints spelled as a "
+      "prose placeholder - with duty 'uses' on the serving unit and the claim on the entry "
+      "while the mechanism sat on the pinned store: a broken example teaches a broken "
+      "contract, and the emit gate would refuse the very shape the profile shows)",
+      len(_pl) == 2
+      and _pl[0].get("ast_hints") == _pl[1].get("ast_hints")
+      and all(t["ast_hints"]["routes"] == [{"method": "POST", "path": "/ingress/packets",
+                                            "duty": "serves"}] for t in _pl)
+      and all(m["duty"] == "owns" for t in _pl for m in t["ast_hints"]["meters"])
+      and "AZ-02 tenant-scoped-query" in _pl[1]["intent"] and "byIdAndTenant" in _pl[1]["intent"]
+      and "(id, tenantId)" not in _pl[1]["intent"]
+      and "AZ-02" in _pl[0]["intent"] and "cross-owner" in _pl[0]["intent"].lower())
+check("AS4d the example teaches the naming law, not just the claim law: a collaborator's "
+      "method appears in prose as a NAME only - no parameter list, because the signature "
+      "belongs to the producing unit's table (2026-11-20 operator review: the shipped "
+      "example spelled byIdAndTenant(id, tenantId) right under the line forbidding prose "
+      "re-spell of tabled signatures - an LLM copies the example, not the caveat)",
+      "COLLABORATOR's" in planner_bodies[0]
+      and "never spelled with its parameter list" in " ".join(planner_bodies[0].split())
+      and "byIdAndTenant(" not in _pl[1]["intent"])
+_plf = " ".join(prompts.ARCHITECT_PLANNER_PROMPT.split()).lower()
+_plprof = " ".join(planner_bodies[0].split()).lower()
+check("AS10 the stage graph, the T1+T2+T3 triple, and the manifest task SHAPE are taught in "
+      "all three phase-2 carriers (2026-11-20 live-line stop: the compressed carrier dropped "
+      "the dependsOn layering law with the old field-rules section, one draft came back with "
+      "19 stage-1->stage-2 inverted edges, and the repair was a 21-edit cascade that spent "
+      "the whole session budget at 965k input / 70k output for a result the lint calls CLEAN; "
+      "the same draft carried NO stage-3 tasks - obeying a stale skill line that promised the "
+      "engine mirrors them; and a manifest task was drafted with the wrong targetAgent - the "
+      "shape was in no carrier after the compression)",
+      "stage graph is law" in _plprof
+      and "never on a stage-2 task" in _plprof
+      and "t3 on its own t2" in _plprof
+      and "the graph is law" in _plf and "t1+t2+t3 triple" in _plf
+      and "never a stage-2 task" in _plf and "t3 dependson its own t2" in _plf
+      and "stage graph is law" in DAG_TEXT.lower()
+      and "engine mirrors" not in DAG_TEXT.lower()
+      and "planner emits all three" in DAG_TEXT.lower()
+      and "targetagent agent-container, kind bootstrap" in _plprof
+      and "targetagent agent-container, kind bootstrap" in _plf
+      and ".opencode/skills/tech-stack-architect/java-reactive-patterns/SKILL.md" in planner_bodies[0])
+check("AS15 the manifest-WIRING law has carriers everywhere a claim is planned (live 2026-11-20 "
+      "board: T2-019 spells @EnableWebFluxSecurity + httpBasic - classes that exist only once "
+      "T0-007's coordinate lands - yet nothing in the plan orders the manifest before its "
+      "tester; the table's own 'schedule the manifest duty before any tester runs' had no line "
+      "in the carriers a stage-2 claim reads, and no stack-neutral gate CAN see an annotation): "
+      "the unit that copies a coordinate-bearing mechanism dependsOn the build-manifest id - "
+      "profile, quickref and the per-context brief each carry the law",
+      "build-manifest task id" in " ".join(planner_bodies[0].split())
+      and "build-manifest task id" in " ".join(planner_bodies[1].split())
+      and "dependsOn the build-manifest task id" in " ".join(QUICKREF_TEXT.split())
+      and "build-manifest task id in its `dependsOn`" in " ".join(prompts.ARCHITECT_PLANNER_PROMPT.split()))
+check("AS4e rule (t) never dangles: the planner profiles and the per-context brief spell "
+      "the amendment's meaning next to the letter (2026-11-20: the (a)-(z) wall moved into "
+      "the skill, but a bare label pointing at a not-yet-loaded skill is a folder hunt "
+      "wearing a citation - the ten-word meaning travels with every (t) reference, both "
+      "mirrors and the brief)",
+      "promised mechanism the plan will not install" in " ".join(planner_bodies[0].split())
+      and "promised mechanism the plan will not install" in " ".join(planner_bodies[1].split())
+      and "rule (t)" in " ".join(planner_bodies[0].split())
+      and "will not install" in " ".join(prompts.ARCHITECT_PLANNER_PROMPT.split()))
+check("AS4f the build-manifest ONE-task law is taught where it is used: both planner "
+      "profiles name the symbol table's `build_manifest` as the first stop, and the brief "
+      "opens the coordinate paragraph with it and ends it with report-don't-duplicate (the "
+      "machine half - lint/emit refusing a second manifest - is pinned by SP5; carriers "
+      "and gate must say the same law or the session obeys whichever it read last)",
+      all("build_manifest" in b for b in planner_bodies)
+      and all("missing_coordinates" in b for b in planner_bodies)
+      and "{gaps}" in prompts.ARCHITECT_PLANNER_PROMPT
+      and "consult the symbol table's `build_manifest` FIRST" in prompts.ARCHITECT_PLANNER_PROMPT
+      and "second manifest" in " ".join(prompts.ARCHITECT_PLANNER_PROMPT.split())
+      and "_stage0_family_errors" in (REPO / "orchestrators/task_queue.py").read_text()
+      and "def apply_coordinate_gaps" in (REPO / "orchestrators/task_queue.py").read_text()
+      and "apply_coordinate_gaps" in (REPO / "orchestrators/pipeline.py").read_text())
+for mirror_index, doc in enumerate(planner_bodies):
+    _pj = re.search(r"```json\n(.*?)\n```", doc, re.S)
+    check(f"AS4c.{mirror_index + 1} planner profile {mirror_index} carries exactly one fenced "
+          "example and its frontmatter is a frontmatter (the 2026-11-20 mirror-copy accident "
+          "left a .github body inside the header region and duplicated the whole document - "
+          "a profile whose frontmatter is prose grants nothing and names nothing)",
+          bool(_pj) and doc.count("```json") == 1 and doc.count("# Global rules") == 1)
+check("AS13 the QUICKREF replaces the 5,967-word full contract as the DEFAULT per-session "
+      "read (2026-11-20 context audit round 2: every one of the 2-4 context sessions re-"
+      "loaded the whole 38.3KB manual for laws the linter already enforces - the skill tax "
+      "was ~9.5K tokens per session of mostly-unused reference tables): the quickref exists "
+      "and resolves, stays under 800 words, carries the schema keys, the stage graph, the "
+      "claim form and the vocabulary fields, and the planner profile makes the FULL SKILL.md "
+      "conditional on an ERR pointer citing a shape the map does not summarize",
+      (REPO / ".opencode/skills/architect-practices/task-decomposition-dag/QUICKREF.md").is_file()
+      and len(QUICKREF_TEXT.split()) <= 800
+      and all(k in QUICKREF_TEXT for k in ("targetAgent", "ast_hints", "dependsOn", "semantics"))
+      and "IDENTICAL" in QUICKREF_TEXT and "CROSS-OWNER" in QUICKREF_TEXT
+      and "QUICKREF.md" in planner_bodies[0]
+      and "ONLY when a lint or emit" in " ".join(planner_bodies[0].split()))
+check("AS14 the repair brief carries the pattern law the planning sessions learned the hard "
+      "way (run 4 measured: the batch's first emit refused 5 stage-1 path violations; the "
+      "repair session obeyed the OLD wording - one edit per object, files re-linted it never "
+      "changed - 25 calls, 371K input for what ONE grep and a batched pass costs): locate a "
+      "repeating pointer shape with ONE grep, batch the repairs or rewrite the affected "
+      "file, re-lint each edited file ONCE, never re-lint an unedited one; and --plan-only "
+      "exists so a supervised plan measurement STOPS before the docker gate instead of "
+      "racing a polling kill against the drain's first billed session",
+      "ONE grep" in " ".join(prompts.ARCHITECT_PLANNER_REPAIR_PROMPT.split())
+      and "a repeating shape is ONE" in " ".join(prompts.ARCHITECT_PLANNER_REPAIR_PROMPT.split())
+      and "never re-lint a file you did not" in " ".join(prompts.ARCHITECT_PLANNER_REPAIR_PROMPT.split())
+      and '"--plan-only"' in _pl_src
+      and _pl_src.index("task phases finished") < _pl_src.index("if args.plan_only:")
+      and "[plan  ] --plan-only" in _pl_src)
+import session_audit  # noqa: E402
+check("AS5 the cost audit sees the split: strategy, planner and repair sessions classify to "
+      "distinct roles (the repair phrase is the longer prefix, tested FIRST), the historic "
+      "monolith phrase still classifies, and the new budgets are in the audit table",
+      session_audit.classify(" ".join(prompts.ARCHITECT_STRATEGY_PROMPT.split())[:400])[0]
+      == "strategy"
+      and session_audit.classify(prompts.ARCHITECT_PLANNER_PROMPT)[0] == "planner"
+      and session_audit.classify(prompts.ARCHITECT_PLANNER_REPAIR_PROMPT)[0] == "planner_repair"
+      and session_audit.classify("You are the blackboard architect for this repository.")[0]
+      == "architect"
+      and session_audit.BUDGETS["strategy"] == 12
+      and session_audit.BUDGETS["planner"] == 12
+      and session_audit.BUDGETS["planner_repair"] == 12)
+check("AS6 the draft-order law: providers draft before consumers from the context-map "
+      "relationship edges (so the only pin a session can need is one the symbol table "
+      "already carries), the unattributed duties get ONE deterministic home (the first "
+      "slice), and stale draft bytes never join a fresh plan - a resumed launch keeps "
+      "only drafts NEWER than every plan input (draft_is_fresh) and unlinks the rest, "
+      "so two plan generations can never share one batch",
+      "def context_draft_order" in _ddd_src
+      and '"draft_order"' in _ddd_src
+      and "def draft_is_fresh" in _tq_src and "draft_is_fresh" in _pl_src
+      and "cleared stale drafts" in _pl_src
+      and "owner is None and context != first" in _ddd_src)
+check("AS9 the carrier preflight is real: agent_profiles_problems parses both profile trees' "
+      "YAML headers (with a quoted-colon heuristic when PyYAML is absent), every CURRENT "
+      "profile passes, and pipeline.run stops the launch on a header problem BEFORE phase 0 "
+      "(2026-11-20 live-line stop: the planner .github description carried an unquoted "
+      "'context: reads' - the header did not parse, the Copilot CLI silently skipped the "
+      "profile, and the first planner spawn died 'No such agent' AFTER six billed sessions; "
+      "a carrier the CLI cannot register must cost zero sessions and stop the launch)",
+      settings.agent_profiles_problems() == []
+      and "def agent_profiles_problems" in (REPO / "orchestrators/settings.py").read_text()
+      and "agent_profiles_problems" in _pl_src
+      and _pl_src.index("agent_profiles_problems") < _pl_src.index("resolve_seed"))
+import tempfile as _as_tmp
+_as_root = Path(_as_tmp.mkdtemp())
+(_as_root / ".github" / "agents").mkdir(parents=True)
+(_as_root / ".github" / "agents" / "poison.agent.md").write_text(
+    "---\nname: Poison\ndescription: One thing: two things, still prose\ntools: [\"read\"]\n---\nbody\n",
+    encoding="utf-8")
+check("AS9b the preflight predicate CAN fail (the PF4c-selftest doctrine): a header with an "
+      "unquoted ': ' inside a value is reported for a synthetic tree - a guard that cannot "
+      "refuse is a guard that never ran",
+      bool(settings.agent_profiles_problems(root=str(_as_root)))
+      and any("poison.agent.md" in line
+              for line in settings.agent_profiles_problems(root=str(_as_root))))
 
 bad_names = [n for n, c in CHECKS if not c]
 print(f"\nSKILL-SCRIPTS SUITE: {len(CHECKS) - len(bad_names)}/{len(CHECKS)}")

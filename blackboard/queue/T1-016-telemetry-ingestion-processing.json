@@ -1,0 +1,114 @@
+{
+  "id": "T1-016",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-001",
+    "T1-003",
+    "T1-004",
+    "T1-005",
+    "T1-006",
+    "T1-007",
+    "T1-011",
+    "T1-014",
+    "T1-015"
+  ],
+  "kind": "test",
+  "layer": "application",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/test/java/com/blackboard/telemetry/ingestion/application/IngestPacketUseCaseTest.java",
+  "export": "com.blackboard.telemetry.ingestion.application.IngestPacketUseCaseTest",
+  "intent": "Mocked ports: out-of-bounds sample is tagged VALIDATION_FAILED, payload kept, and still appended; in-bounds is VALID; a metric without configured bounds is not validated; over-cap packet rejected whole with zero appends; reorder offer false gives 503; a sample later than the window appends BACKFILL; in-flight permits exhausted gives 503; events published; audit and step logs asserted.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.ingestion.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetryProperties",
+        "task_id": "T2-001"
+      },
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-003"
+      },
+      {
+        "type": "MetricsFacade",
+        "task_id": "T2-004"
+      },
+      {
+        "type": "CorrelationWebFilter",
+        "task_id": "T2-005"
+      },
+      {
+        "type": "AuditPort",
+        "task_id": "T2-006"
+      },
+      {
+        "type": "RedactionPort",
+        "task_id": "T2-007"
+      },
+      {
+        "type": "SampleStore",
+        "task_id": "T2-011"
+      },
+      {
+        "type": "ReorderWindow",
+        "task_id": "T2-014"
+      },
+      {
+        "type": "TelemetryEventPublisher",
+        "task_id": "T2-015"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Integer> ingest(String provenDeviceId, List<TelemetrySample> samples)",
+        "returns": "Mono<Integer>",
+        "semantics": "emits the number of rows appended; errors ResponseStatusException 413 over the sample cap (nothing appended), 503 when reorder offer is false or no in-flight permit is free"
+      }
+    ],
+    "meters": [
+      {
+        "name": "telemetry.samples.validated",
+        "duty": "uses"
+      },
+      {
+        "name": "telemetry.samples.reordered",
+        "duty": "uses"
+      },
+      {
+        "name": "telemetry.revisions.appended",
+        "duty": "uses"
+      }
+    ],
+    "routes": [],
+    "config": [
+      {
+        "path": "telemetry.ingress.max-samples-per-packet",
+        "kind": "value"
+      },
+      {
+        "path": "telemetry.ingress.max-in-flight-appends",
+        "kind": "value"
+      },
+      {
+        "path": "telemetry.store.batch-size",
+        "kind": "value"
+      },
+      {
+        "path": "telemetry.store.batch-window",
+        "kind": "value"
+      },
+      {
+        "path": "telemetry.boundaries",
+        "kind": "map"
+      },
+      {
+        "path": "telemetry.reorder.window-seconds",
+        "kind": "value"
+      }
+    ]
+  }
+}

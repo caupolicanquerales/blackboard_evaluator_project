@@ -1,0 +1,50 @@
+{
+  "id": "T1-025",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T0-007",
+    "T1-024",
+    "T1-007"
+  ],
+  "kind": "test",
+  "layer": "shared",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/test/java/com/blackboard/telemetry/shared/DistributionMetricsTest.java",
+  "export": "com.blackboard.telemetry.shared.DistributionMetricsTest",
+  "intent": "Registry-backed test: countBroadcast and countDropped each increment their counter by one under the given tag; a tag outside the bounded set, or an identifier-like value, is passed through the redaction collaborator and collapses to a fixed bucket. Assert counter values per tag.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.shared",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "RedactionPort",
+        "task_id": "T2-007"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "void countBroadcast(String outcome)",
+        "returns": ""
+      },
+      {
+        "signature": "void countDropped(String reason)",
+        "returns": ""
+      }
+    ],
+    "meters": [
+      {
+        "name": "telemetry.window.broadcast",
+        "duty": "owns"
+      },
+      {
+        "name": "telemetry.window.dropped",
+        "duty": "owns"
+      }
+    ],
+    "routes": [],
+    "config": []
+  }
+}

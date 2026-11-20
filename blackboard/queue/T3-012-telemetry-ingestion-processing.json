@@ -1,0 +1,15 @@
+{
+  "id": "T3-012",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-012"
+  ],
+  "kind": "refactor",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/main/java/com/blackboard/telemetry/ingestion/infrastructure/AesGcmPayloadCipher.java",
+  "export": "com.blackboard.telemetry.ingestion.infrastructure.AesGcmPayloadCipher",
+  "intent": "Refactor the cipher for clarity; format and key handling unchanged."
+}

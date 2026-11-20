@@ -1,0 +1,36 @@
+{
+  "id": "T2-015",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T0-001",
+    "T1-015",
+    "T2-003"
+  ],
+  "kind": "code",
+  "layer": "application",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/main/java/com/blackboard/telemetry/ingestion/application/TelemetryEventPublisher.java",
+  "export": "com.blackboard.telemetry.ingestion.application.TelemetryEventPublisher",
+  "intent": "Application-layer event publisher port: the only way Telemetry Ingestion's events cross to Telemetry Stream Distribution, which consumes them in-process through its own adapter; only events cross, never store or reorder internals.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.ingestion.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-003"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> publish(String eventType, TelemetrySample sample)",
+        "returns": "Mono<Void>"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

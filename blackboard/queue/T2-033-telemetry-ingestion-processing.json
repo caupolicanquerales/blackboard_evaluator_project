@@ -1,0 +1,62 @@
+{
+  "id": "T2-033",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T0-001",
+    "T0-007",
+    "T1-033",
+    "T2-003",
+    "T2-025",
+    "T2-029",
+    "T2-031",
+    "T2-032"
+  ],
+  "kind": "code",
+  "layer": "interface",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/main/java/com/blackboard/telemetry/distribution/application/TelemetryEventConsumer.java",
+  "export": "com.blackboard.telemetry.distribution.application.TelemetryEventConsumer",
+  "intent": "Unit IS the surface 'TelemetryEventConsumer': AZ-02 scope-check enforced at the pinned PublisherOriginPolicy; a foreign origin is dropped before any buffering and counted, otherwise the sample enters the window buffer and any completed window is emitted on the hub.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.distribution.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "PublisherOriginPolicy",
+        "task_id": "T2-032"
+      },
+      {
+        "type": "WindowBuffer",
+        "task_id": "T2-029"
+      },
+      {
+        "type": "TelemetryStreamHub",
+        "task_id": "T2-031"
+      },
+      {
+        "type": "DistributionMetrics",
+        "task_id": "T2-025"
+      },
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-003"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> consume(String origin, String eventType, TelemetrySample sample)",
+        "returns": "Mono<Void>"
+      }
+    ],
+    "meters": [
+      {
+        "name": "telemetry.window.dropped",
+        "duty": "uses"
+      }
+    ],
+    "routes": [],
+    "config": []
+  }
+}

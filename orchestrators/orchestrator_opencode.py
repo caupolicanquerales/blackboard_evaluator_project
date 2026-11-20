@@ -11,10 +11,10 @@ The pipeline runs in these phases over one business description from ``seed/``:
    directive means SECURITY REQUIRED.
 2. ``domain-context-mapping-specialist`` reads those files and writes one
    context map per slice to ``blackboard/context-map/context-map-<slug>.json``.
-3. ``agent-architect`` (strategy phase) writes one execution strategy per domain to
-   ``blackboard/complete/execution-strategy-<slug>.json``, including its ``surfaces`` table:
-   every inbound surface the domain receives (name, kind, context, operations). The surface
-   ``name`` is the join key the next two phases are matched on.
+3. ``agent-strategy-architect`` (phase 1 of the split architect) writes one execution strategy
+   per domain to ``blackboard/complete/execution-strategy-<slug>.json``, including its
+   ``surfaces`` table: every inbound surface the domain receives (name, kind, context,
+   operations). The surface ``name`` is the join key the next phases are measured against.
 4. ``agent-database-architect`` runs once per strategy and queues stage 0 database
    tasks (``T0-###``) through ``--emit``.
 5. ``agent-security-architect`` runs once per strategy - unconditionally, there is no skip flag;
@@ -39,9 +39,12 @@ The pipeline runs in these phases over one business description from ``seed/``:
    statefulness and data classes, capabilities from a CLOSED token vocabulary keyed verbatim to
    surfaces/flows, each with a deterministic measurement, and the mandatory offline-port
    invariant - no test may ever reach a live model endpoint.
-6. ``agent-architect`` (tasks phase) queues the application tasks (stage 1..3), lists the
-   database ids in ``dependsOn`` where a unit uses the store, and claims each security duty
-   by naming its ``spec_ref`` token in one unit's intent - mapping capability tokens to the
+6. ``agent-planner-architect`` (phase 2 of the split architect) runs ONE session per bounded
+   context: strategy + that context's digest slice (duties pre-joined to their rule rows
+   and matched mapping-table rows) + the symbol table of the drafted contexts, then the
+   ENGINE emits the whole domain as one batch. Lists the database ids in ``dependsOn``
+   where a unit uses the store, and claims each spec duty by spelling its ``spec_ref`` and
+   ``capability`` token in the enforcing unit's intent - mapping capability tokens to the
    stack's real mechanisms is this phase's job, not the security step's. The claim must sit
    on the stage-2 unit that ENFORCES it, that unit must be pinned by the entry adapter that
    IS the surface, and the adapter's own test must assert the cross-owner case.

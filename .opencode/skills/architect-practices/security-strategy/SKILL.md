@@ -6,11 +6,11 @@ description: "Use when designing a bounded context's security posture: threat mo
 # Scope
 One output: `blackboard/complete/security-spec-<slug>.json`.
 Its shape is fixed by `.opencode/skills/architect-practices/security-strategy/references/security-spec.schema.json`
-(the `.github/skills` symlink serves the same file to Copilot; read it by that full path, once).
+(`.github/skills` too; read once).
 
 - Decide **what must hold**. Never **how**, **where**, or **when it is scheduled**.
 - The architect maps your tokens to mechanisms with the tech-stack skill; the container builds the project.
-- You load no stack skill and read no stack rule: reading those files is what puts framework idioms in a requirements context.
+- You load no stack skill and read no stack rule.
 
 # Naming law
 | Allowed | Forbidden | Owner of the forbidden form |
@@ -32,7 +32,7 @@ Capability tokens: lowercase kebab, 1-4 words, declared in `duties`, referenced 
 A token is load-bearing only if one observation can prove it false; otherwise it is a wish.
 
 # Procedure
-Per bounded context, in order. Every entrant, asset and surface must trace to an input file; anything the inputs do not declare is an `open_questions` entry, never an invention.
+Per bounded context, in order. Every entrant, asset and surface traces to an input file.
 
 1. **Assets** — from `persistence.data_model` and the ubiquitous language.
 2. **Entrants** — from `actors` and `external_systems`; add anonymous and internal-service callers.
@@ -77,15 +77,22 @@ Classify per concept, never per screen, endpoint or column.
 - Log keys and metric tags are bounded sets; an identifier or user text as a label is a disclosure channel.
 - Untrusted input is validated at the boundary that received it; deeper layers receive typed values only.
 - Name injection surfaces on the row that carries them: deserialization, uploads, redirects, templates, queries, paths, archive entries.
-- Key custody, rotation, and the separation of key access from data access are recorded. A reader that automatically holds the key has no separation.
+- Key custody, rotation, and the separation of key access from data access are recorded.
 - Identifiers never encode PII, and a public identifier is never a secret or an authorization token.
 - Audit floor as event classes: authentication failure, authorization denial, privilege change, service credential use, bulk export.
 
 # Duties
-One row per duty. `spec_ref` names the rule it discharges; `obligation` states what must hold; `capability` is the token; `unit_kind` picks the shape from the closed set in that reference file.
+One row per UNIQUE OBLIGATION, not per rule id: `spec_ref` names the primary rule,
+`covers` (optional) lists the ids the same duty also answers, `unit_kind` picks the shape
+from the reference file.
 
-- Every `authorization_matrix` row and every `invariant` is discharged by at least one duty.
-- Every `spec_ref` resolves to a declared entry.
+- ONE duty per unique (`capability`, `unit_kind`, `owner_context`): a rule sharing all
+  three joins that duty's `covers`, never a second row - a repeated triple is refused.
+  The same capability and shape in TWO contexts is TWO duties, each naming its
+  `owner_context` (exact `bounded_contexts` name; omit only for a duty spanning contexts).
+- Every `authorization_matrix` row and every `invariant` is discharged by at least one duty,
+  as its `spec_ref` or inside another duty's `covers`.
+- Every `spec_ref` and every `covers` id resolves to a declared entry.
 - `unit_kind` is a shape (port, adapter, predicate, validator, redaction, audit, credential handling, key custody, classification rule), never a technology.
 - Do not say whether a duty becomes code, configuration or schema: that is decomposition.
 
@@ -94,8 +101,6 @@ One row per duty. `spec_ref` names the rule it discharges; `obligation` states w
 
 Refused on sight: a realization name, a non-deny `default`, an ownership-blind row, an
 undeclared principal, `restricted` data allowed on any surface, a rule discharging no duty,
-a dangling `spec_ref`, a malformed capability token, a `unit_kind` outside its enumeration,
-a declared surface with no row, a `principals[].source` or `owner_context` no input declares, an unbacked risk.
-
-Nothing above is repeated as a checklist: the gate is the check, and a restated rule is
-only another place for the two to disagree.
+a dangling `spec_ref` or `covers` id, a repeated (`capability`, `unit_kind`, `owner_context`)
+duty triple, a malformed capability token, a `unit_kind` outside its enumeration, a declared
+surface with no row, a `principals[].source` or `owner_context` no input declares, an unbacked risk.

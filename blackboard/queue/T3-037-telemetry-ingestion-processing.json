@@ -1,0 +1,15 @@
+{
+  "id": "T3-037",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-037"
+  ],
+  "kind": "refactor",
+  "layer": "interface",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/main/java/com/blackboard/telemetry/distribution/api/WindowedStreamController.java",
+  "export": "com.blackboard.telemetry.distribution.api.WindowedStreamController",
+  "intent": "Refactor the stream controller for clarity without changing behaviour; keep every test green."
+}

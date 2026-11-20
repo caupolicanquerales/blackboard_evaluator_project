@@ -1,0 +1,48 @@
+{
+  "id": "T1-035",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T0-007",
+    "T1-034"
+  ],
+  "kind": "test",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/test/java/com/blackboard/telemetry/distribution/infrastructure/SubscriberAuthenticationManagerTest.java",
+  "export": "com.blackboard.telemetry.distribution.infrastructure.SubscriberAuthenticationManagerTest",
+  "intent": "Seeded subscriber with correct secret authenticates with its scope authority; wrong secret or unknown id yields an authentication error with no detail leak; an empty subscriber list fails fast at construction. Assert the principal, authorities and error types.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.distribution.infrastructure",
+    "implements": [
+      "ReactiveAuthenticationManager"
+    ],
+    "dependencies": [
+      {
+        "type": "DistributionProperties",
+        "task_id": "T2-024"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Authentication> authenticate(Authentication authentication)",
+        "returns": "Mono<Authentication>"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "telemetry.distribution.subscribers",
+        "kind": "list",
+        "fields": [
+          "id",
+          "secret-hash",
+          "scope"
+        ]
+      }
+    ]
+  }
+}

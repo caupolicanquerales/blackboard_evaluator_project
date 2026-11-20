@@ -1,0 +1,15 @@
+{
+  "id": "T0-004",
+  "targetAgent": "agent-container",
+  "stage": 0,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "db/migrations/V3__create_audit_trail.sql",
+  "kind": "bootstrap",
+  "layer": "root",
+  "feature": null,
+  "export": "V3__create_audit_trail",
+  "intent": "Schema migration: PostgreSQL (Flyway) migration script creating append-only audit_trail (actor, action, outcome, occurred_at, correlation_id) for context Telemetry Ingestion.",
+  "project": "telemetry-ingestion-processing"
+}

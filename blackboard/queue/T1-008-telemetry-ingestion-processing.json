@@ -1,0 +1,41 @@
+{
+  "id": "T1-008",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-007"
+  ],
+  "kind": "test",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/test/java/com/blackboard/telemetry/ingestion/infrastructure/FieldRedactionAdapterTest.java",
+  "export": "com.blackboard.telemetry.ingestion.infrastructure.FieldRedactionAdapterTest",
+  "intent": "Slice SI-06, SI-07, SI-12: redact masks numeric sample values and payload text while keeping the action word; safeMessage returns only the fixed safe text for a known code and a generic one for an unknown code, never the input; tag text containing a device identity is masked.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.ingestion.infrastructure",
+    "implements": [
+      "RedactionPort"
+    ],
+    "dependencies": [
+      {
+        "type": "RedactionPort",
+        "task_id": "T2-007"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "String redact(String text)",
+        "returns": "String"
+      },
+      {
+        "signature": "String safeMessage(String code)",
+        "returns": "String"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

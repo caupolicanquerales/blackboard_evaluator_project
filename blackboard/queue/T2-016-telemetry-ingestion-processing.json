@@ -1,0 +1,123 @@
+{
+  "id": "T2-016",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T0-001",
+    "T1-016",
+    "T2-001",
+    "T2-003",
+    "T2-004",
+    "T2-005",
+    "T2-006",
+    "T2-007",
+    "T2-011",
+    "T2-014",
+    "T2-015"
+  ],
+  "kind": "code",
+  "layer": "application",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/main/java/com/blackboard/telemetry/ingestion/application/IngestPacketUseCase.java",
+  "export": "com.blackboard.telemetry.ingestion.application.IngestPacketUseCase",
+  "intent": "Component orchestrating validate, reorder, append, audit, publish. PB-02 batch-limit and PB-07 batch-load: Reactor bufferTimeout(n, Duration) on the tabled loader, over-cap packet rejected whole. PB-04 bounded-semaphore: Semaphore(int) around the append. Bound check tags failures, keeps payload; later-than-window appends BACKFILL, never dropped.",
+  "observability": {
+    "step_logs": [
+      "sample.validated",
+      "sample.validation_failed",
+      "sample.reordered",
+      "event.published"
+    ]
+  },
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.ingestion.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetryProperties",
+        "task_id": "T2-001"
+      },
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-003"
+      },
+      {
+        "type": "MetricsFacade",
+        "task_id": "T2-004"
+      },
+      {
+        "type": "CorrelationWebFilter",
+        "task_id": "T2-005"
+      },
+      {
+        "type": "AuditPort",
+        "task_id": "T2-006"
+      },
+      {
+        "type": "RedactionPort",
+        "task_id": "T2-007"
+      },
+      {
+        "type": "SampleStore",
+        "task_id": "T2-011"
+      },
+      {
+        "type": "ReorderWindow",
+        "task_id": "T2-014"
+      },
+      {
+        "type": "TelemetryEventPublisher",
+        "task_id": "T2-015"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Integer> ingest(String provenDeviceId, List<TelemetrySample> samples)",
+        "returns": "Mono<Integer>",
+        "semantics": "emits the number of rows appended; errors ResponseStatusException 413 over the sample cap (nothing appended), 503 when reorder offer is false or no in-flight permit is free"
+      }
+    ],
+    "meters": [
+      {
+        "name": "telemetry.samples.validated",
+        "duty": "uses"
+      },
+      {
+        "name": "telemetry.samples.reordered",
+        "duty": "uses"
+      },
+      {
+        "name": "telemetry.revisions.appended",
+        "duty": "uses"
+      }
+    ],
+    "routes": [],
+    "config": [
+      {
+        "path": "telemetry.ingress.max-samples-per-packet",
+        "kind": "value"
+      },
+      {
+        "path": "telemetry.ingress.max-in-flight-appends",
+        "kind": "value"
+      },
+      {
+        "path": "telemetry.store.batch-size",
+        "kind": "value"
+      },
+      {
+        "path": "telemetry.store.batch-window",
+        "kind": "value"
+      },
+      {
+        "path": "telemetry.boundaries",
+        "kind": "map"
+      },
+      {
+        "path": "telemetry.reorder.window-seconds",
+        "kind": "value"
+      }
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "id": "T0-005",
+  "targetAgent": "agent-container",
+  "stage": 0,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "db/migrations/V4__create_telemetry_indexes.sql",
+  "kind": "bootstrap",
+  "layer": "root",
+  "feature": null,
+  "export": "V4__create_telemetry_indexes",
+  "intent": "Configuration profile of access paths: PostgreSQL (Flyway) migration script with indexes on (device_id, metric_kind, t_device) and revisions by original event for context Telemetry Ingestion.",
+  "project": "telemetry-ingestion-processing"
+}

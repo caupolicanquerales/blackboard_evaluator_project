@@ -1,6 +1,6 @@
 ---
 name: spring-ai-architect
-description: "Architect-tier only (agent-architect phase 2, when an ai-spec exists): maps the closed AI tokens onto unit, layer, mechanism IDENTIFIER and config key. Planning facts only; adapter bodies and stubs live in the coder/tester tier. The model is never a gate input: proofs bind to the port."
+description: "Architect-tier only (agent-planner-architect phase 2, when an ai-spec exists): maps the closed AI tokens onto unit, layer, mechanism IDENTIFIER and config key. Planning facts only; adapter bodies and stubs live in the coder/tester tier. The model is never a gate input: proofs bind to the port."
 ---
 # Scope
 The CLOSED token set the AI spec gate enforces. The adapter is the ONE class importing

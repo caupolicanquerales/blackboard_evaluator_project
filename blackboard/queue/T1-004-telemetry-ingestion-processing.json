@@ -1,0 +1,66 @@
+{
+  "id": "T1-004",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "layer": "shared",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/test/java/com/blackboard/telemetry/shared/MetricsFacadeTest.java",
+  "export": "com.blackboard.telemetry.shared.MetricsFacadeTest",
+  "intent": "With a SimpleMeterRegistry, each facade method increments or records its tabled meter with exactly the bounded tags passed; a tag value outside the closed set lands as other; no tag ever carries a device identity; the duration meter records the elapsed time.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.shared",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "void countPacket(String outcome)",
+        "returns": ""
+      },
+      {
+        "signature": "void countSampleValidated(String metricKind, String status)",
+        "returns": ""
+      },
+      {
+        "signature": "void countSampleReordered(String kind)",
+        "returns": ""
+      },
+      {
+        "signature": "void countRevisionAppended(String revisionKind)",
+        "returns": ""
+      },
+      {
+        "signature": "void recordIngressDuration(String outcome, Duration elapsed)",
+        "returns": ""
+      }
+    ],
+    "meters": [
+      {
+        "name": "telemetry.ingress.packets",
+        "duty": "owns"
+      },
+      {
+        "name": "telemetry.samples.validated",
+        "duty": "owns"
+      },
+      {
+        "name": "telemetry.samples.reordered",
+        "duty": "owns"
+      },
+      {
+        "name": "telemetry.revisions.appended",
+        "duty": "owns"
+      },
+      {
+        "name": "telemetry.ingress.duration",
+        "duty": "owns"
+      }
+    ],
+    "routes": [],
+    "config": []
+  }
+}

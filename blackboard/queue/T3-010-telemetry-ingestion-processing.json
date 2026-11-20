@@ -1,0 +1,15 @@
+{
+  "id": "T3-010",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-010"
+  ],
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/main/java/com/blackboard/telemetry/ingestion/application/DeviceOwnershipPolicy.java",
+  "export": "com.blackboard.telemetry.ingestion.application.DeviceOwnershipPolicy",
+  "intent": "Refactor the ownership policy for clarity; predicate unchanged."
+}

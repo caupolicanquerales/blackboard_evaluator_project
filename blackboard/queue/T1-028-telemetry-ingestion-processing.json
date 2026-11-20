@@ -1,0 +1,45 @@
+{
+  "id": "T1-028",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T0-007",
+    "T1-027",
+    "T1-003"
+  ],
+  "kind": "test",
+  "layer": "domain",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/test/java/com/blackboard/telemetry/distribution/domain/WindowedTelemetryBroadcastTest.java",
+  "export": "com.blackboard.telemetry.distribution.domain.WindowedTelemetryBroadcastTest",
+  "intent": "Value record test: accessors expose device, metric kind and samples; the sample list is defensively copied and unmodifiable; a null device, metric kind or list is refused. Assert accessors, immutability and refusals.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.distribution.domain",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-003"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "String deviceId()",
+        "returns": "String"
+      },
+      {
+        "signature": "String metricKind()",
+        "returns": "String"
+      },
+      {
+        "signature": "List<TelemetrySample> samples()",
+        "returns": "List<TelemetrySample>"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

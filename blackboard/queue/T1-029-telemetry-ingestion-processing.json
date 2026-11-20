@@ -1,0 +1,64 @@
+{
+  "id": "T1-029",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T0-007",
+    "T1-028",
+    "T1-025",
+    "T1-024"
+  ],
+  "kind": "test",
+  "layer": "application",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/test/java/com/blackboard/telemetry/distribution/application/WindowBufferTest.java",
+  "export": "com.blackboard.telemetry.distribution.application.WindowBufferTest",
+  "intent": "Sustained inserts beyond the window capacity: depth never exceeds capacity, the oldest sample is evicted and the dropped counter rises once per eviction; a VALIDATION_FAILED sample is filtered out and never buffered. Assert window depth, oldest retained sample and counter.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.distribution.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-003"
+      },
+      {
+        "type": "WindowedTelemetryBroadcast",
+        "task_id": "T2-028"
+      },
+      {
+        "type": "DistributionProperties",
+        "task_id": "T2-024"
+      },
+      {
+        "type": "DistributionMetrics",
+        "task_id": "T2-025"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Optional<WindowedTelemetryBroadcast> add(TelemetrySample sample)",
+        "returns": "Optional<WindowedTelemetryBroadcast>"
+      }
+    ],
+    "meters": [
+      {
+        "name": "telemetry.window.dropped",
+        "duty": "uses"
+      }
+    ],
+    "routes": [],
+    "config": [
+      {
+        "path": "telemetry.distribution.window-capacity",
+        "kind": "value"
+      },
+      {
+        "path": "spring.codec.max-in-memory-size",
+        "kind": "value"
+      }
+    ]
+  }
+}

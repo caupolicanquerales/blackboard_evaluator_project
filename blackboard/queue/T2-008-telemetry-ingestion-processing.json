@@ -1,0 +1,42 @@
+{
+  "id": "T2-008",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T0-001",
+    "T1-008",
+    "T2-007"
+  ],
+  "kind": "code",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/main/java/com/blackboard/telemetry/ingestion/infrastructure/FieldRedactionAdapter.java",
+  "export": "com.blackboard.telemetry.ingestion.infrastructure.FieldRedactionAdapter",
+  "intent": "Component adapter of the pinned port. SI-06 log-redaction, SI-07 error-code-only, SI-12 metric-tag-bound: no framework mask for FIELDS, so a RedactionPort plus this adapter, applied BEFORE the audit or step-log write, never a logger call; errors expose opaque code and safe message only; tags never carry device identity.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.ingestion.infrastructure",
+    "implements": [
+      "RedactionPort"
+    ],
+    "dependencies": [
+      {
+        "type": "RedactionPort",
+        "task_id": "T2-007"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "String redact(String text)",
+        "returns": "String"
+      },
+      {
+        "signature": "String safeMessage(String code)",
+        "returns": "String"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

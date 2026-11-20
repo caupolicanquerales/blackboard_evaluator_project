@@ -1,0 +1,66 @@
+{
+  "id": "T2-029",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T0-001",
+    "T0-007",
+    "T1-029",
+    "T2-003",
+    "T2-024",
+    "T2-025",
+    "T2-028"
+  ],
+  "kind": "code",
+  "layer": "application",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/main/java/com/blackboard/telemetry/distribution/application/WindowBuffer.java",
+  "export": "com.blackboard.telemetry.distribution.application.WindowBuffer",
+  "intent": "Claims PB-11 window-buffer-bound: payload cap resource-ceiling bounded by the window capacity (payload cap, spring.codec.max-in-memory-size); oldest sample evicted beyond capacity and counted through the pinned metrics facade. Failed samples never enter the window; otherwise add returns the current window.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.distribution.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-003"
+      },
+      {
+        "type": "WindowedTelemetryBroadcast",
+        "task_id": "T2-028"
+      },
+      {
+        "type": "DistributionProperties",
+        "task_id": "T2-024"
+      },
+      {
+        "type": "DistributionMetrics",
+        "task_id": "T2-025"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Optional<WindowedTelemetryBroadcast> add(TelemetrySample sample)",
+        "returns": "Optional<WindowedTelemetryBroadcast>"
+      }
+    ],
+    "meters": [
+      {
+        "name": "telemetry.window.dropped",
+        "duty": "uses"
+      }
+    ],
+    "routes": [],
+    "config": [
+      {
+        "path": "telemetry.distribution.window-capacity",
+        "kind": "value"
+      },
+      {
+        "path": "spring.codec.max-in-memory-size",
+        "kind": "value"
+      }
+    ]
+  }
+}

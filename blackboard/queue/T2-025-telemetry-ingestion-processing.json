@@ -1,0 +1,50 @@
+{
+  "id": "T2-025",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T0-001",
+    "T0-007",
+    "T1-025",
+    "T2-007"
+  ],
+  "kind": "code",
+  "layer": "shared",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/main/java/com/blackboard/telemetry/shared/DistributionMetrics.java",
+  "export": "com.blackboard.telemetry.shared.DistributionMetrics",
+  "intent": "Claims SI-13 metric-tag-bound: tags restricted to bounded value sets through a RedactionPort (application) with its adapter tabled in ast_hints, applied BEFORE the meter is touched, never a logger call. Registers both counters; known tag recorded as is, unknown value collapses to a fixed bucket.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.shared",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "RedactionPort",
+        "task_id": "T2-007"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "void countBroadcast(String outcome)",
+        "returns": ""
+      },
+      {
+        "signature": "void countDropped(String reason)",
+        "returns": ""
+      }
+    ],
+    "meters": [
+      {
+        "name": "telemetry.window.broadcast",
+        "duty": "owns"
+      },
+      {
+        "name": "telemetry.window.dropped",
+        "duty": "owns"
+      }
+    ],
+    "routes": [],
+    "config": []
+  }
+}

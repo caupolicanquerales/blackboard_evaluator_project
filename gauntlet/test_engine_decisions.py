@@ -1072,6 +1072,82 @@ check("V7 THE FLOOR IS UNCONDITIONAL: a strategy with no observability object at
 rc_v = emit([gtask("T2-799", "Half1", 2, project="half", hints=sl_hints)])
 check("V8 a half floor is rejected naming the missing surfaces - all five are mandatory",
       bool(rc_v) and "floor surfaces" in str(rc_v) and "metrics" in str(rc_v), str(rc_v))
+# V9 (2026-11-20 live board): agent-strategy-architect writes step_logs as the
+# per-context MAPPING {context: [logs]}; the claim gate read lists only and answered
+# CLEAN while FOUR distribution logs (event.consumed, window.buffered, window.broadcast,
+# window.overflow) had zero owners - the 2026-11-13 5-planned-0-owned class re-born in a
+# new spelling. The gate must flatten BOTH shapes before demanding coverage.
+(ROOT / "blackboard" / "complete" / "execution-strategy-sl.json").write_text(json.dumps(
+    {"slug": "sl", "observability": {
+        "correlation_key": "requestId",
+        "step_logs": {"Legacy": ["order accepted (outcome)", "stock reserved"],
+                      "Ingest": ["packet.received"],
+                      "Stream": ["window.broadcast"]},
+        "audit_trail": {"record_fields": ["actor", "action", "outcome", "timestamp"],
+                        "port": "AuditTrail.record(AuditEntry)"},
+        "metrics": [{"name": "orders.accepted", "type": "counter", "tags": ["outcome"]},
+                    {"name": "stock.reserved", "type": "counter", "tags": []},
+                    {"name": "packet.received", "type": "counter", "tags": []},
+                    {"name": "window.broadcast", "type": "counter", "tags": []}],
+        "export": {"logs": "structured ecs file sink", "metrics": "scrape endpoint",
+                   "dependency_rule": "boot passes with the collector absent"}}}))
+v9_a = dict(gtask("T2-798", "Half", 2, project="sl", hints=sl_hints))
+v9_a["observability"] = {"step_logs": ["packet.received"]}
+rc_v = emit([v9_a])
+check("V9 a dict-shaped step-log floor is FLATTENED by the claim gate: half coverage of a "
+      "per-context mapping is refused naming the exact unowned entry (the list-only reader "
+      "skipped the whole law on the live board - 4 logs unowned, gate CLEAN, V1's promise "
+      "broken by shape, not by will)",
+      bool(rc_v) and "window.broadcast" in str(rc_v) and "claimed by NO stage-2 unit" in str(rc_v),
+      str(rc_v)[:260])
+v9_b = dict(gtask("T2-799", "Rest", 2, project="sl", hints=sl_hints))
+v9_b["observability"] = {"step_logs": ["packet.received", "window.broadcast"]}
+rc_v = emit([v9_b])
+check("V9b the SAME dict floor ACCEPTS once every entry has exactly one owner across both "
+      "spellings (the legacy list entries' old claims on the board still count - coverage "
+      "is over the whole board, not the batch)",
+      rc_v is None, str(rc_v)[:220])
+
+# V10 (2026-11-20 root fix): the floor SHAPE law belongs at the strategy WRITE BOUNDARY -
+# a step_logs spelling no consumer can flatten must die in phase 1's post-check, not in a
+# downstream reader's silence (V9's silent skip was an ambiguous contract at the source).
+_v10_strat = settings.COMPLETE_DIR / "execution-strategy-shp.json"
+_v10_base = {"slug": "shp", "bounded_contexts": ["A"],
+             "surfaces": [{"name": "in a", "kind": "http", "context": "A",
+                           "operations": ["post"], "traced_from": "v10"}],
+             "contexts_without_inbound": [], "modules": [], "layers": [], "build_order": [],
+             "risks": [], "module_layout": {"base_package": "com.x", "packages": [],
+                                            "integration": []},
+             "persistence": {"drivers": [], "data_model": [], "queries": [],
+                             "migration_plan": [], "backup_recovery": "",
+                             "open_questions": []}}
+_v10_floor = {"correlation_key": "cid", "audit_trail": {"record_fields": ["actor"]},
+              "metrics": [], "export": {}}
+_v10_strat.write_text(json.dumps(dict(
+    _v10_base, observability=dict(_v10_floor, step_logs="packet received"))),
+    encoding="utf-8")
+_v10_bad = ddd.validate_strategy("shp") or ""
+_v10_strat.write_text(json.dumps(dict(
+    _v10_base, observability=dict(_v10_floor, step_logs={"A": ["packet received"]}))),
+    encoding="utf-8")
+_v10_map = ddd.validate_strategy("shp")
+_v10_strat.write_text(json.dumps(dict(
+    _v10_base, observability=dict(_v10_floor, step_logs=["packet received"]))),
+    encoding="utf-8")
+_v10_list = ddd.validate_strategy("shp")
+_v10_strat.write_text(json.dumps(dict(
+    _v10_base, observability=dict(_v10_floor, step_logs={"A": "packet received"}))),
+    encoding="utf-8")
+_v10_nested = ddd.validate_strategy("shp") or ""
+_v10_strat.unlink()
+check("V10 the floor-shape law fires at the STRATEGY GATE: a step_logs spelled as a bare "
+      "string, or a context mapped to a string, is refused at phase 1's post-check - while "
+      "the two lawful shapes (flat list, {context: [logs]} of lists) pass: ambiguity dies "
+      "where the file is still the only thing being written (root cause of V9's silent skip)",
+      "step_logs" in _v10_bad and "shape" in _v10_bad
+      and _v10_map is None and _v10_list is None
+      and "step_logs[" in _v10_nested,
+      f"bad={_v10_bad[:90]} nested={_v10_nested[:110]}")
 base_h = task(tid="T2-797", export="Hashing", deps=())
 h0 = attempt_ledger.contract_hash(base_h)
 h1 = attempt_ledger.contract_hash({**base_h, "observability": None})
@@ -2028,17 +2104,29 @@ import prompts  # noqa: E402
 SEC_REPO = Path(__file__).resolve().parents[1]
 sec_msg = prompts.build_security_prompt(SEC_SLUG)
 SEC_FLAT = " ".join(sec_msg.split())
-sec_arch_msg = prompts.build_architect_prompt(ROOT, "runner", phase="tasks")
-check("S17b the architect's phase-2 prompt demands the pair (spec_ref + capability), names the "
-      "mechanism in the same intent, asks for the closure list - and emits ONE BATCH of per-context "
-      "drafts, so the atomic cross-context checks still see the whole plan (2026-11-18 token audit: "
-      "one 57-task file forced a 40,442-token single output turn; a context file is ~8k)",
-      "/tmp/tasks/<slug>-<context>.json" in prompts.ARCHITECT_TASKS_PROMPT
-      and "ONE array file PER BOUNDED CONTEXT" in prompts.ARCHITECT_TASKS_PROMPT
-      and "One command is mandatory" in prompts.ARCHITECT_TASKS_PROMPT
-      and "BOTH" in prompts.ARCHITECT_TASKS_PROMPT
-      and "citation is not a mapping" in prompts.ARCHITECT_TASKS_PROMPT
-      and "spec_ref -> claiming unit ids -> mechanism named" in prompts.ARCHITECT_TASKS_PROMPT)
+sec_planner_msg = prompts.build_planner_prompt(
+    ROOT, "runner", SEC_SLUG, "Intake", f"/tmp/tasks/{SEC_SLUG}-intake.json",
+    f"/tmp/phase2-slice-{SEC_SLUG}-intake.json", None,
+    {"T1": "T1-050", "T2": "T2-050", "T3": "T3-050"}, ["Intake"])
+sec_planner_flat = " ".join(sec_planner_msg.split())
+check("S17b the split planner's per-context brief demands the PAIR (spec_ref + capability "
+      "VERBATIM beside the mechanism copied from the duty's own table_row), names the reach "
+      "law and the closure list, routes the session to strategy + slice + symbols, and stops "
+      "at ONE lint: the ENGINE runs the batch emit, so the atomic cross-context checks still "
+      "see the whole plan while no session carries a second context's draft (2026-11-18 "
+      "audit: one 57-task file forced a 40,442-token single output turn; the split's answer: "
+      "the same law, the transcript cost of one ~8k context)",
+      "READ EXACTLY THESE" in sec_planner_flat
+      and "`table_row`" in sec_planner_flat
+      and "spelling its `spec_ref` AND `capability` VERBATIM" in sec_planner_flat
+      and "CROSS-OWNER case" in sec_planner_flat
+      and "spec_ref -> claiming unit ids -> mechanism named -> surface unit" in sec_planner_flat
+      and "--lint" in sec_planner_flat and "LINT-CLEAN" in sec_planner_flat
+      and "Do NOT run" in sec_planner_flat
+      and "the ENGINE emits the batch" in sec_planner_flat
+      and "strategy-slice-" in sec_planner_msg
+      and "arrives COMPLETE" in sec_planner_flat
+      and "joined ONTO the duty" in sec_planner_flat)
 check("S17c the refusal is machine-enforced, not just taught: the emit gate itself carries the "
       "mapping layer (source-level read of the gate, so a doc that promises it without the code "
       "fails here)",
@@ -2053,11 +2141,15 @@ check("S19 the security prompt commands the prohibition its gate enforces",
       "Your vocabulary is requirements only" in SEC_FLAT
       and "never an invented answer" in SEC_FLAT
       and "You queue nothing and you author no project file" in SEC_FLAT)
-sec_arch = prompts.build_architect_prompt(ROOT, "runner", phase="tasks")
-check("S20 the architect owns the mapping: its prompt claims tokens, maps capabilities to the "
-      "stack's mechanisms, and never receives security stage-0 ids (none exist)",
-      "SECURITY DECOMPOSITION DUTY" in sec_arch and "you own every HOW" in sec_arch
-      and "{security_ids}" not in sec_arch and "security_ids" not in sec_arch)
+_planner_docs = [(SEC_REPO / ".opencode/agents/agent-planner-architect.md").read_text(),
+                 (SEC_REPO / ".github/agents/agent-planner-architect.agent.md").read_text()]
+check("S20 the PLANNER owns the mapping: the profile says the token-to-mechanism map is "
+      "yours FROM the digest's row (a name the row does not carry is a defect to report, "
+      "never a recall), and no planning brief hands out security stage-0 ids (none exist)",
+      all("You alone map a capability token" in doc for doc in _planner_docs)
+      and all("map it FROM its row" in doc for doc in _planner_docs)
+      and "{security_ids}" not in sec_planner_msg and "security_ids" not in sec_planner_msg
+      and "{security_ids}" not in prompts.ARCHITECT_PLANNER_REPAIR_PROMPT)
 check("S21 phase 1 is told the security step reads its surfaces and data model",
       "The security step runs after you" in prompts.ARCHITECT_STRATEGY_PROMPT)
 bodies = [(SEC_REPO / ".opencode/agents/agent-security-architect.md").read_text(),
@@ -2299,12 +2391,26 @@ z_reset()
 emit(z_board(entry_hints=Z_ENTRY_PINNED,
              tester_intent=("End-to-end request-path slice drives the intake write surface: "
                             "AZ-01 permitted, denied, cross-owner refused")))
+# seed the /tmp planning state of THIS domain: digests, a slice, a draft and a symbol table
+# - all scratch of the plan being archived, and replan must clear them (a next launch's
+# claim step must never number itself against a plan that no longer exists)
+(Path("/tmp") / f"phase2-digest-{Z_SLUG}.json").write_text("{}")
+(Path("/tmp") / f"phase2-slice-{Z_SLUG}-intake.json").write_text("{}")
+(task_queue.DRAFT_DIR).mkdir(parents=True, exist_ok=True)
+(task_queue.DRAFT_DIR / f"{Z_SLUG}-intake.json").write_text("[]")
+(task_queue.DRAFT_DIR / f"{Z_SLUG}-symbols-intake.json").write_text("{}")
 moved = task_queue.replan_domain(Z_SLUG)
 check("Z15 --replan archives the PLAN (strategy, spec, stage 1-3 records) and nothing else: "
-      "stage 0 stays so the domain keeps its project root, and the phases re-run because their "
-      "inputs are gone",
+      "stage 0 stays so the domain keeps its project root, the phases re-run because their "
+      "inputs are gone, and the /tmp planning state (digest, slices, drafts, symbol tables) "
+      "is dropped with the plan it described (2026-11-20 split: those files number the next "
+      "plan's ids, and stale bytes would silently pre-number a fresh domain)",
       moved["strategy"] and moved["spec"] and moved["tasks"]
       and not (settings.COMPLETE_DIR / f"execution-strategy-{Z_SLUG}.json").is_file()
+      and not (Path("/tmp") / f"phase2-digest-{Z_SLUG}.json").exists()
+      and not (Path("/tmp") / f"phase2-slice-{Z_SLUG}-intake.json").exists()
+      and not (task_queue.DRAFT_DIR / f"{Z_SLUG}-intake.json").exists()
+      and not (task_queue.DRAFT_DIR / f"{Z_SLUG}-symbols-intake.json").exists()
       and (ROOT / "blackboard" / "archive" / f"execution-strategy-{Z_SLUG}.json").is_file()
       and (settings.QUEUE_DIR / f"T0-671-{Z_SLUG}.json").is_file()
       and not (settings.QUEUE_DIR / f"T2-672-{Z_SLUG}.json").is_file()
@@ -2318,14 +2424,23 @@ check("Z16 the hint that made a late spec advisory is gone: the pipeline stops t
       and "security claim gap(s)" in inspect.getsource(pipeline_mod.run))
 z_reset()
 
-_arch_docs = [(SEC_REPO / ".opencode/agents/agent-architect.md").read_text(),
-              (SEC_REPO / ".github/agents/agent-architect.agent.md").read_text()]
-check("S26 the architect's stated budget is the engine's budget, and it covers the calls its "
-      "own phase-2 contract demands (skills, strategy, spec, one draft, one emit)",
-      settings.call_budget(settings.ARCHITECT_AGENT) == 15
-      and all("Budget <=15 calls per phase" in doc for doc in _arch_docs)
-      and all("spring-security-architect: allow" in doc for doc in _arch_docs[:1]),
-      str(settings.call_budget(settings.ARCHITECT_AGENT)))
+_strategy_docs = [(SEC_REPO / ".opencode/agents/agent-strategy-architect.md").read_text(),
+                  (SEC_REPO / ".github/agents/agent-strategy-architect.agent.md").read_text()]
+_planner_docs2 = [(SEC_REPO / ".opencode/agents/agent-planner-architect.md").read_text(),
+                  (SEC_REPO / ".github/agents/agent-planner-architect.agent.md").read_text()]
+check("S26 each split agent's stated budget is the ENGINE's budget, sized for the calls its "
+      "own contract demands (strategy: reads, skills, one strategy write, one scaffold emit; "
+      "planner: three brief reads, skills, one draft, lint rounds) - the 2026-11-19 pairing "
+      "of stated==engine survives the split per carrier, and only the PLANNER carries the "
+      "mapping tables",
+      settings.call_budget(settings.ARCHITECT_STRATEGY_AGENT) == 12
+      and settings.call_budget(settings.ARCHITECT_PLANNER_AGENT) == 12
+      and all("Budget <=12" in doc for doc in _strategy_docs + _planner_docs2)
+      and all("spring-security-architect: allow" in doc for doc in _planner_docs2[:1])
+      and not any("spring-security-architect: allow" in doc for doc in _strategy_docs)
+      and not any("task-decomposition-dag: allow" in doc for doc in _strategy_docs),
+      f"{settings.call_budget(settings.ARCHITECT_STRATEGY_AGENT)}/"
+      f"{settings.call_budget(settings.ARCHITECT_PLANNER_AGENT)}")
 
 # --- SA. the risk register stops being a write-only field (2026-11-18).
 #     `risks[]` was required to EXIST, its ids even resolved `spec_ref` citations, and then nothing read
@@ -2369,11 +2484,13 @@ check("SA6 the register is READ by the pipeline on every launch, including the r
       and inspect.getsource(pipeline_mod.run).count("_surface_security_risks(slug)") >= 2
       and '[risk  ]' in inspect.getsource(pipeline_mod._surface_security_risks))
 sec_spec()
-_arch_profile = (SEC_REPO / ".opencode/agents/agent-architect.md").read_text()
+_arch_profile = (SEC_REPO / ".opencode/agents/agent-planner-architect.md").read_text()
 _claim_refusal = inspect.getsource(task_queue._security_claim_errors)
-check("SA7 the unclaimed-duty refusal no longer orders the session to amend a file it cannot write "
-      "(its edit grant is the strategy + /tmp only), and it names the lawful landing unit instead",
+check("SA7 the unclaimed-duty refusal no longer orders the session to amend a file it cannot "
+      "write (the planner's edit grant is the strategy + /tmp only - never a spec), and the "
+      "gate names the lawful landing unit instead",
       "security-spec-*.json" not in _arch_profile.split("shell:")[0]
+      and "execution-strategy-*.json" in _arch_profile.split("shell:")[0]
       and "reported risk never substitutes for a claiming unit" in _claim_refusal
       and "re-run the security phase" in _claim_refusal
       and "CONFIG unit" in _claim_refusal,
@@ -2551,16 +2668,22 @@ check("SD3 the refusal text asks for an EDIT pass over the named task objects (m
       "by EDITING the named task objects" in _remedy and "never regenerate the whole plan" in _remedy
       and "one rewrite of the draft file" not in _remedy
       and "Every validation error is reported in ONE message" in _remedy)
-_tasks_brief = prompts.build_architect_prompt(ROOT, "runner", phase="tasks")
-_sd_profiles = [(SEC_REPO / ".opencode/agents/agent-architect.md").read_text(),
-                (SEC_REPO / ".github/agents/agent-architect.agent.md").read_text()]
-check("SD4 the generator-script ban lives in every carrier the tasks phase reads (2026-11-18 "
+_tasks_brief = prompts.build_planner_prompt(
+    ROOT, "runner", "dom", "Alpha", "/tmp/tasks/dom-alpha.json",
+    "/tmp/phase2-slice-dom-alpha.json", None,
+    {"T1": "T1-010", "T2": "T2-010", "T3": "T3-010"}, ["Alpha", "Beta"])
+_sd_profiles = [(SEC_REPO / ".opencode/agents/agent-planner-architect.md").read_text(),
+                (SEC_REPO / ".github/agents/agent-planner-architect.agent.md").read_text()]
+check("SD4 the generator-script ban lives in every carrier the planning phase reads (2026-11-18 "
       "live: the brief demanded 'a single JSON document' while step 3 said per-context files - "
       "the contradiction itself pushed the architect into gen_telemetry_tasks.py: 91k carried, "
-      "41k worst single-turn output): the brief bans scripts, teaches ONLY the per-context shape, "
-      "and both profiles carry the ban",
+      "41k worst single-turn output): the per-context brief bans scripts, teaches ONLY the "
+      "one-array-one-file shape of THIS session's context, and both planner profiles carry the "
+      "ban (the split makes the ban cheaper to obey: the session drafts exactly one file by "
+      "construction, so the escape into a generator has no arithmetic left to justify it)",
       "generator script" in _tasks_brief and "single JSON document" not in _tasks_brief
-      and "per-context array file" in _tasks_brief
+      and "one JSON array" in _tasks_brief
+      and "DRAFT one JSON array" in _tasks_brief
       and all("generator script" in b for b in _sd_profiles))
 _closeout_src = inspect.getsource(tdd_engine._tester_close_out)
 _sec_plan_skill = (SEC_REPO / ".opencode/skills/tech-stack-architect/spring-security-architect"
@@ -3660,6 +3783,520 @@ check("PG13 the pipeline runs BOTH new phases between the specs' inputs and deco
       < _pg_src.index("run_ai") < _pg_src.index("architect writing application tasks")
       and "planning_claim_gaps" in _pg_src
       and "AI BY DIRECTIVE" in inspect.getsource(pipeline_mod._terminal_tree_report))
+
+# --- DG. the phase-2 duty digest (2026-11-20): the engine must join duties to their rule
+#     rows BEFORE the architect session, so one read replaces three specs + three tables.
+#     Uses the SEC fixture plus a throwaway strategy (deleted after): the join is what the
+#     architect pays turns for, and a digest that misses a join is a silent recall invitation.
+sec_spec()
+_dg_strategy = settings.COMPLETE_DIR / f"execution-strategy-{SEC_SLUG}.json"
+_sec_data = json.loads(SEC_FILE.read_text())
+_dg_ctx = sorted({str(inv.get("owner_context") or "").strip() for inv in _sec_data.get("invariants", [])
+                  if str(inv.get("owner_context") or "").strip()} | {"Intake"})
+_dg_strategy.write_text(json.dumps({
+    "schema_version": "1.0", "report_type": "execution-strategy", "slug": SEC_SLUG,
+    "bounded_contexts": _dg_ctx,
+    "surfaces": [{"name": r["surface"], "kind": "http", "context": _dg_ctx[0],
+                  "operations": ["post"], "traced_from": "sec"}
+                 for r in _sec_data["authorization_matrix"] if r.get("surface")],
+    "contexts_without_inbound": [], "modules": [], "layers": [], "build_order": [],
+    "risks": [], "module_layout": {"base_package": "com.example.sec", "packages": [],
+                                   "integration": []},
+    "persistence": {"drivers": [], "data_model": [], "queries": [], "migration_plan": [],
+                    "backup_recovery": "", "open_questions": []},
+    "observability": {"contexts": _dg_ctx, "correlation_key": "trace",
+                      "step_logs": {_dg_ctx[0]: ["sample.received"],
+                                    _dg_ctx[-1]: ["window.emitted"]},
+                      "audit_trail": {}, "metrics": [],
+                      "export": {"schema": "jsonl", "sink": "logs/app.ndjson"}},
+}, ), encoding="utf-8")
+try:
+    _dg_path, _dg_problems = ddd.write_phase2_digest(SEC_SLUG)
+    _dg = json.loads(_dg_path.read_text(encoding="utf-8")) if _dg_path and _dg_path.is_file() else {}
+    check("DG1 the digest carries duty->rule joins (test_duty arrives attached), expanded "
+          "covers ids, and ONLY the mapping rows the duties claim - written to /tmp so the "
+          "tasks phase reads one file where it read six (the context-blow-up root fix)",
+          _dg_problems == [] and _dg.get("duties") and _dg.get("rules")
+          and all(d["spec_ref"] in _dg["rules"] for d in _dg["duties"])
+          and all(cid in _dg["rules"] for d in _dg["duties"] for cid in d["covers"])
+          and any("test_duty" in (r.get("entry") or {}) for r in _dg["rules"].values())
+          and _dg.get("mechanisms", {}).get("security", {}).get("rows")
+          and str(_dg_path).startswith("/tmp/phase2-digest-")
+          and _dg["specs"]["security"] == "present",
+          str(_dg_problems)[:200])
+    _dg2path, _dg2problems = ddd.write_phase2_digest("no-such-domain")
+    check("DG2 a domain without a strategy reports a problem instead of a half digest - the "
+          "pipeline stops on it before billing an architect session that would hunt files",
+          _dg2problems and "no readable execution strategy" in " ".join(_dg2problems))
+
+    # DG3-DG5: the 2026-11-20 split made the digest PER-CONTEXT and made the MECHANISM
+    # TRAVEL with the duty - the planner copies a row, it does not read a table.
+    _dg_duties = _dg.get("duties") or []
+    print("DBG DG3 duties:", json.dumps(_dg_duties)[:600])
+    print("DBG DG3 build_coordinates:", json.dumps(_dg.get("build_coordinates"))[:400])
+    print("DBG DG3 gaps:", json.dumps(_dg.get("mechanisms", {}).get("security", {}).get("unmapped_duties")))
+    check("DG3 every duty arrives pre-joined to its matched mapping-table row (the cells "
+          "the intent copies - identifier + config key), the honest None marks exactly the "
+          "duties listed as unmapped, and the table's Build-coordinates ride the digest - "
+          "so a lawful plan never opens a mapping table (item 3: the digest IS the "
+          "pre-filtered skill read)",
+          _dg_duties
+          and all("table_row" in d for d in _dg_duties)
+          and any((d.get("table_row") or {}).get("cells") for d in _dg_duties)
+          and all(bool((d.get("table_row") or {}).get("cells"))
+                  == (f"{d['spec_ref']}:{str(d.get('capability', '')).lower()}/"
+                      f"{str(d.get('unit_kind', '')).lower()}"
+                      not in (_dg.get("mechanisms", {}).get("security", {})
+                              .get("unmapped_duties") or []))
+                  for d in _dg_duties if d["spec"] == "security")
+          and _dg.get("build_coordinates", {}).get("security", {}).get("rows")
+          and "starter-security" in json.dumps(_dg.get("build_coordinates")))
+    _dg_first = _dg.get("draft_order")[0]
+    (Path("/tmp") / f"phase2-slice-{SEC_SLUG}-ghost-context.json").write_text("{}", encoding="utf-8")
+    (Path("/tmp") / f"strategy-slice-{SEC_SLUG}-ghost-context.json").write_text("{}", encoding="utf-8")
+    _sl_path, _sl_problems = ddd.write_phase2_digest_slice(SEC_SLUG, _dg_first)
+    _sl = json.loads(_sl_path.read_text(encoding="utf-8")) if _sl_path else {}
+    _sl_other = ddd.write_phase2_digest_slice(SEC_SLUG, _dg.get("draft_order")[-1])[0]
+    _sl_other_d = json.loads(_sl_other.read_text(encoding="utf-8")) if _sl_other else {}
+    check("DG4 the per-context digest slice is PURE ACTIONABLE RECORDS (2026-11-20 audit "
+          "round 2: the slice carried a 5.2KB rules map duplicating what the duties already "
+          "joined, plus observability/data_model bytes that belong to the strategy slice): "
+          "every duty arrives with its join keys ON the duty (surface/test_duty/measurement "
+          "merged off the rule row), duty keys stay inside the declared set, table_rows are "
+          "cells-only, mechanisms carry no rows array, and the slice holds NO rules, "
+          "surfaces, data_model or observability keys - those ride the strategy slice or the "
+          "full digest (the repair pass's input); attribution and the first-slice home still "
+          "hold, and BOTH slice prefixes prune superseded context names",
+          _sl_problems == [] and _sl.get("context") == _dg_first
+          and len(_sl["duties"]) == len(_dg_duties)
+          and all(set(d.keys()) <= set(ddd.SLICE_DUTY_KEYS) for d in _sl["duties"])
+          and all(("surface" in d and "test_duty" in d) for d in _sl["duties"]
+                  if d.get("spec") == "security"
+                  and str(d.get("spec_ref", "")).startswith("AZ"))
+          and all(not (d.get("table_row") or {}).get("header") for d in _sl["duties"])
+          and all("rows" not in m for m in _sl.get("mechanisms", {}).values())
+          and not any(k in _sl for k in ("rules", "surfaces", "data_model", "observability"))
+          and not (Path("/tmp") / f"phase2-slice-{SEC_SLUG}-ghost-context.json").exists()
+          and not (Path("/tmp") / f"strategy-slice-{SEC_SLUG}-ghost-context.json").exists()
+          and (_dg.get("draft_order")[-1] == _dg_first
+               or _sl_other_d.get("duties") == []
+               or all(ddd._duty_context(d, _dg["rules"], _dg["surfaces"]) in
+                      (None, _dg.get("draft_order")[-1]) for d in _sl_other_d["duties"])))
+    _ss = json.loads(ddd.strategy_slice_path(SEC_SLUG, _dg_first).read_text(encoding="utf-8"))
+    check("DG6 the strategy slice is what lets the session STOP reading the full plan: it "
+          "carries exactly this context's surfaces, an observability block whose step_logs "
+          "are keyed to this context alone, and persistence only when the domain owns a "
+          "store (this fixture declares none - the slice says null instead of shipping "
+          "Flyway lines the streaming context never plans against); the operator-facing "
+          "phase-1 output (risks, build_order) is not planning input and stays out "
+          "(2026-11-20 audit: the full 8.6KB strategy, other contexts included, rode every "
+          "per-context session's every turn)",
+          all(str(s.get("context", "")).strip() == _dg_first for s in _ss.get("surfaces") or [])
+          and list((_ss.get("observability") or {}).get("step_logs") or {}) == [_dg_first]
+          and _ss.get("persistence") is None
+          and "risks" not in _ss and "build_order" not in _ss
+          and _ss.get("slug") == SEC_SLUG and _ss.get("context") == _dg_first
+          and set(_ss.keys()) <= {"slug", "context", "project_root", "tech_stack", "layers",
+                                  "module_layout", "surfaces", "contexts_without_inbound",
+                                  "persistence", "observability"})
+    _order = _dg.get("draft_order") or []
+    check("DG5 the draft order is a permutation of the bounded contexts (provider edges from "
+          "the context map decide the sequence; no context dropped, none invented) - the "
+          "symbol table of the drafted prefixes is therefore the ONLY pin source a session "
+          "can ever legitimately need for backward references",
+          sorted(_order) == sorted(_dg.get("bounded_contexts") or [])
+          and ddd.context_draft_order("no-such-domain") == [])
+
+    # --- SP. the per-context PLANNING lifecycle (claim / lint / symbols / batch emit).
+    _SP_SLUG = "splx"
+    task_queue.clear_drafts(_SP_SLUG)
+    _sp_alpha = task_queue.draft_path(_SP_SLUG, "Alpha")
+    _sp_beta = task_queue.draft_path(_SP_SLUG, "Beta")
+    _sp_alpha.parent.mkdir(parents=True, exist_ok=True)
+
+    def _sp_task(tid, stage, export, deps=(), pins=()):
+        return {"id": tid, "targetAgent": settings.STAGE_AGENTS[stage], "stage": stage,
+                "dependsOn": list(deps), "path": f"src/main/java/m/{export}.java",
+                "kind": settings.STAGE_KINDS[stage][0], "layer": "domain", "feature": None,
+                "export": export, "project": _SP_SLUG,
+                "intent": f"{export} owns its state and answers through the tabled methods.",
+                "ast_hints": {"package": "com.m.splx", "implements": [],
+                              "dependencies": [{"type": t, "task_id": p} for t, p in pins],
+                              "methods": [{"signature": "go()", "returns": "void"}],
+                              "meters": [], "routes": [], "config": []}}
+
+    _sp_a1 = task_queue.next_task_id(2)  # stage 2 units: stage-correct ids from the start
+    _sp_a2 = f"T2-{int(_sp_a1.split('-')[1]) + 1:03d}"
+    _sp_alpha.write_text(json.dumps([
+        _sp_task(_sp_a1, 2, "AlphaOne"),
+        _sp_task(_sp_a2, 2, "AlphaTwo", deps=[_sp_a1])]), encoding="utf-8")
+    _sp_p1, _sp_ren1 = task_queue.claim_draft(_SP_SLUG, "Alpha")
+    # Beta is numbered AS IF IT WERE THE FIRST CONTEXT - the miscount the split makes
+    # possible, and the arithmetic Python owns: claim renumbers Beta, never Alpha.
+    _sp_beta.write_text(json.dumps([
+        _sp_task(_sp_a1, 2, "BetaOne"),
+        _sp_task(_sp_a2, 2, "BetaTwo", deps=[_sp_a1], pins=[("AlphaOne", _sp_a1)])]),
+        encoding="utf-8")
+    _sp_p2, _sp_ren2 = task_queue.claim_draft(_SP_SLUG, "Beta")
+    _sp_beta_after = json.loads(_sp_beta.read_text(encoding="utf-8"))
+    print("DBG SP1 p1:", _sp_p1, "ren1:", _sp_ren1, "p2:", _sp_p2, "ren2:", _sp_ren2)
+    print("DBG SP1 beta_after:", json.dumps(_sp_beta_after)[:400])
+    check("SP1 claim_draft joins a draft's ids to the board's number space IN PYTHON: a "
+          "colliding id is renumbered and the file's own dependsOn and pin references "
+          "follow, the earlier context keeps its ids, Beta's VALID backward pin to Alpha "
+          "is NOT rewritten (it was never a collision), and no repair session is ever "
+          "billed for arithmetic the machine can do",
+          _sp_p1 == [] and _sp_ren1 == {}
+          and set(_sp_ren2) == {_sp_a1, _sp_a2}
+          and _sp_p2 == []
+          and {t["id"] for t in _sp_beta_after} == set(_sp_ren2.values())
+          and json.loads(_sp_alpha.read_text(encoding="utf-8"))[0]["id"] == _sp_a1
+          and _sp_beta_after[1]["dependsOn"] == [_sp_ren2[_sp_a1]]
+          and _sp_beta_after[1]["ast_hints"]["dependencies"][0]["task_id"] == _sp_a1)
+    _sp_fwd = task_queue.draft_path(_SP_SLUG, "Gamma")
+    _sp_g1 = task_queue.next_task_id(2)  # after the claims: a real 3-digit successor
+    _sp_d1 = f"T2-{int(_sp_g1.split('-')[1]) + 1:03d}"
+    _sp_fwd.write_text(json.dumps([
+        _sp_task(_sp_g1, 2, "GammaOne", deps=["T9-999"])]), encoding="utf-8")
+    _sp_lint = task_queue.lint_draft(_sp_fwd)
+    _sp_ok = task_queue.draft_path(_SP_SLUG, "Delta")
+    _sp_ok.write_text(json.dumps([_sp_task(_sp_d1, 2, "DeltaOne")]), encoding="utf-8")
+    _sp_lint_ok = task_queue.lint_draft(_sp_ok)
+    print("DBG SP2 lint:", repr(_sp_lint)[:400])
+    print("DBG SP2 lint_ok:", repr(_sp_lint_ok)[:400])
+    check("SP2 --lint is the deterministic single-file gate: a dangling reference (an id no "
+          "drafted context or file holds - here one not even numbered right) is refused "
+          "with an ERR pointer naming the unit and field, a clean file gets LINT-CLEAN "
+          "with the batch laws explicitly DEFERRED (the claims a later context owns are not "
+          "this file's verdict), and the refusal teaches the split's law - pin the symbol "
+          "table or the queue, never a guessed or forward id",
+      _sp_lint.startswith("ERR [")
+      and any(line.startswith("ERR [") and "dependsOn" in line
+              for line in _sp_lint.splitlines())
+      and ("not yet drafted" in _sp_lint.lower() or "cannot be pinned" in _sp_lint.lower())
+      and _sp_lint_ok.startswith("LINT-CLEAN") and "DEFERRED" in _sp_lint_ok)
+    _sp_batch_reason = task_queue.emit_draft_batch(_SP_SLUG, ["Alpha", "Beta"])
+    check("SP3 the ENGINE-side batch emit still validates the plan as ONE unit across the "
+          "per-context files (Beta's renumbered unit resolves its cross-file pin against "
+          "Alpha in the same batch), and any refusal it prints is a batch of `ERR "
+          "[pointer]` lines with the edit-not-rewrite remedy - the batch law F1 bought "
+          "survives the split with zero sessions spent on it",
+      (_sp_batch_reason is None
+       or ("references no task" not in str(_sp_batch_reason)
+           and all(line.startswith("ERR [") or line.startswith("Fix EVERY") or ":" not in line
+                   for line in str(_sp_batch_reason).splitlines() if line.strip()))))
+    _sp_symbols_path = task_queue.DRAFT_DIR / "splx-symbols.json"
+    _, _sp_sym_problems = task_queue.draft_symbol_table(
+        _SP_SLUG, ["Alpha", "Beta"], _sp_symbols_path)
+    _sp_syms = json.loads(_sp_symbols_path.read_text(encoding="utf-8"))
+    print("DBG SP4:", json.dumps(_sp_syms)[:500])
+    check("SP4 the symbol table gives the NEXT context exactly its lawful pin vocabulary: "
+          "every exported unit of the drafted contexts by id, signature and shared-literal "
+          "tables, plus the next-free numbers - the brief's third input, built in Python so "
+          "no session pays to re-read the drafts it joins against",
+          _sp_sym_problems == []
+          and _sp_syms["drafted_contexts"] == ["Alpha", "Beta"]
+          and {u["export"] for u in _sp_syms["units"]} >= {"AlphaOne", "BetaTwo"}
+          and all(v.startswith(f"{k}-") for k, v in _sp_syms["next_free"].items())
+          and len(_sp_syms["units"]) == 4)
+
+    # SP5/SP6: the stage-0 family law for the split (2026-11-20 operator edge case).
+    # Every context's session shares ONE build file; two contexts may each notice a
+    # missing coordinate. The domain ships ONE scaffold and ONE build-manifest - the
+    # linter and the batch emit refuse the twin naming the first, and the symbol table
+    # carries the scheduled manifest with its VERBATIM intent so a later context never
+    # re-schedules a coordinate it already carries.
+    def _sp_manifest(mid):
+        return {"id": mid, "targetAgent": "agent-container", "stage": 0, "dependsOn": [],
+                "path": "pom.xml", "kind": "bootstrap", "layer": "root", "feature": None,
+                "export": "build-manifest", "project": _SP_SLUG,
+                "intent": "Add spring-boot-starter-security and spring-security-test "
+                          "test-scoped to the build file; the parent owns versions."}
+
+    _sp_m1 = task_queue.next_task_id(0)
+    _sp_eps = task_queue.draft_path(_SP_SLUG, "Epsilon")
+    # SP10's law now governs this fixture too: with a manifest scheduled, the stage-2
+    # unit MUST reach it transitively - the lawful shape the new gate demands
+    _sp_eps.write_text(json.dumps([
+        _sp_manifest(_sp_m1),
+        _sp_task(task_queue.next_task_id(2), 2, "EpsilonOne", deps=[_sp_m1])]),
+        encoding="utf-8")
+    _sp_l_eps = task_queue.lint_draft(_sp_eps)
+    _sp_m2 = f"T0-{int(_sp_m1.split('-')[1]) + 1:03d}"
+    _sp_m3 = f"T0-{int(_sp_m1.split('-')[1]) + 2:03d}"
+    _sp_zeta = task_queue.draft_path(_SP_SLUG, "Zeta")
+    _sp_zeta.write_text(json.dumps([_sp_manifest(_sp_m2)]), encoding="utf-8")
+    _sp_l_zeta = task_queue.lint_draft(_sp_zeta)
+    _sp_twin = task_queue.draft_path(_SP_SLUG, "Twin")
+    _sp_twin.write_text(json.dumps([_sp_manifest(_sp_m2), _sp_manifest(_sp_m3)]),
+                        encoding="utf-8")
+    _sp_l_twin = task_queue.lint_draft(_sp_twin)
+    _sp_emit_eps = task_queue.emit_draft_batch(_SP_SLUG, ["Epsilon"])
+    _sp_emit_twin = task_queue.emit_tasks([str(_sp_twin)])
+    check("SP5 the ONE-stage-0-family law is machine-enforced at BOTH tiers: the first "
+          "build-manifest drafts and emits clean, a second context's manifest is refused at "
+          "lint naming the FIRST task, a twin inside one file is refused too, and the batch "
+          "emit carries the same refusal (2026-11-20 edge: the split shares one build file "
+          "across sessions - without this gate both manifests run and last-write-wins picks "
+          "the delivered pom while the first duty silently vanishes)",
+      _sp_l_eps.startswith("LINT-CLEAN")
+      and _sp_l_zeta.startswith("ERR") and "second 'build-manifest'" in _sp_l_zeta
+      and _sp_m1 in _sp_l_zeta
+      and "second 'build-manifest'" in _sp_l_twin
+      and _sp_emit_eps is None
+      and _sp_emit_twin and "second 'build-manifest'" in _sp_emit_twin)
+    _sp_syms2_path = task_queue.DRAFT_DIR / "splx-symbols-2.json"
+    _, _sp_sym2_problems = task_queue.draft_symbol_table(
+        _SP_SLUG, ["Epsilon"], _sp_syms2_path)
+    _sp_syms2 = json.loads(_sp_syms2_path.read_text(encoding="utf-8"))
+    check("SP6 the symbol table answers the duplication before it happens: `build_manifest` "
+          "carries the scheduled task's id and VERBATIM intent (the session's own coordinate "
+          "check), stage-0 tasks stay OUT of the pin vocabulary (a scaffold/manifest is not "
+          "a collaborator), and the brief teaches consult-first / report-dont-duplicate "
+          "(AS4f pins the carriers; this pins the data)",
+      _sp_sym2_problems == []
+      and [m["id"] for m in _sp_syms2["build_manifest"]] == [_sp_m1]
+      and "spring-boot-starter-security" in _sp_syms2["build_manifest"][0]["intent"]
+      and {u["stage"] for u in _sp_syms2["units"]} == {2})
+
+    # SP7 (X11, 2026-11-20 operator catch): the split's "report the gap" branch must LAND
+    # somewhere the machine reads. Context A schedules the ONE build-manifest with the
+    # coordinates A knows; context B may neither duplicate the task nor edit A's file - B
+    # writes its gap to the structured file, and apply_coordinate_gaps appends it, verbatim
+    # and idempotently, to the ONE task BEFORE the batch emit. A report with no manifest to
+    # amend is a repair-grade problem, never a silent pass.
+    _SP7_SLUG = "sply"
+    task_queue.clear_drafts(_SP7_SLUG)
+
+    def _sp7_manifest(mid, coord):
+        return {"id": mid, "targetAgent": "agent-container", "stage": 0, "dependsOn": [],
+                "path": "pom.xml", "kind": "bootstrap", "layer": "root", "feature": None,
+                "export": "build-manifest", "project": _SP7_SLUG,
+                "intent": f"Add {coord} to the build file; the parent owns versions."}
+
+    def _sp7_task(tid, export):
+        return {"id": tid, "targetAgent": settings.STAGE_AGENTS[2], "stage": 2,
+                "dependsOn": [_sp7_m],
+                "path": f"src/main/java/m/{export}.java",
+                "kind": "code", "layer": "domain", "feature": None, "export": export,
+                "project": _SP7_SLUG,
+                "intent": f"{export} owns its state through the tabled methods.",
+                "ast_hints": {"package": "com.m.sply", "implements": [], "dependencies": [],
+                              "methods": [{"signature": "go()", "returns": "void"}],
+                              "meters": [], "routes": [], "config": []}}
+
+    _sp7_m = task_queue.next_task_id(0)
+    _sp7_t1 = task_queue.next_task_id(2)
+    _sp7_t2 = f"T2-{int(_sp7_t1.split('-')[1]) + 1:03d}"
+    _sp7_alpha = task_queue.draft_path(_SP7_SLUG, "Alpha")
+    _sp7_beta = task_queue.draft_path(_SP7_SLUG, "Beta")
+    _sp7_alpha.write_text(json.dumps([
+        _sp7_manifest(_sp7_m, "org.example:starter-a"), _sp7_task(_sp7_t1, "AlphaOne")]),
+        encoding="utf-8")
+    _sp7_beta.write_text(json.dumps([_sp7_task(_sp7_t2, "BetaOne")]), encoding="utf-8")
+    task_queue.gaps_path(_SP7_SLUG, "Beta").write_text(json.dumps(
+        {"missing_coordinates": ["org.example:starter-a", "org.example:starter-b"]}),
+        encoding="utf-8")
+    _sp7_problems, _sp7_notes = task_queue.apply_coordinate_gaps(_SP7_SLUG, ["Alpha", "Beta"])
+    _sp7_intent = json.loads(_sp7_alpha.read_text(encoding="utf-8"))[0]["intent"]
+    _sp7_again_problems, _sp7_again_notes = task_queue.apply_coordinate_gaps(
+        _SP7_SLUG, ["Alpha", "Beta"])
+    _sp7_emit = task_queue.emit_draft_batch(_SP7_SLUG, ["Alpha", "Beta"])
+    # and the lonely-report shape: a gap with no manifest task anywhere is a problem line,
+    # not a silent success (bare-list gaps shape is accepted too)
+    _SP8_SLUG = "splz"
+    _sp8_gap = task_queue.gaps_path(_SP8_SLUG, "Solo")
+    _sp8_gap.parent.mkdir(parents=True, exist_ok=True)
+    _sp8_gap.write_text(json.dumps(["org.example:orphan"]), encoding="utf-8")
+    _sp8_problems, _ = task_queue.apply_coordinate_gaps(_SP8_SLUG, ["Solo"])
+    check("SP7 the gap report is machine-consumed before the batch emit: B's coordinate is "
+          "appended VERBATIM to the ONE build-manifest task in A's file (B never touched "
+          "it, the ENGINE did), the coordinate B re-reported as already carried is not "
+          "doubled, a second apply is a no-op (idempotent), the emitted batch then carries "
+          "the amended intent, and a report with NO manifest to amend is a repair-grade "
+          "problem line naming the coordinates (2026-11-20: the profile's 'report the gap' "
+          "otherwise died in the transcript, and the missing coordinate surfaced only as "
+          "the first red compile - the D4 class reborn through the split)",
+      _sp7_problems == []
+      and "org.example:starter-b" in _sp7_intent
+      and _sp7_intent.count("org.example:starter-a") == 1
+      and any("starter-b" in n and _sp7_m in n for n in _sp7_notes)
+      and _sp7_again_problems == []
+      and not any("appended" in n for n in _sp7_again_notes)
+      and _sp7_emit is None
+      and _sp8_problems and "NO build-manifest task" in _sp8_problems[0]
+      and "org.example:orphan" in _sp8_problems[0])
+
+    # SP8 (2026-11-20 resume economics, measured live): the budget-killed planner's draft
+    # was LINT-CLEAN - the run's RESULT - yet the next launch wiped every draft
+    # unconditionally and would re-bill the whole context for it. Freshness is now the
+    # keep/drop rule: a draft newer than every plan input is claimed without a session;
+    # an input rewrite older-dates it and only that context re-plans.
+    import os as _os
+    _SP8b_SLUG = "splw"
+    task_queue.clear_drafts(_SP8b_SLUG)
+    _sp8_strategy = settings.COMPLETE_DIR / f"execution-strategy-{_SP8b_SLUG}.json"
+    _sp8_strategy.write_text(json.dumps({"slug": _SP8b_SLUG}), encoding="utf-8")
+    _sp8_draft = task_queue.draft_path(_SP8b_SLUG, "Alpha")
+    _sp8_draft.write_text(json.dumps([{"id": "T2-950", "project": _SP8b_SLUG}]),
+                          encoding="utf-8")
+    _now = _sp8_draft.stat().st_mtime
+    _os.utime(_sp8_strategy, (_now - 100, _now - 100))
+    _sp8_kept = task_queue.draft_is_fresh(_SP8b_SLUG, "Alpha")
+    _os.utime(_sp8_strategy, (_now + 100, _now + 100))
+    _sp8_stale = task_queue.draft_is_fresh(_SP8b_SLUG, "Alpha")
+    _sp8_draft.unlink()
+    _sp8_missing = task_queue.draft_is_fresh(_SP8b_SLUG, "Alpha")
+    # the map/contract hierarchy (§14 consistency check): the QUICKREF is the derivative
+    # MAP the session reads by default - its rewording must NOT re-bill a compliant draft
+    # (map drift dies at lint/emit, the gate is the law); the normative SKILL.md rewrite
+    # MUST older-date it - the resume cost falls exactly where the binding text changed
+    _sp8_dag = SEC_REPO / ".opencode/skills/architect-practices/task-decomposition-dag"
+    _sp8_qr = _sp8_dag / "QUICKREF.md"
+    _sp8_sk = _sp8_dag / "SKILL.md"
+    _base = _sp8_qr.stat().st_mtime
+    _os.utime(_sp8_strategy, (_base - 500, _base - 500))  # undo the +100 staleness probe
+    _sp8_draft.write_text(json.dumps([{"id": "T2-950", "project": _SP8b_SLUG}]),
+                          encoding="utf-8")
+    _sk_orig = _sp8_sk.stat().st_mtime
+    try:
+        _os.utime(_sp8_qr, (_base + 100000, _base + 100000))
+        _sp8_map_edit = task_queue.draft_is_fresh(_SP8b_SLUG, "Alpha")
+        _os.utime(_sp8_qr, (_base, _base))
+        _os.utime(_sp8_sk, (_base + 100000, _base + 100000))
+        _sp8_contract_edit = task_queue.draft_is_fresh(_SP8b_SLUG, "Alpha")
+    finally:
+        _os.utime(_sp8_sk, (_sk_orig, _sk_orig))
+    _sp8_restored = task_queue.draft_is_fresh(_SP8b_SLUG, "Alpha")
+    _sp8_src = (SEC_REPO / "orchestrators/pipeline.py").read_text()
+    check("SP8 draft_is_fresh is the resume gate: a valid draft newer than the strategy and "
+          "the specs is kept, an input rewrite makes it stale ONLY when the rewritten input "
+          "is binding - the normative SKILL.md re-plans, the derivative QUICKREF map does "
+          "NOT (mtime-gating a map edit would re-bill a provably compliant draft for "
+          "wording; map drift is caught by lint/emit: the gate is the law), an absent or "
+          "malformed draft is never trusted, and the loop clears ONLY stale bytes and "
+          "claims kept drafts without spawning a session",
+      _sp8_kept and not _sp8_stale and not _sp8_missing
+      and _sp8_map_edit and not _sp8_contract_edit and _sp8_restored
+      and "[resume]" in _sp8_src and "draft_is_fresh" in _sp8_src
+      and "clear_drafts(slug)" not in _sp8_src)
+
+    # SP9 the symbol-table fold (2026-11-20 context audit: 46K of symbols for one
+    # provider context = 57 entries carrying 23 tables three times each; the T1/T2 pair
+    # is IDENTICAL by law (z4), so the pair's table rides ONCE on the stage-2 entry and
+    # the twin becomes a pointer):
+    _SP9_SLUG = "spfk"
+    task_queue.clear_drafts(_SP9_SLUG)
+    _sp9_hint = {"package": "com.m.f", "implements": [], "dependencies": [],
+                 "methods": [{"signature": "go()", "returns": "void"}],
+                 "meters": [{"name": "f.meter", "duty": "owns"}],
+                 "routes": [{"method": "POST", "path": "/f", "duty": "serves"}],
+                 "config": [{"path": "f.limit", "kind": "value"}]}
+    _sp9_units = [
+        {"id": "T1-960", "targetAgent": "agent-tester", "stage": 1, "dependsOn": [],
+         "path": "src/test/java/m/GoTest.java", "kind": "test", "layer": "domain",
+         "feature": None, "export": "GoTest", "project": _SP9_SLUG, "intent": "t",
+         "ast_hints": _sp9_hint},
+        {"id": "T2-960", "targetAgent": "agent-coder", "stage": 2, "dependsOn": ["T1-960"],
+         "path": "src/main/java/m/Go.java", "kind": "code", "layer": "domain",
+         "feature": None, "export": "Go", "project": _SP9_SLUG, "intent": "c",
+         "ast_hints": _sp9_hint},
+        {"id": "T3-960", "targetAgent": "agent-evaluator", "stage": 3,
+         "dependsOn": ["T2-960"], "path": "src/main/java/m/Go.java", "kind": "refactor",
+         "layer": "domain", "feature": None, "export": "Go", "project": _SP9_SLUG,
+         "intent": "r", "ast_hints": _sp9_hint}]
+    task_queue.draft_path(_SP9_SLUG, "Fold").write_text(json.dumps(_sp9_units),
+                                                       encoding="utf-8")
+    _sp9_sym = task_queue.DRAFT_DIR / "spfk-symbols.json"
+    _, _sp9_problems = task_queue.draft_symbol_table(_SP9_SLUG, ["Fold"], _sp9_sym)
+    _sp9 = json.loads(_sp9_sym.read_text(encoding="utf-8"))
+    _sp9_by_id = {u["id"]: u for u in _sp9["units"]}
+    check("SP9 the symbol-table fold is lossless for pins and heavy-byte for tables: the "
+          "stage-2 entry is the table's ONE home (methods/meters/routes/config as plain "
+          "lists), the twin stage-1 and stage-3 entries carry a `table_of` pointer instead "
+          "of a third copy, every id a session may pin is still present, and the pair law "
+          "(z4) is what makes this lossless - a symbol table a session cannot read is "
+          "context, a symbol table that reads like the draft is waste",
+      _sp9_problems == []
+      and _sp9_by_id["T2-960"]["meters"] == ["f.meter"]
+      and _sp9_by_id["T2-960"]["routes"] == ["POST /f"]
+      and _sp9_by_id["T2-960"]["config"] == ["f.limit"]
+      and _sp9_by_id["T2-960"]["methods"] == ["go()"]
+      and _sp9_by_id["T1-960"].get("table_of") == "T2-960"
+      and _sp9_by_id["T3-960"].get("table_of") == "T2-960"
+      and "ast_hints" not in json.dumps(_sp9_by_id["T1-960"])
+      and {"T1-960", "T2-960", "T3-960"} <= {u["id"] for u in _sp9["units"]})
+    # SP10 (2026-11-20 root fix, AS15's prose law promoted to the machine tier): a
+    # scheduled build-manifest adds coordinates to the module's build file, and a module
+    # test compile pulls the WHOLE module classpath in every stack (Maven, Gradle, npm,
+    # pip alike) - so EVERY stage-1/2 task of the project must reach the manifest
+    # through dependsOn, transitively. The gate reads ONLY board structure: the export
+    # marker and the dependency closure - zero framework vocabulary.
+    _SP10_SLUG = "spo"
+    task_queue.clear_drafts(_SP10_SLUG)
+
+    def _sp10_task(tid, stage, deps, export_suffix=""):
+        return {"id": tid, "targetAgent": settings.STAGE_AGENTS[stage], "stage": stage,
+                "dependsOn": list(deps),
+                "path": ("src/test/java/m/GTest.java" if stage == 1
+                         else "src/main/java/m/G.java"),
+                "kind": settings.STAGE_KINDS[stage][0], "layer": "domain",
+                "feature": None, "export": "G" + export_suffix, "project": _SP10_SLUG,
+                "intent": f"G stage {stage} obeys the manifest ordering",
+                "ast_hints": {"package": "com.m.spo", "implements": [],
+                              "dependencies": [],
+                              "methods": [{"signature": "go()", "returns": "void"}],
+                              "meters": [], "routes": [], "config": []}}
+
+    _sp10_m = task_queue.next_task_id(0)
+    _sp10_t1 = task_queue.next_task_id(1)
+    _sp10_t2 = task_queue.next_task_id(2)
+    _sp10_manifest = {"id": _sp10_m, "targetAgent": "agent-container", "stage": 0,
+                      "dependsOn": [], "path": "pom.xml", "kind": "bootstrap",
+                      "layer": "root", "feature": None, "export": "build-manifest",
+                      "project": _SP10_SLUG, "intent": "Add org.example:starter-x"}
+    _sp10_draft = task_queue.draft_path(_SP10_SLUG, "Draft")
+    _sp10_draft.write_text(json.dumps([
+        _sp10_manifest,
+        _sp10_task(_sp10_t1, 1, []),
+        _sp10_task(_sp10_t2, 2, [_sp10_t1])]), encoding="utf-8")
+    _sp10_rej = task_queue.emit_tasks([str(_sp10_draft)])
+    _sp10_lint = task_queue.lint_draft(_sp10_draft)
+    # lawful shape: T1 depends on the manifest; T2 reaches it THROUGH T1 - transitive
+    _sp10_draft.write_text(json.dumps([
+        _sp10_manifest,
+        _sp10_task(_sp10_t1, 1, [_sp10_m]),
+        _sp10_task(_sp10_t2, 2, [_sp10_t1])]), encoding="utf-8")
+    _sp10_ok = task_queue.emit_tasks([str(_sp10_draft)])
+    _sp10_draft.unlink(missing_ok=True)
+    for _q in list(settings.QUEUE_DIR.glob("*-spo.json")) + \
+              list(settings.COMPLETE_DIR.glob("*-spo.json")):
+        _q.unlink()
+    check("SP10 the manifest-precedes-compile gate is machine-enforced at BOTH tiers: a "
+          "stage-2 with no path to the scheduled build-manifest is refused at emit naming "
+          "both ids, the same defect is caught at single-file lint BEFORE any batch runs, "
+          "transitive reach counts (the T2 reaching the manifest through its T1 accepts), "
+          "and a project without a manifest is never touched - the law is board "
+          "structure, identical for Maven, Gradle, npm and pip, with no annotation or "
+          "artifact name anywhere in the check",
+      _sp10_rej and "build-manifest" in _sp10_rej and _sp10_m in _sp10_rej
+      and _sp10_t2 in _sp10_rej
+      and _sp10_rej.splitlines()[0].startswith("ERR [")
+      and _sp10_lint.startswith("ERR") and "build-manifest" in _sp10_lint
+      and _sp10_ok is None)
+    for _sp_p in (_sp_alpha, _sp_beta, _sp_fwd, _sp_ok, _sp_symbols_path,
+                  _sp_eps, _sp_zeta, _sp_twin, _sp_syms2_path,
+                  _sp7_alpha, _sp7_beta, task_queue.gaps_path(_SP7_SLUG, "Beta"),
+                  _sp8_gap, _sp8_strategy, _sp8_draft,
+                  task_queue.draft_path(_SP9_SLUG, "Fold"), _sp9_sym):
+        _sp_p.unlink(missing_ok=True)
+    for _q in list(settings.QUEUE_DIR.glob("*-splx.json")) + \
+              list(settings.COMPLETE_DIR.glob("*-splx.json")):
+        _q.unlink()
+finally:
+    _dg_strategy.unlink(missing_ok=True)
+    if SEC_FILE.exists():
+        sec_spec()
 
 bad_names = [n for n, c in CHECKS if not c]
 print(f"\nENGINE-DECISIONS SUITE: {len(CHECKS) - len(bad_names)}/{len(CHECKS)}")

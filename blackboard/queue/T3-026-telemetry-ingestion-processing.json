@@ -1,0 +1,15 @@
+{
+  "id": "T3-026",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-026"
+  ],
+  "kind": "refactor",
+  "layer": "domain",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/main/java/com/blackboard/telemetry/distribution/domain/StreamAuditEvent.java",
+  "export": "com.blackboard.telemetry.distribution.domain.StreamAuditEvent",
+  "intent": "Refactor the audit event record for clarity without changing its contract; keep every test green."
+}

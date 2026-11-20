@@ -1,0 +1,60 @@
+{
+  "id": "T2-014",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T0-001",
+    "T1-014",
+    "T2-001",
+    "T2-003"
+  ],
+  "kind": "code",
+  "layer": "application",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/main/java/com/blackboard/telemetry/ingestion/application/ReorderWindow.java",
+  "export": "com.blackboard.telemetry.ingestion.application.ReorderWindow",
+  "intent": "Component holding a bounded t_device-ordered buffer. PB-08 bounded-queue and PI-02 bounded-queue: payload cap row, spring.codec.max-in-memory-size, oversized answers the declared status; depth capped by telemetry.reorder.capacity, overflow rejected never silent; release age telemetry.reorder.window-seconds.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.ingestion.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetryProperties",
+        "task_id": "T2-001"
+      },
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-003"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "boolean offer(TelemetrySample sample)",
+        "returns": "boolean",
+        "semantics": "true: buffered; false: capacity reached, nothing buffered, caller rejects with 503 and Retry-After"
+      },
+      {
+        "signature": "List<TelemetrySample> drainReady(Instant now)",
+        "returns": "List<TelemetrySample>",
+        "semantics": "samples older than the window, ascending t_device, removed from the buffer"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "telemetry.reorder.window-seconds",
+        "kind": "value"
+      },
+      {
+        "path": "telemetry.reorder.capacity",
+        "kind": "value"
+      },
+      {
+        "path": "spring.codec.max-in-memory-size",
+        "kind": "value"
+      }
+    ]
+  }
+}

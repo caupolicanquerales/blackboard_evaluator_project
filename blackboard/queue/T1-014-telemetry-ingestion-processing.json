@@ -1,0 +1,59 @@
+{
+  "id": "T1-014",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-001",
+    "T1-003"
+  ],
+  "kind": "test",
+  "layer": "application",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/test/java/com/blackboard/telemetry/ingestion/application/ReorderWindowTest.java",
+  "export": "com.blackboard.telemetry.ingestion.application.ReorderWindowTest",
+  "intent": "offer true while below capacity; false at capacity (overflow) with depth never above capacity; drainReady returns held samples ordered by t_device once older than the window, newer ones stay; out-of-order arrivals are emitted in t_device order, never ingress order.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.ingestion.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetryProperties",
+        "task_id": "T2-001"
+      },
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-003"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "boolean offer(TelemetrySample sample)",
+        "returns": "boolean",
+        "semantics": "true: buffered; false: capacity reached, nothing buffered, caller rejects with 503 and Retry-After"
+      },
+      {
+        "signature": "List<TelemetrySample> drainReady(Instant now)",
+        "returns": "List<TelemetrySample>",
+        "semantics": "samples older than the window, ascending t_device, removed from the buffer"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "telemetry.reorder.window-seconds",
+        "kind": "value"
+      },
+      {
+        "path": "telemetry.reorder.capacity",
+        "kind": "value"
+      },
+      {
+        "path": "spring.codec.max-in-memory-size",
+        "kind": "value"
+      }
+    ]
+  }
+}

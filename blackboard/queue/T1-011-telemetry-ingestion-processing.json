@@ -1,0 +1,41 @@
+{
+  "id": "T1-011",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-003"
+  ],
+  "kind": "test",
+  "layer": "application",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/test/java/com/blackboard/telemetry/ingestion/application/SampleStoreContractTest.java",
+  "export": "com.blackboard.telemetry.ingestion.application.SampleStoreContractTest",
+  "intent": "Contract over an in-memory double: appendBatch counts appended rows; same-packet resend (identical device, metric, t_device and value) appends nothing; same identity with a new value appends a CORRECTION revision; findByDeviceAndMetric returns rows ordered by t_device, at most the page size.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.ingestion.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-003"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Integer> appendBatch(List<TelemetrySample> samples)",
+        "returns": "Mono<Integer>",
+        "semantics": "count of rows appended; duplicates of the full identity (device, metric, t_device, value) are no-ops; same device, metric and t_device with a different value appends a CORRECTION revision"
+      },
+      {
+        "signature": "Flux<TelemetrySample> findByDeviceAndMetric(String deviceId, String metricKind, Instant from, Instant to)",
+        "returns": "Flux<TelemetrySample>",
+        "semantics": "ordered by t_device ascending, capped at the configured page size"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

@@ -1,0 +1,625 @@
+{
+  "schema_version": "1.0",
+  "report_type": "security-spec",
+  "slug": "telemetry-ingestion-processing",
+  "metadata": {
+    "generated_at": "2026-11-20T16:40:00-03:00",
+    "agent": "agent-security-architect",
+    "inputs": [
+      "blackboard/complete/execution-strategy-telemetry-ingestion-processing.json",
+      "blackboard/domain/domain-boundary-telemetry-ingestion-processing.json",
+      "blackboard/context-map/context-map-telemetry-ingestion-processing.json"
+    ],
+    "confidence": "medium"
+  },
+  "assumptions": [
+    {
+      "id": "AS-01",
+      "text": "Every device proves its identity per packet; identity never comes from the body.",
+      "source": "IoT edge device",
+      "excludes": "Anonymous ingestion and body-asserted device identity."
+    },
+    {
+      "id": "AS-02",
+      "text": "Each device owns its samples; no tenant concept is stated.",
+      "source": "baseline rule",
+      "excludes": "Cross-device reads and tenant-scoped rules."
+    },
+    {
+      "id": "AS-03",
+      "text": "Stream subscribers prove identity and hold a subscribe scope.",
+      "source": "SubscribeWindowedTelemetryStream",
+      "excludes": "Anonymous stream subscription."
+    },
+    {
+      "id": "AS-04",
+      "text": "Physiological samples are personal data, classified confidential.",
+      "source": "Telemetry Sample",
+      "excludes": "Treating telemetry values as public or free to log."
+    }
+  ],
+  "trust_boundaries": [
+    {
+      "id": "TB-01",
+      "name": "Device to ingestion endpoint",
+      "from": "P-01",
+      "to": "Telemetry Ingestion",
+      "untrusted_inputs": ["Ingress Packet", "device identity", "metric kind", "t_device", "value"],
+      "controls": ["AZ-01", "SI-01", "SI-02", "SI-03", "SI-04"]
+    },
+    {
+      "id": "TB-02",
+      "name": "Ingestion to event store",
+      "from": "Telemetry Ingestion",
+      "to": "telemetry_sample_event",
+      "untrusted_inputs": ["payload retained verbatim"],
+      "controls": ["SI-05", "SI-14", "SI-15"]
+    },
+    {
+      "id": "TB-03",
+      "name": "Ingestion to distribution events",
+      "from": "Telemetry Ingestion",
+      "to": "Telemetry Stream Distribution",
+      "untrusted_inputs": ["published event payload"],
+      "controls": ["AZ-02", "SI-10", "SI-11"]
+    },
+    {
+      "id": "TB-04",
+      "name": "Distribution to downstream subscribers",
+      "from": "Telemetry Stream Distribution",
+      "to": "P-05",
+      "untrusted_inputs": ["subscriber credential", "subscription request"],
+      "controls": ["AZ-03", "SI-09", "SI-16"]
+    },
+    {
+      "id": "TB-05",
+      "name": "Logs, errors and metrics egress",
+      "from": "Telemetry Ingestion",
+      "to": "export sink",
+      "untrusted_inputs": ["log fields", "metric tags", "error text"],
+      "controls": ["SI-06", "SI-07", "SI-08", "SI-12", "SI-13"]
+    }
+  ],
+  "principals": [
+    {
+      "id": "P-01",
+      "name": "IoT edge device",
+      "kind": "device",
+      "source": "IoT edge device",
+      "authentication": "required",
+      "credential_capability": "device-credential-proof",
+      "identity_claims": ["device_id", "scopes"]
+    },
+    {
+      "id": "P-02",
+      "name": "Bike computer",
+      "kind": "device",
+      "source": "Bike computer",
+      "authentication": "required",
+      "credential_capability": "device-credential-proof",
+      "identity_claims": ["device_id", "scopes"]
+    },
+    {
+      "id": "P-03",
+      "name": "Smart wearable",
+      "kind": "device",
+      "source": "Smart wearable",
+      "authentication": "required",
+      "credential_capability": "device-credential-proof",
+      "identity_claims": ["device_id", "scopes"]
+    },
+    {
+      "id": "P-04",
+      "name": "Device transmitters",
+      "kind": "service",
+      "source": "Device transmitters",
+      "authentication": "required",
+      "credential_capability": "device-credential-proof",
+      "identity_claims": ["device_id", "scopes"]
+    },
+    {
+      "id": "P-05",
+      "name": "Downstream streaming analytics consumers",
+      "kind": "service",
+      "source": "Downstream streaming analytics consumers",
+      "authentication": "required",
+      "credential_capability": "mutual-tls-proof",
+      "identity_claims": ["subscriber_id", "scopes"]
+    },
+    {
+      "id": "P-06",
+      "name": "Downstream event streams",
+      "kind": "service",
+      "source": "Downstream event streams",
+      "authentication": "required",
+      "credential_capability": "mutual-tls-proof",
+      "identity_claims": ["subscriber_id", "scopes"]
+    },
+    {
+      "id": "P-07",
+      "name": "Ingestion event publisher",
+      "kind": "service",
+      "source": "Telemetry Ingestion",
+      "authentication": "not-applicable",
+      "credential_capability": "in-process-origin",
+      "identity_claims": ["origin_context"]
+    }
+  ],
+  "data_classification": [
+    {
+      "id": "DC-01",
+      "concept": "telemetry_sample_event",
+      "class": "confidential",
+      "pii": true,
+      "secret": false,
+      "fields": ["device identity", "metric kind", "value", "t_device", "t_ingress", "validation status", "revision number", "revision kind", "payload"],
+      "at_rest": "envelope-encryption",
+      "in_transit": "tls",
+      "masking": "redact",
+      "retention": "operator-defined; undecided retention period",
+      "deletion": "none; append-only, erasure by operator process",
+      "log_visibility": "masked",
+      "error_visibility": "forbidden",
+      "export_visibility": "masked",
+      "reason": "Physiological data tied to a device"
+    },
+    {
+      "id": "DC-02",
+      "concept": "telemetry_revision",
+      "class": "confidential",
+      "pii": true,
+      "secret": false,
+      "fields": ["original event reference", "revision number", "revision kind", "value", "t_device"],
+      "at_rest": "envelope-encryption",
+      "in_transit": "tls",
+      "masking": "redact",
+      "retention": "same as original event",
+      "deletion": "none; append-only, erasure by operator process",
+      "log_visibility": "masked",
+      "error_visibility": "forbidden",
+      "export_visibility": "masked",
+      "reason": "Corrected physiological values"
+    },
+    {
+      "id": "DC-03",
+      "concept": "audit_trail",
+      "class": "internal",
+      "pii": false,
+      "secret": false,
+      "fields": ["actor", "action", "outcome", "timestamp", "correlationId"],
+      "at_rest": "none",
+      "in_transit": "tls",
+      "masking": "none",
+      "retention": "operator-defined",
+      "deletion": "none; append-only",
+      "log_visibility": "allowed",
+      "error_visibility": "forbidden",
+      "export_visibility": "allowed",
+      "reason": "Operational record without values"
+    },
+    {
+      "id": "DC-04",
+      "concept": "Windowed Telemetry Stream",
+      "class": "confidential",
+      "pii": true,
+      "secret": false,
+      "fields": ["device identity", "metric kind", "value", "t_device"],
+      "at_rest": "none",
+      "in_transit": "mutual-tls",
+      "masking": "redact",
+      "retention": "sliding window only, in memory",
+      "deletion": "evicted on window expiry",
+      "log_visibility": "masked",
+      "error_visibility": "forbidden",
+      "export_visibility": "allowed",
+      "reason": "Derived validated samples for subscribers"
+    },
+    {
+      "id": "DC-05",
+      "concept": "correlationId",
+      "class": "internal",
+      "pii": false,
+      "secret": false,
+      "fields": ["correlationId"],
+      "at_rest": "none",
+      "in_transit": "tls",
+      "masking": "none",
+      "retention": "same as audit_trail",
+      "deletion": "none; append-only",
+      "log_visibility": "allowed",
+      "error_visibility": "allowed",
+      "export_visibility": "allowed",
+      "reason": "Random trace key, no identity"
+    }
+  ],
+  "authorization_matrix": [
+    {
+      "id": "AZ-01",
+      "surface": "IngestIngressPacket",
+      "operation": "POST",
+      "principal_ids": ["P-01", "P-02", "P-03", "P-04"],
+      "roles": ["telemetry-device"],
+      "scopes": ["telemetry:ingest"],
+      "ownership_rule": "Device identity in every sample equals the proven credential identity",
+      "client_supplied_ids": ["device identity", "metric kind", "t_device"],
+      "decision_point": {
+        "layer": "interface",
+        "component": "Telemetry Ingestion"
+      },
+      "default": "deny",
+      "effect_on_deny": "unauthenticated",
+      "fields_read": [],
+      "fields_written": ["DC-01", "DC-02", "DC-03"],
+      "audit_event": "authentication-failure",
+      "test_duty": "Permitted: own device packet accepted; denied: no credential refused; cross-owner: foreign device identity refused."
+    },
+    {
+      "id": "AZ-02",
+      "surface": "TelemetryEventConsumer",
+      "operation": "consume",
+      "principal_ids": ["P-07"],
+      "roles": ["internal-publisher"],
+      "scopes": ["telemetry:event-publish"],
+      "ownership_rule": "Only events from the Telemetry Ingestion publisher port are accepted",
+      "client_supplied_ids": [],
+      "decision_point": {
+        "layer": "application",
+        "component": "Telemetry Stream Distribution"
+      },
+      "default": "deny",
+      "effect_on_deny": "reject-drop",
+      "fields_read": ["DC-04"],
+      "fields_written": ["DC-04"],
+      "audit_event": "authorization-denied",
+      "test_duty": "Permitted: ingestion event consumed; denied: unknown origin dropped; cross-owner: foreign-origin event dropped."
+    },
+    {
+      "id": "AZ-03",
+      "surface": "SubscribeWindowedTelemetryStream",
+      "operation": "GET",
+      "principal_ids": ["P-05", "P-06"],
+      "roles": ["stream-subscriber"],
+      "scopes": ["telemetry:stream-subscribe"],
+      "ownership_rule": "Subscriber receives only windows granted to its proven identity",
+      "client_supplied_ids": [],
+      "decision_point": {
+        "layer": "interface",
+        "component": "Telemetry Stream Distribution"
+      },
+      "default": "deny",
+      "effect_on_deny": "unauthenticated",
+      "fields_read": ["DC-04"],
+      "fields_written": [],
+      "audit_event": "authorization-denied",
+      "test_duty": "Permitted: granted subscriber streams; denied: no credential refused; cross-owner: ungranted window refused."
+    }
+  ],
+  "invariants": [
+    {
+      "id": "SI-01",
+      "rule": "Every packet carries a proven device credential, else rejected.",
+      "capability": "device-credential-proof",
+      "enforcement_layer": "edge",
+      "owner_context": "Telemetry Ingestion",
+      "failure_mode": "closed"
+    },
+    {
+      "id": "SI-02",
+      "rule": "Sample device identity always equals proven credential identity.",
+      "capability": "owner-scoped-query",
+      "enforcement_layer": "application",
+      "owner_context": "Telemetry Ingestion",
+      "failure_mode": "closed"
+    },
+    {
+      "id": "SI-03",
+      "rule": "Every sample is boundary-validated before propagation; failures keep payload.",
+      "capability": "boundary-validation",
+      "enforcement_layer": "domain",
+      "owner_context": "Telemetry Ingestion",
+      "failure_mode": "closed"
+    },
+    {
+      "id": "SI-04",
+      "rule": "Packets become typed values at the edge; deeper layers never see raw payload.",
+      "capability": "typed-deserialization",
+      "enforcement_layer": "edge",
+      "owner_context": "Telemetry Ingestion",
+      "failure_mode": "closed"
+    },
+    {
+      "id": "SI-05",
+      "rule": "Event history accepts append only; update and delete are never permitted.",
+      "capability": "scope-check",
+      "enforcement_layer": "store",
+      "owner_context": "Telemetry Ingestion",
+      "failure_mode": "closed"
+    },
+    {
+      "id": "SI-06",
+      "rule": "Logs never contain sample values or raw payload.",
+      "capability": "log-redaction",
+      "enforcement_layer": "pipeline",
+      "owner_context": "Telemetry Ingestion",
+      "failure_mode": "closed"
+    },
+    {
+      "id": "SI-07",
+      "rule": "Errors expose only code, safe message and correlation key.",
+      "capability": "error-code-only",
+      "enforcement_layer": "edge",
+      "owner_context": "Telemetry Ingestion",
+      "failure_mode": "closed"
+    },
+    {
+      "id": "SI-08",
+      "rule": "Authentication failures, denials and ingests emit audit events.",
+      "capability": "audit-event",
+      "enforcement_layer": "application",
+      "owner_context": "Telemetry Ingestion",
+      "failure_mode": "closed"
+    },
+    {
+      "id": "SI-09",
+      "rule": "Every subscriber proves identity; unavailable verification denies.",
+      "capability": "mutual-tls-proof",
+      "enforcement_layer": "edge",
+      "owner_context": "Telemetry Stream Distribution",
+      "failure_mode": "closed"
+    },
+    {
+      "id": "SI-10",
+      "rule": "Failed samples are never broadcast as validated.",
+      "capability": "boundary-validation",
+      "enforcement_layer": "domain",
+      "owner_context": "Telemetry Stream Distribution",
+      "failure_mode": "closed"
+    },
+    {
+      "id": "SI-11",
+      "rule": "Only events from the ingestion publisher are consumed.",
+      "capability": "scope-check",
+      "enforcement_layer": "application",
+      "owner_context": "Telemetry Stream Distribution",
+      "failure_mode": "closed"
+    },
+    {
+      "id": "SI-12",
+      "rule": "Metric tags use bounded sets; never device identity.",
+      "capability": "metric-tag-bound",
+      "enforcement_layer": "pipeline",
+      "owner_context": "Telemetry Ingestion",
+      "failure_mode": "closed"
+    },
+    {
+      "id": "SI-13",
+      "rule": "Metric tags use bounded sets; never device identity.",
+      "capability": "metric-tag-bound",
+      "enforcement_layer": "pipeline",
+      "owner_context": "Telemetry Stream Distribution",
+      "failure_mode": "closed"
+    },
+    {
+      "id": "SI-14",
+      "rule": "Stored samples and revisions are encrypted at rest.",
+      "capability": "envelope-encryption",
+      "enforcement_layer": "store",
+      "owner_context": "Telemetry Ingestion",
+      "failure_mode": "closed"
+    },
+    {
+      "id": "SI-15",
+      "rule": "Data keys are held apart from the data they protect.",
+      "capability": "key-separation",
+      "enforcement_layer": "store",
+      "owner_context": "Telemetry Ingestion",
+      "failure_mode": "closed"
+    },
+    {
+      "id": "SI-16",
+      "rule": "Subscription, denial and broadcast events emit audit events.",
+      "capability": "audit-event",
+      "enforcement_layer": "application",
+      "owner_context": "Telemetry Stream Distribution",
+      "failure_mode": "closed"
+    }
+  ],
+  "secrets": {
+    "must_not_appear_in": ["source", "logs", "error responses", "test fixtures", "build artifacts"],
+    "inventory": [
+      {
+        "id": "SD-01",
+        "name": "device-credential-verification-material",
+        "owner": "Telemetry Ingestion",
+        "custody": "runtime-injection",
+        "rotation": "Rotated on schedule and on compromise; revocation denies"
+      },
+      {
+        "id": "SD-02",
+        "name": "data-encryption-key-custody",
+        "owner": "Telemetry Ingestion",
+        "custody": "external-key-store",
+        "rotation": "Rotated on schedule; old keys kept for decryption"
+      },
+      {
+        "id": "SD-03",
+        "name": "subscriber-trust-anchors",
+        "owner": "Telemetry Stream Distribution",
+        "custody": "operator-supplied",
+        "rotation": "Rotated by operator; revocation denies"
+      }
+    ],
+    "handling_rules": [
+      "Secrets are injected at runtime, never stored in source.",
+      "Credential clock-skew tolerance is bounded and configured.",
+      "Revocation checks fail closed when source unavailable."
+    ]
+  },
+  "error_policy": {
+    "allowed_fields": ["code", "message", "correlation_key"],
+    "never_expose": ["stack traces", "internal identifiers", "queries", "paths", "secrets", "input echo"],
+    "security_audit_events": {
+      "classes": ["authentication-failure", "authorization-denied", "bulk-export", "service-credential-use"],
+      "fields": ["actor", "action", "resource", "outcome", "reason", "timestamp", "correlation_key"]
+    }
+  },
+  "duties": [
+    {
+      "spec_ref": "AZ-01",
+      "obligation": "Verify device credential before reading any packet body.",
+      "capability": "device-credential-proof",
+      "unit_kind": "credential-handling",
+      "owner_context": "Telemetry Ingestion",
+      "covers": ["SI-01"]
+    },
+    {
+      "spec_ref": "SI-02",
+      "obligation": "Bind each sample's device identity to proven identity.",
+      "capability": "owner-scoped-query",
+      "unit_kind": "ownership-predicate",
+      "owner_context": "Telemetry Ingestion"
+    },
+    {
+      "spec_ref": "AZ-02",
+      "obligation": "Accept only publisher-origin events and granted subscriptions.",
+      "capability": "scope-check",
+      "unit_kind": "policy-port",
+      "owner_context": "Telemetry Stream Distribution",
+      "covers": ["AZ-03", "SI-11"]
+    },
+    {
+      "spec_ref": "SI-09",
+      "obligation": "Verify subscriber identity before opening any stream.",
+      "capability": "mutual-tls-proof",
+      "unit_kind": "credential-handling",
+      "owner_context": "Telemetry Stream Distribution"
+    },
+    {
+      "spec_ref": "SI-03",
+      "obligation": "Validate sample against metric bounds; tag failures, keep payload.",
+      "capability": "boundary-validation",
+      "unit_kind": "validator",
+      "owner_context": "Telemetry Ingestion"
+    },
+    {
+      "spec_ref": "SI-10",
+      "obligation": "Filter failed samples out of broadcast windows.",
+      "capability": "boundary-validation",
+      "unit_kind": "validator",
+      "owner_context": "Telemetry Stream Distribution"
+    },
+    {
+      "spec_ref": "SI-04",
+      "obligation": "Convert packets to typed values at the receiving edge.",
+      "capability": "typed-deserialization",
+      "unit_kind": "validator",
+      "owner_context": "Telemetry Ingestion"
+    },
+    {
+      "spec_ref": "SI-05",
+      "obligation": "Grant the store append permission only.",
+      "capability": "scope-check",
+      "unit_kind": "policy-adapter",
+      "owner_context": "Telemetry Ingestion"
+    },
+    {
+      "spec_ref": "SI-06",
+      "obligation": "Mask sample values and payload in every log line.",
+      "capability": "log-redaction",
+      "unit_kind": "redaction",
+      "owner_context": "Telemetry Ingestion"
+    },
+    {
+      "spec_ref": "SI-07",
+      "obligation": "Return opaque code, safe message and correlation key only.",
+      "capability": "error-code-only",
+      "unit_kind": "redaction",
+      "owner_context": "Telemetry Ingestion"
+    },
+    {
+      "spec_ref": "SI-08",
+      "obligation": "Record audit events for failures, denials and ingests.",
+      "capability": "audit-event",
+      "unit_kind": "audit-event",
+      "owner_context": "Telemetry Ingestion"
+    },
+    {
+      "spec_ref": "SI-16",
+      "obligation": "Record audit events for subscriptions, denials and broadcasts.",
+      "capability": "audit-event",
+      "unit_kind": "audit-event",
+      "owner_context": "Telemetry Stream Distribution"
+    },
+    {
+      "spec_ref": "SI-12",
+      "obligation": "Restrict metric tags to bounded value sets.",
+      "capability": "metric-tag-bound",
+      "unit_kind": "redaction",
+      "owner_context": "Telemetry Ingestion"
+    },
+    {
+      "spec_ref": "SI-13",
+      "obligation": "Restrict metric tags to bounded value sets.",
+      "capability": "metric-tag-bound",
+      "unit_kind": "redaction",
+      "owner_context": "Telemetry Stream Distribution"
+    },
+    {
+      "spec_ref": "SI-14",
+      "obligation": "Encrypt stored samples and revisions at rest.",
+      "capability": "envelope-encryption",
+      "unit_kind": "classification-rule",
+      "owner_context": "Telemetry Ingestion"
+    },
+    {
+      "spec_ref": "SI-15",
+      "obligation": "Keep data keys separate from stored data.",
+      "capability": "key-separation",
+      "unit_kind": "key-custody",
+      "owner_context": "Telemetry Ingestion"
+    }
+  ],
+  "risks": [
+    {
+      "id": "R-01",
+      "risk": "Retry identity undefined; replayed packets may append duplicate revisions.",
+      "likelihood": "medium",
+      "impact": "medium",
+      "mitigation": "SI-02 binds identity; SI-08 audits every ingest.",
+      "residual": "accepted: duplicate revisions remain possible until owner decides retry identity."
+    },
+    {
+      "id": "R-02",
+      "risk": "Metrics lacking bounds pass validation unchecked.",
+      "likelihood": "medium",
+      "impact": "low",
+      "mitigation": "SI-03 validates all bounded metrics.",
+      "residual": "accepted: ground contact time, respiration, swim stroke values stay unvalidated."
+    },
+    {
+      "id": "R-03",
+      "risk": "Failed samples consumed by distribution may reach subscribers.",
+      "likelihood": "medium",
+      "impact": "medium",
+      "mitigation": "SI-10 filters failed samples from broadcast.",
+      "residual": "accepted: filtering default pending owner decision on failed-sample propagation."
+    },
+    {
+      "id": "R-04",
+      "risk": "Compromised device credential allows forged own-device samples.",
+      "likelihood": "low",
+      "impact": "medium",
+      "mitigation": "SI-01 proof with rotation and revocation; SD-01.",
+      "residual": "accepted: samples forged within validation bounds remain undetected."
+    },
+    {
+      "id": "R-05",
+      "risk": "Burst or flood from authenticated devices exhausts capacity.",
+      "likelihood": "medium",
+      "impact": "medium",
+      "mitigation": "operator: rate limits and capacity set by operator.",
+      "residual": "operator: no per-device rate ceiling is specified in inputs."
+    }
+  ],
+  "open_questions": []
+}

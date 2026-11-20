@@ -1,0 +1,15 @@
+{
+  "id": "T3-022",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-022"
+  ],
+  "kind": "refactor",
+  "layer": "interface",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/main/java/com/blackboard/telemetry/ingestion/api/IngestIngressController.java",
+  "export": "com.blackboard.telemetry.ingestion.api.IngestIngressController",
+  "intent": "Refactor the controller; mapping, statuses and ownership check order unchanged."
+}

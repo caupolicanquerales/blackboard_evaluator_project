@@ -1,6 +1,6 @@
 ---
 name: spring-security-architect
-description: "Architect-tier only (agent-architect phase 2): maps a security spec's capability tokens onto the unit, layer, mechanism name and config keys a plan must schedule in Spring Boot 3. Planning facts only - method bodies and test syntax live in the coder/tester-tier skill tech-stack/spring-security."
+description: "Architect-tier only (agent-planner-architect, phase 2 of the split): maps a security spec's capability tokens onto the unit, layer, mechanism name and config keys a plan must schedule in Spring Boot 3. Planning facts only - method bodies and test syntax live in the coder/tester-tier skill tech-stack/spring-security."
 ---
 # Scope
 Phase 2, rule (y): the mechanism column IS the identifier the intent must spell - `AZ-03` plus a

@@ -1,0 +1,15 @@
+{
+  "id": "T3-030",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-030"
+  ],
+  "kind": "refactor",
+  "layer": "application",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/main/java/com/blackboard/telemetry/distribution/application/SubscriberLimiter.java",
+  "export": "com.blackboard.telemetry.distribution.application.SubscriberLimiter",
+  "intent": "Refactor the subscriber limiter for clarity without changing behaviour; keep every test green."
+}

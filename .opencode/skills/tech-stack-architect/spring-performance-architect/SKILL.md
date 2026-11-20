@@ -1,6 +1,6 @@
 ---
 name: spring-performance-architect
-description: "Architect-tier only (agent-architect phase 2, when a performance-spec exists): maps performance tokens onto unit, layer, mechanism IDENTIFIER and config key. Planning facts only; bodies and test code live in the coder/tester tier."
+description: "Architect-tier only (agent-planner-architect phase 2, when a performance-spec exists): maps performance tokens onto unit, layer, mechanism IDENTIFIER and config key. Planning facts only; bodies and test code live in the coder/tester tier."
 ---
 # Scope
 One row per spec duty; the mechanism column is what the intent spells VERBATIM (a paraphrase

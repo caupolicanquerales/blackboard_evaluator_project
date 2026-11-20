@@ -1,1 +1,0 @@
-{"fingerprint": "{\"memo_version\": 11, \"payload\": 1795032108328492075, \"tree\": \"a844c1f821fdfd5a\"}", "reason": null, "result": {"status": "passed", "exit_code": 0, "missing_symbols": [], "missing_packages": [], "failures": [], "counts": {"run": 5, "failures": 0, "errors": 0}, "classes": {"com.pulsestream.telemetry.distribution.api.ValidatedEventConsumerTest": "passed"}}}

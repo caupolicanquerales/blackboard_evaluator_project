@@ -1,0 +1,91 @@
+{
+  "id": "T1-022",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-003",
+    "T1-004",
+    "T1-005",
+    "T1-006",
+    "T1-010",
+    "T1-016",
+    "T1-017",
+    "T1-018",
+    "T1-019"
+  ],
+  "kind": "test",
+  "layer": "interface",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/test/java/com/blackboard/telemetry/ingestion/api/IngestIngressControllerTest.java",
+  "export": "com.blackboard.telemetry.ingestion.api.IngestIngressControllerTest",
+  "intent": "WebFluxTest slice AZ-01 at IngestIngressPacket: own-device packet accepted 202 (permitted); no credential 401 (denied); a VALID packet bearing a foreign device identity refused 403 and audited REJECTED (cross-owner), use case never called; constraint violation 400 at the boundary; use-case 503 propagates; packet.received log captured.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.ingestion.api",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "IngestPacketUseCase",
+        "task_id": "T2-016"
+      },
+      {
+        "type": "IngressPacketRequest",
+        "task_id": "T2-017"
+      },
+      {
+        "type": "DeviceOwnershipPolicy",
+        "task_id": "T2-010"
+      },
+      {
+        "type": "DeviceSecurityConfig",
+        "task_id": "T2-019"
+      },
+      {
+        "type": "DeviceAuthenticationManager",
+        "task_id": "T2-018"
+      },
+      {
+        "type": "AuditPort",
+        "task_id": "T2-006"
+      },
+      {
+        "type": "MetricsFacade",
+        "task_id": "T2-004"
+      },
+      {
+        "type": "CorrelationWebFilter",
+        "task_id": "T2-005"
+      },
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-003"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<ResponseEntity<Void>> ingest(IngressPacketRequest request, Authentication authentication)",
+        "returns": "Mono<ResponseEntity<Void>>",
+        "semantics": "202 when appended; 403 when permits is false for any sample; use-case errors propagate with their status"
+      }
+    ],
+    "meters": [
+      {
+        "name": "telemetry.ingress.packets",
+        "duty": "uses"
+      },
+      {
+        "name": "telemetry.ingress.duration",
+        "duty": "uses"
+      }
+    ],
+    "routes": [
+      {
+        "method": "POST",
+        "path": "/api/v1/telemetry/ingress-packets",
+        "duty": "serves"
+      }
+    ],
+    "config": []
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "id": "T0-003",
+  "targetAgent": "agent-container",
+  "stage": 0,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "db/migrations/V2__create_telemetry_revisions.sql",
+  "kind": "bootstrap",
+  "layer": "root",
+  "feature": null,
+  "export": "V2__create_telemetry_revisions",
+  "intent": "Schema migration: PostgreSQL (Flyway) migration script creating append-only telemetry_revisions referencing telemetry_sample_events for context Telemetry Ingestion.",
+  "project": "telemetry-ingestion-processing"
+}

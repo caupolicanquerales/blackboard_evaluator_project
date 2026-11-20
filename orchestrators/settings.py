@@ -33,7 +33,11 @@ ATTEMPTS_DIR = BLACKBOARD / "attempts"
 
 DISCOVERY_AGENT = "domain-boundary-discovery-specialist"
 MAPPING_AGENT = "domain-context-mapping-specialist"
-ARCHITECT_AGENT = "agent-architect"
+# 2026-11-20 architect split: the monolithic planning agent became two carriers so each
+# phase starts with a clean, small context window. Phase 1 (strategy) and phase 2 (planner)
+# share no prompt bytes; the planner runs ONE session per bounded context.
+ARCHITECT_STRATEGY_AGENT = "agent-strategy-architect"
+ARCHITECT_PLANNER_AGENT = "agent-planner-architect"
 DATABASE_AGENT = "agent-database-architect"
 SECURITY_AGENT = "agent-security-architect"
 PERFORMANCE_AGENT = "agent-performance-architect"
@@ -63,9 +67,14 @@ AGENT_CALL_BUDGETS = {
     STAGE_AGENTS[2]: 6,
     STAGE_AGENTS[3]: 12,
     STAGE_AGENTS[4]: 12,
-    ARCHITECT_AGENT: 15,   # +1 spring-security table, +1 performance table, +1 AI table -
-                           # each conditional on its spec being on disk; the budget covers
-                           # all three mapping tables plus the phase-2 reads (2026-11-19)
+    ARCHITECT_STRATEGY_AGENT: 12,  # phase 1: read 2 reports, write 1 strategy, emit 1 scaffold
+                                   # task; the three strategy skills load once. The old 15 was
+                                   # sized for BOTH phases (2026-11-19); the split moves phase 2
+                                   # bytes out of this context entirely.
+    ARCHITECT_PLANNER_AGENT: 12,   # per BOUNDED CONTEXT session: strategy + digest + symbol
+                                   # table reads, one draft write, one lint/emit. The mapping
+                                   # tables load ONLY when the digest lists unmapped_duties -
+                                   # the matched rows ride the digest itself (2026-11-20).
     DATABASE_AGENT: 12,    # 14 was needed ONLY because the profile had no exact skill
                            # paths and the agent globbed tech-stack/** (A4, 2026-11-18);
                            # with paths given, 12 is the honest ceiling and it is pinned
@@ -83,6 +92,69 @@ CODER_BATCH_CALLS_PER_UNIT = 3
 # per-task rerun rather than a wrong freeze.
 TESTER_BATCH_FIRST_CALLS = 3
 TESTER_BATCH_CALLS_PER_UNIT = 4
+
+
+PROFILE_REQUIRED_KEYS = {".github": ("name", "description", "tools"),
+                         ".opencode": ("description", "permission")}
+
+
+def agent_profiles_problems(root=None):
+    """Launch preflight (2026-11-20 live-line stop): the Copilot CLI SILENTLY skips any
+    agent profile whose YAML header does not parse - the failure then surfaces as
+    'No such agent' mid-run, only at the first spawn of that carrier, after every prior
+    planning session was already billed. The engine therefore parses both profile trees
+    itself before phase 0 starts: a header must be a mapping with its backend's required
+    keys. When PyYAML is absent the colon heuristic below catches the known poison shape
+    (an unquoted 'x: y' sequence inside a value line)."""
+    base = Path(root) if root else ROOT
+    try:
+        import yaml
+    except ImportError:
+        yaml = None
+    problems = []
+    for tree in (".github", ".opencode"):
+        folder = base / tree / "agents"
+        if not folder.is_dir():
+            continue
+        for path in sorted(folder.glob("*.md")):
+            text = path.read_text(encoding="utf-8")
+            if not text.startswith("---\n"):
+                problems.append(f"{path}: no frontmatter header")
+                continue
+            parts = text.split("---\n", 2)
+            if len(parts) < 3:
+                problems.append(f"{path}: unterminated frontmatter")
+                continue
+            header = parts[1]
+            fields = {}
+            if yaml is not None:
+                try:
+                    parsed = yaml.safe_load(header)
+                except Exception as exc:
+                    problems.append(f"{path}: header is not parseable YAML: {str(exc)[:120]}")
+                    continue
+                if not isinstance(parsed, dict):
+                    problems.append(f"{path}: header is not a mapping")
+                    continue
+                fields = parsed
+            else:
+                for line in header.splitlines():
+                    if not line.strip() or (line[:1] in (" ", "\t")):
+                        continue
+                    key, sep, value = line.partition(":")
+                    if not sep:
+                        problems.append(f"{path}: header line without a key: {line[:60]!r}")
+                        continue
+                    value = value.strip()
+                    if ": " in value and not value.startswith(('"', "'", "[")):
+                        problems.append(
+                            f"{path}: unquoted ': ' inside {key.strip()!r} - the CLI's YAML "
+                            "loader will reject the header")
+                    fields[key.strip()] = value
+            for key in PROFILE_REQUIRED_KEYS[tree]:
+                if key not in fields:
+                    problems.append(f"{path}: header lacks the required key {key!r}")
+    return problems
 
 
 def call_budget(target_agent, units=1):

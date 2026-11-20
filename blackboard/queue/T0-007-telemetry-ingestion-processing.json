@@ -1,0 +1,13 @@
+{
+  "id": "T0-007",
+  "targetAgent": "agent-container",
+  "stage": 0,
+  "dependsOn": [],
+  "kind": "bootstrap",
+  "layer": "root",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "pom.xml",
+  "export": "build-manifest",
+  "intent": "Build manifest: add compile coordinates org.springframework.boot:spring-boot-starter-security, org.springframework.boot:spring-boot-starter-oauth2-resource-server and org.springframework.boot:spring-boot-starter-validation, plus test coordinate org.springframework.security:spring-security-test, so subscriber authentication, scope checks and boundary validation compile and test."
+}

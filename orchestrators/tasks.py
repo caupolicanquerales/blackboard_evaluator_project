@@ -122,6 +122,21 @@ def _step_tokens(text):
             if w not in STEP_STOP_TOKENS}
 
 
+def step_log_entries(value):
+    """The strategy spells its step-log floor in EITHER shape - a flat list, or the
+    per-context mapping {context: [logs]} the strategy carrier teaches. The claim law
+    and the meter pairing flatten BOTH: a dict-shaped floor was silently SKIPPING the
+    completeness gate (2026-11-20 board audit: 4 distribution step logs unowned, the
+    gate answered CLEAN - the 2026-11-13 class re-born in a new spelling)."""
+    if isinstance(value, dict):
+        out = []
+        for logs in value.values():
+            if isinstance(logs, list):
+                out.extend(logs)
+        return out
+    return value if isinstance(value, list) else []
+
+
 def _surface_norm(text):
     return " ".join(str(text or "").strip().lower().rstrip(".").split())
 
@@ -476,7 +491,10 @@ def validate(task, index, planning=False):
                 or not isinstance(dep_task.get("path"), str)):
             return f"dependsOn {dep} not resolvable in queue or complete"
         if dep_task["stage"] > stage:
-            return f"dependsOn {dep} is in a later stage than this task"
+            return (f"dependsOn {dep} is in a later stage than this task - the stage graph "
+                    "is law: a stage-1 test NEVER depends on a stage-2 task (red must run "
+                    "before green, the drain orders units only by dependsOn); drop this "
+                    "entry, or point it at the producer unit's stage-1 pair")
         if depends_transitively(dep, task["id"], index):
             return f"dependsOn {dep} creates a dependency cycle"
     if "ast_hints" in task:
@@ -984,9 +1002,9 @@ def plan_consistency(staged, index):
         except json.JSONDecodeError:
             strat = {}
         obs = strat.get("observability") if isinstance(strat, dict) else None
-        steps = (obs or {}).get("step_logs") if isinstance(obs, dict) else None
+        steps = step_log_entries((obs or {}).get("step_logs")) if isinstance(obs, dict) else []
         metrics = (obs or {}).get("metrics") if isinstance(obs, dict) else None
-        if isinstance(steps, list) and isinstance(metrics, list) and steps and metrics:
+        if steps and isinstance(metrics, list) and metrics:
             exempt = set()
             for entry in (obs.get("uncounted_steps") or []):
                 exempt.add(_surface_norm(entry if isinstance(entry, str)

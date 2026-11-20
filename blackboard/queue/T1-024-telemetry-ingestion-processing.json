@@ -1,0 +1,89 @@
+{
+  "id": "T1-024",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T0-007",
+    "T1-023"
+  ],
+  "kind": "test",
+  "layer": "shared",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/test/java/com/blackboard/telemetry/shared/DistributionPropertiesTest.java",
+  "export": "com.blackboard.telemetry.shared.DistributionPropertiesTest",
+  "intent": "Binds the distribution settings record: a fully populated source yields every accessor value; an absent optional value falls back to its default; a non-positive capacity, subscriber limit or attempt count is refused at binding. Assert each accessor and the refusal.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.shared",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "int bufferCapacity()",
+        "returns": "int"
+      },
+      {
+        "signature": "int windowCapacity()",
+        "returns": "int"
+      },
+      {
+        "signature": "int maxSubscribers()",
+        "returns": "int"
+      },
+      {
+        "signature": "int emitMaxAttempts()",
+        "returns": "int"
+      },
+      {
+        "signature": "Duration emitBackoff()",
+        "returns": "Duration"
+      },
+      {
+        "signature": "List<Map<String,String>> subscribers()",
+        "returns": "List<Map<String,String>>"
+      },
+      {
+        "signature": "String publisherOrigin()",
+        "returns": "String"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "telemetry.distribution.buffer-capacity",
+        "kind": "value"
+      },
+      {
+        "path": "telemetry.distribution.window-capacity",
+        "kind": "value"
+      },
+      {
+        "path": "telemetry.distribution.max-subscribers",
+        "kind": "value"
+      },
+      {
+        "path": "telemetry.distribution.emit-max-attempts",
+        "kind": "value"
+      },
+      {
+        "path": "telemetry.distribution.emit-backoff",
+        "kind": "value"
+      },
+      {
+        "path": "telemetry.distribution.subscribers",
+        "kind": "list",
+        "fields": [
+          "id",
+          "secret-hash",
+          "scope"
+        ]
+      },
+      {
+        "path": "telemetry.distribution.publisher-origin",
+        "kind": "value"
+      }
+    ]
+  }
+}

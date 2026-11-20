@@ -1,0 +1,33 @@
+{
+  "id": "T1-007",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "layer": "application",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/test/java/com/blackboard/telemetry/ingestion/application/RedactionPortContractTest.java",
+  "export": "com.blackboard.telemetry.ingestion.application.RedactionPortContractTest",
+  "intent": "Contract test over a double: redact returns text with sample values and payload masked; safeMessage maps an opaque error code to a human-safe message that never echoes input.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.ingestion.application",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "String redact(String text)",
+        "returns": "String"
+      },
+      {
+        "signature": "String safeMessage(String code)",
+        "returns": "String"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

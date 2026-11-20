@@ -23,7 +23,11 @@ from pathlib import Path
 SESSION_GLOB = "~/.copilot/session-state/*/events.jsonl"
 
 BUDGETS = {
-    "discovery": 10, "mapping": 10, "architect": 13, "database": 10, "security": 8,
+    "discovery": 10, "mapping": 10,
+    # 2026-11-20 architect split: "architect" stays the label of HISTORIC monolith
+    # sessions (13 was their per-phase shape); the two new carriers classify apart.
+    "architect": 13, "strategy": 12, "planner": 12, "planner_repair": 12,
+    "database": 10, "security": 8, "performance": 8, "ai": 8,
     "container": 10, "tester": 8, "coder": 6, "evaluator": 12, "assembly": 12,
 }
 
@@ -58,6 +62,14 @@ ROLE_MARKERS = (
     ("mapping", "you are the domain context mapping specialist"),
     ("database", "you are the blackboard database architect"),
     ("security", "you are the blackboard security architect"),
+    ("performance", "you are the blackboard performance architect"),
+    ("ai", "you are the blackboard ai architect"),
+    # 2026-11-20 architect split. Order matters: the repair brief is the more specific
+    # prefix of the planner phrase, so it must be tested first.
+    ("planner_repair", "you are the blackboard planning architect for this repository. repair"),
+    ("strategy", "you are the blackboard strategy architect"),
+    ("planner", "you are the blackboard planning architect"),
+    # the retired monolith's phrase: kept so HISTORIC sessions still classify as architect
     ("architect", "you are the blackboard architect"),
     ("coder", "emit the payload of this unit"),
     ("coder", "create the implementation at"),
@@ -344,7 +356,10 @@ def main():
                         help="per-item token cost weighted by the turns that re-sent it (why a "
                              "session cost what it cost)")
     parser.add_argument("--role", default="architect",
-                        help="which agent to attribute (default: architect; used with --burn-report)")
+                        help="which agent to attribute (default: architect; used with "
+                             "--burn-report). After the 2026-11-20 split the plan roles are "
+                             "'strategy' (phase 1) and 'planner'/'planner_repair' (phase 2); "
+                             "'architect' still matches HISTORIC monolith sessions.)")
     args = parser.parse_args()
 
     if args.burn_report:

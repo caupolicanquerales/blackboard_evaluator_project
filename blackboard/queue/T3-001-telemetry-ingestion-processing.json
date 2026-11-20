@@ -1,0 +1,15 @@
+{
+  "id": "T3-001",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-001"
+  ],
+  "kind": "refactor",
+  "layer": "shared",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/main/java/com/blackboard/telemetry/shared/TelemetryProperties.java",
+  "export": "com.blackboard.telemetry.shared.TelemetryProperties",
+  "intent": "Refactor the properties binder for clarity without changing the tabled accessors or bound keys."
+}

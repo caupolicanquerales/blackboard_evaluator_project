@@ -3,6 +3,8 @@
 Phase runners render shared prompts, delegate execution to ``agent_runners``,
 and apply the DDD gates after a successful agent run.
 """
+import json
+
 import agent_runners
 import ddd
 import prompts
@@ -74,36 +76,71 @@ def run_mapping(args):
     )
 
 
-def run_architect(args, phase="tasks"):
-    """Run the architect in phase 'strategy' (writes execution strategies) or 'tasks' (queues tasks)."""
+def run_strategy(args):
+    """Phase 1 of the split architect: execution strategies + the scaffold task.
+    The tasks phase moved to `run_planner` (one session per bounded context)."""
 
     def post_check():
-        if phase == "strategy":
-            if not ddd.database_slugs():
-                return "no execution strategy was written"
-            coverage = ddd.validate_strategy_coverage()
-            if coverage:
-                return coverage
-            for slug in ddd.database_slugs():
-                # The strategy is the security step's only input: existence was never
-                # enough, an underspecified plan silently costs the domain its permissions.
-                reason = ddd.validate_strategy(slug)
-                if reason:
-                    return reason
-            return None
-        if phase == "tasks" and not any(
-            (match := settings.ID_PATTERN.match(task_id)) and int(match.group(1)) >= 1
-            for task_id in task_queue.load_index()
-        ):
-            return "architect queued no application tasks"
+        if not ddd.database_slugs():
+            return "no execution strategy was written"
+        coverage = ddd.validate_strategy_coverage()
+        if coverage:
+            return coverage
+        for slug in ddd.database_slugs():
+            # The strategy is the security step's only input: existence was never
+            # enough, an underspecified plan silently costs the domain its permissions.
+            reason = ddd.validate_strategy(slug)
+            if reason:
+                return reason
         return None
 
     return _run_phase(
-        "blackboard.architect", settings.ARCHITECT_AGENT,
-        prompts.build_architect_prompt(workspace.get_project_root(), RUNNER_SCRIPT, phase=phase),
+        "blackboard.strategy", settings.ARCHITECT_STRATEGY_AGENT,
+        prompts.build_architect_prompt(workspace.get_project_root(), RUNNER_SCRIPT,
+                                       phase="strategy"),
         args.timeout, not args.no_auto, post_check,
-        {"context_maps": str(settings.CONTEXT_MAP_DIR), "phase": phase},
-        cmd_note=f"({phase})",
+        {"context_maps": str(settings.CONTEXT_MAP_DIR)},
+        cmd_note="(strategy)",
+    )
+
+
+def _draft_reason(slug, context):
+    """Post-check for one planning session: the draft file is its whole deliverable."""
+    draft = task_queue.draft_path(slug, context)
+    if not draft.is_file():
+        return f"the planning session wrote no draft file at {draft}"
+    try:
+        loaded = json.loads(draft.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        return f"draft {draft.name} is not readable JSON: {exc}"
+    if not isinstance(loaded, list) or not loaded \
+            or not all(isinstance(task, dict) for task in loaded):
+        return f"draft {draft.name} is not a JSON array of task objects"
+    return None
+
+
+def run_planner(args, slug, context, message):
+    """Phase 2 of the split architect: ONE bounded context per session. The message is
+    built by the pipeline (it owns the drafting state); this backend only runs the
+    session and holds it to its one-file deliverable."""
+    return _run_phase(
+        "blackboard.planner", settings.ARCHITECT_PLANNER_AGENT, message,
+        args.timeout, not args.no_auto,
+        lambda: _draft_reason(slug, context),
+        {"slug": slug, "context": str(context)},
+        cmd_note=f"(planner {slug}/{context})",
+    )
+
+
+def run_planner_repair(args, slug, message):
+    """The bounded remedy after an engine-side refusal (claim or batch emit). The file
+    law is the claim step's post-check, so no session post_check here - the engine
+    re-validates after the session by itself."""
+    return _run_phase(
+        "blackboard.planner_repair", settings.ARCHITECT_PLANNER_AGENT, message,
+        args.timeout, not args.no_auto, None,
+        {"slug": slug},
+        cmd_note=f"(planner-repair {slug})",
     )
 
 

@@ -1,0 +1,43 @@
+{
+  "id": "T2-026",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T0-001",
+    "T0-007",
+    "T1-026"
+  ],
+  "kind": "code",
+  "layer": "domain",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "path": "src/main/java/com/blackboard/telemetry/distribution/domain/StreamAuditEvent.java",
+  "export": "com.blackboard.telemetry.distribution.domain.StreamAuditEvent",
+  "intent": "Immutable audit event record published through the application event publisher for subscriptions, denials and broadcasts. Compact constructor refuses null or blank fields; valid values are exposed unchanged.",
+  "ast_hints": {
+    "package": "com.blackboard.telemetry.distribution.domain",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "String actor()",
+        "returns": "String"
+      },
+      {
+        "signature": "String action()",
+        "returns": "String"
+      },
+      {
+        "signature": "String outcome()",
+        "returns": "String"
+      },
+      {
+        "signature": "String correlationId()",
+        "returns": "String"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

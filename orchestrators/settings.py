@@ -57,6 +57,11 @@ STAGE_KINDS = {
     3: ("refactor",),
     4: ("assembly",),
 }
+
+# Stage-0 family export markers (S16's lesson: families are keyed by EXPORT marker, never
+# by path shape). task_queue re-exports these names; both trees read one source.
+SCAFFOLD_EXPORT = "project_scaffold"
+BUILD_MANIFEST_EXPORT = "build-manifest"
 ALLOWED_AGENTS = tuple(STAGE_AGENTS.values())
 
 # Tool calls per agent session. Every turn re-sends the whole transcript, so a session's cost is
@@ -71,10 +76,18 @@ AGENT_CALL_BUDGETS = {
                                    # task; the three strategy skills load once. The old 15 was
                                    # sized for BOTH phases (2026-11-19); the split moves phase 2
                                    # bytes out of this context entirely.
-    ARCHITECT_PLANNER_AGENT: 12,   # per BOUNDED CONTEXT session: strategy + digest + symbol
+    ARCHITECT_PLANNER_AGENT: 16,   # per BOUNDED CONTEXT session: strategy + digest + symbol
                                    # table reads, one draft write, one lint/emit. The mapping
                                    # tables load ONLY when the digest lists unmapped_duties -
                                    # the matched rows ride the digest itself (2026-11-20).
+                                   # 12 -> 16 (2026-11-24 seed-002, measured twice): a LAW-ABIDING
+                                   # session costs 7 reads + bulk create + rewrite + ~3 lints +
+                                   # a per-object fix pass for a 68-object draft = 25 calls; the
+                                   # compliant draft hit the 24-cap (twice: run 1's second context,
+                                   # run 2's single context) and the kill landed AFTER the work
+                                   # was done. The budget was calibrated for ~10 units; this
+                                   # seed's context carries every duty in one file. 16 keeps the
+                                   # watchdog's teeth (cap 32) with room for two lint rounds.
     DATABASE_AGENT: 12,    # 14 was needed ONLY because the profile had no exact skill
                            # paths and the agent globbed tech-stack/** (A4, 2026-11-18);
                            # with paths given, 12 is the honest ceiling and it is pinned

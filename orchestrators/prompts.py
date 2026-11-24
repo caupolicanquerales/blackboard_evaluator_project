@@ -48,9 +48,122 @@ def build_architect_prompt(project_root, runner, phase="strategy"):
         .replace("{context_map_dir}", str(settings.CONTEXT_MAP_DIR.relative_to(settings.ROOT)))
         .replace("{strategy_dir}", str(settings.COMPLETE_DIR.relative_to(settings.ROOT)))
         .replace("{runner}", runner)
+        .replace("{scaffold_agent}", settings.STAGE_AGENTS[0])
         + _discipline(settings.ARCHITECT_STRATEGY_AGENT, extra=(
             "One strategy file per domain, one scaffold draft, one `--emit`."))
     )
+
+
+def _resolved_stack_skills(slug):
+    """STACK-SKILL RESOLUTION (2026-11-24 agnosticism fix): the planner profile must not
+    name Java, Spring or any other stack - the strategy already spells the planned stack,
+    so the engine maps the strategy's language/framework tokens onto the skill tree by
+    NAME PATTERN and the brief hands the session the exact paths. Data-driven, so a new
+    stack needs only directories following the repo's naming law:
+    `tech-stack/<language>-<framework>/SKILL.md` (spelling source) and, when they exist,
+    `tech-stack-architect/<language>-*/SKILL.md` (counterpart) and
+    `tech-stack-architect/<framework>-*-architect/SKILL.md` (mapping tables)."""
+    strategy = ddd.strategy_for(slug) or {}
+    stack = strategy.get("tech_stack") or {}
+    language = str(stack.get("language") or strategy.get("language") or "").strip().lower()
+    lang_tokens = re.findall(r"[a-z]+", language)
+    lang_token = lang_tokens[0] if lang_tokens else ""
+    framework_tokens = re.findall(r"[a-z]+", str(stack.get("framework") or "").strip().lower())
+    fam_token = framework_tokens[0] if framework_tokens else ""
+    base = settings.ROOT / ".opencode" / "skills"
+    stack_docs, counterpart, tables = [], [], []
+    tech_dir = base / "tech-stack"
+    arch_dir = base / "tech-stack-architect"
+    if lang_token and tech_dir.is_dir():
+        stack_docs = [f".opencode/skills/tech-stack/{p.parent.name}/SKILL.md"
+                      for p in sorted(tech_dir.glob("*/SKILL.md"))
+                      if p.parent.name.lower().startswith(lang_token + "-")]
+    if arch_dir.is_dir():
+        for p in sorted(arch_dir.glob("*/SKILL.md")):
+            name = p.parent.name.lower()
+            rel = f".opencode/skills/tech-stack-architect/{p.parent.name}/SKILL.md"
+            if lang_token and name.startswith(lang_token + "-"):
+                counterpart.append(rel)
+            elif fam_token and name.startswith(fam_token + "-") and name.endswith("-architect"):
+                tables.append(rel)
+    return stack_docs, counterpart, tables
+
+
+def build_stack_skills_line(slug):
+    stack_docs, counterpart, tables = _resolved_stack_skills(slug)
+    parts = []
+    if stack_docs:
+        parts.append("tech-stack skill (the technology names and spelling source): "
+                     + ", ".join(stack_docs))
+    if counterpart:
+        parts.append("its architect counterpart (read once with it): " + ", ".join(counterpart))
+    if tables:
+        parts.append("mapping tables (open ONLY when the digest lists unmapped_duties, "
+                     "and then only the table that lists the duty): " + ", ".join(tables))
+    else:
+        parts.append("mapping tables: NONE exists for this stack - an unmapped duty is a "
+                     "reported flow defect for phase 1, never an invented mechanism")
+    if not stack_docs:
+        parts.insert(0, "(NO tech-stack skill resolves from this strategy's planned stack - "
+                        "report it as a phase-1 defect and stop; do not glob a skills folder)")
+    return "; ".join(parts)
+
+
+def write_planner_context(slug, context, strategy_slice_path, slice_path, symbols_path):
+    """ONE read instead of four round-trips (2026-11-24 planner performance pass): the
+    engine concatenates the session's whole input - strategy slice, digest slice, symbol
+    table (when any), contract quickref - into one marked file at prompt-build time, so
+    the first turn is a single read of bytes already chosen for it. Section banners are
+    exact strings the law names; a missing component prints its absence rather than a
+    path to hunt. Returns the context path."""
+    from pathlib import Path as _P
+    root = settings.ROOT
+    quickref = root / ".opencode/skills/architect-practices/task-decomposition-dag/QUICKREF.md"
+    stem = ddd.context_stem(context)
+    path = _P(f"/tmp/planner-context-{slug}-{stem}.md")
+    sections = [("STRATEGY SLICE", _P(strategy_slice_path)),
+                ("DIGEST SLICE", _P(slice_path)),
+                ("SYMBOL TABLE", _P(symbols_path) if symbols_path else None),
+                ("CONTRACT QUICKREF", quickref)]
+    parts = [f"# Planner session context - {slug} / {context}\n"]
+    for label, p in sections:
+        parts.append(f"\n===== SECTION: {label} =====\n")
+        try:
+            parts.append(p.read_text(encoding="utf-8") if p else "(absent)")
+        except OSError as exc:
+            parts.append(f"(unreadable: {exc})")
+    try:
+        path.write_text("".join(parts), encoding="utf-8")
+    except OSError:
+        return None
+    return path
+
+
+def worked_draft_example(slug):
+    """STACK-SOURCED exemplar (2026-11-24 agnosticism fix): the planner's concrete
+    example is the ACTIVE tech-stack skill's `# Worked draft example` section, lifted
+    verbatim into the per-domain brief. Profiles and the contract skill teach the
+    SHAPE and name no stack; the flavor lives where the stack vocabulary is allowed.
+    A stack skill without the section prints its absence - the shape above still
+    governs, and no Java bytes leak back into a Python plan."""
+    stack_docs, _c, _t = _resolved_stack_skills(slug)
+    for rel in stack_docs:
+        try:
+            text = (settings.ROOT / rel).read_text(encoding="utf-8")
+        except OSError:
+            continue
+        i = text.find("# Worked draft example")
+        if i < 0:
+            continue
+        fence = re.search(r"```json\n(.*?)\n```", text[i:], re.S)
+        if fence:
+            return ("Worked draft example - THIS domain's stack flavor, lifted from "
+                    f"`{rel}` (the SHAPE is the law for every stack; the paths, names "
+                    "and signatures below belong to this stack only):\n```json"
+                    + fence.group(1) + "\n```")
+    return ("(no worked example is published by the resolved tech-stack skill - the "
+            "record shape and the stage graph above are the whole teaching; ask the "
+            "skill by path, never by a stack you assume)")
 
 
 def build_planner_prompt(project_root, runner, slug, context, draft, slice_path,
@@ -77,9 +190,15 @@ def build_planner_prompt(project_root, runner, slug, context, draft, slice_path,
                       if undrafted else
                       "You draft the LAST context of this domain: every other context is "
                       "already in the symbol table.")
+    context_path = write_planner_context(slug, context, str(strategy_slice_path),
+                                         str(slice_path), str(symbols_path) if symbols_path else None)
     return (
         ARCHITECT_PLANNER_PROMPT.replace("{project_root}", str(project_root))
+        .replace("{context_path}",
+                 str(context_path) if context_path
+                 else "(context file unavailable - read the three section files listed below)")
         .replace("{slug}", slug)
+        .replace("{stack_skills}", build_stack_skills_line(slug))
         .replace("{context}", str(context))
         .replace("{draft}", str(draft))
         .replace("{gaps}", str(gaps_path))
@@ -90,6 +209,8 @@ def build_planner_prompt(project_root, runner, slug, context, draft, slice_path,
         .replace("{symbols_line}", drafted_line)
         .replace("{undrafted_line}", undrafted_line)
         .replace("{next_free}", ", ".join(f"{stage}: {tid}" for stage, tid in next_free.items()))
+        .replace("{worked_example}", worked_draft_example(slug))
+        .replace("{scaffold_agent}", settings.STAGE_AGENTS[0])
         .replace("{db_ids}", task_queue.stage_task_summary(0))
         .replace("{runner}", runner)
         + _discipline(settings.ARCHITECT_PLANNER_AGENT)
@@ -245,7 +366,7 @@ def _collaborator_tables(task):
     if not deps:
         return ""
     index = task_queue.load_index(include_error=True)
-    lines = ["Collaborators (API truth for construction, calls and stubs - the producing"
+    lines = ["Collaborators (interface truth for construction, calls and stubs - the producing"
              " task's ast_hints, no file hunt needed):"]
     for dep in deps:
         producer = index.get(str(dep.get("task_id", "")))
@@ -493,20 +614,30 @@ Once per domain:
    object when the context owns data, and an `observability` object ALWAYS - for every
    executable context, UNCONDITIONALLY, whether or not the business description mentions
    auditing, logging or visibility (it is the operational floor, not a feature request; a
-   strategy without the floor is refused when its tasks emit): step logs with their
-   correlation key, the audit-trail records (actor, action, outcome, timestamp), named metrics with bounded
+   strategy without the floor is refused when its tasks emit): step logs - ONLY step
+   strings, spelled EITHER as a flat list or as a per-context {context: [steps]} mapping;
+   the correlation key is a SIBLING top-level key, never an entry inside step_logs and the
+   step list is never wrapped in an object ("their" means the floor names it beside the
+   logs, not nested in them); the audit-trail records (actor, action, outcome, timestamp), named metrics with bounded
    tags, AND an `export` entry declaring how those events leave the process in machine-readable
-   form for EXTERNAL tools (log management such as Elasticsearch: structured schema + local
-   append-only sink; metrics: a scrape endpoint or push only when named). The app writes the
+   form for EXTERNAL tools (log management such as the collector the tech-stack skill
+   names: structured schema + local append-only sink; metrics: a scrape target or push
+   only when named). The app writes the
    contract, the platform ships it - no hard runtime dependency on the external tool, and the
    boot test must pass with the tool absent. Keep observability abstract - the tech-stack skill
    supplies the concrete properties.
    The security step runs after you and reads ONLY this file plus the slice and the map, and it
    tables ONE authorization row per entry of your `surfaces` array: every inbound surface the
-   domain receives - http endpoint, message consumer, schedule, cli, cross-context call - is one
+   domain receives - inbound request, message consumer, schedule, command line,
+   cross-context call - is one
    entry `{name, kind, context, operations, traced_from}`, with `kind` from
    `http|consumer|job|cli|internal-call` and `context` one of your `bounded_contexts` BY EXACT
-   NAME. A bounded context that receives nothing from outside declares itself in
+   NAME. Every `http` or `consumer` address-taking entry ALSO tables `method` + `path` exactly
+   as the delivered plan must spell them (the request method, the full path): the surfaces table is
+   the route JOIN AUTHORITY - two per-context sessions that must cite the same inbound address and
+   find no path here will invent two spellings, and the batch literal-join will die on the
+   difference (2026-11-24 v4 live: the first gate guessed `GET /telemetry/stream`, the
+   owning context served `GET /telemetry/stream/windows`). A bounded context that receives nothing from outside declares itself in
    `contexts_without_inbound` WITH a reason: silence is not a decision, and phase 1 is refused
    when a context appears in neither table. `surfaces[].name` is the join key the spec copies
    VERBATIM into `authorization_matrix[].surface` and that the decomposition copies into the unit
@@ -514,32 +645,44 @@ Once per domain:
    an undefended surface is found by its first caller, not by this run. `persistence.data_model`
    must likewise name every persisted concept the spec is to classify.
    Use only the slice and its own context map.
+   Table the description's RULE VALUES before they die with you: a strategy `rules` array,
+   ONE entry per bounded rule the slice states - `{context, statement}` with `statement`
+   copying the slice's invariant/ubiquitous-language sentence VERBATIM, numbers, units and
+   status tokens included. Every phase after you (security, performance, database, the
+   per-context planners) reads the strategy and the digests, NEVER the seed description: a
+   bound you paraphrase away (30-240 becomes "physiological limits") is a value no unit will
+   ever assert and no test will ever pin. A one-sided rule (">45 sec/100m") keeps its open
+   side - never close a bound the description left open; a rule the slice omits a value for
+   stays value-less (the phase reports the gap), it never gets an invented default here.
    The `tech stack` / `language` fields MUST repeat the versions the business description names
-   VERBATIM (a seed saying "Java 21 / Spring Boot 3 WebFlux" yields language "Java 21", never a
-   defaulted or normalized version). When the description names NO version, the tech-stack skill's
-   DEFAULT applies (Java: 21 LTS). A skill floor ("Java 17+") is a compatibility minimum, never an
-   emitted value: every version field carries ONE exact number. Never copy versions from an
-   existing scaffold or tool default (Spring Initializr's default is a trap, not a decision):
+   VERBATIM - whatever it spells arrives word for word, never defaulted, normalized or
+   summarized into a family. When the description names NO version, the chosen tech-stack
+   skill's DEFAULT applies. A skill floor is a compatibility minimum, never an emitted
+   value: every version field carries ONE exact number. Never copy versions from an
+   existing scaffold or tool default (the generator's default is a trap, not a decision):
    the description is the source of truth, and downstream stages pin the build from it.
 
 2. Emit exactly one separate project scaffold task for THIS domain. Each domain is its own project,
    rooted at {project_root}/services/<slug>/. Fields:
-   id (the next free T0 id), targetAgent "agent-container", stage 0, dependsOn [],
-   kind "bootstrap", layer "root", feature null, export "project_scaffold",
-   project "<slug>", path "<build marker>" relative to the domain root ("pom.xml" or "package.json"
-   chosen from the stack), intent "Generate the <slug> project root and build scaffold using the matching
-   mcp-server-alternatives skill, with language version <the ONE exact number from your strategy>,
-   framework version <the exact pinned name and major from your strategy's tech stack, e.g. Spring Boot 3>,
-   and build dependencies <the GENERATOR-NATIVE dependency ids of the stack's scaffold tool - for Spring
-   Initializr the short ids like webflux, data-r2dbc, flyway, actuator, test, reactor-test, never the
-   spring-boot-starter-* artifactIds - covering EVERY starter AND EVERY test artifact the tech stack names>".
-   The intent MUST list the build dependencies AND the exact language AND framework versions the strategy
-   names (a Boot-3 plan scaffolded on Boot 4 is off-plan; an omitted test artifact is a classpath hole that
-   makes every later green gate impossible). agent-container cannot guess them: for Spring Initializr the
-   list MUST include `test` and, when the plan tests reactive code, `reactor-test`, spelled as generator ids.
-   A generator that retired the pinned major does NOT relax the plan: the stage-0 skill's machine-verified
-   re-pin fallback keeps the tree equal to the pin. Never write a version RANGE ("3.x") where the plan
-   demands a pin, and never cite "generator availability" in a strategy - availability is stage 0's problem.
+   id (the next free T0 id), targetAgent "{scaffold_agent}" (the board's stage-0 role),
+   stage 0, dependsOn [], kind "bootstrap", layer "root", feature null,
+   export "project_scaffold", project "<slug>", path "<build marker>" relative to the
+   domain root - the marker the chosen tech-stack skill names. Intent: "Generate the
+   <slug> project root and build scaffold using the matching mcp-server-alternatives
+   skill, with language version <the ONE exact number from your strategy>, framework
+   version <the exact pinned name and major from your strategy's tech stack>, and build
+   dependencies <the GENERATOR-NATIVE dependency ids published by the tech-stack skill's
+   `# Scaffold facts` section, covering EVERY dependency AND EVERY test artifact the tech
+   stack names>". The intent MUST list the build dependencies AND the exact language AND
+   framework versions the strategy names (a plan pinned to major N and scaffolded on
+   major N+1 is off-plan; an omitted test artifact is a classpath hole that makes every
+   later green gate impossible). The scaffold agent cannot guess them: the tech-stack
+   skill's `# Scaffold facts` section is the dependency list's ONLY source - it names the
+   generator, the id spelling, and which ids the board MUST include (test runs first). A
+   generator that retired the pinned major does NOT relax the plan: the stage-0 skill's
+   machine-verified re-pin fallback keeps the tree equal to the pin. Never write a version
+   RANGE ("x.x") where the plan demands a pin, and never cite "generator availability" in
+   a strategy - availability is stage 0's problem.
     The intent MUST also require, for the chosen stack: a SINGLE composition root (never a second boot
     class beside the scaffold's), test-run timeout guardrails (a hung test must fail fast, never freeze
     the suite), and when the strategy's persistence object owns SQL, a schema MIGRATION RUNNER wired
@@ -560,28 +703,50 @@ Domain: {slug} - project root {project_root}/services/{slug}/; every task `path`
 Context: {context} - draft file: {draft}.
 
 READ EXACTLY THESE, once each - they are the whole input; nothing else is:
-1. {strategy_slice} - phase 1's plan FILTERED to this context by Python: your surfaces
+0. {context_path} - the engine PRE-CONCATENATED the three inputs below plus the contract
+   QUICKREF into this ONE file. Read IT once; do not re-read the section files it contains.
+1. {strategy_slice} SECTION STRATEGY SLICE - phase 1's plan FILTERED to this context by Python: your surfaces
    (the `surfaces[].name` join keys), your persistence, your step logs, the module layout.
+   Two fields are WHOLE-ROOT and must be read as such: `composition_root_surfaces` - every
+   inbound surface the domain hosts, any context, each with its `method`+`path` where the
+   strategy tables a route: the root gets ONE entry gate and its owner must account for all
+   of them (see the ROOT-WIDE ADMISSION law; a later context PINs the gate it finds in the
+   symbol table instead of adding a second one) - and
+   `rules` - the description's numeric bounds, windows and status literals verbatim, your
+   ONLY copy: plan the numbers from here, never from memory.
    The full file at {strategy_path} stays CLOSED - a fact the slice lacks is a reported
    gap for phase 1, never a silent re-read. Paths in this brief are repository paths;
    only a task `path` INSIDE your JSON is domain-root-relative. Do not rewrite the
    strategy; the ONE lawful edit: a mechanism the strategy promised ("via <mechanism>")
    that this plan will not install - amend the promise to what ships (the skill's rule
    (t)) and report the amendment.
-2. {slice} - this context's duty digest, and every duty arrives COMPLETE: `surface`,
+2. {slice} SECTION DIGEST SLICE - this context's duty digest, and every duty arrives COMPLETE: `surface`,
    `test_duty`, `measurement` are joined ONTO the duty (the specs' own sections -
    principals, assumptions, trust boundaries, risks - are not here and nothing in them is
    needed to claim), `covers` is expanded, and the matched mapping-table row rides as the
    duty's `table_row` (the identifier the intent must spell and the key the config unit
-   owns, copied, not recalled). `build_coordinates` names the stage-0 manifest duty's
+   owns, copied, not recalled). `build_coordinates` is ALWAYS present and may be EMPTY:
+   empty = no coordinate beyond the scaffold is needed, schedule no manifest; a duty with
+   `table_row: null` has NO row mapped to its token (the stack's table is missing, or the
+   token is absent from it) - report the flow defect for phase 1, NEVER borrow a
+   mechanism from a neighbouring row.
+   `build_coordinates` names the stage-0 manifest duty's
    dependencies when the scaffold lacks one. The raw specs and the mapping tables STAY
    CLOSED unless this file lists `unmapped_duties` - then open ONLY that spec's table.
-3. {symbols_line}
+3. SECTION SYMBOL TABLE - {symbols_line}
+4. SECTION CONTRACT QUICKREF - the contract map (schema keys, stage graph, claim form,
+   vocabulary fields); the FULL contract SKILL.md opens ONLY on an ERR pointer citing a
+   shape the map does not summarize.
+
+STACK SKILLS (the paths below are resolved by the ENGINE from this strategy's planned
+stack - read each named file ONCE, never glob a skills folder, never assume a name this
+brief does not print): {stack_skills}
 
 DRAFT one JSON array at {draft} - the stage 1-3 units of context "{context}" - created with
-your edit tool. A generator script is forbidden: no python/shell/heredoc that produces or
+your edit tool: the FULL array in the fewest calls the tool allows (one create, two at most
+if it truncates). A generator script is forbidden: no python/shell/heredoc that produces or
 patches drafts (it rides every later turn, patches blind, and re-emits through your
-costliest class - measured 2026-11-18: 91k carried, 41k worst single-turn output). Never
+costliest class). Never
 touch another context's file.
 
 Id and pin law (the split makes this exact): number from {next_free}; the suffix matches
@@ -591,39 +756,72 @@ table - a context not yet drafted cannot be referenced, because its ids do not e
 {db_ids}
 
 Stage shape - the graph is law, because the drain orders units ONLY by dependsOn and
-red must precede green: every unit of work is a T1+T2+T3 TRIPLE. stage 1 -> agent-tester
-(path = the TEST file it creates, never a production file); stage 2 -> agent-coder (path =
-the production file); stage 3 -> agent-evaluator (stage 2's file, kind refactor). A T1
+red must precede green: every unit of work is a T1+T2+T3 TRIPLE. TWO honest draft shapes
+exist and the engine expands BOTH: the COMPACT UNIT FORM (one record per unit, ids
+derived from `n`) or the BOARD TASK OBJECTS (full T1/T2/T3 records - an expanded draft
+validates identically: the pair table is mirrored by the engine, rule z4 holds at claim
+time, not by your typing). Pick the shape you write fluently, keep ONE shape for the whole file, and never
+generate the draft with a script - write it with the edit tool (2026-11-24 v4 live: the compact-only law with a literal exemplar was in
+the prompt and the session still typed expanded records in 30 calls - and DROPPED the
+(p) slice "for not knowing its compact form". A format law that loses to the model's
+prior shaves requirements; the prior is now the taught shape, the triad stays honest
+too). The record keys are the BOARD's names for every stack; the active tech-stack
+skill's `# Record keys` mapping gives each its language reality (and says which are
+not applicable). The lone
+stage-0 object you may type is your ONE build-manifest bootstrap:
+  {"n": 7, "project": "<slug>", "layer": "domain", "feature": null,
+   "dependsOn": {"test": ["T0-001"], "code": ["T2-003"]},
+   "test": {"path": "<stack test dir>/CounterTest.<test ext>", "export": "CounterTest",
+            "intent": "<what the slice's table_row mechanism must do, both branches, the literals>"},
+   "code": {"path": "<stack source path>/Counter.<source ext>", "export": "Counter",
+            "intent": "<claim: spec_ref + capability + copied mechanism, config literals>",
+            "ast_hints": {"package": "...", "implements": [], "dependencies": [...],
+                          "methods": [...], "meters": [...], "routes": [...], "config": [...]}}}
+ids derive from n (unit 7 -> T1-007/T2-007/T3-007); T2 gets its own T1 prepended
+automatically; a flat dependsOn list = both sides; a stage-0 id on either side propagates
+to both. stage 1 -> agent-tester (path = the TEST file, never a production file); stage 2 ->
+agent-coder (path = the production file); stage 3 -> agent-evaluator (stage 2's file, kind
+refactor) - all Python's boilerplate, not your tokens. A T1
 dependsOn the domain scaffold + earlier units' T1 tasks - NEVER a stage-2 task (emit
 refuses the inverted edge); a T2 dependsOn its own T1 + the T2 tasks of pinned producers;
-a T3 dependsOn its own T2. The T1/T2 pair carries the IDENTICAL ast_hints table: the single API truth, shared literals TABLED - meter names only in
+a T3 dependsOn its own T2. The ONE sanctioned exception to the triple: the (p) request-path
+slice may stand as a lone stage-1 test task - its green belongs to the terminal suite after
+every T2 lands - but it asserts ONLY outcomes the chained units already TABLE (cite the
+enforcing unit; a branch the slice invents is a second contract no implementation can
+satisfy twice). The T1/T2 pair carries the IDENTICAL ast_hints table: the single interface truth, shared literals TABLED - meter names only in
 `ast_hints.meters`, request paths only in `ast_hints.routes`, property paths only in
 `ast_hints.config` (rule (z)), one owner each, everyone else cites VERBATIM. intent
 40-80 words (180 refused at emit): the claim, the config literals, both branches of a
 signal - a fact `ast_hints` pins is never re-spelled in prose.
 
-Build coordinates: consult the symbol table's `build_manifest` FIRST - a coordinate its
-intent already carries is SCHEDULED, emit nothing for it. If none is scheduled yet and the
-slice's `build_coordinates` names a coordinate the scaffold build file lacks, schedule the
-ONE lawful stage-0 build-manifest duty as a bootstrap task (layer root, feature null,
-targetAgent agent-container, kind bootstrap, layer root, feature null, export
-build-manifest, dependsOn empty, path = the stack's build file, intent = the
-generator-native ids). If the ONE manifest task exists but lacks YOUR coordinate, write it
-VERBATIM into {gaps} - JSON: {"missing_coordinates": ["<coordinate string>", ...]},
-spelled exactly as the slice's build_coordinates spells it: the ENGINE reads that file and
-appends every reported coordinate to the ONE task before the batch emit. Never emit a
-second manifest (the linter refuses it), never edit another context's file, and never
-settle for prose in your output - a report the machine cannot read is an unscheduled
-coordinate, and the first red compile dies in that hole. A unit whose copied mechanism
-needs such a coordinate lists the build-manifest task id in its `dependsOn` (its T1
-twin inherits it through the pair): the tester compiles against a classpath that must
-exist first.
+{worked_example}
 
-Lead duties: every aggregate root / event / read endpoint of this context gets its
-API/UseCase unit; repository port + adapter (DDL is the database phase's); the strategy's
-observability floor decomposes into its units here as the skill directs - audit ports
-tabled, one correlation middleware unit unless the symbol table already shows one, an
-externalized-config unit ONCE per domain (skip it if the symbol table already has one).
+Build coordinates: consult the symbol table's `build_manifest` FIRST, then the scaffold's own
+dependency list (its stage-0 intent, printed in your brief) - a coordinate either carries is
+SCHEDULED, emit nothing for it. If neither carries one the slice's `build_coordinates` names,
+YOU schedule the ONE lawful stage-0 build-manifest duty as a bootstrap task (targetAgent
+{scaffold_agent}, kind bootstrap, layer root, feature null, export build-manifest,
+dependsOn empty, path = the stack's build marker, intent = the generator-native
+dependency ids from the tech-stack skill's `# Scaffold facts` section) - the FIRST context
+discovering a scaffold-missing coordinate OWNS it (a gaps file never substitutes for
+scheduling, and T0-001 is a completed stage-0 duty you cannot edit). If the ONE manifest task
+exists but lacks YOUR coordinate, write it VERBATIM into {gaps} - JSON: {"missing_coordinates": ["<coordinate string>", ...]},
+spelled exactly as the slice's build_coordinates spells it: the ENGINE reads that file and
+appends every reported coordinate to the ONE task before the batch emit. Never a
+second manifest (the linter refuses it), never another context's file, never prose in place
+of the file - a report the machine cannot read is an unscheduled coordinate, and the first
+red compile dies in that hole. A unit whose copied mechanism needs such a coordinate lists
+the build-manifest task id in its `dependsOn` (its T1 twin inherits through the pair): the
+dependency set must exist before the first red compile.
+
+Lead duties: the strategy's decomposition of this context - its `layers`,
+`module_layout` and the operations its surfaces name - becomes the unit list, one unit
+per behavior the strategy owns; persistence units follow the strategy's `persistence`
+object, and the schema itself is the database phase's stage-0 duty (never planned here);
+the strategy's observability floor decomposes into its units here as the skill directs -
+the floor's audit records get their unit, the floor's correlation mechanism lives in
+exactly ONE unit unless the symbol table already shows one, an externalized-config unit
+ONCE per domain (skip it if the symbol table already has one).
 
 DUTY CLAIMS, machine-enforced at emit: every duty of the slice is discharged INSIDE the
 enforcing STAGE-2 unit by spelling its `spec_ref` AND `capability` VERBATIM beside the
@@ -636,16 +834,45 @@ without the reach law; PA- assumptions and AI roles/assumptions never carry clai
 HOME OF THE ARTIFACT is a SOURCE unit and the writable channel is language source or
 configuration document ONLY - a template file has no writer on this board.
 
+ROOT-WIDE ADMISSION - ONE GATE PER ROOT (batch law): the composition root has ONE
+entry-admission decision - whatever mechanism the active stack uses to decide which
+inbound work is reachable (request pipeline, message router, command dispatcher, job
+gate - the tech-stack skill names it) - owned by ONE unit and scheduled by the context
+that drafts it FIRST. It reads `composition_root_surfaces` (ALL contexts' rows, with
+the inbound addresses the strategy tables): it admits-and-guards its own context's
+work, ADMITS the foreign contexts' work UNGUARDED (their duties are enforced where the
+owning context places the check), and the terminal default-closure ends only what the
+table leaves. A LATER context NEVER installs a second root-wide admission - check the
+symbol table: if an entry gate exists, PIN it like any guard, add at most authorization
+rules scoped to your own surfaces, and cite NO foreign inbound address in your own
+tables (2026-11-24 v4: two root-wide gates each closing the other's world ping-ponged
+the z6/y pair through two repair sessions into a fatal - one removed the cross-context
+citation, the twin-table law demanded it back). ENTRY IS PER-KIND: a surface's declared
+`kind` picks its entry unit - a surface with a tabled inbound address (`http`, address-taking
+`consumer`): the unit whose `routes` table answers that address, cross-owner = a valid
+identifier owned by another; an `internal-call` or unrouted `consumer` surface: the
+adapter the events ARRIVE at, cross-owner = a forged producer's VALID event refused and
+audited, and no address is tabled or required of it; `job`/`cli` surfaces enter at the
+runner.
+
+
+RULE VALUES (batch law): every `rules` literal lands in the enforcing unit - numeric bound in
+the validator's intent or an `ast_hints.config` default, window length in the buffer's config
+key, the seed's status token spelled exactly - with ONE owner per value and VERBATIM citation
+(l)/(z); a one-sided bound stays one-sided, never a closed range the seed did not state.
+
 The FULL contract (a)-(z) is `task-decomposition-dag` SKILL.md - load it once, do not
 memorize it: the linter and the batch emit quote the violated rule by letter.
 
 FINISH with the lint, then stop:
     python3 {runner} --lint {draft}
+Lint pointers name the EXPANDED objects: T1-007 is your unit 7 test side, T2-007 its code
+side; fix the unit record that produced them.
 EDIT every ERR [id]: line into existence-proof (one lint pass of edits costs hundreds of
 tokens; a rewrite costs 10-30k), lint again. If ONE defect shape repeats across tasks it
 is a law you missed, not N typos: reread that rule, rewrite the WHOLE file in ONE create
 call, lint once - a 20-edit cascade re-sends the transcript 20 times and costs the
-session its budget (measured live 2026-11-20). A `LINT-CLEAN` line is your exit. Do NOT run
+session its budget. A `LINT-CLEAN` line is your exit. Do NOT run
 `--emit`: when every context of the domain is drafted, the ENGINE emits the batch in one
 command and only a refusal then comes back to a repair session.
 
@@ -671,8 +898,30 @@ defect, not N typos, so batch the repairs (several edits in one pass, or one rew
 the affected file), never one edit per task object across a dozen turns. Re-lint each
 edited file ONCE with `python3 {runner} --lint <file>`; never re-lint a file you did not
 change; then stop - the ENGINE re-runs the batch emit.
+The stage-shape law binds the repair: fix objects INSIDE the existing units; the ONE task a
+refusal may add is the (p) request-path slice (a lone stage-1 test whose green belongs to the
+terminal suite) - and it asserts only what the chained units already TABLE, citing their ids:
+never a fresh status, retention or tag behavior the plan froze elsewhere - one input, two
+contracts, no implementation satisfies either.
 A refusal that contradicts a spec (a duty the mechanism rows cannot realize) is a reported
 flow defect you NAME, never a spec rewrite: the operator re-runs the phase that wrote it.
+
+REPAIR LAWS (2026-11-24 v4, each learned from a repair session that exploited it):
+- EDIT, NEVER GENERATE: change drafts with file edits the pointers name. A script that
+  rewrites task objects is a batch edit with a hidden diff - it renumbers, reorders and
+  rewrites fields no refusal mentioned, and the next emit refuses what the script broke.
+- A twin-table or literal-join refusal is fixed by making BOTH records cite the SAME
+  plan fact (the strategy surfaces table's `method`+`path`, the shared meter, the config
+  key) - never by importing another context's route into your own guard, and never by
+  deleting the citation: if one context's chain owns the route, the other context PINS
+  that chain (ONE ROOT GATE).
+- Never reword a duty claim, intent or capability to escape a classification, and never
+  relabel a unit's `layer` to satisfy a checker: the refusal names a missing WIRING or
+  ASSERTION - add the pin or the cross-owner case. A claim that vanishes because the
+  token was paraphrased is a dropped requirement wearing a green board.
+- Fix only what the pointers cover, in ONE grep-and-batch pass: unmentioned fields stay
+  byte-identical; N repetitions of one shape are ONE edit rule applied N times, not N
+  investigations.
 """
 
 DATABASE_PROMPT = """You are the blackboard database architect for this repository.
@@ -680,18 +929,31 @@ Run your workflow for the bounded context slug `{slug}` only. Its project root i
 
 1. Read the strategy file {strategy_path} with the read tool and use only its `persistence` object.
 2. Select the storage technology from the tech-stack skill. Write the migration and configuration
-   scripts yourself, only under {project_root}/services/{slug}/db/migrations/ (absolute path). You own
-   the database files of this domain: setup, schema migration, configuration, and backup.
-   Runner/configuration fragments carry weight ONLY in the property namespace the runtime actually
-   reads (the tech-stack skill names it) and only in files the application loads: use the framework
-   namespace (not the bare tool's), name the consuming config unit, and make the configured locations
-   align with where the migration scripts physically live. A fragment nothing reads is schema fiction -
-   prefer the app's own config file over a standalone profile when a config unit exists.
-3. Queue one stage 0 bootstrap task per database concern (store setup, schema migration, configuration
-   profile, backup/recovery). Write ONE array file /tmp/tasks/{slug}-db-tasks.json holding every task
+   scripts yourself into the ONE canonical RUNTIME-LOADED migration directory named by the ACTIVE
+   tech-stack skill (concrete-database-migration: the location the runtime's migration runner
+   actually reads - never a module-root folder nobody loads). Create it with ONE shell mkdir of its
+   full absolute path before the first write (the scaffold does not exist yet and the create tool
+   refuses a missing parent). You own
+   the database files of this domain: store setup, schema migration, and backup/recovery
+   artifacts, written inside the runtime-loaded migration directory. Runner configuration
+   fragments carry weight ONLY in the property namespace the runtime actually reads (the
+   tech-stack skill names it) and only in files the application loads: use the framework
+   namespace (not the bare tool's), and make the configured locations align with where the
+   migration scripts physically live. Do NOT write or queue the application's OWN
+   configuration document (its runtime config file): that file is the externalized-config
+   unit's artifact, scheduled by the planning phase AFTER you - your channel to it is this
+   report's named key list (runner locations, the distinct datasource URL placeholders), not
+   bytes in a file no task of yours owns. A file on disk with no owning task is schema
+   fiction the gates cannot see - prefer the app's own config file over a standalone profile
+   ONLY as a key list in your report, never as written bytes.
+3. Queue one stage 0 bootstrap task per database concern YOU own (store setup, schema
+   migration, backup/recovery - never the application's own config document, which the
+   planning phase's config unit owns). Write ONE array file /tmp/tasks/{slug}-db-tasks.json holding every task
    object, with exactly the keys of your output contract (every `export` a non-empty file base name,
-   never null), ids starting at {next_id}, each with dependsOn ["{scaffold_id}"] and path
-   db/migrations/<file> relative to the domain project root, then queue them
+   never null), ids starting at {next_id}, each with dependsOn ["{scaffold_id}"] and path = the file
+   INSIDE that same runtime-loaded directory, relative to the domain project root (the task path and
+   the bytes you wrote must be the same location: an emitted path outside the loader's directory is
+   schema fiction that every gate below will still call green), then queue them
    with: `python3 {runner} --emit /tmp/tasks/{slug}-db-tasks.json`. Never write into blackboard/ directly.
    Application tasks queued later reference these ids.
 

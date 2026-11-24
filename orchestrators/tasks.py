@@ -239,7 +239,13 @@ def strategy_language(slug):
 
 def _returns_publisher(returns):
     text = str(returns or "").strip().lower().replace(" ", "")
-    return any(text.startswith(form) for form in PUBLISHER_FORMS)
+    # SUBSTRING, not startswith (2026-11-24 seed-002): a streaming endpoint wrapped as
+    # `Mono<ResponseEntity<Flux<ServerSentEvent<...>>>>` is STILL a publisher; a start-only
+    # test let the envelope hide the stream from the unconsumed-source check, so the SSE
+    # surface reported green while nothing in-tree subscribed to it. If a stream type
+    # appears ANYWHERE in the return, the source publishes and needs a consumer or a
+    # tabled out-of-process boundary.
+    return any(form in text for form in PUBLISHER_FORMS)
 
 
 def _returns_signal(returns):
@@ -426,6 +432,40 @@ def validate_ast_hints(hints):
     return None
 
 
+MIGRATION_SCRIPT_NAME_RE = re.compile(r"^V\d+__[^/\\]+$", re.I)
+
+
+def is_database_task(task, index=None):
+    """STAGE-0 DATABASE FAMILY membership (2026-11-24, seed-002 second run; third-run
+    revision): keyed on the runner's OWN vocabulary - a `migration`/`migrations` path
+    segment ANYWHERE in the tree (the packaged `src/main/resources/db/migration` and the
+    module-root `db/migrations` are both that word; the active tech-stack skill names
+    which), a versioned runner script name (`V<n>__description.ext`), OR the STRUCTURAL
+    hang: a stage-0 bootstrap task whose `dependsOn` names this domain's scaffold/manifest
+    (export-keyed, S16's law: families are keyed by export marker, never by path shape).
+    The path-only test refused the database phase's OWN configuration-profile and backup
+    concerns when they landed outside the runner folder (2026-11-24 third run: the
+    application.yml task's scaffold edge was refused, the agent left the concern unqueued,
+    and the config-file bytes sat on disk with no owning task). NEVER a fixed folder
+    LOCATION: a literal folder check quietly refuses a correctly packaged schema - the
+    gate-vs-skill twin of the N8/S16 pair this codebase keeps relearning."""
+    path = str((task or {}).get("path", "")).replace("\\", "/")
+    parts = tuple(p.lower() for p in path.split("/") if p)
+    if "migration" in parts or "migrations" in parts:
+        return True
+    if bool(parts) and MIGRATION_SCRIPT_NAME_RE.match(parts[-1]) is not None:
+        return True
+    if int((task or {}).get("stage") or 0) == 0 and str(task.get("kind") or "") == "bootstrap":
+        export = str(task.get("export") or "").strip()
+        if export not in (settings.SCAFFOLD_EXPORT, settings.BUILD_MANIFEST_EXPORT):
+            for dep in (task.get("dependsOn") or []):
+                ref = (index or {}).get(str(dep))
+                if isinstance(ref, dict) and str(ref.get("export") or "").strip() in (
+                        settings.SCAFFOLD_EXPORT, settings.BUILD_MANIFEST_EXPORT):
+                    return True
+    return False
+
+
 def validate(task, index, planning=False):
     """Validate one blackboard task against the evaluator pipeline schema.
 
@@ -469,8 +509,11 @@ def validate(task, index, planning=False):
             return "stage 0 layer must be root"
         if task["feature"] is not None:
             return "stage 0 feature must be null"
-        if task["dependsOn"] and "migrations" not in Path(str(task["path"])).parts:
-            return "stage 0 dependsOn must be empty except for database tasks"
+        if task["dependsOn"] and not is_database_task(task, index):
+            return ("stage 0 dependsOn must be empty except for database-family tasks "
+                    "(the migration directory, a V<n>__ script, or a scaffold/manifest-hung "
+                    "bootstrap: the database phase's concerns hang off the scaffold because "
+                    "they write INSIDE the tree it creates)")
         return None
 
     if task["layer"] not in settings.LAYERS:
@@ -628,6 +671,31 @@ def plan_consistency(staged, index):
                     "no unit targets a runtime configuration artifact (application.yml, "
                     "config.ts, settings.py per stack): schedule the config unit carrying the "
                     "seed's literal values")
+        # (b2) BOOT-PATH CONNECTION KEYS (rule (h)'s machine leg, 2026-11-24 seed-002 v3):
+        #      a config unit that tables a READER-LOCATION key (a path whose last segment is
+        #      "locations"/"location" - Flyway's locations, Alembic's version_locations, a
+        #      TypeORM migrations glob: the shape is universal, the gate names no vendor)
+        #      enables a runtime reader, but readers migrate what they CONNECT to - if the
+        #      same table carries no connection-URL path (last segment "url"), the enabled
+        #      reader migrates an auto-detected throwaway store while the app writes
+        #      elsewhere: the production schema is fiction and every per-unit gate stays
+        #      green (the F5 class). Stack-neutral: property-path segments only.
+        for u in units:
+            if not isinstance(u, dict) or u.get("stage") != 2 or not _path_is_config_artifact(u.get("path")):
+                continue
+            cfg_paths = [str(c.get("path", "")) for c in (u.get("ast_hints") or {}).get("config", [])
+                         if isinstance(c, dict)]
+            segs = [p.split(".")[-1].strip().lower() for p in cfg_paths]
+            if any(s in ("locations", "location") or s.endswith("_locations") for s in segs) \
+                    and not any(s == "url" or s.endswith("_url") for s in segs):
+                errors.append(
+                    f"{u.get('id')}: the config table enables a reader with a LOCATIONS key "
+                    "but tables NO connection-URL path in the same document (rule (h)): an "
+                    "enabled reader without a configured datasource migrates the "
+                    "auto-detected embedded store while the runtime writes elsewhere. Table "
+                    "each reader form's url key (distinct environment placeholders - never "
+                    "one variable feeding two URL schemes), or drop the locations key and "
+                    "state the disabled posture")
     # (c) request-encoding alignment on each test+impl pair (seed-002 D2: a pinned
     #     Flux<Dto> request can never receive the "JSON array" its test mandates).
     by_id = {str(u.get("id")): u for u in index.values() if isinstance(u, dict)}
@@ -825,7 +893,10 @@ def plan_consistency(staged, index):
                 f"({member.get('returns')}) but no unit pins this type as a collaborator - "
                 "the rule behind an unconsumed source executes zero times while its unit "
                 "tests and the boot gate stay green (2026-11-16: the reordering service "
-                "was a registered island; the seed's core rule never ran). Name its "
+                "was a registered island; the seed's core rule never ran). Wrapping the "
+                "stream in an envelope (Mono<ResponseEntity<Flux<...>>>) is the same "
+                "publisher (2026-11-24: an SSE surface hid behind one to pass this check) "
+                "- the honest answers are: name its "
                 "consumer unit in the DAG, route it in the wiring unit's duty list, or "
                 "declare the out-of-process boundary in the strategy")
         for ret, producers in sorted(factory_claims.items()):
@@ -888,9 +959,13 @@ def plan_consistency(staged, index):
                 f"{project}: {len(inbound)} inbound adapter unit(s) but NO end-to-end "
                 "request-path slice scheduled: unit tests build the use case with new, "
                 "the smoke test loads a context without a request - neither proves the "
-                "entry, the store and the schema agree. Add one integration test task "
-                "that drives the entry surface against the embedded substitute and "
-                "asserts the durable effect (valid AND invalid payloads)")
+                "entry, the store and the schema agree. Ride the slice where it belongs: "
+                "the inbound unit's OWN stage-1 intent names the end-to-end drive against "
+                "the embedded substitute with the durable effect asserted (valid AND "
+                "invalid payloads), or schedule the FULL triple with its support unit - "
+                "never a lone stage-1 task: the triple is atomic (2026-11-24: a repair "
+                "pass bought its peace with an unpaired integration test whose red had "
+                "no owner until the terminal suite)")
         # (q) RETRYABLE INBOUND + APPEND-ONLY CHAIN = IDEMPOTENCY DUTY or an explicit
         #     at-most-once declaration: with a server-minted identity, a network retry
         #     is indistinguishable from a correction and becomes a domain revision
@@ -926,7 +1001,13 @@ def plan_consistency(staged, index):
                 "retry mints a revision the device never sent twice")
         # (r) migration locations must be the PACKAGED (classpath) form - enforced at
         #     emit, where the architect can still fix it; see the vocabulary note above.
-        if (workspace.project_root_for(project) / "db" / "migrations").is_dir():
+        #     The trigger is the migration SCRIPT, not a folder: wherever the tech-stack
+        #     skill placed the runner's files, a `V*__*.sql` under the domain root means
+        #     the domain has a packaged schema whose location a config unit may misquote
+        #     (2026-11-24: the literal `db/migrations` folder test went silently dormant
+        #     once the scripts moved into `src/main/resources/db/migration`).
+        _proj_root = workspace.project_root_for(project)
+        if _proj_root.is_dir() and any(_proj_root.rglob("V*__*.sql")):
             for u in live:
                 if u.get("stage") != 2 or not _path_is_config_artifact(u.get("path")):
                     continue

@@ -5,11 +5,11 @@
   "dependsOn": [
     "T0-001"
   ],
-  "path": "db/migrations/V4__create_telemetry_indexes.sql",
+  "path": "services/telemetry-ingestion-processing/src/main/resources/db/migration/BACKUP_RECOVERY.md",
   "kind": "bootstrap",
   "layer": "root",
   "feature": null,
-  "export": "V4__create_telemetry_indexes",
-  "intent": "Configuration profile of access paths: PostgreSQL (Flyway) migration script with indexes on (device_id, metric_kind, t_device) and revisions by original event for context Telemetry Ingestion.",
+  "export": "BACKUP_RECOVERY.md",
+  "intent": "Backup/recovery runbook for the Telemetry Event Log PostgreSQL store (pg_dump backup, restore then Flyway forward, replay since history is append-only) in BACKUP_RECOVERY.md.",
   "project": "telemetry-ingestion-processing"
 }

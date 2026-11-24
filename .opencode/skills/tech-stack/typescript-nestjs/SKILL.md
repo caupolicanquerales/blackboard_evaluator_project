@@ -12,5 +12,45 @@ TypeORM (decorators, migrations as `<Tag><Timestamp>.ts` expand-only) or a decla
 Logs: Nest `Logger` (JSON transport configured in the module/config unit), one logger per owning class, no `console.log`. Export for external tools (the strategy's `observability.export`): the contract sink is an NDJSON file written by the logger transport (pino `transport.target: pino/file` with `destination`, or the configured Logger serializers - keys carried by ConfigService: path, rollover), tailed by Filebeat/Fluent Bit/Vector into Elasticsearch; the app writes files, the platform ships them. Direct transports (elasticsearch transport, OTLP exporter) ONLY when the description names the endpoint, off under the boot test so it passes offline. Correlation: one middleware/interceptor unit generating/adopting `requestId`, carried via AsyncLocalStorage so async paths keep it; the id is ALSO an explicit audit-record field, never only ambient context. Audit trail: application-port token (`@Inject(TOKEN)`) whose DTO shape is tabled in ast_hints (actor, action, outcome, timestamp, correlation id) + a TypeORM append-only entity + migration owned by the database step; same-transaction vs best-effort per the invariant. Metrics via a thin counting provider (prom-client only if the description asks), bounded labels only. Test surfaces: jest spies on the Logger capturing structured arguments, the audit port's recording provider bound with `{provide, useClass}` (assert every tabled field), counting-provider totals; assertions on rendered strings are forbidden.
 # Build/run
 `npm run build` (nest tsc), start:dev watch; package-lock committed; engines.node pinned.
+# Record keys (board `ast_hints` vocabulary -> this language)
+`package` = the module's source path (e.g. `src/intake`); `implements` = the TypeScript
+`implements` interface names (the port contracts), `[]` for plain classes;
+`methods[].signature` is the TS method header with declared types; `config[].path` = dotted
+ConfigService keys;
+`routes[].method`/`path` = the HTTP verb and full path of the `@Controller` + `@Get`/`@Post` decorator pair; `path` = the `.ts` file. A build `coordinate` = the npm package name
+with its pinned version spelled EXACTLY as `package.json` carries it (`dependencies` or
+`devDependencies` key), and `missing_coordinates` / the ONE manifest's intent use that same
+spelling.
+# Scaffold facts (the strategy phase's ONLY dependency source)
+Scaffold generator: Nest CLI (mcp-server-nestjs). Spell dependencies as its GENERATOR-NATIVE
+ids - `@nestjs/core`, `@nestjs/common`, `@nestjs/platform-express`, `@nestjs/config`,
+`@nestjs/testing`, `rxjs`, plus the driver/ORM packages the persistence strategy names -
+NEVER npm aliases or bare names the CLI cannot resolve. The list MUST include
+`@nestjs/testing` (the test artifact); e2e lanes add `supertest`. The generator's default
+major is a trap - the strategy's pin wins; the stage-0 re-pin fallback keeps package.json
+equal to it.
+
+# Worked draft example
+ONE honest unit record for THIS stack - the planner brief lifts it verbatim; the shape
+is law everywhere, these spellings are NestJS/TypeScript's only. Unit 21 expands to
+T1-021/T2-021/T3-021 with the IDENTICAL ast_hints pair (the engine mirrors it):
+```json
+[
+ {"n": 21, "project": "telemetry", "layer": "interface", "feature": null,
+  "dependsOn": {"test": ["T0-001", "T1-020"], "code": ["T0-001", "T2-020"]},
+  "test": {"path": "test/intake/ingress.controller.spec.ts",
+           "export": "IngressControllerSpec",
+           "intent": "Slice drives POST /ingress/packets AT the lookup: owner's packet appended (AZ-02 permitted); a VALID packet bearing a foreign tenant's id REFUSED 403 (cross-owner); duplicate key a no-op; assert the appended row, the refused status, the counted meter."},
+  "code": {"path": "src/intake/ingress.controller.ts",
+           "export": "IngressController",
+           "intent": "Unit IS the surface 'packet ingest HTTP inbound': AZ-02 tenant-scoped-query enforced at the lookup - findByTenant scoped find on the injected SampleStore provider token, a foreign tenant's packet never fetched, 403 on refusal; counts telemetry.ingest.accepted per append; duplicate key a no-op.",
+           "ast_hints": {"package": "src/intake", "implements": ["SampleStoreToken"],
+             "dependencies": [{"type": "SampleStore", "task_id": "T2-020"}],
+             "methods": [{"signature": "ingest(request: IngressRequest): Promise<void>", "returns": "Promise<void>"}],
+             "meters": [{"name": "telemetry.ingest.accepted", "duty": "owns"}],
+             "routes": [{"method": "POST", "path": "/ingress/packets", "duty": "serves"}],
+             "config": []}}}]
+```
+
 # Prohibitions in tasks
 `any` in public contracts, module-level process.env, entity-as-response, sync IO in handlers, unstored schema changes (must be migrations), test-only stubs reaching production wiring.

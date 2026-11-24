@@ -19,7 +19,7 @@ STRATEGY_PREFIX = "execution-strategy-"
 # decomposition wires the unit that enforces the row to the unit that IS the surface.
 # A surface the plan never names cannot get a row, and a row with no surface is invention.
 SURFACE_KEYS = ("name", "kind", "context", "operations")
-SURFACE_OPTIONAL_KEYS = ("traced_from",)
+SURFACE_OPTIONAL_KEYS = ("traced_from", "method", "path")
 SURFACE_KINDS = ("http", "consumer", "job", "cli", "internal-call")
 # A `principals[].source` may cite an entry of the slice (the law) or, on boards written
 # before the trace was machine-checked, the NAME of the section it came from.
@@ -178,6 +178,41 @@ PHASE2_TABLES = {  # spec file prefix -> mapping table (the spring stack is the 
 }
 
 
+def phase2_stack_tables(slug):
+    """Map each spec phase to the PLANNED stack's mapping table (2026-11-24): reading
+    PHASE2_TABLES unconditionally injects Spring rows and Spring build_coordinates into a
+    Python/TypeScript digest - wrong-stack facts wearing plan-fact clothes, exactly what the
+    planner then copies VERBATIM into intents. Resolution mirrors the brief's stack-skill
+    law: an architect directory `<token>-<phase>-architect` whose token shares a prefix with
+    the strategy's framework (or language) family. A stack without mapping tables resolves
+    to None per phase - the digest then states the honest shape (no table, every duty
+    listed under `unmapped_duties`, `build_coordinates` EMPTY, never absent: a key that
+    sometimes exists is a field every session must hunt to disprove). A strategy with no
+    tech_stack at all (legacy boards, pre-split fixtures) keeps today's default map."""
+    default = dict(PHASE2_TABLES)
+    stack = (strategy_for(slug) or {}).get("tech_stack") or {}
+    fw = re.findall(r"[a-z]+", str(stack.get("framework") or "").strip().lower())
+    lg = re.findall(r"[a-z]+", str(stack.get("language") or "").strip().lower())
+    if not fw and not lg:
+        return default
+    arch = Path(__file__).resolve().parents[1] / ".opencode" / "skills" / "tech-stack-architect"
+    stems = sorted(d.name for d in arch.iterdir() if d.is_dir()) if arch.is_dir() else []
+    out = {}
+    for prefix in PHASE2_TABLES:
+        phase = prefix.replace("-spec-", "")
+        hit = None
+        for stem in stems:
+            if not stem.endswith(f"-{phase}-architect"):
+                continue
+            token = stem.split("-")[0]
+            fams = [t for t in (fw[0] if fw else "", lg[0] if lg else "") if t]
+            if any(f == token or f.startswith(token) or token.startswith(f) for f in fams):
+                hit = f".opencode/skills/tech-stack-architect/{stem}/SKILL.md"
+                break
+        out[prefix] = hit
+    return out
+
+
 def phase2_digest_path(slug):
     """Same /tmp channel the drafts use (edit grants already cover it; the repo stays clean)."""
     return Path("/tmp") / f"{PHASE2_DIGEST_PREFIX}{slug}.json"
@@ -251,15 +286,20 @@ def _digest_table_rows(table_path, wanted_tokens, wanted_kinds):
 
 
 def _digest_duty_row(table_info, duty):
-    """The one mapping-table row a duty claims: the FIRST kept row whose token or kind set
-    contains the duty's capability / unit_kind. None is honest - the duty then appears in
-    `unmapped_duties` and only THAT sends the architect to the raw table."""
+    """The one mapping-table row a duty claims: the FIRST kept row whose TOKEN set
+    contains the duty's capability. Kind never matches: a shape (policy-adapter, validator)
+    is shared by many rows, so a shape-match borrows some other duty's mechanism - the
+    planner is then FAITHFULLY copying poison the digest manufactured (2026-11-24 seed-002
+    v2: SI-03 `append-only-write`, unit_kind policy-adapter, was handed the `scope-check`
+    row's `hasAuthority("SCOPE_...")` mechanism because the shape matched; the security
+    chain task shipped claiming append-only with an authorization mechanism). None is
+    honest - the duty appears in `unmapped_duties` and only THAT sends the architect to
+    the raw table, where an absent token is a reported flow defect."""
     if table_info is None:
         return None
     cap = str(duty.get("capability", "")).strip().lower()
-    kind = str(duty.get("unit_kind", "")).strip().lower()
     for row in table_info["rows"]:
-        if cap in row["tokens"] or kind in row["kinds"]:
+        if cap in row["tokens"]:
             return row
     return None
 
@@ -312,6 +352,7 @@ def write_phase2_digest(slug):
     }
     problems, duties, mechanisms, specs, rules = [], [], {}, {}, {}
     build_coordinates = {}
+    stack_tables = phase2_stack_tables(slug)
     for phase, prefix in (("security", "security-spec-"),
                           ("performance", "performance-spec-"),
                           ("ai", "ai-spec-")):
@@ -324,28 +365,37 @@ def write_phase2_digest(slug):
         if spec is None:
             problems.append(f"{path.name} is not readable JSON")
             continue
+        table_path = stack_tables.get(prefix)
         index = _digest_rule_index(spec, [(k, None) for k in sections[phase]])
         phase_duties = [d for d in (spec.get("duties") or []) if isinstance(d, dict)]
         wanted_tokens = {str(d.get("capability", "")).strip().lower() for d in phase_duties}
         wanted_kinds = {str(d.get("unit_kind", "")).strip().lower() for d in phase_duties}
-        table = _digest_table_rows(PHASE2_TABLES[prefix], wanted_tokens, wanted_kinds)
+        table = _digest_table_rows(table_path, wanted_tokens, wanted_kinds) if table_path else None
         gaps = []
-        if table is None:
-            problems.append(f"{path.name}: mapping table {PHASE2_TABLES[prefix]} unreadable - "
+        if table_path is None:
+            # no mapping table exists for the PLANNED stack (2026-11-24): every duty of this
+            # phase is an honest unmapped gap rather than another stack's rows copied into
+            # this plan; not a digest problem - the planner reports the flow defect per its
+            # brief ("no tables listed => reported gap for phase 1").
+            gaps = sorted(f"{d.get('spec_ref')}:{str(d.get('capability', '')).strip().lower()}/"
+                          f"{str(d.get('unit_kind', '')).strip().lower()}" for d in phase_duties)
+            mechanisms[phase] = {"table": None, "header": None, "rows": []}
+        elif table is None:
+            problems.append(f"{path.name}: mapping table {table_path} unreadable - "
                             "the architect must read it directly")
         else:
             for duty in phase_duties:
                 cap = str(duty.get("capability", "")).strip().lower()
                 kind = str(duty.get("unit_kind", "")).strip().lower()
-                if cap not in table["seen_tokens"] and kind not in table["seen_kinds"]:
+                if cap not in table["seen_tokens"]:
                     gaps.append(f"{duty.get('spec_ref')}:{cap}/{kind}")
             mechanisms[phase] = {"table": table["table"], "header": table["header"],
                                  "rows": table["rows"]}
-        coordinates = _digest_build_coordinates(PHASE2_TABLES[prefix])
+        coordinates = _digest_build_coordinates(table_path) if table_path else []
         if coordinates:
-            build_coordinates[phase] = {"table": PHASE2_TABLES[prefix], "rows": coordinates}
+            build_coordinates[phase] = {"table": table_path, "rows": coordinates}
         if gaps:
-            mechanisms.setdefault(phase, {"table": PHASE2_TABLES[prefix], "rows": []})
+            mechanisms.setdefault(phase, {"table": table_path, "rows": []})
             mechanisms[phase]["unmapped_duties"] = sorted(gaps)
         for duty in phase_duties:
             ref = str(duty.get("spec_ref", "")).strip()
@@ -425,8 +475,12 @@ STRATEGY_SLICE_PREFIX = "strategy-slice-"
 # for the repair pass, which is the only session that reads forensics)
 SLICE_DUTY_JOIN_KEYS = ("surface", "test_duty", "measurement", "effect_on_deny",
                         "statement", "operation", "class", "threat")
+# the y5 entry-shape keys ride the duty (2026-11-24 v4): the session gets the declared
+# KIND and, for route-taking surfaces, the tabled method+path ON the record it discharges
+# - the entry shape is decided in Python from the strategy table, never guessed per session
 SLICE_DUTY_KEYS = ("spec", "spec_ref", "capability", "unit_kind", "obligation",
-                   "owner_context", "covers", "table_row") + SLICE_DUTY_JOIN_KEYS
+                   "owner_context", "covers", "table_row",
+                   "surface_kind", "surface_method", "surface_path") + SLICE_DUTY_JOIN_KEYS
 
 
 def strategy_slice_path(slug, context):
@@ -442,7 +496,13 @@ def write_strategy_slice(slug, context):
     in full: one domain ships one schema, and a context that reads what another wrote is
     the normal shape - null-ing it out would delete the store law the repository units
     need, so the honest slice keeps it and drops only the prose. (2026-11-20 audit: the
-    full strategy rode every per-context session; this file is ~half of it.)"""
+    full strategy rode every per-context session; this file is ~half of it.)
+    Two fields stay WHOLE on purpose (2026-11-24 seed-002): `composition_root_surfaces` -
+    a unit that installs the entry-wide gate (chain, filter list, router) decides which
+    routes of the WHOLE root live, and a per-context surface list hid the sibling's stream
+    route behind a "rest denied" clause; and `rules` - the description's numeric bounds,
+    windows and status names ride phase 1's table, because every later phase reads the
+    strategy and the digest, never the seed."""
     strategy = strategy_for(slug)
     if strategy is None:
         return None, [f"no readable execution strategy for {slug}"]
@@ -465,6 +525,14 @@ def write_strategy_slice(slug, context):
         "layers": strategy.get("layers"),
         "module_layout": module_layout,
         "surfaces": surfaces,
+        # WHOLE composition root, not just this context (2026-11-24 seed-002): a root-wide
+        # admission unit (chain/filter/router) must see every route it governs, including a
+        # sibling context's, or its terminal deny closes a surface this session never sees.
+        "composition_root_surfaces": [
+            {k: v for k, v in s.items() if k in ("name", "context", "kind", "method", "path")}
+            for s in (strategy.get("surfaces") or []) if isinstance(s, dict)
+            and str(s.get("name", "")).strip()],
+        "rules": [r for r in (strategy.get("rules") or []) if isinstance(r, dict)],
         "contexts_without_inbound": [c for c in (strategy.get("contexts_without_inbound") or [])
                                      if isinstance(c, dict)
                                      and str(c.get("context", "")).strip() == context],
@@ -582,6 +650,20 @@ def write_phase2_digest_slice(slug, context):
         for jk in SLICE_DUTY_JOIN_KEYS:
             if jk in rule and rule[jk] not in (None, "", [], {}):
                 flat[jk] = rule[jk]
+        # y5 pre-joined (2026-11-24 v4): the surface's declared KIND rides the duty, so
+        # the session learns the entry SHAPE (route-taking controller vs events-arrive-at
+        # adapter vs runner) without re-deriving it - and with no room to guess it.
+        _duty_surface = norm_surface(flat.get("surface"))
+        if _duty_surface:
+            for _s in surfaces:
+                if isinstance(_s, dict) and norm_surface(_s.get("name")) == _duty_surface:
+                    if str(_s.get("kind") or "").strip():
+                        flat["surface_kind"] = str(_s.get("kind")).strip()
+                    if str(_s.get("method") or "").strip():
+                        flat["surface_method"] = str(_s.get("method")).strip()
+                    if str(_s.get("path") or "").strip():
+                        flat["surface_path"] = str(_s.get("path")).strip()
+                    break
         if isinstance(duty.get("table_row"), dict):
             flat["table_row"] = {"cells": (duty["table_row"] or {}).get("cells")}
         else:
@@ -757,6 +839,19 @@ def validate_strategy(slug):
         if not isinstance(surface["operations"], list) or not surface["operations"]:
             problems.append(f"{label}.operations must be a non-empty list "
                             "(GET, POST, consume, schedule, cli, internal-call, ...)")
+        # ROUTE JOIN AUTHORITY (2026-11-24 v4 live): per-context sessions must cite the
+        # SAME route spelling or the batch literal-join dies on the difference - so the
+        # table, not each session's guess, is the authority. An `http` surface without a
+        # tabled method+path cannot be planned honestly by two sessions.
+        if str(surface["kind"]).strip() == "http":
+            if not str(surface.get("method") or "").strip():
+                problems.append(f"{label}: kind 'http' tables no `method` - the verb is a "
+                                "plan fact, not a per-session guess (2026-11-24 v4: one "
+                                "session guessed GET /telemetry/stream, the owning session "
+                                "served GET /telemetry/stream/windows, the batch died)")
+            if not str(surface.get("path") or "").strip().startswith("/"):
+                problems.append(f"{label}: kind 'http' tables no `path` starting with '/' "
+                                "- the full path is a plan fact owned by phase 1")
     covered = {norm_surface(surface.get("context")) for surface in surfaces
                if isinstance(surface, dict)}
     covered |= {norm_surface((entry or {}).get("context") if isinstance(entry, dict) else entry)
@@ -839,7 +934,15 @@ def _security_leaks(spec):
 
 
 def _security_capability_errors(spec):
-    """Every capability token must look like a capability: lowercase kebab, 1-4 words."""
+    """Every capability token must look like a capability: lowercase kebab, 1-4 words, and
+    every credential the matrix relies on must be DISCHARGED (2026-11-24 seed-002: the
+    stream surface's row addressed a principal whose `credential_capability` no duty
+    carried - duty coverage stayed complete, every claim gate stayed green, and the
+    decomposition scheduled a scope-check over a principal nothing could ever authenticate:
+    no consumer chain was ever planned and the sibling context's deny-by-default wall
+    closed the surface for good. An authenticated principal whose credential proves nobody
+    is a row no unit can answer; the gate refuses it HERE, where the spec is law, instead
+    of billing a drain against a guard on an unbuilt road)."""
     problems = []
     for duty in (spec.get("duties") or []):
         if not isinstance(duty, dict):
@@ -858,6 +961,33 @@ def _security_capability_errors(spec):
             if not SECURITY_CAPABILITY_RE.match(token):
                 problems.append(f"invariant {entry.get('id', '?')}: capability {token!r} is not an "
                                 "abstract token (lowercase kebab, one to four words)")
+    duty_caps = {str(d.get("capability", "")).strip()
+                 for d in (spec.get("duties") or []) if isinstance(d, dict)}
+    row_pids = {str(pid).strip()
+                for row in (spec.get("authorization_matrix") or []) if isinstance(row, dict)
+                for pid in (row.get("principal_ids") or [])}
+    for entry in (spec.get("principals") or []):
+        if not isinstance(entry, dict):
+            continue
+        if (str(entry.get("authentication", "")).strip().lower() == "required"
+                and str(entry.get("id", "")).strip() not in row_pids):
+            problems.append(
+                f"principal {entry.get('id', '?')}: authentication 'required' but it addresses "
+                "NO authorization_matrix row - a credential no declared surface consumes is a "
+                "guard on a door nobody built. Table the entrant's inbound surface in the "
+                "strategy (phase 1 decides the entry) or drop the posture; the plan must not "
+                "invent a network identity with no route to prove it on")
+    for entry in (spec.get("principals") or []):
+        if not isinstance(entry, dict):
+            continue
+        cap = str(entry.get("credential_capability", "")).strip()
+        if cap and str(entry.get("id", "")).strip() in row_pids and cap not in duty_caps:
+            problems.append(
+                f"principal {entry.get('id', '?')}: credential_capability {cap!r} is discharged by "
+                "no duty - a matrix row addressed to this principal can never be answered because "
+                "the unit that ESTABLISHES the credential is unclaimed. Name the capability as a "
+                "duty's `capability` (a credential-handling duty for its row's surface), or drop "
+                "the row that presumes it")
     return problems
 
 
@@ -1097,6 +1227,35 @@ PERFORMANCE_UNIT_KINDS = ("admission-control", "rate-limit-policy", "concurrency
                           "cache-policy", "retry-policy", "pagination-rule",
                           "resource-ceiling", "batch-policy", "timeout-policy",
                           "budget-observer")
+
+
+def _performance_capability_tokens():
+    """The CLOSED performance capability vocabulary, parsed live from the
+    performance-strategy skill's Budgets paragraph (carrier, not board state - resolve
+    against the module repo root like _digest_table_rows does). 2026-11-24 v4: the skill
+    named the families but left page/payload/streaming tokens unnamed, the spec agent
+    coined `payload-limit`/`bounded-window`/`page-size-limit`, the table missed them, and
+    the planner "mapped each PB duty to the closest row" - nearest-row borrowing is how
+    SI-03 got poisoned with a foreign mechanism once already. The skill now NAMES every
+    token; the engine refuses any token that paragraph does not name. If the paragraph
+    cannot be parsed the check FAILS OPEN - the skill text stays the single source."""
+    if _performance_capability_tokens.cache is not None:
+        return _performance_capability_tokens.cache
+    repo_base = Path(__file__).resolve().parents[1]
+    try:
+        text = (repo_base / ".opencode" / "skills" / "architect-practices"
+                / "performance-strategy" / "SKILL.md").read_text(encoding="utf-8")
+    except OSError:
+        _performance_capability_tokens.cache = frozenset()
+        return _performance_capability_tokens.cache
+    match = re.search(r"A budget bounds one thing:(.*?)Each names its token", text, re.S)
+    tokens = set()
+    if match:
+        for group in re.findall(r"\(([^)]*)\)", match.group(1)):
+            tokens.update(part.strip() for part in group.split(",") if part.strip())
+    _performance_capability_tokens.cache = frozenset(tokens)
+    return _performance_capability_tokens.cache
+_performance_capability_tokens.cache = None
 AI_UNIT_KINDS = ("model-port-adapter", "prompt-contract", "output-validator",
                  "context-budget", "fallback-policy", "retrieval-adapter", "tool-guard",
                  "eval-harness", "memory-adapter", "offline-stub",
@@ -1314,6 +1473,15 @@ def validate_performance_spec(slug):
             problems.append(f"duty {duty.get('spec_ref', '?')}: unit_kind {kind!r} must be "
                             f"one of {list(PERFORMANCE_UNIT_KINDS)}")
         ref = str(duty.get("spec_ref", "")).strip()
+        cap = str(duty.get("capability", "")).strip()
+        closed = _performance_capability_tokens()
+        if closed and cap and cap not in closed:
+            problems.append(
+                f"duty {ref}: capability {cap!r} is outside the closed performance token set "
+                "parsed from the performance-strategy skill's Budgets paragraph - a token the "
+                "skill does not name has no mapping-table row, and 'closest row' is how a duty "
+                "gets a foreign mechanism (2026-11-24 v4). Name an existing token, or file the "
+                "unbounded thing as a risk/accepted posture, never coin a term")
         if ref.startswith("PA-"):
             problems.append(f"duty {ref}: a baseline assumption is CONTEXT, never a duty "
                             "target - the budgets derived from it carry the duties")

@@ -1,129 +1,117 @@
 {
   "slug": "telemetry-ingestion-processing",
-  "project_root": "projects/high-performance-time-series-telemetry-ingestion-pipeline/services/telemetry-ingestion-processing",
+  "project": "PulseStream Engine",
   "tech_stack": {
     "language": "Java 21",
-    "framework": "Spring Boot 3",
-    "web": "Spring WebFlux (reactive, Mono/Flux)",
-    "persistence_access": "Spring Data R2DBC (non-blocking)",
-    "migrations": "Flyway (classpath:db/migration)",
-    "build": "Maven (wrapper ./mvnw)",
-    "test": "spring-boot-starter-test, reactor-test, embedded H2 for boot/slice tests only"
+    "framework": "Spring Boot 3 WebFlux",
+    "build": "Maven (./mvnw)",
+    "persistence": "R2DBC with Flyway migrations; embedded in-process substitute for boot/test only",
+    "scaffold_dependencies": ["webflux", "data-r2dbc", "flyway", "actuator", "validation", "test", "reactor-test"]
   },
+  "bounded_contexts": [
+    "Sample Ingestion & Validation",
+    "Backfill Reordering & Windowing",
+    "Telemetry Event Log"
+  ],
   "modules": [
-    {
-      "name": "telemetry-ingestion-processing",
-      "type": "single deployable module",
-      "contexts": ["Telemetry Ingestion", "Telemetry Stream Distribution"]
-    }
+    {"name": "telemetry-ingestion-processing", "path": "services/telemetry-ingestion-processing", "contexts": ["Sample Ingestion & Validation", "Backfill Reordering & Windowing", "Telemetry Event Log"]}
   ],
   "layers": ["interface", "application", "domain", "infrastructure", "shared"],
-  "build_order": [
-    "T0 scaffold",
-    "shared (config, correlation)",
-    "domain: Telemetry Ingestion (sample, boundaries, revision, reorder window)",
-    "application: Telemetry Ingestion ports and use cases",
-    "infrastructure: Telemetry Ingestion append-only store and migrations",
-    "interface: Telemetry Ingestion ingress endpoint",
-    "domain/application: Telemetry Stream Distribution (window buffer, broadcast port)",
-    "infrastructure/interface: Telemetry Stream Distribution consumer and downstream broadcast adapter",
-    "wiring configuration and integration slice"
-  ],
-  "bounded_contexts": ["Telemetry Ingestion", "Telemetry Stream Distribution"],
   "module_layout": {
-    "base_package": "com.blackboard.telemetry",
-    "packages": [
-      "com.blackboard.telemetry.ingestion.{interface,application,domain,infrastructure}",
-      "com.blackboard.telemetry.distribution.{interface,application,domain,infrastructure}",
-      "com.blackboard.telemetry.shared"
-    ],
-    "integration": "Ingestion publishes TelemetrySampleIngested, TelemetrySampleValidationFailed, TelemetrySampleBackfilled and TelemetryRevisionAppended through an application-layer event publisher port; Distribution consumes them in-process through a bounded, backpressure-aware reactive stream (Sinks.many().multicast().onBackpressureBuffer(capacity, false), capacity from config); only events cross the boundary, never the store or reorder internals. The @SpringBootApplication class sits in the base package."
+    "base_package": "com.pulsestream.telemetry",
+    "packages": {
+      "Sample Ingestion & Validation": "com.pulsestream.telemetry.ingestion",
+      "Backfill Reordering & Windowing": "com.pulsestream.telemetry.reordering",
+      "Telemetry Event Log": "com.pulsestream.telemetry.eventlog",
+      "shared": "com.pulsestream.telemetry.shared"
+    },
+    "integration": "Single deployable, single composition root at the base package. Contexts integrate only through the published events TelemetrySampleValidated, TelemetrySampleValidationFailed and TelemetrySampleBackfilled over in-process bounded reactive streams (Sinks with onBackpressureBuffer(capacity, false)); no context reads another's internals."
   },
+  "build_order": [
+    "scaffold (stage 0)",
+    "shared (events, correlation, config)",
+    "Sample Ingestion & Validation",
+    "Telemetry Event Log",
+    "Backfill Reordering & Windowing",
+    "wiring configuration"
+  ],
   "surfaces": [
-    {
-      "name": "IngestIngressPacket",
-      "kind": "http",
-      "context": "Telemetry Ingestion",
-      "operations": ["POST /api/v1/telemetry/ingress-packets: accept an Ingress Packet of 1Hz Telemetry Samples from a device"],
-      "traced_from": "context-map: external -> Telemetry Ingestion (Conformist); invariants on validation, t_device reorder, append-only revisions"
-    },
-    {
-      "name": "TelemetryEventConsumer",
-      "kind": "internal-call",
-      "context": "Telemetry Stream Distribution",
-      "operations": ["consume TelemetrySampleIngested, TelemetrySampleValidationFailed, TelemetrySampleBackfilled, TelemetryRevisionAppended from Telemetry Ingestion"],
-      "traced_from": "context-map: Telemetry Ingestion -> Telemetry Stream Distribution (Customer-supplier)"
-    },
-    {
-      "name": "SubscribeWindowedTelemetryStream",
-      "kind": "http",
-      "context": "Telemetry Stream Distribution",
-      "operations": ["GET /api/v1/telemetry/windowed-stream: downstream streaming analytics consumers subscribe to WindowedTelemetryBroadcast as a demand-driven server-sent event stream"],
-      "traced_from": "context-map: Telemetry Stream Distribution -> external (Open host service / published language)"
-    }
+    {"name": "ingress packet HTTP inbound", "kind": "http", "context": "Sample Ingestion & Validation", "method": "POST", "path": "/telemetry/packets", "operations": ["accept Ingress Packet", "record t_ingress", "validate Telemetry Samples", "tag VALIDATION_FAILED"], "traced_from": "Ingestion entry point keeps backpressure control; context map: external -> Sample Ingestion & Validation"},
+    {"name": "validated sample reordering consumer", "kind": "internal-call", "context": "Backfill Reordering & Windowing", "operations": ["consume TelemetrySampleValidated", "consume TelemetrySampleValidationFailed", "reorder by t_device", "buffer window"], "traced_from": "context map: Sample Ingestion & Validation -> Backfill Reordering & Windowing"},
+    {"name": "ordered telemetry stream HTTP outbound", "kind": "http", "context": "Backfill Reordering & Windowing", "method": "GET", "path": "/telemetry/stream/windows", "operations": ["stream TelemetryWindowBuffered", "stream OrderedTelemetryStreamBroadcast"], "traced_from": "context map: Backfill Reordering & Windowing -> external (streaming analytics consumers)"},
+    {"name": "validated sample event log consumer", "kind": "internal-call", "context": "Telemetry Event Log", "operations": ["append raw record from TelemetrySampleValidated", "append raw record from TelemetrySampleValidationFailed"], "traced_from": "context map: Sample Ingestion & Validation -> Telemetry Event Log"},
+    {"name": "backfilled sample event log consumer", "kind": "internal-call", "context": "Telemetry Event Log", "operations": ["append Event Revision from TelemetrySampleBackfilled"], "traced_from": "context map: Backfill Reordering & Windowing -> Telemetry Event Log"}
   ],
   "contexts_without_inbound": [],
-  "risks": [
-    "Delivery posture and retry identity undefined (at-most-once vs at-least-once): dedup identity (device, metric, t_device) vs correction revisions is an open owner decision; plan must not silently dedup.",
-    "Bounds missing for ground contact time, respiration, swim stroke and swim pace upper bound: boundaries bound to config keys, unbounded metrics not validated, no invented ranges.",
-    "Behaviour for packets later than the 60-second reorder window unspecified: default to appending an Event Revision (never drop), flagged as open.",
-    "Distribution invariant (only validated samples) conflicts with consuming TelemetrySampleValidationFailed: filtering rule needs owner decision; default is to not propagate failed samples as validated.",
-    "Reorder window buffers and sliding windows must be bounded (capacity from config); unbounded buffers prohibited.",
-    "Sinks must use autoCancel=false and bounded emit retry, otherwise one disconnect kills ingestion.",
-    "No blocking I/O on event-loop threads under burst; correlation id lost across reactive hops unless context-propagation is used.",
-    "Context split into two contexts is a low-confidence assumption; both live in one deployable so a merge stays cheap."
+  "rules": [
+    {"context": "Sample Ingestion & Validation", "statement": "Every incoming 1Hz Telemetry Sample is validated before downstream propagation (HR 30-240 BPM, Power 0-2500W, Cadence 0-220 RPM, Swimming Pace >45 sec/100m)"},
+    {"context": "Sample Ingestion & Validation", "statement": "Invalid samples are tagged VALIDATION_FAILED and the underlying payload is never dropped"},
+    {"context": "Sample Ingestion & Validation", "statement": "Ingestion entry point keeps backpressure control with zero blocking I/O on thread pools under burst load (thousands of simultaneous 1Hz transmissions)"},
+    {"context": "Sample Ingestion & Validation", "statement": "Backfill Reorder Window: 60-second window within which delayed out-of-order packets are re-indexed by t_device."},
+    {"context": "Sample Ingestion & Validation", "statement": "Ingress Timestamp (t_ingress): Arrival time at the ingestion entry point; never used for ordering."},
+    {"context": "Sample Ingestion & Validation", "statement": "Metrics without ranges (ground contact time, respiration, swim stroke telemetry) have no Sensor Metric Boundary stated; Swimming Pace has only a lower bound (>45 sec/100m), no upper bound."},
+    {"context": "Backfill Reordering & Windowing", "statement": "Packets delayed up to 60 seconds are re-indexed chronologically on t_device rather than t_ingress"},
+    {"context": "Telemetry Event Log", "statement": "Raw time-series records are strictly append-only"},
+    {"context": "Telemetry Event Log", "statement": "Corrective streams or backfilled frames append new Event Revisions, never mutate history"}
   ],
   "persistence": {
-    "drivers": ["relational store accessed non-blockingly; embedded in-process substitute for boot and slice tests only"],
-    "storage_paradigm": "Append-only relational event log of telemetry samples and their revisions; owned only by Telemetry Ingestion. Telemetry Stream Distribution holds in-memory derived window buffers and persists nothing.",
+    "drivers": ["append-only auditability", "high write throughput, non-blocking access", "ordering by t_device", "history never mutated"],
+    "storage_paradigm": {
+      "primary": "relational append-only event log (single reactive-accessible store, owned by Telemetry Event Log)",
+      "derived": "none; window buffers in Backfill Reordering & Windowing are transient bounded in-memory state, rebuildable from the log"
+    },
     "data_model": [
-      "telemetry_sample_event: append-only raw sample (device identity, metric kind, value, t_device, t_ingress, validation status VALID|VALIDATION_FAILED, revision number, revision kind ORIGINAL|CORRECTION|BACKFILL, payload retained verbatim)",
-      "telemetry_revision: appended record referencing the original event for a correction or backfilled frame; originals never updated or deleted",
-      "audit_trail: append-only audit entries (actor, action, outcome, timestamp, correlationId)"
+      {"concept": "Raw Telemetry Record", "context": "Telemetry Event Log", "keys": "surrogate id; natural lookup (device, metric, t_device)", "invariants": ["append-only, never updated or deleted", "VALIDATION_FAILED status stored as a tag, payload retained"], "versioning": "none; immutable rows", "sensitivity": "athlete biometric/health data - classify, restrict access"},
+      {"concept": "Event Revision", "context": "Telemetry Event Log", "keys": "surrogate id; reference by id to the Raw Telemetry Record revised; revision sequence", "invariants": ["corrections and backfills append new revisions, never overwrite"], "versioning": "monotonic revision number per record", "sensitivity": "athlete biometric/health data"},
+      {"concept": "Audit Trail Entry", "context": "Telemetry Event Log", "keys": "surrogate id", "invariants": ["append-only; actor, action, outcome, timestamp, correlation id"], "versioning": "none", "sensitivity": "operational, no payload values"}
     ],
     "queries": [
-      "append a sample event or revision",
-      "read events of a device and metric ordered by t_device (never t_ingress) within a time range",
-      "read latest revision per (device, metric, t_device)",
-      "read events within the 60-second backfill window for reorder"
+      "append record (write-heavy, non-blocking)",
+      "append revision referencing a record",
+      "read history by (device, metric) ordered by t_device with keyset pagination, bounded results"
     ],
-    "migration_plan": "Flyway expand-only versioned scripts V<n>__snake_case.sql under src/main/resources/db/migration, portable types (TIMESTAMP WITH TIME ZONE); index on (device, metric, t_device); no updates or deletes on event tables; distinct JDBC and R2DBC URL placeholders.",
-    "backup_recovery": "Periodic snapshots plus point-in-time recovery of the append-only log; replay of the event history rebuilds derived window buffers.",
+    "performance": "Batched reactive appends; no unbounded scans or offsets; index on (device, metric, t_device).",
+    "migration_plan": "Ordered, recorded, expand-only Flyway scripts packaged on the classpath; embedded substitute only under the test profile.",
+    "backup_recovery": "Periodic backup of the event log; restore by replay since history is append-only; owned by platform operations.",
     "open_questions": [
-      "Retry identity versus correction revision for duplicate (device, metric, t_device)",
-      "Retention period for raw 1Hz history",
-      "Handling of packets later than 60 seconds",
-      "Bounds for ground contact time, respiration, swim stroke, swim pace upper bound"
+      "Transport delivery semantics (at-most-once vs at-least-once) and dedup identity: is the value part of the identity, and what separates a retry from a correction revision?",
+      "Handling of samples later than the 60-second window (rejected or appended as backfill Event Revisions).",
+      "Ranges for ground contact time, respiration, swim stroke telemetry; Swimming Pace upper bound."
     ]
   },
   "observability": {
-    "contexts": ["Telemetry Ingestion", "Telemetry Stream Distribution"],
-    "correlation_key": "correlationId, generated or adopted per request by one interface-layer WebFilter, carried in the Reactor Context and written explicitly into every audit record; log lines do not rely on MDC",
     "step_logs": {
-      "Telemetry Ingestion": ["packet.received", "sample.validated", "sample.validation_failed", "sample.reordered", "revision.appended", "event.published"],
-      "Telemetry Stream Distribution": ["event.consumed", "window.buffered", "window.broadcast", "window.overflow"]
+      "Sample Ingestion & Validation": ["packet received", "sample validated", "sample tagged VALIDATION_FAILED", "backpressure applied"],
+      "Backfill Reordering & Windowing": ["sample buffered in window", "backfill detected", "window emitted", "window overflow"],
+      "Telemetry Event Log": ["record appended", "revision appended", "append rejected"]
     },
+    "correlation_key": "requestId",
     "audit_trail": {
       "fields": ["actor", "action", "outcome", "timestamp", "correlationId"],
-      "actions": ["INGEST_PACKET", "VALIDATE_SAMPLE", "APPEND_REVISION", "BROADCAST_WINDOW", "SUBSCRIBE_STREAM"],
-      "outcomes": ["SUCCESS", "VALIDATION_FAILED", "REJECTED", "ERROR"],
-      "sink": "append-only audit_trail store written through an application-layer audit port"
+      "port": "AuditTrail",
+      "sink": "append-only audit_trail table"
     },
     "metrics": [
-      {"name": "telemetry.ingress.packets", "type": "counter", "tags": ["outcome"]},
-      {"name": "telemetry.samples.validated", "type": "counter", "tags": ["metric_kind", "status"]},
-      {"name": "telemetry.samples.reordered", "type": "counter", "tags": ["kind"]},
-      {"name": "telemetry.revisions.appended", "type": "counter", "tags": ["revision_kind"]},
-      {"name": "telemetry.ingress.duration", "type": "timer", "tags": ["outcome"]},
-      {"name": "telemetry.window.broadcast", "type": "counter", "tags": ["outcome"]},
-      {"name": "telemetry.window.dropped", "type": "counter", "tags": ["reason"]}
+      {"name": "telemetry.ingest.packets", "type": "counter", "tags": ["outcome"]},
+      {"name": "telemetry.sample.validation", "type": "counter", "tags": ["status", "metric"]},
+      {"name": "telemetry.window.backfilled", "type": "counter", "tags": ["outcome"]},
+      {"name": "telemetry.eventlog.append", "type": "counter", "tags": ["kind"]},
+      {"name": "telemetry.ingest.backpressure", "type": "counter", "tags": ["outcome"], "counts_steps": ["backpressure applied"]},
+      {"name": "telemetry.window.overflow", "type": "counter", "tags": ["outcome"], "counts_steps": ["window overflow", "window emitted", "sample buffered in window"]},
+      {"name": "telemetry.ingest.latency", "type": "timer", "tags": ["outcome"]}
     ],
-    "metric_tag_rule": "bounded tags only (statuses, kinds, outcomes); never deviceId or other entity ids",
     "export": {
-      "logs": "machine-readable structured JSON lines in Elastic Common Schema written to a local append-only rolling file sink (logs/telemetry-ingestion-processing.log); external log tooling such as Elasticsearch ships the file, the app never talks to it",
-      "audit": "audit_trail table plus audit events in the same structured log file with the same schema",
-      "metrics": "Micrometer meters exposed through the actuator metrics endpoint for external scraping; no push",
-      "offline_rule": "no hard runtime dependency on any external tool; the boot test passes with all of them absent"
+      "logs": {"format": "ecs", "schema": "Elastic Common Schema JSON lines", "sink": "local append-only rolling file logs/telemetry-ingestion-processing.log", "consumer": "external log shipper reads the file, never the app"},
+      "metrics": "actuator metrics only; no scrape or push target named",
+      "dependency": "no runtime dependency on external tools; boot passes with them absent"
     }
-  }
+  },
+  "risks": [
+    "Unresolved retry vs correction identity in the append-only log",
+    "Handling of samples older than the 60-second window is unspecified",
+    "Metrics without ranges cannot be validated",
+    "Unbounded buffering under burst load must be avoided; bounded sinks with overflow duty",
+    "Sink termination under subscriber churn kills ingestion unless built with autoCancel=false",
+    "Reordering window held in memory loses state on restart; rebuildable from the log"
+  ]
 }

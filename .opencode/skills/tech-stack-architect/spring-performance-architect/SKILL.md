@@ -11,17 +11,19 @@ import. Bodies and test idiom: `tech-stack/spring-performance` (coder/tester tie
 # Token -> unit, layer, mechanism, key
 | token family | unit_kind | layer | the identifier the INTENT must spell | key the config unit owns |
 |---|---|---|---|---|
-| admission on saturation | admission-control | interface | no framework mechanism: the plan's guard filter answering the declared `429`/`503` with `Retry-After` | the bound key |
-| rate limit | rate-limit-policy | interface/infra | no framework mechanism in Boot core: a plan-added permit guard (token-bucket shape); a provider library is a MANIFEST DUTY decision, never recall | rate + burst keys |
-| bounded concurrency | concurrency-guard | application | `Semaphore(int)` around the critical path, or Reactor `limitRate(n)` | the permits key |
-| read-through + negative cache | cache-policy | application + infra | `@EnableCaching` + `@Cacheable` + a named `CacheManager` (`ConcurrentMapCacheManager` base; bounded sizing = the plan's wrapper); cache the MISS explicitly (no key = storm) | `spring.cache.type`, `spring.cache.cache-names` |
-| bounded / idempotent retry | retry-policy | application | Reactor `retryWhen(Retry.backoff(N, Duration))`, N config-bound; retries ONLY behind the (q)/(s) dedup identity, attempts metered | attempts + backoff keys |
-| page cap | pagination-rule | infrastructure | every list query binds `LIMIT :limit` from config - no unbounded `findAll()` on a request path | page-size + max keys |
-| payload cap | resource-ceiling | config + interface | `spring.codec.max-in-memory-size`; oversized answers the declared status | that key |
-| pool ceiling | resource-ceiling | config | reactive: `spring.r2dbc.pool.max-size`, `spring.r2dbc.pool.max-idle-time`, `spring.r2dbc.pool.max-acquire-time`; blocking plan: `spring.datasource.hikari.maximum-pool-size` + `server.tomcat.threads.max` | those keys |
-| batch load | batch-policy | application | Reactor `bufferTimeout(n, Duration)` / `window(...)` on the tabled loader | the batch-size key |
-| timeout budget | timeout-policy | application/infra | `Mono.timeout(Duration)` per external await; `spring.lifecycle.timeout-per-shutdown-phase` | the timeout keys |
-| counted proof | budget-observer | shared/infra | no framework mechanism: the plan's OWN counting decorator wrapping the port (tabled in `ast_hints`) - what makes `query-count` provable | - |
+| admission-control / bounded-queue / bounded-buffer / backpressure / drop-policy | admission-control | interface | no framework mechanism: the plan's guard filter answering the declared `429`/`503` with `Retry-After` | the bound key |
+| rate-limit | rate-limit-policy | interface/infra | no framework mechanism in Boot core: a plan-added permit guard (token-bucket shape); a provider library is a MANIFEST DUTY decision, never recall | rate + burst keys |
+| bounded-semaphore | concurrency-guard | application | `Semaphore(int)` around the critical path, or Reactor `limitRate(n)` | the permits key |
+| read-through-cache / negative-cache | cache-policy | application + infra | `@EnableCaching` + `@Cacheable` + a named `CacheManager` (`ConcurrentMapCacheManager` base; bounded sizing = the plan's wrapper); cache the MISS explicitly (no key = storm) | `spring.cache.type`, `spring.cache.cache-names` |
+| bounded-attempts / idempotent-retry | retry-policy | application | Reactor `retryWhen(Retry.backoff(N, Duration))`, N config-bound; retries ONLY behind the (q)/(s) dedup identity, attempts metered | attempts + backoff keys |
+| page-size-limit | pagination-rule | infrastructure | every list query binds `LIMIT :limit` from config - no unbounded `findAll()` on a request path | page-size + max keys |
+| payload-limit | resource-ceiling | config + interface | `spring.codec.max-in-memory-size`; oversized answers the declared status | that key |
+| pool-limit | resource-ceiling | config | reactive: `spring.r2dbc.pool.max-size`, `spring.r2dbc.pool.max-idle-time`, `spring.r2dbc.pool.max-acquire-time`; blocking plan: `spring.datasource.hikari.maximum-pool-size` + `server.tomcat.threads.max` | those keys |
+| batch-load | batch-policy | application | Reactor `bufferTimeout(n, Duration)` / `window(...)` on the tabled loader | the batch-size key |
+| bounded-window | admission-control | application | Reactor `windowTimeout(count, Duration)` / the plan's own reorder buffer over the declared window, spill answered by the drop-policy, never silent | the window count + duration keys |
+| subscriber-limit | admission-control | interface | no framework mechanism in Boot core: the plan's own per-stream fan-in permit guard answering the declared status at the cap | the subscribers cap key |
+| timeout-budget | timeout-policy | application/infra | `Mono.timeout(Duration)` per external await; `spring.lifecycle.timeout-per-shutdown-phase` | the timeout keys |
+| counted proof (budget-observer) | budget-observer | shared/infra | no framework mechanism: the plan's OWN counting decorator wrapping the port (tabled in `ast_hints`) - what makes `query-count` provable | - |
 
 # The wall-clock law (R5)
 `measurement.kind` picks the proof surface: the decorator's number, a finite bound read by the

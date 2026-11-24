@@ -321,7 +321,10 @@ def _next_free_for(slug):
     numbers; stating them in the brief is the one id rule the session must see early)."""
     world = task_queue.draft_world(slug)
     stages = {}
-    for stage in (1, 2, 3):
+    # stage 0 included (2026-11-24): the ONE build-manifest bootstrap a planner may
+    # schedule needs the next-free T0 printed in its brief, not guessed at - a hand-picked
+    # id either collides (claim renumbers, fine) or leaves gaps the operator reads as loss.
+    for stage in (0, 1, 2, 3):
         numbers = [int(m.group(2)) for tid in world
                    if (m := settings.ID_PATTERN.match(tid)) and int(m.group(1)) == stage]
         stages[f"T{stage}"] = f"T{stage}-{(max(numbers) + 1 if numbers else 1):03d}"
@@ -565,14 +568,28 @@ def run(args, backend):
         print(f"[fatal] AI directive: {reason}")
         return 1
     for slug in ddd.database_slugs():
-        migrations = workspace.project_root_for(slug) / "db" / "migrations"
+        # SHAPE GATE FIRST (2026-11-24 seed-002 v4 live stop): the strategy's own
+        # validate_strategy ran only inside the security loop, AFTER the database phase
+        # had already billed a session against the invalid plan - a refused floor shape
+        # cost the database agent on the way out. Fail fast where nothing is billed yet.
+        reason = ddd.validate_strategy(slug)
+        if reason:
+            print(f"[fatal] strategy {slug}: {reason}")
+            print(f"[hint ] relaunch with --replan {slug} to archive this domain's plan and "
+                  "re-run the phases that read it")
+            return 1
+    for slug in ddd.database_slugs():
+        # The runtime-loaded migration directory is named by the ACTIVE tech-stack skill
+        # (concrete-database-migration: "the script directory comes ONLY from the active
+        # tech-stack skill"), so the engine pre-creates NOTHING: a hard-coded path here
+        # (2026-11-24 seed-002: it mkdir'd `services/<slug>/db/migrations` and printed that
+        # same path in the skip line) advertised a module-root folder nobody loads and
+        # contradicted the skill the database agent was told to follow. The gate stays
+        # location-agnostic - _migration_files finds the scripts wherever the skill put them.
         if task_queue.database_task_ids(slug) and _migration_files(slug):
-            print(f"[skip] database {slug}: tasks queued and migrations written in {migrations}")
+            print(f"[skip] database {slug}: tasks queued and migration scripts written under "
+                  f"{workspace.project_root_for(slug)}")
             continue
-        # The scaffold (stage 0) is generated AFTER this phase, and Copilot's create tool refuses
-        # to write under a missing parent: without this directory the database agent loses ~10
-        # tool calls to failed writes and duplicates, every extra turn re-sending the transcript.
-        migrations.mkdir(parents=True, exist_ok=True)
         ok, reason = backend.run_database(args, slug)
         if ok:
             reason = _database_reason(slug)

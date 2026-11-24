@@ -19,8 +19,11 @@ the servlet pair.
 | `device-credential-proof` | credential-handling | infrastructure | `httpBasic` + a per-device `ReactiveAuthenticationManager` (or a `ReactiveUserDetailsService` behind it); the single in-memory dev user is never the delivered posture. A credential is a TRIPLE: the custody path is tabled `ast_hints.config` kind `list` with fields `id`, `secret-hash`, `scope` (z5 - one scalar env var per role cannot carry a triple); the store has NO legal empty state, so the boot posture is declared in the config contract: fail-fast when unseeded, or test-profile seed entries - never an invented placeholder principal | credential-list path (kind `list`, fields above), defaultable `${VAR:}` or profile-seeded |
 | `mutual-tls-proof` | credential-handling | infrastructure | `x509` on the chain with `SubjectX500PrincipalExtractor` + `ReactivePreAuthenticatedAuthenticationManager`, over the peer certificate the container exposes | `server.ssl.client-auth` |
 | `role-check` | policy-adapter | infrastructure | `ReactiveAuthorizationManager.hasRole(...)` on the matcher - or `@PreAuthorize` with `@EnableReactiveMethodSecurity` active | - |
-| `scope-check` | policy-adapter | infrastructure | `ReactiveAuthorizationManager.hasAuthority("SCOPE_...")`; the claim becomes that authority through `JwtGrantedAuthoritiesConverter` | `spring.security.oauth2.resourceserver.jwt.authority-prefix` |
+| `scope-check` | policy-adapter | infrastructure | `ReactiveAuthorizationManager.hasAuthority("SCOPE_...")` - the authority's ARRIVAL depends on how the principal enters: bearer → the claim becomes it through `JwtGrantedAuthoritiesConverter`; certificate/pre-authenticated → the granted-authorities mapper at that principal's authentication point (the x509 or pre-auth manager grants `SCOPE_...`); in-process subscriber registry → the plan's OWN adapter reads the tabled scopes. Never import the JWT machinery into a plan that has no bearer principal | authority-prefix key (bearer), else - |
+| `device-binding-check` | ownership-predicate | application (the entry use case) or domain policy class | no framework mechanism: a plan-owned predicate compares the AUTHENTICATED principal's device id with each sample's claimed source (`binding.permits(principal, sample)`), mismatch refuses and audits; the framework supplies the principal, never the comparison | - |
+| `service-credential-proof` | credential-handling | infrastructure | the same chain machinery as `device-credential-proof` (`httpBasic` or a token check) behind a per-service `ReactiveAuthenticationManager` over the configured credential list - the principal is a service, the store and fail-fast posture are identical | service-credential path (kind `list`, fields `id`, `secret-hash`, `scope`) |
 | `owner-scoped-query` / `tenant-scoped-query` | ownership-predicate + policy-adapter | domain or application + infrastructure | `permits(...)` / `byIdAndTenant(...)` on the unit that performs the LOOKUP, tenant bound as a PARAMETER (`@Query(":tenantId")`, `DatabaseClient.bind(...)`), never concatenated SQL | - |
+| `append-only-history` | policy-adapter | infrastructure (the store port and its adapter; the schema grants are the database step's) | no framework mechanism: the tabled store port exposes insert-only operations (NO update or delete member in its method table) and the adapter's test asserts a corrective frame APPENDS a revision while an update attempt fails; the DDL immutability is the migration's duty, named on that task | - |
 | `deny-by-default` | policy-port + wiring duty | infrastructure (chain bean) | the chain's terminal `anyExchange().denyAll()` (servlet: `anyRequest().denyAll()`) | - |
 | `hashing` | credential-handling | infrastructure | `PasswordEncoder` bean = `PasswordEncoderFactories.createDelegatingPasswordEncoder()` (the id-prefix lets rotated writes and old hashes both verify) | - |
 | `field-encryption` / `envelope-encryption` | policy-adapter | infrastructure | no framework mechanism: the plan's OWN adapter at the store boundary (`AesGcmPayloadCipher.encrypt(...)` / `decrypt(...)` tabled), key read through the named bundle - its paired test runs on the REAL substrate and asserts the stored column is not the plaintext | `spring.ssl.bundle.pem.<name>.*` |
@@ -41,7 +44,7 @@ the servlet pair.
 | coordinate | scope |
 |---|---|
 | `org.springframework.boot:spring-boot-starter-security` | compile |
-| `org.springframework.boot:spring-boot-starter-oauth2-resource-server` | compile, with any JWT/device token row |
+| `org.springframework.boot:spring-boot-starter-oauth2-resource-server` | compile, ONLY when a bearer-JWT duty row (`bearer-jwt-proof`, or a `scope-check` reached by a bearer principal) is planned - an httpBasic/certificate-only plan does NOT schedule it (starter-security covers both; an inert resource-server starter is dead weight the container merges blindly) |
 | `org.springframework.boot:spring-boot-starter-validation` | compile, with `boundary-validation` |
 | `org.springframework.security:spring-security-test` | **test** | An unlisted test coordinate kills the first red compile: schedule the manifest duty before any tester runs. 
 
@@ -75,6 +78,22 @@ entries) instead of letting a frozen boot test invent one.
   `SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http)` whose body ends
   `return http.build();`, or `SecurityFilterChain filterChain(HttpSecurity http)`; the chain bean is
   the wiring unit's factory duty - one mechanism registers it.
+- **THE CHAIN IS ROOT-WIDE (2026-11-24 seed-002):** one composition root serves EVERY bounded
+  context's inbound surfaces, so the chain's route set is planned against the strategy's FULL
+  `surfaces` table (the slice's `composition_root_surfaces`), not the drafting context's rows
+  alone: each declared surface gets its permit WITH its authentication mechanism (httpBasic for
+  device rows, the resource-server JWT entry for bearer rows) before the terminal deny;
+  the chain's terminal deny-all may close only what that table leaves. A "rest denied" that covers a
+  sibling context's route is a wall, not a posture - the surface ships claimed, implemented, and
+  permanently unreachable, and no per-context gate sees it.
+- **AUTHN BEFORE AUTHZ:** a `scope-check` row mapped to `ReactiveAuthorizationManager.hasAuthority
+  ("SCOPE_...")` only becomes reachable when the SAME chain enables the principal's proving row
+  (`bearer-jwt-proof`: the `ReactiveJwtDecoder` bean + the resource-server wiring the
+  coder-tier security skill holds). The
+  granted-authorities converter translates claims NO provider mints without it - an authorization
+  check over an unauthenticated principal is a decision that always denies; when the spec's
+  principal names a bearer credential and no scheduled unit wires the provider, the plan is
+  missing the credential-handling duty (report it - the spec gate now refuses that shape).
 - **`unit_kind` -> its one DAG home** (a duty is claimed in the unit that owns its kind, never in a
   filler that only recites the token): `policy-port` = application port + `policy-adapter` =
   infrastructure adapter; `ownership-predicate` = the unit that performs the lookup;

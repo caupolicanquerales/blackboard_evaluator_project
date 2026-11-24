@@ -1114,7 +1114,7 @@ check("V9b the SAME dict floor ACCEPTS once every entry has exactly one owner ac
 _v10_strat = settings.COMPLETE_DIR / "execution-strategy-shp.json"
 _v10_base = {"slug": "shp", "bounded_contexts": ["A"],
              "surfaces": [{"name": "in a", "kind": "http", "context": "A",
-                           "operations": ["post"], "traced_from": "v10"}],
+                           "operations": ["post"], "traced_from": "v10", "method": "POST", "path": "/x"}],
              "contexts_without_inbound": [], "modules": [], "layers": [], "build_order": [],
              "risks": [], "module_layout": {"base_package": "com.x", "packages": [],
                                             "integration": []},
@@ -1228,6 +1228,17 @@ island = gtask("T2-900", "Feeder", 2, project="wl", path="src/main/java/w/Feeder
 rc_w = emit([island])
 check("W1 a unit whose table PUBLISHES a stream and nobody pins it is REFUSED at emit "
       "(the F1 orphan: registered, green-tested, never executed)",
+      bool(rc_w) and "PUBLISHES a stream" in str(rc_w), str(rc_w)[:200])
+envelope = gtask("T2-917", "StreamEnvelope", 2, project="wv",
+                 path="src/main/java/w/StreamEnvelope.java", hints={
+    "package": "com.w", "implements": [], "dependencies": [],
+    "methods": [{"signature": "Mono<ResponseEntity<Flux<Event>>> stream()",
+                 "returns": "Mono<ResponseEntity<Flux<Event>>>"}]})
+rc_w = emit([envelope])
+check("W1e the ENVELOPED publisher is caught too (2026-11-24 seed-002: an SSE endpoint "
+      "wrapped as Mono<ResponseEntity<Flux<...>>> hid from the start-of-type match and "
+      "passed the unconsumed-source gate - the repair pass called it a workaround): the "
+      "stream type counts ANYWHERE in the return, so an envelope is no escape",
       bool(rc_w) and "PUBLISHES a stream" in str(rc_w), str(rc_w)[:200])
 consumer_hints = {"package": "com.w", "implements": [],
                   "dependencies": [{"type": "Feeder", "task_id": "T2-900"}],
@@ -1548,6 +1559,36 @@ cfg_good = gtask("T2-953", "AppCfgOk", 2, project="wh",
                         "methods": []})
 rc_x = emit([cfg_good])
 check("X6b the packaged classpath form ACCEPTS", rc_x is None, str(rc_x)[:200])
+
+# X6c/X6d (2026-11-24 seed-002 v3): the (h) reader-connection leg went machine at emit -
+# the live draft tabled spring.flyway.locations but no datasource URL path (the URLs lived
+# only in an UNOWNED file the database agent wrote), the F5 fiction class reborn.
+_cfg_loc = gtask("T2-961", "AppLoc", 2, project="wj",
+                 path="src/main/resources/application.yml",
+                 intent="runtime config document seeding the reader locations and ceilings",
+                 hints={"package": "com.w", "implements": [], "dependencies": [],
+                        "methods": [], "meters": [], "routes": [],
+                        "config": [{"path": "spring.flyway.locations", "kind": "value"},
+                                   {"path": "spring.codec.max-in-memory-size", "kind": "value"}]})
+rc_x = emit([_cfg_loc])
+check("X6c a stage-2 config unit tableding a LOCATIONS-class path with NO URL-class path "
+      "is REFUSED at emit (rule (h)'s connection leg, stack-neutral segment matching - no "
+      "vendor name in the gate; an enabled reader with no tabled datasource migrates the "
+      "auto-detected store while the app writes elsewhere)",
+      bool(rc_x) and "LOCATIONS key" in str(rc_x), str(rc_x)[:200])
+_cfg_url = json.loads(json.dumps(_cfg_loc))
+_cfg_url["id"] = "T2-962"
+_cfg_url["export"] = "AppUrl"
+_cfg_url["ast_hints"]["config"] += [{"path": "spring.r2dbc.url", "kind": "value"},
+                                    {"path": "spring.flyway.url", "kind": "value"}]
+rc_x = emit([_cfg_url])
+check("X6d the SAME unit ACCEPTS once the connection-URL paths are tabled (the gate "
+      "refuses the gap, not the style)", rc_x is None, str(rc_x)[:200])
+for _q in (ROOT / "blackboard" / "queue").glob("*-wj.json"):
+    _q.unlink()
+check("X6e the planner brief's next-free numbers include T0 (2026-11-24: the manifest "
+      "bootstrap id was hand-guessed because only stages 1-3 were printed)",
+      set(pipeline._next_free_for("anything")) == {"T0", "T1", "T2", "T3"})
 
 # X7: the terminal suite gate must read a red class whose owner is QUARANTINED as the
 # quarantine owning it - not as an ownerless mystery.
@@ -1925,7 +1966,12 @@ def sec_spec(mutate=None):
             {"spec_ref": "SI-01", "obligation": "decide admission at the boundary, failing closed",
              "capability": "deny-by-default", "unit_kind": "policy-port"},
             {"spec_ref": "DC-01", "obligation": "mask classified fields on every egress surface",
-             "capability": "log-redaction", "unit_kind": "redaction"}],
+             "capability": "log-redaction", "unit_kind": "redaction"},
+            # 2026-11-24 principal law: an in-matrix principal's credential_capability must be
+            # discharged by SOME duty (seed-002: bearer-jwt-proof had no duty, so no consumer
+            # chain was ever scheduled and the scope-check guarded an unauthenticated road).
+            {"spec_ref": "AZ-01", "obligation": "establish the device proof before any row decides",
+             "capability": "proof-of-possession", "unit_kind": "credential-handling"}],
         "risks": [{"id": "R-01", "risk": "credential reuse", "likelihood": "medium",
                    "impact": "high", "mitigation": "SD-01 rotation", "residual": "rotation window"}],
         "open_questions": [],
@@ -1965,7 +2011,8 @@ SEC_BOARD = [
              "valid key owned by another tenant is refused", "AdmissionTest", ("T0-501",),
              SEC_HINTS),
     sec_task("T2-501", 2, "src/main/java/sec/Admission.java",
-             "Enforce AZ-01 and SI-01: the tenant-scoped-query predicate plus deny-by-default, "
+             "Enforce AZ-01, SI-01 and the proof-of-possession credential-handling: the device "
+             "secret is verified before the tenant-scoped-query predicate plus deny-by-default, "
              "applied inside the lookup, so a foreign key admits nothing and answers like a "
              "missing row", "Admission", ("T1-501",), SEC_HINTS),
     sec_task("T2-502", 2, "src/main/java/sec/Reader.java",
@@ -1976,6 +2023,53 @@ SEC_BOARD = [
 sec_spec()
 check("S1 the spec gate passes a lawful, capability-only spec",
       ddd.validate_security_spec(SEC_SLUG) is None, ddd.validate_security_spec(SEC_SLUG))
+# 2026-11-24 seed-002: the stream surface's principal carried credential_capability
+# bearer-jwt-proof and NO duty discharged it - duty coverage stayed complete while no
+# unit could ever authenticate the caller (the consumer chain was never scheduled).
+sec_spec(lambda s: s["duties"].pop(4))
+check("S1p an in-matrix principal whose credential_capability is discharged by no duty is "
+      "REFUSED (a row addressed to a credential nothing establishes is a guard on an "
+      "unbuilt road - the bearer-jwt-proof hole, machine-killed at the spec)",
+      "credential_capability" in str(ddd.validate_security_spec(SEC_SLUG))
+      and "proof-of-possession" in str(ddd.validate_security_spec(SEC_SLUG)))
+sec_spec()
+# S1q (2026-11-24 seed-002 v2, the mirror hole): P-04 mutual-tls-proof addressed NO row -
+# the plan shipped a network identity with no route that ever admits it (SI-10 claimed on
+# the device chain, x509/ssl configured nowhere). Entry law, machine-killed at the spec.
+sec_spec(lambda s: [r.update(principal_ids=[]) for r in s["authorization_matrix"]])
+check("S1q a principal with authentication 'required' addressing NO authorization_matrix "
+      "row is REFUSED (the consumer-entry law: an identity no declared face admits has "
+      "nothing to enforce - the dangling mutual-tls/SI-10 class)",
+      "addresses NO authorization_matrix row" in str(ddd.validate_security_spec(SEC_SLUG)))
+sec_spec()
+# DIG1 (2026-11-24 seed-002 v2): the digest matched an UNTABLED duty to a sibling row by
+# unit_kind (SI-03 append-only-write, kind policy-adapter, got scope-check's hasAuthority
+# mechanism) and the planner faithfully copied the manufactured poison. Row matching is
+# TOKEN-only now; a shape says WHERE a duty lives, never WHICH mechanism holds it.
+sec_spec(lambda s: s["duties"][1].update(capability="invented-write"))
+_dig_strategy = settings.COMPLETE_DIR / f"execution-strategy-{SEC_SLUG}.json"
+_dig_had_strategy = _dig_strategy.is_file()
+if not _dig_had_strategy:
+    _dig_strategy.write_text(json.dumps({
+        "slug": SEC_SLUG, "report_type": "execution-strategy",
+        "bounded_contexts": ["Intake"],
+        "surfaces": [{"name": r["surface"], "kind": "http", "context": "Intake",
+                      "operations": ["x"], "traced_from": "sec", "method": "POST", "path": "/x"}
+                     for r in json.loads(SEC_FILE.read_text())["authorization_matrix"]],
+        "persistence": {}, "observability": {}}), encoding="utf-8")
+_dig_path, _dig_problems = ddd.write_phase2_digest(SEC_SLUG)
+_dig = json.loads(_dig_path.read_text(encoding="utf-8")) if _dig_path else {}
+_dig_duty = next((x for x in _dig.get("duties", []) if x.get("spec_ref") == "AZ-02"), {})
+_dig_gaps = (_dig.get("mechanisms", {}).get("security") or {}).get("unmapped_duties") or []
+if not _dig_had_strategy:
+    _dig_strategy.unlink(missing_ok=True)
+check("DIG1 an untabled capability token NEVER inherits a sibling row through a unit_kind "
+      "collision: the duty arrives with table_row null AND lands in unmapped_duties (the "
+      "channel that lawfully sends the planner to the table - where an absent token is a "
+      "reported flow defect, never a borrowed mechanism)",
+      _dig_problems == [] and _dig_duty.get("table_row") is None
+      and any(g.split(":", 1)[0] == "AZ-02" for g in _dig_gaps))
+sec_spec()
 check("S2 an absent spec is a reason, never a pass (the phase must be seen to have run)",
       "not found" in ddd.validate_security_spec("no-such-domain"))
 sec_spec(lambda s: s["authorization_matrix"][1].update(ownership_rule="none"))
@@ -2205,7 +2299,7 @@ def z_strategy(surfaces=("intake write",), contexts=("Intake",), exempt=None):
              "layers": ["domain", "application", "interface"], "build_order": ["domain"],
              "bounded_contexts": list(contexts),
              "surfaces": [{"name": name, "kind": "http", "context": contexts[0],
-                           "operations": ["POST"]} for name in surfaces],
+                           "operations": ["POST"], "method": "POST", "path": "/x"} for name in surfaces],
              "persistence": {"data_model": "telemetry_record (tenant_id, device_key, value)"},
              "observability": FULL_FLOOR, "risks": []}
     if exempt:
@@ -2372,6 +2466,42 @@ rc_z = emit(unowned)
 check("Z17 SURFACE OWNERSHIP: a declared surface no inbound unit names is REFUSED - otherwise "
       "the reach law could be dodged by never mentioning the surface",
       bool(rc_z) and "named by NO inbound unit" in str(rc_z), str(rc_z)[:240])
+z_strategy()
+_no_route = json.loads((ROOT / "blackboard" / "complete"
+                        / f"execution-strategy-{Z_SLUG}.json").read_text())
+for _s in _no_route["surfaces"]:
+    if _s.get("kind") == "http":
+        _s.pop("method", None)
+        _s.pop("path", None)
+(ROOT / "blackboard" / "complete" / f"execution-strategy-{Z_SLUG}.json").write_text(
+    json.dumps(_no_route))
+check("Z18 ROUTE JOIN AUTHORITY: an `http` surface with no tabled method+path is REFUSED at "
+      "phase 1 (2026-11-24 v4: the surfaces table named the streaming surface but no path, so "
+      "the first session GUESSED `GET /telemetry/stream` and the owning session served `GET "
+      "/telemetry/stream/windows` - the two guards then cited different literals and the "
+      "batch ping-ponged two repair sessions into a fatal; the route is a phase-1 PLAN fact, "
+      "not a per-session guess)",
+      bool(ddd.validate_strategy(Z_SLUG)) and "method" in str(ddd.validate_strategy(Z_SLUG))
+      and "path" in str(ddd.validate_strategy(Z_SLUG)),
+      str(ddd.validate_strategy(Z_SLUG))[:200])
+z_strategy()
+check("Z19 the restored strategy with tabled routes passes the gate again (the refusal is the "
+      "missing columns, not the surface)",
+      ddd.validate_strategy(Z_SLUG) is None, str(ddd.validate_strategy(Z_SLUG))[:160])
+_inbound_units = getattr(task_queue, "_inbound_units")
+_adapter = gtask("T2-674", "EventAdapter", 2, deps=("T0-671",),
+                 intent="Unit IS the surface 'Consume events': typed events arrive from the "
+                        "publisher and are windowed",
+                 project=Z_SLUG, path="src/main/java/surf/application/EventAdapter.java")
+_adapter["layer"] = "application"
+check("Z20 (y5) SURFACE ENTRY IS PER-KIND: the detector that enforces surface OWNERSHIP reads "
+      "an internal-call surface's ENTRY as the adapter that NAMES it - layer-neutral (2026-11-24 "
+      "v4: the batch demanded a controller-shaped entry for a route-less consumer, and the "
+      "repair answered by relabeling the consumer 'interface' while its package stayed "
+      "/application/ - an HTTP-only law does not close the hole, it writes a layer lie)",
+      _adapter not in _inbound_units([_adapter])
+      and _adapter in _inbound_units([_adapter], ["consume events"]),
+      str(_inbound_units([_adapter]))[:120])
 z_reset()
 # The resumed-board shape: units already ON the board (they predate the gate, so they claim
 # nothing) - written straight to the queue, because the emit gate of today would refuse them.
@@ -2434,8 +2564,9 @@ check("S26 each split agent's stated budget is the ENGINE's budget, sized for th
       "of stated==engine survives the split per carrier, and only the PLANNER carries the "
       "mapping tables",
       settings.call_budget(settings.ARCHITECT_STRATEGY_AGENT) == 12
-      and settings.call_budget(settings.ARCHITECT_PLANNER_AGENT) == 12
-      and all("Budget <=12" in doc for doc in _strategy_docs + _planner_docs2)
+      and settings.call_budget(settings.ARCHITECT_PLANNER_AGENT) == 16
+      and all("Budget <=12" in doc for doc in _strategy_docs)
+      and all("Budget <=16" in doc for doc in _planner_docs2)
       and all("spring-security-architect: allow" in doc for doc in _planner_docs2[:1])
       and not any("spring-security-architect: allow" in doc for doc in _strategy_docs)
       and not any("task-decomposition-dag: allow" in doc for doc in _strategy_docs),
@@ -2533,7 +2664,7 @@ def sb_strategy(slug):
         {"slug": slug, "modules": [slug], "layers": ["domain"], "build_order": ["domain"],
          "risks": [], "bounded_contexts": ["In"],
          "surfaces": [{"name": "sample write", "kind": "http", "context": "In",
-                       "operations": ["POST"]}],
+                       "operations": ["POST"], "method": "POST", "path": "/x"}],
          "observability": FULL_FLOOR}))
 
 
@@ -2931,7 +3062,7 @@ VOC_SLUG = "voc"
     "layers": ["domain", "application"], "build_order": ["domain"],
     "bounded_contexts": ["Voc"],
     "surfaces": [{"name": "voc ingest", "kind": "http", "context": "Voc",
-                  "operations": ["POST"]}],
+                  "operations": ["POST"], "method": "POST", "path": "/x"}],
     "contexts_without_inbound": [],
     "persistence": {"data_model": "voc_row (id, value)"},
     "observability": {"correlation_key": "cid", "step_logs": ["voc accepted"],
@@ -3355,7 +3486,7 @@ settings.CONTEXT_MAP_DIR.mkdir(parents=True, exist_ok=True)
     "slug": PFS, "language": "Java 21", "modules": [PFS],
     "bounded_contexts": ["Intake"],
     "surfaces": [{"name": "intake write", "kind": "http", "context": "Intake",
-                  "operations": ["POST"]}],
+                  "operations": ["POST"], "method": "POST", "path": "/x"}],
     "contexts_without_inbound": [],
     "persistence": {"data_model": "telemetry_record (device_key, value)"},
     "observability": FULL_FLOOR, "risks": []}))
@@ -3375,16 +3506,16 @@ def perf_spec(**over):
                      "surfaces_exempt": []},
         "budgets": [{"id": "PB-01", "target": "in-flight packets per instance",
                      "limit": "a finite admission bound with a declared rejection",
-                     "capability": "bounded-admission",
+                     "capability": "rate-limit",
                      "measurement": {"kind": "status-code",
                                      "assertion": "saturation answers the declared status"}}],
         "invariants": [{"id": "PI-01", "rule": "no unbounded queue or buffer on any path",
-                        "capability": "backpressure-posture"}],
+                        "capability": "drop-policy"}],
         "duties": [
             {"spec_ref": "PB-01", "obligation": "admit up to the bound, refuse above",
-             "capability": "bounded-admission", "unit_kind": "admission-control"},
+             "capability": "rate-limit", "unit_kind": "admission-control"},
             {"spec_ref": "PI-01", "obligation": "every queue ships with its bound and policy",
-             "capability": "backpressure-posture", "unit_kind": "resource-ceiling"}],
+             "capability": "drop-policy", "unit_kind": "resource-ceiling"}],
         "risks": [], "open_questions": []}
     spec.update(over)
     (settings.COMPLETE_DIR / f"performance-spec-{PFS}.json").write_text(json.dumps(spec))
@@ -3421,14 +3552,44 @@ check("PG5 a vendor name in the artifact is REFUSED (the leak law is not securit
       "performance spec that names a product decided the architect's job)",
       "hikaricp" in str(ddd.validate_performance_spec(PFS)),
       str(ddd.validate_performance_spec(PFS))[:180])
+bad = perf_spec(); bad["duties"][0]["capability"] = "in-flight-cap"
+bad["budgets"][0]["capability"] = "in-flight-cap"
+(settings.COMPLETE_DIR / f"performance-spec-{PFS}.json").write_text(json.dumps(bad))
+check("PG5b a capability OUTSIDE the skill's closed token vocabulary is REFUSED (2026-11-24 v4 "
+      "live: the skill named families but not sizes/streaming tokens, so the spec coined "
+      "payload-limit-style terms, the architect table missed them, the digest carried "
+      "table_row null, and the planner borrowed the CLOSEST row - nearest-row is how a duty "
+      "acquires a mechanism it never asked for)",
+      "in-flight-cap" in str(ddd.validate_performance_spec(PFS))
+      and "outside the closed performance token set" in str(ddd.validate_performance_spec(PFS)),
+      str(ddd.validate_performance_spec(PFS))[:220])
+_check_tokens = ddd._performance_capability_tokens()
+check("PG5c the closed set is PARSED LIVE from the performance-strategy skill (not a second "
+      "list to drift): every token the spec fixture uses is in it, the four tokens the v4 "
+      "report needed are there, and the family words are lowercase-kebab",
+      {"rate-limit", "bounded-semaphore", "bounded-buffer", "page-size-limit", "payload-limit",
+       "bounded-window", "subscriber-limit", "pool-limit", "timeout-budget",
+       "read-through-cache", "negative-cache", "idempotent-retry", "bounded-attempts",
+       "bounded-queue", "backpressure", "drop-policy", "batch-load"} <= _check_tokens
+      and all(tok.islower() and " " not in tok for tok in _check_tokens),
+      str(sorted(_check_tokens))[:220])
 perf_spec()
+_table_text = (Path(__file__).resolve().parents[1]  # carriers live in the REAL repo, not the
+      # rebased engine sandbox - same reason _digest_table_rows resolves against the module root
+     / ".opencode/skills/tech-stack-architect/spring-performance-architect/"
+                "SKILL.md").read_text()
+_missing = sorted(tok for tok in _check_tokens if tok not in _table_text)
+check("PG5d the ACTIVE stack table keys every closed token in its first column - a skill token "
+      "with no row is the gap that sent v4's planner to the closest row (digest gaps list "
+      "would fire, but the refusal belongs to the spec, not the plan)",
+      not _missing, f"rows missing for {_missing}")
 
 AIS = "ais"
 (settings.COMPLETE_DIR / f"execution-strategy-{AIS}.json").write_text(json.dumps({
     "slug": AIS, "language": "Java 21", "modules": [AIS],
     "bounded_contexts": ["Ask"],
     "surfaces": [{"name": "ask surface", "kind": "http", "context": "Ask",
-                  "operations": ["POST"]}],
+                  "operations": ["POST"], "method": "POST", "path": "/x"}],
     "persistence": {"data_model": "answer_record (question)"},
     "observability": FULL_FLOOR, "risks": []}))
 (settings.CONTEXT_MAP_DIR / f"context-map-{AIS}.json").write_text(json.dumps(
@@ -3710,7 +3871,7 @@ ai_spec()
 CLM = "clm"
 (settings.COMPLETE_DIR / f"execution-strategy-{CLM}.json").write_text(json.dumps({
     "slug": CLM, "language": "Java 21", "modules": [CLM], "bounded_contexts": ["C"],
-    "surfaces": [{"name": "c write", "kind": "http", "context": "C", "operations": ["POST"]}],
+    "surfaces": [{"name": "c write", "kind": "http", "context": "C", "operations": ["POST"], "method": "POST", "path": "/x"}],
     "persistence": {"data_model": "c_row (id)"},
     "observability": FULL_FLOOR, "risks": []}))
 (settings.COMPLETE_DIR / f"performance-spec-{CLM}.json").write_text(json.dumps({
@@ -3720,11 +3881,11 @@ CLM = "clm"
     "workload": {"entries": [{"id": "WB-01", "surface": "c write", "driver": "bursty",
                               "data": ["c_row"]}], "surfaces_exempt": []},
     "budgets": [{"id": "PB-07", "target": "in-flight", "limit": "bounded",
-                 "capability": "bounded-admission",
+                 "capability": "rate-limit",
                  "measurement": {"kind": "status-code", "assertion": "429 under saturation"}}],
     "invariants": [], "duties": [
         {"spec_ref": "PB-07", "obligation": "admit up to the bound, refuse above",
-         "capability": "bounded-admission", "unit_kind": "admission-control"}],
+         "capability": "rate-limit", "unit_kind": "admission-control"}],
     "risks": [], "open_questions": []}))
 _clm_scaffold = gtask("T0-681", "Scaffold", 0, project=CLM, path="pom.xml",
                       intent="Generate the clm root")
@@ -3746,11 +3907,11 @@ rc_pg = emit([_clm_scaffold, _clm_t, _clm_u])
 check("PG9 emit REFUSES a plan whose stage-2 units never claim the performance duty "
       "(spec_ref + capability verbatim, the (y1) claim form reused): an advisory spec is "
       "the C-gap story repeating for load rules",
-      bool(rc_pg) and "PB-07" in str(rc_pg) and "bounded-admission" in str(rc_pg)
+      bool(rc_pg) and "PB-07" in str(rc_pg) and "rate-limit" in str(rc_pg)
       and "claimed by no stage-2 unit" in str(rc_pg), str(rc_pg)[:280])
-_clm_u["intent"] = ("the guard admits the flow: PB-07 bounded-admission, saturation answers "
+_clm_u["intent"] = ("the guard admits the flow: PB-07 rate-limit, saturation answers "
                     "the declared status")
-_clm_t["intent"] = "asserts PB-07 bounded-admission refuses above the bound"
+_clm_t["intent"] = "asserts PB-07 rate-limit refuses above the bound"
 for _f in list(settings.QUEUE_DIR.glob("T?-68*-clm.json")) + \
         list(settings.ERROR_DIR.glob("T?-68*-clm.json")):
     _f.unlink()
@@ -3797,7 +3958,7 @@ _dg_strategy.write_text(json.dumps({
     "schema_version": "1.0", "report_type": "execution-strategy", "slug": SEC_SLUG,
     "bounded_contexts": _dg_ctx,
     "surfaces": [{"name": r["surface"], "kind": "http", "context": _dg_ctx[0],
-                  "operations": ["post"], "traced_from": "sec"}
+                  "operations": ["post"], "traced_from": "sec", "method": "POST", "path": "/x"}
                  for r in _sec_data["authorization_matrix"] if r.get("surface")],
     "contexts_without_inbound": [], "modules": [], "layers": [], "build_order": [],
     "risks": [], "module_layout": {"base_package": "com.example.sec", "packages": [],
@@ -3898,7 +4059,17 @@ try:
           and _ss.get("slug") == SEC_SLUG and _ss.get("context") == _dg_first
           and set(_ss.keys()) <= {"slug", "context", "project_root", "tech_stack", "layers",
                                   "module_layout", "surfaces", "contexts_without_inbound",
-                                  "persistence", "observability"})
+                                  "persistence", "observability",
+                                  "composition_root_surfaces", "rules"}
+          # 2026-11-24: the root tables ride WHOLE on purpose - an entry-wide admission unit
+          # decides every route of the composition root (the gateway chain's "rest denied"
+          # sealed a stream route the filtered view had dropped), and the strategy's rule
+          # values are the planner's only copy of the description's literals.
+          and len(_ss.get("composition_root_surfaces") or []) == len(_dg.get("surfaces") or [])
+          and {str(s.get("context", "")).strip()
+               for s in _ss.get("composition_root_surfaces") or []} ==
+              {str(s.get("context", "")).strip() for s in _dg.get("surfaces") or []}
+          and isinstance(_ss.get("rules"), list))
     _order = _dg.get("draft_order") or []
     check("DG5 the draft order is a permutation of the bounded contexts (provider edges from "
           "the context map decide the sequence; no context dropped, none invented) - the "
@@ -3907,6 +4078,187 @@ try:
           sorted(_order) == sorted(_dg.get("bounded_contexts") or [])
           and ddd.context_draft_order("no-such-domain") == [])
 
+    # BC. the build_coordinates edge (2026-11-24 operator review): the key the planner brief
+    # promises must be UNCONDITIONAL (a key that sometimes exists is a field every session
+    # pays to hunt and disprove), EMPTY lawful on stacks that ship no external manifest, and
+    # never filled with another stack's coordinates by the table resolution.
+    def _bc_fixture(slug, tech_stack):
+        (settings.COMPLETE_DIR / f"execution-strategy-{slug}.json").write_text(json.dumps({
+            "schema_version": "1.0", "report_type": "execution-strategy", "slug": slug,
+            "bounded_contexts": ["Ctx"],
+            "surfaces": [{"name": "S1", "kind": "http", "context": "Ctx",
+                          "operations": ["post"], "traced_from": "x", "method": "POST", "path": "/x"}],
+            "contexts_without_inbound": [], "modules": [], "layers": [], "build_order": [],
+            "risks": [], "rules": [], "tech_stack": tech_stack,
+            "module_layout": {"base_package": "p", "packages": [], "integration": []},
+            "persistence": {}, "observability": {"contexts": ["Ctx"], "correlation_key": "t",
+                "step_logs": {"Ctx": ["a.received"]}, "audit_trail": {}, "metrics": [],
+                "export": {"schema": "jsonl", "sink": "l.ndjson"}}}), encoding="utf-8")
+        (settings.COMPLETE_DIR / f"security-spec-{slug}.json").write_text(json.dumps({
+            "schema_version": "1.0", "report_type": "security-spec", "slug": slug,
+            "metadata": {}, "assumptions": [], "trust_boundaries": [],
+            "principals": [{"id": "P-01", "name": "dev", "kind": "device", "source": "actors",
+                            "authentication": "required", "credential_capability": "proof",
+                            "identity_claims": []}],
+            "data_classification": [],
+            "authorization_matrix": [{"id": "AZ-01", "surface": "S1", "operation": "POST",
+                "principal_ids": ["P-01"], "roles": [], "scopes": [], "ownership_rule": "public",
+                "client_supplied_ids": [], "decision_point": {"layer": "application",
+                "component": "C"}, "default": "deny", "effect_on_deny": "unauthenticated",
+                "fields_read": [], "fields_written": [], "audit_event": "x",
+                "test_duty": "permitted, denied, cross-owner"}],
+            "invariants": [], "secrets": {"inventory": [], "handling_rules": []},
+            "error_policy": {"allowed_fields": ["code"], "never_expose": [],
+                             "security_audit_events": []},
+            "duties": [{"spec_ref": "AZ-01", "obligation": "prove the device", "capability": "proof",
+                        "unit_kind": "credential-handling", "owner_context": "Ctx"}],
+            "risks": [], "open_questions": []}), encoding="utf-8")
+    _bc_files = []
+    try:
+        _bc_results = {}
+        for _bc_slug, _bc_ts in (("bcjava", {"language": "Java 21",
+                                            "framework": "Spring Boot 3 WebFlux"}),
+                                 ("bcpy", {"language": "Python 3.12", "framework": "FastAPI 0.115"}),
+                                 ("bclegacy", {})):
+            _bc_files += [settings.COMPLETE_DIR / f"execution-strategy-{_bc_slug}.json",
+                          settings.COMPLETE_DIR / f"security-spec-{_bc_slug}.json"]
+            _bc_fixture(_bc_slug, _bc_ts)
+            _dp, _dprob = ddd.write_phase2_digest(_bc_slug)
+            _full = json.loads(_dp.read_text(encoding="utf-8"))
+            _sp, _sprob = ddd.write_phase2_digest_slice(_bc_slug, "Ctx")
+            _slice = json.loads(_sp.read_text(encoding="utf-8"))
+            _bc_results[_bc_slug] = (_dprob, _sprob, _full, _slice)
+        _bj_p, _bj_sp, _bfull, _bslice = _bc_results["bcjava"]
+        _py_p, _py_sp, _pfull, _pslice = _bc_results["bcpy"]
+        _lg_p, _lg_sp, _lfull, _lslice = _bc_results["bclegacy"]
+        check("BC1 build_coordinates is UNCONDITIONAL on both the whole digest and every "
+              "per-context slice (2026-11-24: the brief promises the key; a digest that "
+              "omitted it on a stack with no mapping table would send the planner hunting a "
+              "field it cannot prove absent) - Java keeps its table's coordinates, the "
+              "Python-shaped plan gets the key PRESENT AS EMPTY plus table:null plus every "
+              "duty under unmapped_duties (never Spring rows copied into a non-Java plan), "
+              "and a strategy with no tech_stack keeps the historical default map",
+              _bj_p == [] and _py_p == [] and _lg_p == [] and _bj_sp == [] and _py_sp == []
+              and "build_coordinates" in _bfull and _bfull["build_coordinates"].get("security", {})
+              and "build_coordinates" in _bslice and _bslice["build_coordinates"].get("security")
+              and "build_coordinates" in _pfull and _pfull["build_coordinates"] == {}
+              and "build_coordinates" in _pslice and _pslice["build_coordinates"] == {}
+              and _pfull["mechanisms"]["security"]["table"] is None
+              and _pslice["mechanisms"]["security"]["unmapped_duties"]
+              and "spring" not in json.dumps(_pslice).lower()
+              and "build_coordinates" in _lslice and _lslice["build_coordinates"].get("security"))
+
+    finally:
+        for _bcf in _bc_files:
+            _bcf.unlink(missing_ok=True)
+        for _slug in ("bcjava", "bcpy", "bclegacy"):
+            for _pat in (f"phase2-digest-{_slug}.json", f"phase2-slice-{_slug}-*.json",
+                         f"strategy-slice-{_slug}-*.json"):
+                for _f in Path("/tmp").glob(_pat):
+                    _f.unlink(missing_ok=True)
+
+
+    # EXP/CTX/TOOL. the 2026-11-24 planner performance pass: compact-unit expansion is
+    # deterministic, the session context arrives pre-concatenated, and the profile grants
+    # no search tools the brief already forbids.
+    _ex_units = [
+        {"n": 5, "project": "expp", "layer": "domain", "feature": None,
+         "dependsOn": {"test": ["T0-001"], "code": ["T2-002"]},
+         "test": {"path": "src/test/java/d/CTest.java", "export": "CTest", "intent": "i1"},
+         "code": {"path": "src/main/java/d/C.java", "export": "C", "intent": "i2",
+                  "ast_hints": {"package": "com.d", "implements": [], "dependencies": [],
+                                "methods": [{"signature": "go()", "returns": "void"}],
+                                "meters": [], "routes": [], "config": []},
+                  "observability": {"step_logs": ["c.tick"]}}},
+        {"n": 7, "project": "expp", "layer": "application", "feature": None,
+         "test": {"path": "src/test/java/d/UTest.java", "export": "UTest", "intent": "u1"},
+         "code": {"path": "src/main/java/d/U.java", "export": "U", "intent": "u2"}}]
+    _ex_tasks, _ex_errs = task_queue.expand_unit_draft(_ex_units)
+    _ex_by = {str(t.get("id")): t for t in _ex_tasks}
+    check("EXP1 the compact UNIT form expands DETERMINISTICALLY (2026-11-24 performance pass):"
+          " 2 units -> 6 canonical records; stage/agent/kind derived (tester/test, coder/code,"
+          " evaluator/refactor); the ONE ast_hints lands byte-identical on T1 and T2 (z4 by"
+          " construction); T2 dependsOn prepends its own T1 before the listed producers; T3"
+          " shares the code path with a generated default intent when none is given; the unit's"
+          " observability rides the STAGE-2 record; canonical records pass through untouched and"
+          " malformed units are refused with ERR pointers, not crashes",
+          _ex_errs == [] and len(_ex_tasks) == 6
+          and _ex_by["T1-005"]["targetAgent"] == "agent-tester"
+          and _ex_by["T2-005"]["targetAgent"] == "agent-coder"
+          and _ex_by["T3-005"]["targetAgent"] == "agent-evaluator"
+          and _ex_by["T3-005"]["kind"] == "refactor" and _ex_by["T3-005"]["path"] == "src/main/java/d/C.java"
+          and _ex_by["T1-005"]["ast_hints"] == _ex_by["T2-005"]["ast_hints"]
+          and _ex_by["T2-005"]["dependsOn"] == ["T1-005", "T0-001", "T2-002"]
+          and _ex_by["T1-005"]["dependsOn"] == ["T0-001"]
+          and _ex_by["T3-007"]["intent"] and "no behavior" in _ex_by["T3-007"]["intent"]
+          and _ex_by["T2-005"]["observability"] == {"step_logs": ["c.tick"]}
+          and "ast_hints" not in _ex_by["T1-007"]
+          and task_queue.expand_unit_draft([{"stage": 1, "id": "T1-001"}])[0][0].get("id") == "T1-001"
+          and bool(task_queue.expand_unit_draft([{"n": "x"}])[1]))
+    def _ex_unit(deps):
+        return {"n": 9, "project": "expp", "layer": "domain", "feature": None,
+                "dependsOn": deps,
+                "test": {"path": "t/XT.java", "export": "XT", "intent": "i"},
+                "code": {"path": "s/X.java", "export": "X", "intent": "j",
+                         "ast_hints": {"package": "a", "implements": [], "dependencies": [],
+                                        "methods": [], "meters": [], "routes": [],
+                                        "config": []}}}
+    _ex_manifest = tq1, tq2 = task_queue.expand_unit_draft(
+        [_ex_unit({"test": ["T1-001"], "code": ["T0-006", "T2-002"]})])[0][:2]
+    _ex_flat = task_queue.expand_unit_draft([_ex_unit(["T0-001", "T0-006"])])[0][:2]
+    _ex_testonly = task_queue.expand_unit_draft(
+        [_ex_unit({"test": ["T0-001", "T1-001"], "code": ["T2-002"]})])[0][:2]
+    check("EXP2 stage-0 bootstrap ids are UNIT facts, not side facts (2026-11-24 edge case):"
+          " a build-manifest or scaffold id listed only under code propagates to the TEST"
+          " record too (the tester's first red compiles against the same classpath - the"
+          " manifest-precedes-compile law survives compact dependsOn), a test-only T0 id"
+          " propagates to code, a FLAT dependsOn list is honored unit-wide rather than"
+          " dropped, and side-specific T1-/T2- pins never migrate across sides",
+          tq1["dependsOn"] == ["T0-006", "T1-001"]
+          and "T0-006" in tq2["dependsOn"] and tq2["dependsOn"][0] == "T1-009"
+          and "T1-001" not in tq2["dependsOn"] and "T2-002" not in tq1["dependsOn"]
+          and _ex_flat[0]["dependsOn"] == ["T0-001", "T0-006"]
+          and _ex_flat[1]["dependsOn"] == ["T1-009", "T0-001", "T0-006"]
+          and _ex_testonly[0]["dependsOn"] == ["T0-001", "T1-001"]
+          and "T0-001" in _ex_testonly[1]["dependsOn"]
+          and "T2-002" not in _ex_testonly[0]["dependsOn"])
+    _ctx_dir = settings.COMPLETE_DIR
+    _ctx_strategy = _ctx_dir / "execution-strategy-expc.json"
+    _ctx_strategy.write_text(json.dumps({"slug": "expc", "tech_stack": {}}), encoding="utf-8")
+    _ctx_ss = Path("/tmp/strategy-slice-expc-Ctx.json")
+    _ctx_ds = Path("/tmp/phase2-slice-expc-Ctx.json")
+    _ctx_ss.write_text('{"surfaces": []}', encoding="utf-8")
+    _ctx_ds.write_text('{"duties": []}', encoding="utf-8")
+    _ctx_msg = prompts.build_planner_prompt(
+        "/root", "r.py", "expc", "Ctx", "/tmp/tasks/expc-Ctx.json", str(_ctx_ds),
+        None, {1: "T1-900"}, [], "/tmp/tasks/expc-Ctx.gaps.json", strategy_slice_path=_ctx_ss)
+    _ctx_file = Path("/tmp/planner-context-expc-ctx.md")
+    _ctx_text = _ctx_file.read_text(encoding="utf-8") if _ctx_file.is_file() else ""
+    check("CTX1 the engine pre-concatenates the session input: build_planner_prompt writes"
+          " ONE planner-context file carrying the marked STRATEGY SLICE, DIGEST SLICE, SYMBOL"
+          " TABLE and CONTRACT QUICKREF sections (the 4-6 sequential reads collapse into one"
+          " round-trip), and the brief routes the session to that file while still printing"
+          " the provenance paths",
+          _ctx_file.is_file()
+          and "SECTION: STRATEGY SLICE" in _ctx_text and "SECTION: DIGEST SLICE" in _ctx_text
+          and "SECTION: SYMBOL TABLE" in _ctx_text and "SECTION: CONTRACT QUICKREF" in _ctx_text
+          and "surfaces" in _ctx_text and "duties" in _ctx_text
+          and str(_ctx_file) in _ctx_msg and "READ EXACTLY THESE" in _ctx_msg)
+    _ctx_file.unlink(missing_ok=True)
+    _ctx_ss.unlink(missing_ok=True); _ctx_ds.unlink(missing_ok=True)
+    _ctx_strategy.unlink(missing_ok=True)
+    check("TOOL1 the planner's tools are only what its own law allows (2026-11-24): the"
+          " brief forbids searching (no discovery redo, never glob a skills folder, no"
+          " reading application code) - a granted search tool is an invitation the session"
+          " pays for on every later turn; the Copilot mirror grants read/execute/edit, the"
+          " OpenCode mirror denies glob, grep and list",
+          '"read", "execute", "edit"'
+          in (SEC_REPO / ".github/agents/agent-planner-architect.agent.md").read_text()
+          and "search" not in (SEC_REPO / ".github/agents/agent-planner-architect.agent.md")
+          .read_text().split("---\n", 2)[1]
+          and "glob: deny" in (SEC_REPO / ".opencode/agents/agent-planner-architect.md").read_text()
+          and "grep: deny" in (SEC_REPO / ".opencode/agents/agent-planner-architect.md").read_text()
+          and "list: deny" in (SEC_REPO / ".opencode/agents/agent-planner-architect.md").read_text())
     # --- SP. the per-context PLANNING lifecycle (claim / lint / symbols / batch emit).
     _SP_SLUG = "splx"
     task_queue.clear_drafts(_SP_SLUG)
@@ -4155,15 +4507,22 @@ try:
     _sp8_qr = _sp8_dag / "QUICKREF.md"
     _sp8_sk = _sp8_dag / "SKILL.md"
     _base = _sp8_qr.stat().st_mtime
+    # TIME BOMB FIX (2026-11-24): the probe offset was _base+100000 - anchored to the FILE's
+    # own mtime, the +27.7h shift fell into the PAST once the skill aged past a day, and the
+    # contract-edit staleness could never flip (the suite silently failed on any repo whose
+    # skills were older than ~28h - pre-existing, exposed by the seed-002 rerun). Anchor the
+    # future stamp to NOW instead: the probe asserts freshness semantics, not file ages.
+    import time as _sp8_time
+    _future = _sp8_time.time() + 100000
     _os.utime(_sp8_strategy, (_base - 500, _base - 500))  # undo the +100 staleness probe
     _sp8_draft.write_text(json.dumps([{"id": "T2-950", "project": _SP8b_SLUG}]),
                           encoding="utf-8")
     _sk_orig = _sp8_sk.stat().st_mtime
     try:
-        _os.utime(_sp8_qr, (_base + 100000, _base + 100000))
+        _os.utime(_sp8_qr, (_future, _future))
         _sp8_map_edit = task_queue.draft_is_fresh(_SP8b_SLUG, "Alpha")
         _os.utime(_sp8_qr, (_base, _base))
-        _os.utime(_sp8_sk, (_base + 100000, _base + 100000))
+        _os.utime(_sp8_sk, (_future, _future))
         _sp8_contract_edit = task_queue.draft_is_fresh(_SP8b_SLUG, "Alpha")
     finally:
         _os.utime(_sp8_sk, (_sk_orig, _sk_orig))
@@ -4261,7 +4620,19 @@ try:
         _sp10_task(_sp10_t1, 1, []),
         _sp10_task(_sp10_t2, 2, [_sp10_t1])]), encoding="utf-8")
     _sp10_rej = task_queue.emit_tasks([str(_sp10_draft)])
+    # 2026-11-24 tier split: the BATCH emit wires the missing manifest edge mechanically
+    # (a manifest scheduled by a LATER context could never be pinned by the first draft -
+    # refusing billed a repair session to type an id into a list), and the emitted record
+    # carries the edge; single-file lint still refuses the same shape at drafting time.
+    _sp10_wired = None
+    for _p in settings.QUEUE_DIR.glob(f"*-{_SP10_SLUG}.json"):
+        _rec = json.loads(_p.read_text())
+        if _rec.get("id") == _sp10_t1:
+            _sp10_wired = _sp10_m in _rec.get("dependsOn", [])
     _sp10_lint = task_queue.lint_draft(_sp10_draft)
+    for _q in list(settings.QUEUE_DIR.glob(f"*-{_SP10_SLUG}.json")) + \
+              list(settings.COMPLETE_DIR.glob(f"*-{_SP10_SLUG}.json")):
+        _q.unlink()
     # lawful shape: T1 depends on the manifest; T2 reaches it THROUGH T1 - transitive
     _sp10_draft.write_text(json.dumps([
         _sp10_manifest,
@@ -4272,16 +4643,18 @@ try:
     for _q in list(settings.QUEUE_DIR.glob("*-spo.json")) + \
               list(settings.COMPLETE_DIR.glob("*-spo.json")):
         _q.unlink()
-    check("SP10 the manifest-precedes-compile gate is machine-enforced at BOTH tiers: a "
-          "stage-2 with no path to the scheduled build-manifest is refused at emit naming "
-          "both ids, the same defect is caught at single-file lint BEFORE any batch runs, "
-          "transitive reach counts (the T2 reaching the manifest through its T1 accepts), "
-          "and a project without a manifest is never touched - the law is board "
-          "structure, identical for Maven, Gradle, npm and pip, with no annotation or "
-          "artifact name anywhere in the check",
-      _sp10_rej and "build-manifest" in _sp10_rej and _sp10_m in _sp10_rej
-      and _sp10_t2 in _sp10_rej
-      and _sp10_rej.splitlines()[0].startswith("ERR [")
+    check("SP10 the manifest-precedes-compile gate is machine-enforced, each tier with the "
+          "remedy its actor can execute (2026-11-20 law; 2026-11-24 tier split): a single-file "
+          "lint BEFORE the batch REFUSES a stage-2 with no path to the scheduled "
+          "build-manifest naming both ids (drafting-time hygiene the session fixes itself), "
+          "while the BATCH emit WIRES the edge mechanically and accepts - the emitted unit "
+          "now dependsOn the manifest (the manifest may arrive with a LATER context, so the "
+          "first draft could never pin it; the 2026-11-24 batch refused 46 objects into a "
+          "billed repair pass to type ids into lists); transitive reach counts (the T2 "
+          "reaching the manifest through its T1 accepts), and a project without a manifest "
+          "is never touched - the law is board structure, identical for Maven, Gradle, npm "
+          "and pip, with no annotation or artifact name anywhere in the check",
+      _sp10_rej is None and _sp10_wired
       and _sp10_lint.startswith("ERR") and "build-manifest" in _sp10_lint
       and _sp10_ok is None)
     for _sp_p in (_sp_alpha, _sp_beta, _sp_fwd, _sp_ok, _sp_symbols_path,

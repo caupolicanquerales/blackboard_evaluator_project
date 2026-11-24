@@ -5,11 +5,11 @@
   "dependsOn": [
     "T0-001"
   ],
-  "path": "db/migrations/V2__create_telemetry_revisions.sql",
+  "path": "services/telemetry-ingestion-processing/src/main/resources/db/migration/V2__create_telemetry_history_index.sql",
   "kind": "bootstrap",
   "layer": "root",
   "feature": null,
-  "export": "V2__create_telemetry_revisions",
-  "intent": "Schema migration: PostgreSQL (Flyway) migration script creating append-only telemetry_revisions referencing telemetry_sample_events for context Telemetry Ingestion.",
+  "export": "V2__create_telemetry_history_index.sql",
+  "intent": "Schema migration for Telemetry Event Log: PostgreSQL (Flyway) keyset history index on (device_id, metric, t_device, id) in the versioned Flyway script at this path.",
   "project": "telemetry-ingestion-processing"
 }

@@ -25,9 +25,13 @@ real numbers.
 
 # Budgets: every one carries a DETERMINISTIC measurement
 A budget bounds one thing: admission (rate-limit), concurrency (bounded-semaphore), queueing
-(bounded-queue, backpressure, drop-policy), cache (read-through-cache, negative-cache), retry
-(idempotent-retry, bounded-attempts), page/payload sizes, resource ceilings (pool-limit,
-timeout-budget), batching (batch-load). Each names its token, its enforcement expectation and
+(bounded-queue, bounded-buffer, backpressure, drop-policy), streaming fan-in (bounded-window,
+subscriber-limit), cache (read-through-cache, negative-cache), retry
+(idempotent-retry, bounded-attempts), sizes (page-size-limit, payload-limit), resource ceilings
+(pool-limit, timeout-budget), batching (batch-load). Each names its token - ONE of the closed
+set above, VERBATIM, never a neighbour (2026-11-24 v4: an unnamed family let the spec invent
+a token, the table miss it, and the planner borrow a neighbouring mechanism row), and its
+enforcement expectation and
 a `measurement` from the CLOSED kind set:
 `query-count | config-key | status-code | payload-size | queue-depth | deterministic-count`.
 THE WALL-CLOCK LAW: no kind measures elapsed time - every limit becomes a count, a bounded

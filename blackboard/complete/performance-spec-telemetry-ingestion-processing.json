@@ -3,7 +3,7 @@
   "report_type": "performance-spec",
   "slug": "telemetry-ingestion-processing",
   "metadata": {
-    "generated_at": "2026-11-20T16:35:00-03:00",
+    "generated_at": "2026-11-24T17:25:00-03:00",
     "agent": "agent-performance-architect",
     "inputs": [
       "blackboard/complete/execution-strategy-telemetry-ingestion-processing.json",
@@ -15,7 +15,7 @@
   "assumptions": [
     {
       "id": "PA-01",
-      "text": "Single-node baseline ceiling assumed; description omits device counts, rates and volumes.",
+      "text": "Single-node baseline ceiling assumed; description omits rates and volumes.",
       "source": "baseline rule"
     }
   ],
@@ -23,21 +23,33 @@
     "entries": [
       {
         "id": "WB-01",
-        "surface": "IngestIngressPacket",
-        "driver": "Bursty 1Hz samples per device, many devices; packet size bounded per PA-01.",
-        "data": ["telemetry_sample_event", "telemetry_revision", "audit_trail"]
+        "surface": "ingress packet HTTP inbound",
+        "driver": "Thousands of 1Hz device transmissions in bursts; small packets per PA-01",
+        "data": ["Raw Telemetry Record"]
       },
       {
         "id": "WB-02",
-        "surface": "TelemetryEventConsumer",
-        "driver": "In-process event fan-in, one event per accepted sample; bounded per PA-01.",
-        "data": ["telemetry_sample_event"]
+        "surface": "validated sample reordering consumer",
+        "driver": "Every validated or failed sample; 60-second reorder window per PA-01",
+        "data": ["Raw Telemetry Record"]
       },
       {
         "id": "WB-03",
-        "surface": "SubscribeWindowedTelemetryStream",
-        "driver": "Few long-lived downstream subscribers, demand-driven window fan-out per PA-01.",
-        "data": ["telemetry_sample_event"]
+        "surface": "ordered telemetry stream HTTP outbound",
+        "driver": "Long-lived streaming analytics subscribers; fan-out of every window per PA-01",
+        "data": ["Raw Telemetry Record"]
+      },
+      {
+        "id": "WB-04",
+        "surface": "validated sample event log consumer",
+        "driver": "One append per ingested sample; write-heavy per PA-01",
+        "data": ["Raw Telemetry Record", "Audit Trail Entry"]
+      },
+      {
+        "id": "WB-05",
+        "surface": "backfilled sample event log consumer",
+        "driver": "Append per backfilled sample; fraction of ingest volume per PA-01",
+        "data": ["Event Revision"]
       }
     ],
     "surfaces_exempt": []
@@ -45,294 +57,296 @@
   "budgets": [
     {
       "id": "PB-01",
-      "target": "Ingress packet body size",
-      "limit": "Fixed byte ceiling per packet per PA-01",
-      "capability": "payload-ceiling",
+      "target": "Ingress packet body size and samples per packet",
+      "limit": "At most 256 KiB and 500 samples per packet",
+      "capability": "payload-limit",
       "measurement": {
         "kind": "payload-size",
-        "assertion": "Packet over ceiling rejected with payload-too-large status; none persisted"
+        "assertion": "Oversized packet is rejected with 413; boundary-size packet accepted"
       }
     },
     {
       "id": "PB-02",
-      "target": "Samples per ingress packet",
-      "limit": "Fixed sample count per packet per PA-01",
-      "capability": "batch-limit",
+      "target": "Ingress in-flight packets under burst",
+      "limit": "At most 2000 in flight; excess rejected, never blocked",
+      "capability": "backpressure",
       "measurement": {
-        "kind": "deterministic-count",
-        "assertion": "Packet over sample cap rejected whole; zero appends observed"
+        "kind": "status-code",
+        "assertion": "Packet beyond in-flight limit receives 429 and increments backpressure counter"
       }
     },
     {
       "id": "PB-03",
-      "target": "Ingress admission rate",
-      "limit": "Fixed packets admitted per window per PA-01",
-      "capability": "rate-limit",
+      "target": "Concurrent sample validation work",
+      "limit": "At most 256 concurrent validations",
+      "capability": "bounded-semaphore",
       "measurement": {
-        "kind": "status-code",
-        "assertion": "Excess packets answered with too-many-requests status"
+        "kind": "config-key",
+        "assertion": "Concurrency limit key bound and equals 256"
       }
     },
     {
       "id": "PB-04",
-      "target": "In-flight append operations",
-      "limit": "Fixed concurrent appends, bound from config",
-      "capability": "bounded-semaphore",
+      "target": "Published validated-event hand-off queue",
+      "limit": "Capacity 4096 events; overflow counted, validation-failed payload retained",
+      "capability": "bounded-queue",
       "measurement": {
-        "kind": "config-key",
-        "assertion": "Concurrency limit read from bounded config key; observed in-flight never exceeds it"
+        "kind": "queue-depth",
+        "assertion": "Depth never exceeds 4096 when consumer is stalled"
       }
     },
     {
       "id": "PB-05",
-      "target": "Event store connection pool",
-      "limit": "Fixed maximum connections, bound from config",
-      "capability": "pool-limit",
+      "target": "Reorder window buffered samples",
+      "limit": "At most 10000 buffered samples per device",
+      "capability": "bounded-buffer",
       "measurement": {
-        "kind": "config-key",
-        "assertion": "Pool maximum read from bounded config key"
+        "kind": "deterministic-count",
+        "assertion": "Sample 10001 for one device triggers overflow, buffer size stays 10000"
       }
     },
     {
       "id": "PB-06",
-      "target": "Store call timeout",
-      "limit": "Every store call carries a configured timeout budget",
-      "capability": "timeout-budget",
+      "target": "Reorder window span",
+      "limit": "Window span fixed at 60 seconds by one bounded key",
+      "capability": "bounded-window",
       "measurement": {
         "kind": "config-key",
-        "assertion": "Timeout read from bounded config key; stalled call errors"
+        "assertion": "Window span key bound and equals 60 seconds"
       }
     },
     {
       "id": "PB-07",
-      "target": "Store queries per ingress packet",
-      "limit": "At most two queries per packet regardless of sample count",
-      "capability": "batch-load",
+      "target": "Concurrent ordered stream subscribers",
+      "limit": "At most 200 subscribers; extra rejected",
+      "capability": "subscriber-limit",
       "measurement": {
-        "kind": "query-count",
-        "assertion": "Query counter per packet at most two for maximum sample count"
+        "kind": "status-code",
+        "assertion": "Subscriber 201 receives 503; 200 remain served"
       }
     },
     {
       "id": "PB-08",
-      "target": "Reorder window buffer",
-      "limit": "Fixed sample capacity, bound from config",
-      "capability": "bounded-queue",
+      "target": "Slow subscriber outbound buffer",
+      "limit": "Buffer of 1024 windows; overflow drops with counter",
+      "capability": "drop-policy",
       "measurement": {
         "kind": "queue-depth",
-        "assertion": "Depth never exceeds capacity; overflow answered by rejection status"
+        "assertion": "Stalled subscriber buffer stays at 1024; drop counter increments"
       }
     },
     {
       "id": "PB-09",
-      "target": "Ingestion-to-distribution event stream buffer",
-      "limit": "Fixed event capacity, bound from config",
-      "capability": "bounded-queue",
+      "target": "Event log append batch",
+      "limit": "At most 500 records per batch, one write statement",
+      "capability": "batch-load",
       "measurement": {
-        "kind": "queue-depth",
-        "assertion": "Depth never exceeds capacity under slow consumer"
+        "kind": "query-count",
+        "assertion": "500 appended records issue one write statement"
       }
     },
     {
       "id": "PB-10",
-      "target": "Event stream overflow behavior",
-      "limit": "Overflow dropped and counted, ingestion never blocked",
-      "capability": "drop-policy",
+      "target": "Event log store connections",
+      "limit": "Pool maximum 20 connections",
+      "capability": "pool-limit",
       "measurement": {
-        "kind": "deterministic-count",
-        "assertion": "Dropped counter equals events beyond capacity"
+        "kind": "config-key",
+        "assertion": "Pool maximum key bound and equals 20"
       }
     },
     {
       "id": "PB-11",
-      "target": "Window buffer per device and metric",
-      "limit": "Fixed window sample capacity, bound from config",
-      "capability": "window-buffer-bound",
+      "target": "History read page size",
+      "limit": "Default 100, maximum 500 rows per keyset page",
+      "capability": "page-size-limit",
       "measurement": {
-        "kind": "queue-depth",
-        "assertion": "Window depth never exceeds capacity after sustained inserts"
+        "kind": "deterministic-count",
+        "assertion": "Request for 5000 rows returns at most 500"
       }
     },
     {
       "id": "PB-12",
-      "target": "Concurrent stream subscribers",
-      "limit": "Fixed subscriber count per PA-01",
-      "capability": "subscriber-limit",
+      "target": "Event log append retries",
+      "limit": "At most 3 attempts per append",
+      "capability": "bounded-attempts",
       "measurement": {
-        "kind": "status-code",
-        "assertion": "Subscriber beyond limit answered with service-unavailable status"
+        "kind": "deterministic-count",
+        "assertion": "Failing store receives exactly 3 attempts then append rejected"
       }
     },
     {
       "id": "PB-13",
-      "target": "Rows per range read",
-      "limit": "Fixed page size ceiling per read",
-      "capability": "bounded-page",
+      "target": "Event log consumer intake queue",
+      "limit": "Capacity 4096 events; overflow counted as rejected append",
+      "capability": "bounded-queue",
       "measurement": {
-        "kind": "deterministic-count",
-        "assertion": "Range read returns at most page-size rows"
+        "kind": "queue-depth",
+        "assertion": "Depth never exceeds 4096 when store is stalled"
       }
     },
     {
       "id": "PB-14",
-      "target": "Event emit retry attempts",
-      "limit": "Fixed attempt count, then drop with counter",
-      "capability": "bounded-attempts",
+      "target": "Event log append timeout",
+      "limit": "One bounded timeout key per append",
+      "capability": "timeout-budget",
       "measurement": {
-        "kind": "deterministic-count",
-        "assertion": "Emit attempts never exceed configured maximum"
+        "kind": "config-key",
+        "assertion": "Append timeout key bound to a positive value"
       }
     }
   ],
   "invariants": [
     {
       "id": "PI-01",
-      "rule": "No unbounded queue or buffer on the event stream path.",
+      "rule": "No unbounded queue between ingestion and downstream contexts",
       "capability": "bounded-queue",
-      "owner_context": "Telemetry Stream Distribution"
+      "owner_context": "Sample Ingestion & Validation"
     },
     {
       "id": "PI-02",
-      "rule": "No unbounded reorder buffer; overflow rejected, never silent.",
-      "capability": "bounded-queue",
-      "owner_context": "Telemetry Ingestion"
+      "rule": "Saturation of reorder window or subscribers is answered, never silent",
+      "capability": "drop-policy",
+      "owner_context": "Backfill Reordering & Windowing"
     },
     {
       "id": "PI-03",
-      "rule": "Saturation answered with rejection status, never absorbed.",
-      "capability": "rate-limit",
-      "owner_context": "Telemetry Ingestion"
+      "rule": "Burst load never blocks ingress threads; excess rejected with status",
+      "capability": "backpressure",
+      "owner_context": "Sample Ingestion & Validation"
     },
     {
       "id": "PI-04",
-      "rule": "Every retry bounded; one bounded policy per path.",
+      "rule": "Append retries stay bounded; exhausted append is rejected and counted",
       "capability": "bounded-attempts",
-      "owner_context": "Telemetry Stream Distribution"
+      "owner_context": "Telemetry Event Log"
     }
   ],
   "duties": [
     {
       "spec_ref": "PB-01",
-      "obligation": "Reject oversize packets before parsing or persisting.",
-      "capability": "payload-ceiling",
+      "obligation": "Reject packets over size and sample-count limits",
+      "capability": "payload-limit",
       "unit_kind": "admission-control",
-      "owner_context": "Telemetry Ingestion"
+      "owner_context": "Sample Ingestion & Validation"
     },
     {
       "spec_ref": "PB-02",
-      "obligation": "Reject packets over sample cap atomically.",
-      "capability": "batch-limit",
-      "unit_kind": "batch-policy",
-      "owner_context": "Telemetry Ingestion"
-    },
-    {
-      "spec_ref": "PB-03",
-      "obligation": "Admit packets within rate; reject excess with status.",
-      "capability": "rate-limit",
-      "unit_kind": "rate-limit-policy",
-      "owner_context": "Telemetry Ingestion",
+      "obligation": "Cap in-flight packets; reject excess with counter",
+      "capability": "backpressure",
+      "unit_kind": "admission-control",
+      "owner_context": "Sample Ingestion & Validation",
       "covers": ["PI-03", "WB-01"]
     },
     {
-      "spec_ref": "PB-04",
-      "obligation": "Hold one bounded in-flight append limit.",
+      "spec_ref": "PB-03",
+      "obligation": "Cap concurrent validations with one bounded permit set",
       "capability": "bounded-semaphore",
       "unit_kind": "concurrency-guard",
-      "owner_context": "Telemetry Ingestion"
+      "owner_context": "Sample Ingestion & Validation"
+    },
+    {
+      "spec_ref": "PB-04",
+      "obligation": "Hand-off queue bounded; overflow counted, payload retained",
+      "capability": "bounded-queue",
+      "unit_kind": "resource-ceiling",
+      "owner_context": "Sample Ingestion & Validation",
+      "covers": ["PI-01"]
     },
     {
       "spec_ref": "PB-05",
-      "obligation": "Cap store connections at configured maximum.",
-      "capability": "pool-limit",
+      "obligation": "Window buffer bounded per device; overflow counted",
+      "capability": "bounded-buffer",
       "unit_kind": "resource-ceiling",
-      "owner_context": "Telemetry Ingestion"
+      "owner_context": "Backfill Reordering & Windowing",
+      "covers": ["WB-02"]
     },
     {
       "spec_ref": "PB-06",
-      "obligation": "Apply timeout budget to every store call.",
-      "capability": "timeout-budget",
+      "obligation": "Window span comes from one bounded key",
+      "capability": "bounded-window",
       "unit_kind": "timeout-policy",
-      "owner_context": "Telemetry Ingestion"
+      "owner_context": "Backfill Reordering & Windowing"
     },
     {
       "spec_ref": "PB-07",
-      "obligation": "Load and append per packet in constant query count.",
-      "capability": "batch-load",
-      "unit_kind": "batch-policy",
-      "owner_context": "Telemetry Ingestion"
+      "obligation": "Cap stream subscribers; reject excess with status",
+      "capability": "subscriber-limit",
+      "unit_kind": "admission-control",
+      "owner_context": "Backfill Reordering & Windowing",
+      "covers": ["WB-03"]
     },
     {
       "spec_ref": "PB-08",
-      "obligation": "Bound reorder window buffer; reject on overflow.",
-      "capability": "bounded-queue",
+      "obligation": "Slow subscriber buffer bounded; drops counted",
+      "capability": "drop-policy",
       "unit_kind": "resource-ceiling",
-      "owner_context": "Telemetry Ingestion",
+      "owner_context": "Backfill Reordering & Windowing",
       "covers": ["PI-02"]
     },
     {
       "spec_ref": "PB-09",
-      "obligation": "Bound event stream buffer with configured capacity.",
-      "capability": "bounded-queue",
-      "unit_kind": "resource-ceiling",
-      "owner_context": "Telemetry Stream Distribution",
-      "covers": ["PI-01", "WB-02"]
+      "obligation": "Batch appends into one write statement",
+      "capability": "batch-load",
+      "unit_kind": "batch-policy",
+      "owner_context": "Telemetry Event Log",
+      "covers": ["WB-04", "WB-05"]
     },
     {
       "spec_ref": "PB-10",
-      "obligation": "Drop overflow events and increment drop counter.",
-      "capability": "drop-policy",
-      "unit_kind": "admission-control",
-      "owner_context": "Telemetry Stream Distribution"
+      "obligation": "Store connection pool bounded by one key",
+      "capability": "pool-limit",
+      "unit_kind": "resource-ceiling",
+      "owner_context": "Telemetry Event Log"
     },
     {
       "spec_ref": "PB-11",
-      "obligation": "Evict oldest window samples beyond capacity.",
-      "capability": "window-buffer-bound",
-      "unit_kind": "resource-ceiling",
-      "owner_context": "Telemetry Stream Distribution"
+      "obligation": "History reads keyset-paged with maximum page size",
+      "capability": "page-size-limit",
+      "unit_kind": "pagination-rule",
+      "owner_context": "Telemetry Event Log"
     },
     {
       "spec_ref": "PB-12",
-      "obligation": "Cap concurrent subscribers; reject excess with status.",
-      "capability": "subscriber-limit",
-      "unit_kind": "concurrency-guard",
-      "owner_context": "Telemetry Stream Distribution",
-      "covers": ["WB-03"]
+      "obligation": "Append retries capped; exhaustion rejected and counted",
+      "capability": "bounded-attempts",
+      "unit_kind": "retry-policy",
+      "owner_context": "Telemetry Event Log",
+      "covers": ["PI-04"]
     },
     {
       "spec_ref": "PB-13",
-      "obligation": "Cap rows returned per range read.",
-      "capability": "bounded-page",
-      "unit_kind": "pagination-rule",
-      "owner_context": "Telemetry Ingestion"
+      "obligation": "Consumer intake queue bounded; overflow rejected and counted",
+      "capability": "bounded-queue",
+      "unit_kind": "resource-ceiling",
+      "owner_context": "Telemetry Event Log"
     },
     {
       "spec_ref": "PB-14",
-      "obligation": "Bound emit retries; drop with counter after limit.",
-      "capability": "bounded-attempts",
-      "unit_kind": "retry-policy",
-      "owner_context": "Telemetry Stream Distribution",
-      "covers": ["PI-04"]
+      "obligation": "Each append carries one bounded timeout key",
+      "capability": "timeout-budget",
+      "unit_kind": "timeout-policy",
+      "owner_context": "Telemetry Event Log"
     }
   ],
   "risks": [
     {
       "id": "R-01",
-      "risk": "No real rates or volumes declared; budget numbers are baseline guesses.",
-      "mitigation": "accepted: numbers set from PA-01, tunable through config",
-      "residual": "Budgets may under- or over-admit until real load is known."
+      "risk": "Reorder window state is lost on restart",
+      "mitigation": "accepted: window rebuilt from append-only log",
+      "residual": "Reordering of in-window samples delayed until rebuild completes"
     },
     {
       "id": "R-02",
-      "risk": "Dropped events on overflow lose live distribution samples.",
-      "mitigation": "PB-10",
-      "residual": "Live window gaps possible; stored history stays complete and replayable."
+      "risk": "Single-node ceiling may be below real burst volume",
+      "mitigation": "PB-02",
+      "residual": "Excess packets rejected; devices must retransmit"
     },
     {
       "id": "R-03",
-      "risk": "Wall-clock latency targets cannot be proven by deterministic gates.",
-      "mitigation": "operator: latency verified by post-delivery load run",
-      "residual": "Latency unproven at stage-1; only counts, sizes and statuses gated."
+      "risk": "Stalled store drops appends once intake queue is full",
+      "mitigation": "PB-13",
+      "residual": "Rejected appends counted but not replayed automatically"
     }
   ],
   "open_questions": []

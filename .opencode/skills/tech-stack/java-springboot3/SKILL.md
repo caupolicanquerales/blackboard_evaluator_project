@@ -51,3 +51,45 @@ Flyway: `V<n>__snake_case_description.sql`, PostgreSQL dialect, snake_case table
   `context-propagation` + `Hooks.enableAutomaticContextPropagation()` as a duty (the
   correlation unit or the wiring unit); without them Reactor Context never reaches
   the MDC and the ECS file loses the id at the first scheduler hop.
+
+# Scaffold facts (the strategy phase's ONLY dependency source)
+Scaffold generator: Spring Initializr (mcp-server-springboot). Spell dependencies as its
+GENERATOR-NATIVE SHORT IDS - `webflux`, `data-r2dbc`, `flyway`, `actuator`, `validation`,
+`security`, `oauth2-resource-server`, `test`, `reactor-test` - NEVER the
+`spring-boot-starter-*` artifactIds (the generator wraps them itself; citing a starter id
+is a dependency the scaffold cannot add). The list MUST include `test`; when the plan
+tests reactive code it MUST include `reactor-test`. Default when the description names no
+version: Boot 3.x at the skill's pinned major; the generator's own default major is a
+trap - the strategy's pin wins, and the stage-0 re-pin fallback keeps the tree equal to it.
+
+# Record keys (board `ast_hints` vocabulary -> this language)
+`package` = the Java package declaration of the file (every segment a legal identifier,
+no reserved word); `implements` = the supertypes the class declares - interface names,
+or `[]` for a concrete class with none; `methods[].signature` is the Java method
+header (return type, name, typed parameters) and `returns` the return type (`""` for
+`void`); `routes[].method`/`path` = the mapping annotation's verb and path pattern;
+`config[].path` = the Spring property key (`spring.` namespace form). The keys are the
+board's structural slots; this section is the mapping - a task record that spells a
+value outside these forms is off-plan for this stack.
+
+# Worked draft example
+ONE honest unit record for THIS stack - the planner brief lifts it verbatim; the shape
+is law everywhere, these spellings are Java/Spring's only. Unit 21 expands to
+T1-021/T2-021/T3-021 with the IDENTICAL ast_hints pair (the engine mirrors it):
+```json
+[
+ {"n": 21, "project": "telemetry", "layer": "interface", "feature": null,
+  "dependsOn": {"test": ["T0-001", "T1-020"], "code": ["T0-001", "T2-020"]},
+  "test": {"path": "src/test/java/com/acme/intake/IngressControllerTest.java",
+           "export": "IngressControllerTest",
+           "intent": "Slice drives POST /ingress/packets AT the lookup: owner's packet appended (AZ-02 permitted); a VALID packet bearing a foreign tenant's id REFUSED 403 (cross-owner); duplicate key a no-op; assert the appended row, the refused status, the counted meter."},
+  "code": {"path": "src/main/java/com/acme/intake/IngressController.java",
+           "export": "IngressController",
+           "intent": "Unit IS the surface 'packet ingest HTTP inbound': AZ-02 tenant-scoped-query enforced at the lookup - byIdAndTenant on the pinned SampleStore, a foreign tenant's packet never fetched, 403 on refusal; counts telemetry.ingest.accepted per append; duplicate key a no-op.",
+           "ast_hints": {"package": "com.acme.intake", "implements": [],
+             "dependencies": [{"type": "SampleStore", "task_id": "T2-020"}],
+             "methods": [{"signature": "ResponseEntity<Void> ingest(IngressRequest request)", "returns": "ResponseEntity<Void>"}],
+             "meters": [{"name": "telemetry.ingest.accepted", "duty": "owns"}],
+             "routes": [{"method": "POST", "path": "/ingress/packets", "duty": "serves"}],
+             "config": []}}}]
+```

@@ -16,7 +16,7 @@ import test_gate
 # identifying it the moment a second dependency-free stage 0 family (database migrations)
 # shared the board, and any future specialist that queues bootstrap work inherits the
 # ambiguity: the marker is the answer, the shape scan is only the legacy fallback.
-SCAFFOLD_EXPORT = "project_scaffold"
+SCAFFOLD_EXPORT = settings.SCAFFOLD_EXPORT
 
 
 def read_queue():
@@ -106,8 +106,7 @@ def scaffold_task_id(slug):
             continue
         if str(task.get("export", "")).strip() == SCAFFOLD_EXPORT:
             return task_id
-        path_parts = str(task.get("path", "")).split("/")
-        if not task.get("dependsOn") and "migrations" not in path_parts:
+        if not task.get("dependsOn") and not tasks.is_database_task(task):
             dependency_free.append(task_id)
     return dependency_free[0] if dependency_free else "T0-000"
 
@@ -118,9 +117,10 @@ def database_task_ids(slug):
     Used to keep the database phase idempotent: re-running it would emit duplicates.
     """
     found = []
-    for task_id, task in sorted(load_index().items()):
+    board = load_index()
+    for task_id, task in sorted(board.items()):
         if (task.get("project") == slug and task_id.startswith("T0-")
-                and "migrations" in str(task.get("path", "")).split("/")):
+                and tasks.is_database_task(task, board)):
             found.append(task_id)
     return found
 
@@ -809,11 +809,18 @@ def _unit_text(record):
                      + [str(value) for value in hints.values() if isinstance(value, str)])
 
 
-def _inbound_units(units):
-    """Stage-2 entry adapters - the same reading rule (p) uses (layer or inbound prose)."""
+def _inbound_units(units, surface_names=()):
+    """Stage-2 entry adapters - the same reading rule (p) uses (layer or inbound prose),
+    widened by y5 (2026-11-24 v4 live): an internal-call surface's consuming adapter IS the
+    entry even at application layer - a law that only recognizes HTTP controllers gets
+    layer-hacked around (the repair relabeled a consumer 'interface' while its package
+    stayed /application/). y2 already makes the unit that NAMES a surface the entry; the
+    detector follows the law it enforces."""
     return [unit for unit in units if unit.get("stage") == settings.TDD_STAGE
             and (str(unit.get("layer", "")) in ("interface", "api", "entry")
-                 or tasks.INBOUND_RE.search(str(unit.get("intent", ""))))]
+                 or tasks.INBOUND_RE.search(str(unit.get("intent", "")))
+                 or any(n and n in ddd.norm_surface(str(unit.get("intent", "")))
+                        for n in surface_names))]
 
 
 def _pins(entry_unit, product_unit, by_id):
@@ -869,7 +876,9 @@ def _security_reach_errors(slug, spec, claims, by_id):
             or []) if isinstance(row, dict)}
     units = [record for record in by_id.values()
              if str(record.get("project", "")) == slug and int(record.get("stage") or 0) >= 1]
-    inbound = _inbound_units(units)
+    # y5 (2026-11-24 v4): the detector is widened by the DECLARED surface names - the
+    # unit that names a surface IS its entry, whatever layer it lives at.
+    inbound = _inbound_units(units, surfaces)
     testers = {}
     for unit in units:
         if int(unit.get("stage") or 0) != settings.TESTER_STAGE:
@@ -1162,6 +1171,51 @@ def replan_domain(slug):
 # class), discovered at its first red gate - so emit refuses it and the plan moves the
 # artifact where it can live: a prompt contract becomes a Java TYPE whose tabled members
 # carry the contract elements; other facts belong to a source type or the config document.
+def _wire_manifest_edges(staged, index):
+    """Build-manifest edges are MECHANICAL, not decisions (2026-11-24 seed-002): the
+    context drafted FIRST cannot depend on a manifest a LATER context is about to
+    schedule, so every unit of the first context arrived at the batch unable to reach
+    the manifest - a law unsatisfiable at drafting time refused 46 objects and billed
+    repair sessions to type an id into a list. The refusal's own remedy names the fix
+    exactly (add the manifest id to `dependsOn`; the pair's twin inherits through it),
+    so Python joins the edge BEFORE the gate runs and discloses every append;
+    `_manifest_order_errors` keeps its teeth as the assertion it was written to be."""
+    world = dict(index)
+    world.update({str(task.get("id")): task for task in staged
+                  if isinstance(task, dict) and task.get("id")})
+    manifests = {}
+    for tid, task in world.items():
+        if not isinstance(task, dict) or int(task.get("stage") or 0) != 0:
+            continue
+        if str(task.get("export", "")).strip() == BUILD_MANIFEST_EXPORT:
+            manifests.setdefault(str(task.get("project", "")), []).append(str(tid))
+    notes = []
+    for task in staged:
+        if not isinstance(task, dict) or int(task.get("stage") or 0) not in (1, 2):
+            continue
+        targets = manifests.get(str(task.get("project", "")))
+        if not targets:
+            continue
+        seen, stack = set(), [str(task.get("id", ""))]
+        reached = None
+        while stack:
+            for dep in world.get(stack.pop(), {}).get("dependsOn") or []:
+                dep = str(dep)
+                if dep in targets:
+                    reached = dep
+                    break
+                if dep not in seen:
+                    seen.add(dep)
+                    stack.append(dep)
+            if reached:
+                break
+        if reached is None:
+            task.setdefault("dependsOn", []).append(targets[0])
+            notes.append(f"{task.get('id')}: dependsOn += {targets[0]} "
+                         "(build-manifest edge wired by the engine - mechanical, not billed)")
+    return notes
+
+
 def _manifest_order_errors(staged, index):
     """BUILD-MANIFEST PRECEDES EVERY RED COMPILE (2026-11-20 root fix - AS15's prose law
     promoted to the machine tier): a stage-0 task whose export is `build-manifest` means
@@ -1358,6 +1412,7 @@ def emit_tasks(paths):
         errors.extend(_reserved_segment_errors(staged))
         errors.extend(_writable_channel_errors(staged))
         errors.extend(_stage0_family_errors([], index))
+        manifest_notes = _wire_manifest_edges(staged, index)
         errors.extend(_manifest_order_errors(staged, index))
         if errors:
             reason = "\n".join([_format_error(e) for e in errors] + [
@@ -1367,6 +1422,8 @@ def emit_tasks(paths):
                 "a few hundred) - then re-emit the same files in ONE command."])
             telemetry.mark_error(current, reason)
             return reason
+        for note in manifest_notes:
+            print(f"[wire  ] {note}")
         for task in staged:
             destination = settings.QUEUE_DIR / tasks.task_file_name(task)
             # One id, one record across the whole board. A QUARANTINED sibling of the same
@@ -1457,7 +1514,7 @@ def draft_world(slug, exclude=None):
     return world
 
 
-BUILD_MANIFEST_EXPORT = "build-manifest"
+BUILD_MANIFEST_EXPORT = settings.BUILD_MANIFEST_EXPORT
 
 
 def _stage0_family_errors(staged, world=None):
@@ -1493,6 +1550,93 @@ def _stage0_family_errors(staged, world=None):
     return problems
 
 
+def expand_unit_draft(batch):
+    """THE COMPACT UNIT FORM -> the canonical triad, deterministically (2026-11-24 planner
+    performance pass). The session submits ONE record per unit - both paths, both intents,
+    ONE ast_hints, the two dependsOn lists - and this function materializes the T1+T2+T3
+    triad the board has always validated. Why in Python: (a) T1/T2 must carry the
+    BYTE-IDENTICAL table (rule z4) - typing it twice is 2x output tokens plus drift that
+    costs a lint round each time, copying it once is free and exact; (b) targetAgent/stage/
+    kind/T3-shape are boilerplate, and AS10's whole point is that arithmetic never gets
+    billed to a session; (c) a 68-object draft shrinks ~35-45%, halving the single-turn
+    streaming wall. A fully-formed task record (has `stage`) passes through untouched, so
+    both draft shapes are lawful inputs until the draft is claimed. Returns (tasks, errors)
+    with ERR pointers in the derived-object space (T1-007 = unit 7 test side)."""
+    out, errors = [], []
+    for position, entry in enumerate(batch, start=1):
+        if not isinstance(entry, dict) or "stage" in entry:
+            out.append(entry)          # canonical record (or garbage for validate to name)
+            continue
+        if "n" not in entry and "test" not in entry and "code" not in entry:
+            out.append(entry)          # not a unit record: the id-less refusal names it
+            continue
+        n = entry.get("n")
+        label = f"unit[{n}]" if isinstance(n, int) else f"unit[{position}]"
+        if not isinstance(n, int) or n < 1:
+            errors.append(f"ERR [{label}].n: a unit needs a positive integer n "
+                          "(the id number its triad will carry)")
+            continue
+        test, code = entry.get("test") or {}, entry.get("code") or {}
+        if not isinstance(test, dict) or not isinstance(code, dict) or not test or not code:
+            errors.append(f"ERR [{label}]: a unit needs both objects test (the stage-1 test "
+                          "side) and code (the stage-2 production side)")
+            continue
+        missing = [f"{side}.{key}" for side, d in (("test", test), ("code", code))
+                   for key in ("path", "export", "intent")
+                   if not str(d.get(key) or "").strip()]
+        if missing:
+            errors.append(f"ERR [{label}]: {', '.join(missing)} empty - each side carries "
+                          "its path, export and intent")
+            continue
+        hints = code.get("ast_hints")
+        if hints is not None and not isinstance(hints, dict):
+            errors.append(f"ERR [{label}].code.ast_hints: must be an object - the SAME table "
+                          "lands byte-identical on T1 and T2 (z4 by construction)")
+            continue
+        shared = {"layer": entry.get("layer"), "feature": entry.get("feature"),
+                  "project": entry.get("project")}
+        deps = entry.get("dependsOn") or []
+        if isinstance(deps, list):
+            # flat list = unit-wide dependencies (scaffold, manifest, db ids): the model's
+            # canonical-form habit, honored as BOTH sides' base rather than dropped (2026-11-24)
+            deps = {"test": deps, "code": deps}
+        t1_deps = [str(d) for d in (deps.get("test") or [])]
+        t2_extra = [str(d) for d in (deps.get("code") or [])]
+        # stage-0 bootstrap ids are UNIT facts, not side facts (2026-11-24): the code side
+        # compiles against the same scaffold/manifest/database classpath the TEST side
+        # compiles against - red precedes green, so the tester's first compile needs them
+        # too. Propagate any T0-* listed on either side to both (the law's "its T1 twin
+        # inherits through the pair", enforced by construction); side-specific T1/T2 pins
+        # stay side-specific.
+        t0_shared = sorted({d for d in t1_deps + t2_extra if d.startswith("T0-")})
+        if t0_shared:
+            t1_deps = t0_shared + [d for d in t1_deps if not d.startswith("T0-")]
+            t2_extra = t0_shared + [d for d in t2_extra if not d.startswith("T0-")]
+        tid1, tid2, tid3 = f"T1-{n:03d}", f"T2-{n:03d}", f"T3-{n:03d}"
+        t1 = {"id": tid1, "targetAgent": settings.STAGE_AGENTS[1], "stage": 1,
+              "dependsOn": t1_deps, "kind": settings.STAGE_KINDS[1][0],
+              "path": test["path"], "export": test["export"], "intent": test["intent"],
+              **shared}
+        t2 = {"id": tid2, "targetAgent": settings.STAGE_AGENTS[2], "stage": 2,
+              "dependsOn": [tid1] + [d for d in t2_extra if d != tid1],
+              "kind": settings.STAGE_KINDS[2][0],
+              "path": code["path"], "export": code["export"], "intent": code["intent"],
+              **shared}
+        if hints is not None:
+            t1["ast_hints"] = json.loads(json.dumps(hints))
+            t2["ast_hints"] = json.loads(json.dumps(hints))
+        if code.get("observability") is not None:
+            t2["observability"] = json.loads(json.dumps(code["observability"]))
+        intent3 = str(entry.get("refactor_intent") or "").strip() or (
+            f"Refactor {code['export']}: keep the tabled contract and the paired tests "
+            "green; no behavior, status, meter or route change.")
+        t3 = {"id": tid3, "targetAgent": settings.STAGE_AGENTS[3], "stage": 3,
+              "dependsOn": [tid2], "kind": settings.STAGE_KINDS[3][0],
+              "path": code["path"], "export": code["export"], "intent": intent3, **shared}
+        out.extend([t1, t2, t3])
+    return out, errors
+
+
 def lint_draft(path):
     """The agent-facing single-file check: `python3 <runner> --lint <draft file>`.
 
@@ -1509,12 +1653,13 @@ def lint_draft(path):
     except (OSError, json.JSONDecodeError) as exc:
         return f"ERR [{source.name}]: unreadable JSON: {exc}"
     batch = loaded if isinstance(loaded, list) else [loaded]
+    batch, expand_errors = expand_unit_draft(batch)
+    errors = list(expand_errors)
     task = batch[0] if isinstance(loaded, dict) else None
     slug = str((task or {}).get("project") or source.name.split("-", 1)[0])
     world = draft_world(slug, exclude=source)
     index = dict(world)
     staged = []
-    errors = []
     reasons = {}
     for position, entry in enumerate(batch, start=1):
         label = (entry.get("id") if isinstance(entry, dict) and entry.get("id")
@@ -1581,8 +1726,14 @@ def claim_draft(slug, context):
     batch = loaded if isinstance(loaded, list) else [loaded]
     if not batch or not all(isinstance(task, dict) for task in batch):
         return [f"{path.name}: must be a JSON array of task objects"], {}
+    was_compact = any(isinstance(t, dict) and "stage" not in t
+                      and ("n" in t or "test" in t or "code" in t) for t in batch)
+    batch, expand_errors = expand_unit_draft(batch)
     world = draft_world(slug, exclude=path)
     problems, renames = [], {}
+    problems.extend(expand_errors)
+    if expand_errors:
+        return problems, {}
     counters = {}
     originals = []  # (task, old id) recorded BEFORE any rename - the reference pass needs both spaces
     for task in batch:
@@ -1604,7 +1755,7 @@ def claim_draft(slug, context):
             counters[stage] += 1
             renames[old] = new_id
             task["id"] = new_id
-    if renames:
+    if renames or was_compact:
         own_export = {old: str(task.get("export") or "") for task, old in originals
                       if old in renames}
         for task, _old in originals:

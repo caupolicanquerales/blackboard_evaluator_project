@@ -26,7 +26,7 @@ BUDGETS = {
     "discovery": 10, "mapping": 10,
     # 2026-11-20 architect split: "architect" stays the label of HISTORIC monolith
     # sessions (13 was their per-phase shape); the two new carriers classify apart.
-    "architect": 13, "strategy": 12, "planner": 12, "planner_repair": 12,
+    "architect": 13, "strategy": 12, "planner": 16, "planner_repair": 12,
     "database": 10, "security": 8, "performance": 8, "ai": 8,
     "container": 10, "tester": 8, "coder": 6, "evaluator": 12, "assembly": 12,
 }

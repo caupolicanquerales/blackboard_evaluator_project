@@ -19,7 +19,11 @@ servlet type in a reactive chain is a compile error the coder pays for.**
 body ends `return http.build();`.
 `http.authorizeExchange(e -> e.pathMatchers(HttpMethod.POST, "/api/x")
  .access(ReactiveAuthorizationManager.hasRole("ADMIN")).anyExchange().denyAll())` - **ALWAYS a terminal
-clause**; `.access(...)` guards the ROUTE, never a ROW. JWT:
+clause**; `.access(...)` guards the ROUTE, never a ROW. The terminal deny closes ONLY what the plan's
+FULL surface table leaves - a composition root hosts every bounded context's routes, so a chain
+written for one context still permits the siblings' tabled paths beside their own guards
+(2026-11-24: a single-context chain's "rest denied" made another context's streaming endpoint
+unreachable while every per-unit gate stayed green). JWT:
 `.oauth2ResourceServer(o -> o.jwt(Customizer.withDefaults()))` beside the `ReactiveJwtDecoder` bean the
 plan tables; per-device secrets: `.httpBasic(h -> h.authenticationManager(<device manager>))`; client
 certificates: `.x509(x -> x.principalExtractor(...).authenticationManager(...))` (defaults

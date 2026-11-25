@@ -157,10 +157,25 @@ def worked_draft_example(slug):
             continue
         fence = re.search(r"```json\n(.*?)\n```", text[i:], re.S)
         if fence:
+            body = fence.group(1)
+            # (2026-11-25 bleeding stop) the example's `project` is a placeholder -
+            # sessions copy the exemplar faithfully, and the static `"telemetry"`
+            # taught three drafts a fake slug each one then had to sed/edit away
+            # (the repair tier later sed'd it AGAIN). The engine prints the domain's
+            # real slug into the example exactly as it prints every other concrete.
+            try:
+                units = json.loads(body)
+                for u in units if isinstance(units, list) else [units]:
+                    if isinstance(u, dict):
+                        u["project"] = slug
+                body = json.dumps(units, indent=1)
+            except (ValueError, TypeError):
+                body = re.sub(r'("project":\s*)"[^"]*"', lambda m: m.group(1) + json.dumps(slug), body)
             return ("Worked draft example - THIS domain's stack flavor, lifted from "
                     f"`{rel}` (the SHAPE is the law for every stack; the paths, names "
-                    "and signatures below belong to this stack only):\n```json"
-                    + fence.group(1) + "\n```")
+                    "and signatures below belong to this stack only; `project` is this "
+                    "domain's slug):\n```json"
+                    + body + "\n```")
     return ("(no worked example is published by the resolved tech-stack skill - the "
             "record shape and the stage graph above are the whole teaching; ask the "
             "skill by path, never by a stack you assume)")
@@ -169,13 +184,30 @@ def worked_draft_example(slug):
 def build_planner_prompt(project_root, runner, slug, context, draft, slice_path,
                          symbols_path, next_free, undrafted, gaps_path=None,
                          strategy_slice_path=None):
-    """Phase 2 brief for ONE bounded context (2026-11-20 architect split). Every path the
-    session reads or writes is computed by the engine and spelled here in full: the
-    transcript of a short per-context session must contain decisions, not hunting.
-    `gaps_path` defaults to the draft's own name with .gaps.json - the structured channel
-    for coordinates the ONE build-manifest task lacks (X11: the engine consumes it)."""
-    if gaps_path is None:
-        gaps_path = str(draft).rsplit(".json", 1)[0] + ".gaps.json"
+    """Phase 2 brief for ONE bounded context (2026-11-20 architect split) or, since the
+    2026-11-25 root restructure, for the reserved ROOT pass that owns the domain-wide
+    singletons. Every path the session reads or writes is computed by the engine and
+    spelled here in full: the transcript of a short per-context session must contain
+    decisions, not hunting. `gaps_path` is a DEAD parameter kept only so old callers
+    cannot crash: PHASE 1.5 deleted the gap channel."""
+    is_root = str(context or "") == ddd.ROOT_CONTEXT
+    ownership_line = (
+        "YOU ARE THE ROOT PASS: this file carries the domain's SHARED singletons - the "
+        "ONE configuration-artifact unit (its path is the stack skill's runtime "
+        "configuration artifact; its table seeds every operational key the mechanism "
+        "rows name with the DEFAULT VALUES the strategy `rules` tabled, the sink "
+        "format/destination/rolling literals, the test-profile activation route, and the BOOT POSTURE (fail-fast, profile-seeded entries) of every seeded key whose mechanism row names one), the "
+        "ONE root admission gate (mark its stage-2 unit with the key `root_gate: true` - the engine "
+        "tables every addressed surface of the composition root into its routes, so you "
+        "cite no foreign address yourself), and the UNATTRIBUTED duties of the digest "
+        "slice - the obligations no bounded context owns. The build manifest is NOT "
+        "yours: the engine queued it before you (stage-0 summary). Schedule NO request-"
+        "path slice and NO per-context unit: those are the bounded-context passes' "
+        "work, drafted AFTER you, pinning YOUR ids from the symbol table."
+        if is_root else
+        "You draft ONE bounded context. The domain singletons (config unit, root gate, "
+        "build manifest) belong to the ROOT pass and the ENGINE - the symbol table "
+        "shows their ids; schedule none of them.")
     if strategy_slice_path is None:
         strategy_slice_path = ddd.strategy_slice_path(slug, context)
     drafted_line = (f"{symbols_path} - the symbol table of the contexts already drafted "
@@ -200,8 +232,9 @@ def build_planner_prompt(project_root, runner, slug, context, draft, slice_path,
         .replace("{slug}", slug)
         .replace("{stack_skills}", build_stack_skills_line(slug))
         .replace("{context}", str(context))
+        .replace("{ownership_line}", ownership_line)
         .replace("{draft}", str(draft))
-        .replace("{gaps}", str(gaps_path))
+        .replace("{gaps}", str(gaps_path or ""))
         .replace("{slice}", str(slice_path))
         .replace("{strategy_path}",
                   str(settings.COMPLETE_DIR / f"execution-strategy-{slug}.json"))
@@ -701,180 +734,186 @@ ARCHITECT_PLANNER_PROMPT = """You are the blackboard planning architect for this
 Phase 2 of 2 (the split planner): the tasks of ONE bounded context, in this session.
 Domain: {slug} - project root {project_root}/services/{slug}/; every task `path` is relative to it.
 Context: {context} - draft file: {draft}.
+{ownership_line}
 
 READ EXACTLY THESE, once each - they are the whole input; nothing else is:
-0. {context_path} - the engine PRE-CONCATENATED the three inputs below plus the contract
+0. {context_path} - the engine PRE-CONCATENATED the inputs below plus the contract
    QUICKREF into this ONE file. Read IT once; do not re-read the section files it contains.
 1. {strategy_slice} SECTION STRATEGY SLICE - phase 1's plan FILTERED to this context by Python: your surfaces
    (the `surfaces[].name` join keys), your persistence, your step logs, the module layout.
    Two fields are WHOLE-ROOT and must be read as such: `composition_root_surfaces` - every
    inbound surface the domain hosts, any context, each with its `method`+`path` where the
-   strategy tables a route: the root gets ONE entry gate and its owner must account for all
-   of them (see the ROOT-WIDE ADMISSION law; a later context PINs the gate it finds in the
-   symbol table instead of adding a second one) - and
-   `rules` - the description's numeric bounds, windows and status literals verbatim, your
-   ONLY copy: plan the numbers from here, never from memory.
+   strategy tables a route: the root gets ONE entry gate (see the ROOT-WIDE ADMISSION law;
+   a later context PINs the gate it finds in the symbol table instead of adding a second
+   one) - and `rules` - the description's numeric bounds, windows and status literals
+   verbatim, your ONLY copy: plan the numbers from here, never from memory.
    The full file at {strategy_path} stays CLOSED - a fact the slice lacks is a reported
    gap for phase 1, never a silent re-read. Paths in this brief are repository paths;
    only a task `path` INSIDE your JSON is domain-root-relative. Do not rewrite the
-   strategy; the ONE lawful edit: a mechanism the strategy promised ("via <mechanism>")
-   that this plan will not install - amend the promise to what ships (the skill's rule
-   (t)) and report the amendment.
+   strategy; the ONE lawful edit: a promised mechanism the plan will not install - amend
+   the promise to what ships (the skill's rule (t)) and report the amendment. Scope is
+   literal: you may reword SENTENCES inside existing fields, you NEVER add, rename or
+   delete keys - the strategy schema belongs to phase 1, and an out-of-process
+   boundary or at-most-once posture belongs in an EXISTING text segment the gate can
+   read - or, cheapest of all, in the PUBLISHING unit's OWN intent: the gate reads the
+   marker words per source there too (a made-up strategy key is refused by the shape
+   gate and re-plans the whole domain; live 2026-11-25 an SSE feed's repair invented
+   exactly that).
 2. {slice} SECTION DIGEST SLICE - this context's duty digest, and every duty arrives COMPLETE: `surface`,
-   `test_duty`, `measurement` are joined ONTO the duty (the specs' own sections -
-   principals, assumptions, trust boundaries, risks - are not here and nothing in them is
-   needed to claim), `covers` is expanded, and the matched mapping-table row rides as the
-   duty's `table_row` (the identifier the intent must spell and the key the config unit
-   owns, copied, not recalled). `build_coordinates` is ALWAYS present and may be EMPTY:
-   empty = no coordinate beyond the scaffold is needed, schedule no manifest; a duty with
-   `table_row: null` has NO row mapped to its token (the stack's table is missing, or the
-   token is absent from it) - report the flow defect for phase 1, NEVER borrow a
-   mechanism from a neighbouring row.
-   `build_coordinates` names the stage-0 manifest duty's
-   dependencies when the scaffold lacks one. The raw specs and the mapping tables STAY
-   CLOSED unless this file lists `unmapped_duties` - then open ONLY that spec's table.
+   `test_duty`, `measurement`, `surface_kind` (+ `surface_method`/`surface_path` for
+   addressed surfaces) are joined ONTO the duty; `covers` is expanded, and the matched
+   mapping-table row rides as the duty's `table_row` (the identifier the intent must
+   spell and the key the config unit owns, copied, not recalled). `build_coordinates`
+   is ALWAYS present and may be EMPTY: empty = no coordinate beyond the scaffold is
+   needed, schedule no manifest; a duty with `table_row: null` has NO row mapped to its
+   token - report the flow defect for phase 1, NEVER borrow a mechanism from a
+   neighbouring row. The raw specs and the mapping tables STAY CLOSED unless this file
+   lists `unmapped_duties` - then open ONLY that spec's table.
 3. SECTION SYMBOL TABLE - {symbols_line}
-4. SECTION CONTRACT QUICKREF - the contract map (schema keys, stage graph, claim form,
-   vocabulary fields); the FULL contract SKILL.md opens ONLY on an ERR pointer citing a
-   shape the map does not summarize.
+4. SECTION CONTRACT QUICKREF - the contract map (schema keys, stage graph, the reference
+   law, claim form, vocabulary fields); the FULL contract SKILL.md opens ONLY on an ERR
+   pointer citing a shape the map does not summarize.
 
 STACK SKILLS (the paths below are resolved by the ENGINE from this strategy's planned
 stack - read each named file ONCE, never glob a skills folder, never assume a name this
 brief does not print): {stack_skills}
 
-DRAFT one JSON array at {draft} - the stage 1-3 units of context "{context}" - created with
-your edit tool: the FULL array in the fewest calls the tool allows (one create, two at most
-if it truncates). A generator script is forbidden: no python/shell/heredoc that produces or
-patches drafts (it rides every later turn, patches blind, and re-emits through your
-costliest class). Never
+DRAFT one JSON array at {draft} - the stage 1-3 units of context "{context}" - every
+record's `project` is the slug {slug} (the human context names in your slices are NOT
+project values), created with your edit tool: the FULL array in the fewest calls the tool allows. A generator script is forbidden: no python/shell/heredoc that produces or patches drafts. Never
 touch another context's file.
 
 Id and pin law (the split makes this exact): number from {next_free}; the suffix matches
-the stage. A pin goes ONLY to queue/complete ids, to ids inside this file, or to the symbol
-table - a context not yet drafted cannot be referenced, because its ids do not exist yet:
-{undrafted_line} Units that use the store list these queued database ids in `dependsOn`:
-{db_ids}
+the stage. A pin goes ONLY to queue/complete ids, to ids inside this file, or to the
+symbol table - a context not yet drafted cannot be referenced, because its ids do not
+exist yet: {undrafted_line} Units that use the store list these queued database ids in
+`dependsOn`: {db_ids}
 
 Stage shape - the graph is law, because the drain orders units ONLY by dependsOn and
 red must precede green: every unit of work is a T1+T2+T3 TRIPLE. TWO honest draft shapes
-exist and the engine expands BOTH: the COMPACT UNIT FORM (one record per unit, ids
-derived from `n`) or the BOARD TASK OBJECTS (full T1/T2/T3 records - an expanded draft
-validates identically: the pair table is mirrored by the engine, rule z4 holds at claim
-time, not by your typing). Pick the shape you write fluently, keep ONE shape for the whole file, and never
-generate the draft with a script - write it with the edit tool (2026-11-24 v4 live: the compact-only law with a literal exemplar was in
-the prompt and the session still typed expanded records in 30 calls - and DROPPED the
-(p) slice "for not knowing its compact form". A format law that loses to the model's
-prior shaves requirements; the prior is now the taught shape, the triad stays honest
-too). The record keys are the BOARD's names for every stack; the active tech-stack
-skill's `# Record keys` mapping gives each its language reality (and says which are
-not applicable). The lone
-stage-0 object you may type is your ONE build-manifest bootstrap:
-  {"n": 7, "project": "<slug>", "layer": "domain", "feature": null,
-   "dependsOn": {"test": ["T0-001"], "code": ["T2-003"]},
-   "test": {"path": "<stack test dir>/CounterTest.<test ext>", "export": "CounterTest",
-            "intent": "<what the slice's table_row mechanism must do, both branches, the literals>"},
-   "code": {"path": "<stack source path>/Counter.<source ext>", "export": "Counter",
-            "intent": "<claim: spec_ref + capability + copied mechanism, config literals>",
-            "ast_hints": {"package": "...", "implements": [], "dependencies": [...],
-                          "methods": [...], "meters": [...], "routes": [...], "config": [...]}}}
-ids derive from n (unit 7 -> T1-007/T2-007/T3-007); T2 gets its own T1 prepended
-automatically; a flat dependsOn list = both sides; a stage-0 id on either side propagates
-to both. stage 1 -> agent-tester (path = the TEST file, never a production file); stage 2 ->
-agent-coder (path = the production file); stage 3 -> agent-evaluator (stage 2's file, kind
-refactor) - all Python's boilerplate, not your tokens. A T1
+exist and the engine expands BOTH: the COMPACT UNIT FORM {"n": 7, "test": {...},
+"code": {...}} (one record per unit, ids derived from `n`) or the BOARD TASK OBJECTS
+(full T1/T2/T3 records). The active tech-stack skill's `# Record keys` mapping gives
+every board key its language reality (and says which are not applicable). Pick the shape you
+write fluently, keep ONE shape for the whole file; the ONE lawful extra object in a
+compact file is the (p) slice's lone stage-1 - the ONLY extra (the build-manifest is
+ENGINE-queued, PHASE 1.5; the config unit and the root gate belong to the ROOT pass). stage 1 -> agent-tester (path = the TEST file, never a production
+file); stage 2 -> agent-coder (path = the production file); stage 3 -> agent-evaluator
+(stage 2's file, kind refactor) - all Python's boilerplate, not your tokens; in a
+BOARD file the engine COMPLETES the triple (R4): omit stage-3 records and the
+stage-1 table freely - claim issues and mirrors them. A T1
 dependsOn the domain scaffold + earlier units' T1 tasks - NEVER a stage-2 task (emit
-refuses the inverted edge); a T2 dependsOn its own T1 + the T2 tasks of pinned producers;
-a T3 dependsOn its own T2. The ONE sanctioned exception to the triple: the (p) request-path
-slice may stand as a lone stage-1 test task - its green belongs to the terminal suite after
-every T2 lands - but it asserts ONLY outcomes the chained units already TABLE (cite the
-enforcing unit; a branch the slice invents is a second contract no implementation can
-satisfy twice). The T1/T2 pair carries the IDENTICAL ast_hints table: the single interface truth, shared literals TABLED - meter names only in
-`ast_hints.meters`, request paths only in `ast_hints.routes`, property paths only in
-`ast_hints.config` (rule (z)), one owner each, everyone else cites VERBATIM. intent
-40-80 words (180 refused at emit): the claim, the config literals, both branches of a
-signal - a fact `ast_hints` pins is never re-spelled in prose.
+refuses the inverted edge); a T2 dependsOn its own T1 + the T2 tasks of pinned
+producers; a T3 dependsOn its own T2. The (p) request-path slice: a project with an
+inbound adapter unit is REFUSED at emit without it - its stage-1 intent spells the
+marker the gate greps (`end-to-end`, `integration slice` or `request-path` - naming is
+part of the law, describing alone is not), asserts ONLY outcomes the chained units
+already TABLE, citing them, and NAMES the isolation choice for the shared substitute:
+each case seeds a UNIQUE identity, asserts a RELATIVE delta against its own baseline,
+or the support unit provides a CLEANUP between cases - a bare global count on a store
+siblings also write freezes test order into the contract. It may stand as a lone
+stage-1 (its green belongs to the terminal suite). The T1/T2 pair carries the IDENTICAL ast_hints table - the engine
+mirrors it; type the table ONCE, on the code side.
+
+REFERENCING IS LAW, COPYING IS THE ENGINE'S (batch hygiene): a shared fact you consume
+you REFERENCE on the code side, never re-spell -
+  "uses_meters": ["<owner's exact meter name>", ...]
+  "uses_routes": ["<METHOD> /path", ...]
+  "uses_config": ["<dotted.property.path>", ...]
+  "claims_steps": ["<strategy floor step-log string>", ...]
+At claim the ENGINE tables the canonical `ast_hints.meters`/`ast_hints.routes`/
+`ast_hints.config` entries VERBATIM from their owning units (or the strategy floor and
+surface table), writes your `observability.step_logs`, and tables EVERY addressed
+surface of the composition root into your gate's routes. An unresolvable reference is
+refused at LINT naming the closest tabled spelling - fix the reference or the owner's
+table; hand-copying what the engine derives is the drift the batch joins refuse (rule
+(z)). What remains YOUR typing: `owns`/`serves` entries, the `dependencies` pins,
+methods with `semantics` (REQUIRED when the intent rejects null or bounds an argument),
+claims and intents. A published `returns` type no other unit names in its
+`dependencies` is a DEAD source (rule (k)): the consumer pins the PRODUCER task.
 
 {worked_example}
 
-Build coordinates: consult the symbol table's `build_manifest` FIRST, then the scaffold's own
-dependency list (its stage-0 intent, printed in your brief) - a coordinate either carries is
-SCHEDULED, emit nothing for it. If neither carries one the slice's `build_coordinates` names,
-YOU schedule the ONE lawful stage-0 build-manifest duty as a bootstrap task (targetAgent
-{scaffold_agent}, kind bootstrap, layer root, feature null, export build-manifest,
-dependsOn empty, path = the stack's build marker, intent = the generator-native
-dependency ids from the tech-stack skill's `# Scaffold facts` section) - the FIRST context
-discovering a scaffold-missing coordinate OWNS it (a gaps file never substitutes for
-scheduling, and T0-001 is a completed stage-0 duty you cannot edit). If the ONE manifest task
-exists but lacks YOUR coordinate, write it VERBATIM into {gaps} - JSON: {"missing_coordinates": ["<coordinate string>", ...]},
-spelled exactly as the slice's build_coordinates spells it: the ENGINE reads that file and
-appends every reported coordinate to the ONE task before the batch emit. Never a
-second manifest (the linter refuses it), never another context's file, never prose in place
-of the file - a report the machine cannot read is an unscheduled coordinate, and the first
-red compile dies in that hole. A unit whose copied mechanism needs such a coordinate lists
-the build-manifest task id in its `dependsOn` (its T1 twin inherits through the pair): the
-dependency set must exist before the first red compile.
+DOMAIN SINGLETONS (PHASE 1.5 - the rule that makes this session symmetric): the
+ONE stage-0 build-manifest was queued by the ENGINE from the stack table's Build
+coordinates rows before any planning session ran - it appears in the stage-0 summary
+above. You NEVER schedule a manifest, never write a gaps file, and never edit another
+context's draft: a coordinate neither the manifest nor the scaffold carries is a
+REPORTED gap for phase 1, never a second bootstrap. The ONE configuration-artifact
+unit and the ONE root admission gate belong to the ROOT pass drafted BEFORE you: the
+symbol table shows their ids - pin them like any collaborator. Your units' bound
+property paths need no seeding duty: you table {path, kind, value?} on the BINDING
+unit and the engine copies it into the config unit at the batch (coverage wiring).
+A unit whose copied mechanism needs a coordinate lists the build-manifest task id in
+its `dependsOn` (the batch wires the edge mechanically if you omit it).
 
 Lead duties: the strategy's decomposition of this context - its `layers`,
 `module_layout` and the operations its surfaces name - becomes the unit list, one unit
 per behavior the strategy owns; persistence units follow the strategy's `persistence`
 object, and the schema itself is the database phase's stage-0 duty (never planned here);
-the strategy's observability floor decomposes into its units here as the skill directs -
-the floor's audit records get their unit, the floor's correlation mechanism lives in
-exactly ONE unit unless the symbol table already shows one, an externalized-config unit
-ONCE per domain (skip it if the symbol table already has one).
+the strategy's observability floor decomposes into units here: audit records get their
+unit, the floor's step logs are claimed via `claims_steps` (one owner per string - a
+meter never claims a step), correlation lives in exactly ONE unit unless the symbol
+table already shows one; the ONE externalized-config unit belongs to the ROOT PASS -
+pin it from the symbol table, schedule no second one. Your binders table
+{path, kind, value?} on the unit whose record reads the key, and the batch WIRES every
+tabled path into the config unit's coverage - no seeding duty and no gaps file rides
+your draft.
 
-DUTY CLAIMS, machine-enforced at emit: every duty of the slice is discharged INSIDE the
-enforcing STAGE-2 unit by spelling its `spec_ref` AND `capability` VERBATIM beside the
-mechanism copied from that duty's `table_row`. Security duties add the reach geometry: the
-unit that IS a surface (its intent names the strategy's `surfaces[].name`) pins the
+DUTY CLAIMS, machine-enforced at emit: YOU ALONE map a capability token to a real
+mechanism, and you map it FROM its row - the digest already carries each duty's matched
+`table_row`; a name no row carries is a defect to report, never a recall. Every duty of
+the slice is discharged INSIDE the enforcing STAGE-2 unit by spelling its `spec_ref`
+AND `capability` VERBATIM beside the mechanism copied from that duty's `table_row`. Security duties add the reach geometry:
+the unit that IS a surface (its intent names the strategy's `surfaces[].name`) pins the
 enforcing unit in `ast_hints.dependencies` + `dependsOn`, and that entry unit's stage-1
 pair carries the row id and its `test_duty` CROSS-OWNER case. Performance (PB-/PI-, WB-
-only where no PB- covers the capability) and AI (AC-/AM-) duties ride the same (y1) form
-without the reach law; PA- assumptions and AI roles/assumptions never carry claims. The
-HOME OF THE ARTIFACT is a SOURCE unit and the writable channel is language source or
-configuration document ONLY - a template file has no writer on this board.
+only where no PB- covers the capability) and AI (AC-/AM-) duties ride the same (y1)
+form: Performance and AI duties follow the same STAGE-2 placement without the reach
+law - the digest's `spec` label names each family; PA- assumptions and AI
+roles/assumptions never carry claims. The HOME OF THE ARTIFACT is a SOURCE unit and the writable channel is language
+source or configuration document ONLY - a template file has no writer on this board.
 
 ROOT-WIDE ADMISSION - ONE GATE PER ROOT (batch law): the composition root has ONE
 entry-admission decision - whatever mechanism the active stack uses to decide which
-inbound work is reachable (request pipeline, message router, command dispatcher, job
-gate - the tech-stack skill names it) - owned by ONE unit and scheduled by the context
-that drafts it FIRST. It reads `composition_root_surfaces` (ALL contexts' rows, with
-the inbound addresses the strategy tables): it admits-and-guards its own context's
-work, ADMITS the foreign contexts' work UNGUARDED (their duties are enforced where the
-owning context places the check), and the terminal default-closure ends only what the
-table leaves. A LATER context NEVER installs a second root-wide admission - check the
-symbol table: if an entry gate exists, PIN it like any guard, add at most authorization
-rules scoped to your own surfaces, and cite NO foreign inbound address in your own
-tables (2026-11-24 v4: two root-wide gates each closing the other's world ping-ponged
-the z6/y pair through two repair sessions into a fatal - one removed the cross-context
-citation, the twin-table law demanded it back). ENTRY IS PER-KIND: a surface's declared
-`kind` picks its entry unit - a surface with a tabled inbound address (`http`, address-taking
-`consumer`): the unit whose `routes` table answers that address, cross-owner = a valid
-identifier owned by another; an `internal-call` or unrouted `consumer` surface: the
-adapter the events ARRIVE at, cross-owner = a forged producer's VALID event refused and
-audited, and no address is tabled or required of it; `job`/`cli` surfaces enter at the
-runner.
+inbound work is reachable - owned by ONE unit, scheduled by the ROOT PASS and marked
+there with the key `root_gate: true`. The engine tables the whole root's
+addressed surfaces into its routes (own guarded, foreign admitted unguarded; the
+terminal default-closure ends only what the table leaves) - you cite NO foreign address
+yourself. A LATER context NEVER installs a second root-wide admission - check the
+symbol table: if a root_gate unit exists, PIN it like any guard, add at most
+authorization rules scoped to your own surfaces, and table no foreign address.
+ENTRY IS PER-KIND: a surface's declared `kind` picks its entry unit - a surface with a
+tabled inbound address: the unit whose `routes` table answers that address, cross-owner
+= a valid identifier owned by another; an `internal-call` or unrouted `consumer`
+surface: the adapter the events ARRIVE at, cross-owner = a forged producer's VALID
+event refused and audited, and no address is tabled or required of it; `job`/`cli`
+surfaces enter at the runner.
 
+RULE VALUES (batch law): every `rules` literal lands in the enforcing unit - numeric
+bound in the validator's intent or an `ast_hints.config` default, window length in the
+buffer's config key, the seed's status token spelled exactly - with ONE owner per value
+and VERBATIM citation (l)/(z); a one-sided bound stays one-sided, never a closed range
+the seed did not state; a refusal status no tabled source names is not a plan fact -
+assert the behavior or report the gap, never invent the number the frozen test
+will demand. intent 40-80 words (180 refused at emit): the claim, the config
+literals, both branches of a signal - a fact `ast_hints` pins is never re-spelled in
+prose, a collaborator's method is NAMED, never spelled with its parameter list.
 
-RULE VALUES (batch law): every `rules` literal lands in the enforcing unit - numeric bound in
-the validator's intent or an `ast_hints.config` default, window length in the buffer's config
-key, the seed's status token spelled exactly - with ONE owner per value and VERBATIM citation
-(l)/(z); a one-sided bound stays one-sided, never a closed range the seed did not state.
-
-The FULL contract (a)-(z) is `task-decomposition-dag` SKILL.md - load it once, do not
-memorize it: the linter and the batch emit quote the violated rule by letter.
+The FULL contract (a)-(z) is `task-decomposition-dag` SKILL.md - the linter and the
+batch emit quote the violated rule by letter; the history behind each rule is
+DECISIONS.md and is not your read.
 
 FINISH with the lint, then stop:
     python3 {runner} --lint {draft}
-Lint pointers name the EXPANDED objects: T1-007 is your unit 7 test side, T2-007 its code
-side; fix the unit record that produced them.
-EDIT every ERR [id]: line into existence-proof (one lint pass of edits costs hundreds of
-tokens; a rewrite costs 10-30k), lint again. If ONE defect shape repeats across tasks it
-is a law you missed, not N typos: reread that rule, rewrite the WHOLE file in ONE create
-call, lint once - a 20-edit cascade re-sends the transcript 20 times and costs the
-session its budget. A `LINT-CLEAN` line is your exit. Do NOT run
-`--emit`: when every context of the domain is drafted, the ENGINE emits the batch in one
-command and only a refusal then comes back to a repair session.
+Lint pointers name the EXPANDED objects: T1-007 is your unit 7 test side, T2-007 its
+code side; fix the unit record that produced them. EDIT every ERR [id]: line into
+existence-proof (one lint pass of edits costs hundreds of tokens; a rewrite costs
+10-30k), lint again. If ONE defect shape repeats across tasks it is a law you missed,
+not N typos: reread that rule, rewrite the WHOLE file in ONE create call, lint once.
+A `LINT-CLEAN` line is your exit. Do NOT run `--emit`: when every context of the
+domain is drafted, the ENGINE emits the batch in one command - the ENGINE emits the
+batch, and only a refusal then comes back to a repair session.
 
 Output: task ids + deps, the duty-by-duty closure (`spec_ref -> claiming unit ids ->
 mechanism named -> surface unit`), any `unmapped_duties` you had to open, risks.
@@ -900,21 +939,41 @@ edited file ONCE with `python3 {runner} --lint <file>`; never re-lint a file you
 change; then stop - the ENGINE re-runs the batch emit.
 The stage-shape law binds the repair: fix objects INSIDE the existing units; the ONE task a
 refusal may add is the (p) request-path slice (a lone stage-1 test whose green belongs to the
-terminal suite) - and it asserts only what the chained units already TABLE, citing their ids:
-never a fresh status, retention or tag behavior the plan froze elsewhere - one input, two
-contracts, no implementation satisfies either.
+terminal suite) - its intent spells the marker the gate greps (`end-to-end`, `integration
+slice`, `request-path`) and it asserts only what the chained units already TABLE, citing
+their ids: never a fresh status, retention or tag behavior the plan froze elsewhere - one
+input, two contracts, no implementation satisfies either.
 A refusal that contradicts a spec (a duty the mechanism rows cannot realize) is a reported
 flow defect you NAME, never a spec rewrite: the operator re-runs the phase that wrote it.
+THE STRATEGY FILE IS NOT YOURS EVEN TO AMEND unless the refusal's own remedy names it
+(rule (t)'s promise mismatch, or an out-of-process/at-most-once boundary sentence) - and then the edit is a SENTENCE inside an existing field, never
+a new key: an invented field is schema-fatal and re-plans the whole domain (live
+2026-11-25: a repair answered the (k) remedy by adding an out-of-process KEY to a
+surfaces row; the gate reads text, not the key; the next launch died at the shape
+gate before any session ran).
 
-REPAIR LAWS (2026-11-24 v4, each learned from a repair session that exploited it):
+REPAIR LAWS (each learned from a repair session that exploited it; history in the skill's
+DECISIONS.md):
 - EDIT, NEVER GENERATE: change drafts with file edits the pointers name. A script that
   rewrites task objects is a batch edit with a hidden diff - it renumbers, reorders and
   rewrites fields no refusal mentioned, and the next emit refuses what the script broke.
-- A twin-table or literal-join refusal is fixed by making BOTH records cite the SAME
-  plan fact (the strategy surfaces table's `method`+`path`, the shared meter, the config
-  key) - never by importing another context's route into your own guard, and never by
-  deleting the citation: if one context's chain owns the route, the other context PINS
-  that chain (ONE ROOT GATE).
+- A literal-join refusal names an OWNER: fix the owner's `owns`/`serves`/binding entry,
+  or make the consumer cite it VERBATIM - a twin-table refusal is fixed by making BOTH
+  records cite the SAME plan fact (the strategy surfaces table's `method`+`path`, the
+  shared meter, the config key), never by importing another context's route into your own
+  guard, and never by deleting the citation: if one context's chain owns the route, the
+  other context PINS that chain (ONE ROOT GATE).
+- A CONFIG refusal is now one of TWO shapes, and coverage copying is NOT your job:
+  NO-UNIT (the board has no configuration-artifact unit at all) is repaired in the ROOT
+  draft - schedule the ONE config unit there; VALUE-CONFLICT (one path, two seeded
+  values) is repaired at the OWNING binder's table - one path, one default. The engine
+  wires every tabled path into the config unit's coverage mechanically; editing a
+  second config unit or a hand-copied seed is always wrong.
+- A missing-claim refusal (an unowned floor step log, an unscheduled request-path slice,
+  an unpinned published type) is repaired by ADDING what the law names to the unit that
+  owns the behavior: the step string VERBATIM into `observability.step_logs`, the slice
+  with its marker words, the consumer pin naming the PRODUCER task and type - never by
+  dropping the strategy floor, renaming the step, or deleting the publisher.
 - Never reword a duty claim, intent or capability to escape a classification, and never
   relabel a unit's `layer` to satisfy a checker: the refusal names a missing WIRING or
   ASSERTION - add the pin or the cross-owner case. A claim that vanishes because the
@@ -922,6 +981,15 @@ REPAIR LAWS (2026-11-24 v4, each learned from a repair session that exploited it
 - Fix only what the pointers cover, in ONE grep-and-batch pass: unmentioned fields stay
   byte-identical; N repetitions of one shape are ONE edit rule applied N times, not N
   investigations.
+- IDS ARE BORROWED, NEVER INVENTED: every id you type into dependsOn or a pin exists in
+  a named draft file, the digest, or the board - if the collaborator you wish existed
+  has no id, the claim belongs to the unit that OWES it (or the refusal is a reported
+  flow defect), not to a fabricated T2-0NN (a made-up id converts a repairable pointer
+  into a claim-grade refusal and burns the round).
+- The pair's table is the ENGINE's mirror (z4): edit the CODE-side record once and the
+  test twin follows at the next emit - never chase a twin-dr refusal by hand-copying
+  tables, and never re-spell a shared literal: reference it (`uses_meters`,
+  `uses_routes`, `uses_config`) or the coverage wire copies it.
 """
 
 DATABASE_PROMPT = """You are the blackboard database architect for this repository.

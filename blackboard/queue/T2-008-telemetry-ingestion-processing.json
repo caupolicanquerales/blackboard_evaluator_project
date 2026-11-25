@@ -1,0 +1,44 @@
+{
+  "id": "T2-008",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-008",
+    "T0-001",
+    "T2-007"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/domain/IngestionEvent.java",
+  "export": "IngestionEvent",
+  "intent": "IngestionEvent is the immutable domain event published to downstream subscribers: kind TelemetrySampleIngested, TelemetrySampleValidationFailed or TelemetryBackfillRevisionAppended, carrying the sample.",
+  "layer": "domain",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.domain",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-007"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "IngestionEvent ingested(TelemetrySample sample)",
+        "returns": "IngestionEvent"
+      },
+      {
+        "signature": "IngestionEvent validationFailed(TelemetrySample sample)",
+        "returns": "IngestionEvent"
+      },
+      {
+        "signature": "IngestionEvent backfillRevisionAppended(TelemetrySample sample)",
+        "returns": "IngestionEvent"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "id": "T3-032",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-032"
+  ],
+  "kind": "refactor",
+  "path": "src/main/java/com/pulsestream/telemetry/distribution/interfaces/IngestionEventsConsumer.java",
+  "export": "IngestionEventsConsumer",
+  "intent": "Refactor IngestionEventsConsumer: keep the tabled contract and the paired tests green; no behavior, status, meter or route change.",
+  "layer": "interface",
+  "feature": null,
+  "project": "telemetry-ingestion-processing"
+}

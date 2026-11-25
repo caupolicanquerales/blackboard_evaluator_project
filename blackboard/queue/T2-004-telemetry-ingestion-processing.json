@@ -1,0 +1,35 @@
+{
+  "id": "T2-004",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-004",
+    "T0-001"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/pulsestream/telemetry/shared/MetricTagBoundConfiguration.java",
+  "export": "MetricTagBoundConfiguration",
+  "intent": "Discharges SI-10 metric-tag-bound: MeterRegistry meters over a CLOSED tag set (metric, status, outcome, reason) with a MeterFilter refusing unbounded tags - a device key as a tag is a disclosure and a cardinality bomb. Allowed branch keeps the tag; any other key is stripped. Common tag via management.metrics.tags.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.shared",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "MeterFilter boundedTagFilter()",
+        "returns": "MeterFilter"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "management.metrics.tags",
+        "kind": "map"
+      }
+    ]
+  }
+}

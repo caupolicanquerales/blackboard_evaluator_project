@@ -1,0 +1,38 @@
+{
+  "id": "T2-020",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-020",
+    "T0-001",
+    "T2-012"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/infrastructure/LogRedactionAdapter.java",
+  "export": "LogRedactionAdapter",
+  "intent": "SI-05 log-redaction: the RedactionPort adapter masks sample values and device identifiers in ingestion logs and audit fields, applied BEFORE the audit or step-log write, never a logger call.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.infrastructure",
+    "implements": [
+      "RedactionPort"
+    ],
+    "dependencies": [
+      {
+        "type": "RedactionPort",
+        "task_id": "T2-012"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "String mask(String text)",
+        "returns": "String"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

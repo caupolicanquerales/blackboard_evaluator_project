@@ -1,0 +1,15 @@
+{
+  "id": "T3-012",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-012"
+  ],
+  "kind": "refactor",
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/application/RedactionPort.java",
+  "export": "RedactionPort",
+  "intent": "Refactor RedactionPort: keep the tabled contract and the paired tests green; no behavior, status, meter or route change.",
+  "layer": "application",
+  "feature": null,
+  "project": "telemetry-ingestion-processing"
+}

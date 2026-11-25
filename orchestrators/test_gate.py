@@ -13,6 +13,7 @@ import subprocess
 import sys
 
 import pathlib
+import importlib.util
 import shutil
 
 import settings
@@ -372,10 +373,6 @@ FILE_REFERENCE_RE = re.compile(rf"([^\s:()\[\]]+\.{SOURCE_EXT})[\s\[\(:]+(\d+)\s
 
 # Phrases that mark a CASCADING error (a symbol missing because a FOREIGN file is broken),
 # not a structural defect of the blamed file itself.
-CASCADE_PHRASES = ("cannot find symbol", "undefined:", "is not defined", "cannot find name",
-                   "no module named", "could not resolve", "not found", "unresolved reference",
-                   "cannot resolve")
-
 SOURCE_SUFFIXES = {".java", ".kt", ".kts", ".scala", ".groovy", ".ts", ".tsx", ".js", ".jsx",
                    ".mjs", ".cjs", ".go", ".py", ".rs", ".rb", ".php", ".c", ".h", ".cc",
                    ".cpp", ".hpp", ".cs", ".m", ".swift", ".vue", ".svelte"}
@@ -389,27 +386,57 @@ FINGERPRINT_SUFFIXES = SOURCE_SUFFIXES | {".yml", ".yaml", ".properties", ".xml"
                                           ".ini", ".toml", ".cfg", ".conf", ".env"}
 
 
-def error_locations(result, limit=8):
-    """[(file basename, message tail)] for every source-file location in the excerpt.
+# ---- O1 (2026-11-25 verdict contract): the test tool owns every decision input ----
+# The engine binds deferral/charge/reopen decisions ONLY to typed verdict fields
+# (status, missing_symbols, missing_packages, member_demands, problem_kinds,
+# bean_demands, mock_impossible, blamed_files, package_symbol_demands, unit_match)
+# or to registry/filesystem facts. Message text survives for DISPLAY (_failure_detail,
+# coder feedback) - never for a decision that can bill a token. Every cache boundary
+# below enforces the version stamp the tool carries, so a verdict written under an
+# older schema can never re-decide under the newer engine: it is dropped and the
+# build re-runs (deterministic, session-free).
 
-    Attribution reads the FULL tree evidence (`excerpt_all`) when the wave gate carried
-    one; the filtered `excerpt` is the coder-facing digest and must not blind deferral."""
-    found = []
-    for line in (result.get("excerpt_all") or result.get("excerpt") or []):
-        if len(found) >= limit:
-            break
-        text = str(line)
-        for match in FILE_REFERENCE_RE.finditer(text):
-            name = match.group(1).split("/")[-1].lstrip(".")
-            tail = text[match.end():].replace("[ERROR]", "").strip().lstrip("]): ").strip()[:80]
-            found.append((name, tail))
-            break
-    return found
+_RUNNER_MODULE = None
 
 
-def is_cascade(message):
-    lowered = (message or "").lower()
-    return any(phrase in lowered for phrase in CASCADE_PHRASES)
+def _runner_module():
+    """Import run-test-tool.py as a module (cached) - ONE source for VERDICT_VERSION
+    and the parse() normalizer, so the engine can never drift from the tool's schema."""
+    global _RUNNER_MODULE
+    if _RUNNER_MODULE is None:
+        spec = importlib.util.spec_from_file_location("run_test_tool", settings.RUN_TEST_TOOL)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        _RUNNER_MODULE = module
+    return _RUNNER_MODULE
+
+
+def verdict_is_typed(result):
+    return isinstance(result, dict) and "verdict_version" in result
+
+
+def parse_verdict_text(text, cwd):
+    """Normalize raw build output through the TOOL'S OWN parser (used by the
+    verification gate, which runs a build without going through the CLI)."""
+    rtt = _runner_module()
+    (compile_hit, missing, missing_packages, failures, counts, demands, problems,
+     beans, mocks, pkg_demands, blamed) = rtt.parse(text, str(cwd))
+    status = rtt.classify(1, compile_hit, missing, failures, counts, text)
+    verdict = {"verdict_version": rtt.VERDICT_VERSION, "status": status,
+               "exit_code": 1, "missing_symbols": missing,
+               "missing_packages": missing_packages, "failures": failures,
+               "counts": counts, "blamed_files": blamed}
+    if demands:
+        verdict["member_demands"] = demands
+    if problems:
+        verdict["problem_kinds"] = problems
+    if beans:
+        verdict["bean_demands"] = beans
+    if mocks:
+        verdict["mock_impossible"] = mocks
+    if pkg_demands:
+        verdict["package_symbol_demands"] = pkg_demands
+    return verdict
 
 
 _SKIP_DIRS = {".git", "target", "build", "dist", "node_modules", "__pycache__", ".venv", "venv"}
@@ -471,6 +498,26 @@ def _blame_lines(result, limit=3):
                 entry += " " + stripped[:90]
         blame.append(entry[:200])
     return blame
+
+
+def canonicalize_tree(project_root):
+    """O4 (2026-11-25 single-owner boundary): every engine-owned, deterministic,
+    behavior-free tree normalization runs HERE, and EVERY fingerprint is taken after
+    it. The old shape - repairs called ad hoc at some gate paths, fingerprints taken
+    at others - made an engine repair indistinguishable from an agent's tree change
+    (the rollback-hole check fired on OUR import pass). Canonicalize-then-hash means
+    the hashed tree is always the canonical tree: idempotent, fingerprint-stable,
+    and one honest place to see what the engine itself touches."""
+    n = _count(ensure_wrapper_executables(project_root))
+    n += _count(repair_test_imports(project_root))
+    return n
+
+
+def _count(result):
+    """Normalize a normalizer's return (count or file list) to a count."""
+    if isinstance(result, int):
+        return result
+    return len(result or [])
 
 
 def ensure_wrapper_executables(project_root):
@@ -562,7 +609,7 @@ def external_type_index(project_root):
             continue
     index = {k: sorted(v) for k, v in index.items() if k[:1].isupper()}
     try:
-        cache.write_text(json.dumps({"stamp": stamp, "index": index}))
+        _atomic_write(cache, json.dumps({"stamp": stamp, "index": index}))
     except OSError:
         pass
     _EXT_INDEX_CACHE[(str(marker), stamp_mtime)] = index
@@ -588,25 +635,23 @@ def command_from_test_path(test_path, project_root):
 
 def _synthesized_command(task, record):
     """Legacy red-phase records predate command capture: rebuild the scoped command
-    from the stage-1 task path (`.../AccountStateTest.java` -> `./mvnw -Dtest=AccountStateTest test`)."""
+    from the stage-1 task path via `command_from_test_path` - ONE shape table for
+    every language. (The old inline chain stripped only the `.java` suffix from the
+    stem, so a Kotlin/TS/Go/Python twin produced `AccountStateTest.kt` as a selector
+    and duplicated build-file detection the table already owns.)"""
     if isinstance(record, dict):
         command = record.get("command")
         if isinstance(command, str) and command.strip():
             return command.strip()
     import task_queue
     index = task_queue.load_index()
+    root = workspace.project_root_for(task["project"])
     for dep in task.get("dependsOn", []):
         t1 = index.get(dep)
         if t1 and str(dep).startswith("T1-") and isinstance(t1.get("path"), str):
-            stem = pathlib.Path(t1["path"]).name.removesuffix(".java")
-            root = workspace.project_root_for(task["project"])
-            if (root / "pom.xml").is_file():
-                return f"./mvnw -Dtest={stem} test"
-            if (root / "package.json").is_file():
-                return f"npx jest {stem}"
-            if (root / "go.mod").is_file():
-                return f"go test -run {stem} ./..."
-            return f"python3 -m pytest {t1['path']}"
+            command = command_from_test_path(t1["path"], root)
+            if command:
+                return command
     return None
 
 
@@ -650,7 +695,13 @@ def _read_memo(task):
         memo = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return None
-    return memo if isinstance(memo, dict) and memo.get("fingerprint") == _fingerprint(task) else None
+    if not (isinstance(memo, dict) and memo.get("fingerprint") == _fingerprint(task)):
+        return None
+    # O1: a verdict recorded before the current schema is not a fact about the
+    # CURRENT engine's fields - drop it; the re-run costs a build, never a session
+    if isinstance(memo.get("result"), dict) and not verdict_is_typed(memo["result"]):
+        return None
+    return memo
 
 
 def last_adjudicated(task):
@@ -664,12 +715,22 @@ def last_adjudicated(task):
     return _read_memo(task)
 
 
+def _atomic_write(path, text):
+    """Write-then-rename: a SIGTERM between bytes can only leave the COMPLETE old
+    file or the COMPLETE new one (2026-11-25 review: direct write_text in the cache
+    writers is the same crash class _fork_boot_corruption heals FOR THE TREE - a
+    truncated JSON gate cache poisons every later read until manual archaeology)."""
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    tmp.replace(path)   # os.replace under the hood: atomic on the same filesystem
+
+
 def _write_memo(task, reason, result):
     settings.GATE_CACHE_DIR.mkdir(parents=True, exist_ok=True)
     memo = {"fingerprint": _fingerprint(task), "reason": reason,
             "result": result if isinstance(result, dict) else None}
-    (settings.GATE_CACHE_DIR / f"{task['id']}.json").write_text(
-        json.dumps(memo, ensure_ascii=False) + "\n", encoding="utf-8")
+    _atomic_write(settings.GATE_CACHE_DIR / f"{task['id']}.json",
+                  json.dumps(memo, ensure_ascii=False) + "\n")
 
 
 _FP_CACHE = {}      # str(root) -> (stat-signature, content-fingerprint)
@@ -808,37 +869,6 @@ def _ident_tail(name):
     return s
 
 
-def _norm_stem(name):
-    text = _ident_tail(name)
-    text = re.sub(r"^test_(?=\w)", "", text)
-    text = re.sub(r"^Test(?=[A-Z_])", "", text)  # go: TestStore -> store
-    text = re.sub(r"_test$", "", text)
-    text = re.sub(r"(Tests?|Spec)$", "", text)
-    return text.lower()
-
-
-def _selector_of(command):
-    toks = str(command or "").split()
-    for t in toks:
-        if t.startswith("-Dtest="):
-            return t[len("-Dtest="):]
-    if "-run" in toks:
-        i = toks.index("-run")
-        if i + 1 < len(toks):
-            return toks[i + 1]
-    if toks[:2] == ["npx", "jest"]:
-        return next((t for t in toks[2:] if not t.startswith("-")), None)
-    if toks[:3] == ["python3", "-m", "pytest"]:
-        return next((t.split("::")[0] for t in toks[3:] if not t.startswith("-")), None)
-    return None
-
-
-def _matches_class(key, selector):
-    return (key == selector or _ident_tail(key) == _ident_tail(selector)
-            or (_ident_tail(key).lower() == selector.lower())
-            or _norm_stem(key) == _norm_stem(selector))
-
-
 def _tool_result(root, command, timeout):
     tool_command = [sys.executable, str(settings.RUN_TEST_TOOL), "--cwd", str(root),
                     "--cmd", command, "--timeout", str(timeout)]
@@ -882,7 +912,8 @@ def _shared_verdict(data, task):
     shared = {k: data.get(k) for k in ("status", "exit_code", "missing_symbols",
                                        "missing_packages", "failures", "counts",
                                        "excerpt", "member_demands", "problem_kinds",
-                                       "bean_demands")}
+                                       "bean_demands", "blamed_files", "verdict_version",
+                                       "package_symbol_demands", "mock_impossible", "stack_files")}
     shared = {k: v for k, v in shared.items() if v is not None}
     return f"test gate: {_failure_detail(shared, task)}", shared
 
@@ -893,7 +924,7 @@ def _write_wave(data, stamp):
     wave_files = sorted(settings.GATE_CACHE_DIR.glob("wave-*.json"), key=lambda f: f.stat().st_mtime)
     for stale in wave_files[:-5]:
         stale.unlink(missing_ok=True)
-    (settings.GATE_CACHE_DIR / f"wave-{stamp}.json").write_text(json.dumps(data), encoding="utf-8")
+    _atomic_write(settings.GATE_CACHE_DIR / f"wave-{stamp}.json", json.dumps(data))
 
 
 def _run_suite_once(root, suite_command, stamp):
@@ -922,6 +953,11 @@ def _run_suite_once(root, suite_command, stamp):
     return data
 
 
+def _wave_is_current(data):
+    """O1: the same version door the memo uses, for the shared wave cache."""
+    return isinstance(data, dict) and verdict_is_typed(data)
+
+
 def wave_gate_verdict(task, command):
     """(reason, result) from ONE module-wide build shared by every unit's green gate,
     or None to fall back to the per-unit scoped run.
@@ -946,6 +982,10 @@ def wave_gate_verdict(task, command):
             data = json.loads(cache_file.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             data = None
+        # O1: a wave written before the current verdict schema is not evidence the
+        # current engine can read - drop it; the rebuild costs a compile, no session
+        if data is not None and not _wave_is_current(data):
+            data = None
     # A cached tree-wide failure serves EVERY unit regardless of how the unit's own
     # command is shaped: the fact is about the tree, not the selector. (This is also
     # where a scoped fallback that primed its decisive verdict gets reused for free.)
@@ -954,18 +994,16 @@ def wave_gate_verdict(task, command):
                 and _fork_boot_corruption(root):
             cache_file.unlink(missing_ok=True)
             # corrupted fork boot is not a tree fact: drop the cached wave and fall to
-            # the scoped per-unit gate, which wipes target and re-runs as a
+            # the scoped per-unit gate, which wipes the build output and re-runs as a
             # zero-session repair (green_test_result) instead of laundering one killed
             # build into every unit's verdict - and do NOT rebuild the suite HERE on
-            # the still-corrupted target; the scoped path heals first.
+            # the still-corrupted output; the scoped path heals first.
             return None
-    if data is not None and _tree_wide_failure(data):
         return _shared_verdict(data, task)
     suite = _suite_command(command)
-    selector = _selector_of(command)
-    if not suite or not selector:
+    if not suite:
         return None
-    if data is None:
+    if data is None or not _wave_is_current(data):
         try:
             data = _run_suite_once(root, suite, stamp)
         except (OSError, subprocess.TimeoutExpired) as exc:
@@ -988,17 +1026,23 @@ def wave_gate_verdict(task, command):
     classes = data.get("classes") or {}
     if not classes:
         return None
-    matches = [k for k in classes if _matches_class(k, selector)]
-    if len(matches) != 1:
-        return None  # unknown or ambiguous class: keep the scoped verdict path
-    key = matches[0]
+    # O2 (2026-11-25): the selector->class join is FRAMEWORK GRAMMAR and lives in the
+    # tool - unit_match names the one key the scoped command selected, or none. The
+    # engine no longer fuzzy-matches stems: ambiguity falls to the unit's own scoped
+    # build (costs a compile, never a wrong attribution).
+    match = data.get("unit_match") or {}
+    key = str(match.get("class_key") or "")
+    if key not in classes:
+        return None
     if classes[key] == "passed":
         counts = data.get("counts") or {}
         print(f"[gate ] {task['id']} wave verdict: green ({key})")
         return None, {"status": "passed", "counts": counts}
     unit_failures = [f for f in (data.get("failures") or [])
-                     if isinstance(f, dict) and _matches_class(key, f.get("test", ""))]
-    excerpt = [line for line in (data.get("excerpt") or []) if selector.lower() in str(line).lower()]
+                     if isinstance(f, dict) and (str(f.get("class") or "") == key
+                     or (not f.get("class") and str(f.get("test") or "").startswith(key + ".")))]
+    digest = str((data.get("unit_match") or {}).get("selector") or key)
+    excerpt = [line for line in (data.get("excerpt") or []) if digest.lower() in str(line).lower()]
     shared = {"status": "assertion_failure", "exit_code": data.get("exit_code", 1),
               "failures": unit_failures or [{"test": key, "message": ""}],
               "counts": data.get("counts") or {}, "missing_symbols": [], "missing_packages": []}
@@ -1010,7 +1054,9 @@ def wave_gate_verdict(task, command):
         shared["excerpt_all"] = data["excerpt"]
     # attribution fields ride along when the wave run produced them: the engine's
     # deferral decisions read ONLY these normalized fields (the tool owns syntax).
-    for field in ("bean_demands", "member_demands", "problem_kinds"):
+    for field in ("bean_demands", "member_demands", "problem_kinds",
+                  "blamed_files", "package_symbol_demands", "mock_impossible",
+                  "stack_files", "unit_match"):
         if data.get(field):
             shared[field] = data[field]
     if excerpt:
@@ -1023,23 +1069,74 @@ _CORRUPT_FORK_MARKS = ("Truncated class file", "Error while running fork",
                        "The forked VM terminated without properly saying goodbye")
 
 
-def _fork_boot_corruption(project_root):
-    """True when the newest surefire dumpstreams show the fork dying at CLASS LOADING.
+# Regenerable build-output directories a killed build can leave half-written. The
+# NAMES are toolchain facts; the table lives in ONE place and only ever drives
+# DELETE-AND-REBUILD of derived output - a source directory can never appear here
+# because healing refuses paths the fingerprint set would treat as tree facts.
+_BUILD_OUTPUT_DIRS = ("target", "build", "out")   # maven, gradle, generic
 
-    A build killed mid-write leaves a half-written .class in target/; every forked test
-    JVM then dies before running anything (status=error, tests=0) - a TOOLING wound the
-    engine can heal free by wiping the build output, never a unit defect. Charging it to
-    units (or memoizing it as a tree-wide fact) converts one killed build into a whole
-    board of false identical failures (observed live 2026-11-18: an operator SIGTERM
-    during a build poisoned every subsequent gate).
+
+def _fork_boot_corruption(project_root):
+    """True when a KILLED build left poisoned derived output the next build will inhale.
+
+    A build interrupted mid-write leaves a half-written artifact - a .class under
+    target/ that kills every forked test JVM at CLASS LOADING (Maven/Surefire), the
+    same crash in Gradle's build/test-results dumps, or a truncated TypeScript
+    incremental cache (.tsbuildinfo) that makes tsc die before running anything
+    (2026-11-25 review: the recovery existed only for Surefire dumpstreams, so a
+    SIGTERM inside a Gradle or tsc build became everybody's phantom defect). Every
+    shape is TOOLING evidence, not a unit defect: status=error with zero tests run
+    plus this probe means heal free by wiping the derived output and re-running -
+    charging it to units (or memoizing it as a tree-wide fact) converts one killed
+    build into a whole board of false identical failures (live 2026-11-18).
     """
-    reports = pathlib.Path(project_root) / "target" / "surefire-reports"
-    try:
-        dumps = sorted(reports.glob("*.dumpstream"), key=lambda f: f.stat().st_mtime_ns)[-2:]
-        return any(mark in f.read_text(encoding="utf-8", errors="ignore")
-                   for f in dumps for mark in _CORRUPT_FORK_MARKS)
-    except OSError:
-        return False
+    root = pathlib.Path(project_root)
+    for pattern in ("target/surefire-reports/**/*.dumpstream",
+                    "build/test-results/**/*.dumpstream"):
+        try:
+            dumps = sorted(root.glob(pattern), key=lambda f: f.stat().st_mtime_ns)[-2:]
+        except OSError:
+            continue
+        if any(mark in f.read_text(encoding="utf-8", errors="ignore")
+               for f in dumps for mark in _CORRUPT_FORK_MARKS):
+            return True
+    # TypeScript's incremental cache is JSON; a kill mid-write truncates it and tsc
+    # then errors at READ time, before any test exists. Unparsable = poisoned.
+    for info in _pruned_files(root, ".tsbuildinfo"):
+        try:
+            json.loads(info.read_text(encoding="utf-8", errors="ignore"))
+        except (OSError, json.JSONDecodeError):
+            return True
+    return False
+
+
+def _pruned_files(root, suffix):
+    """Files under root with `suffix`, skipping build/dependency folders."""
+    out = []
+    for dirpath, dirnames, filenames in __import__("os").walk(str(root)):
+        dirnames[:] = [d for d in dirnames if d not in _SKIP_DIRS]
+        out.extend(pathlib.Path(dirpath, fn) for fn in filenames if fn.endswith(suffix))
+    return sorted(out)
+
+
+def heal_interrupted_build(project_root):
+    """Delete the poisoned derived output a killed build left behind (the ONE place
+    the engine wipes build directories); returns the names/paths healed. Source
+    bytes are never touched - this is cache surgery, fingerprint-invisible."""
+    root = pathlib.Path(project_root)
+    healed = []
+    for name in _BUILD_OUTPUT_DIRS:
+        d = root / name
+        if d.is_dir():
+            shutil.rmtree(d, ignore_errors=True)
+            healed.append(name)
+    for info in _pruned_files(root, ".tsbuildinfo"):
+        try:
+            info.unlink()
+            healed.append(info.name)
+        except OSError:
+            pass
+    return healed
 
 
 def green_test_result(task):
@@ -1060,8 +1157,7 @@ def green_test_result(task):
         "--cmd", command,
         "--timeout", str(settings.TEST_GATE_TIMEOUT),
     ]
-    ensure_wrapper_executables(workspace.project_root_for(task["project"]))
-    fixed = repair_test_imports(workspace.project_root_for(task["project"]))
+    fixed = canonicalize_tree(workspace.project_root_for(task["project"]))
     if fixed:
         print(f"[test] {task['id']} repaired missing imports in {fixed} test file(s)")
     memo = _read_memo(task)
@@ -1103,9 +1199,9 @@ def green_test_result(task):
             # The empty fork is a tooling wound, not a verdict: heal it BEFORE memo, wave
             # publish or ledger signature can launder it into a tree-wide fact.
             print(f"[test] {task['id']} fork boot dies on corrupted build output: "
-                  "wiping target and re-running the gate once (zero-session repair)")
-            shutil.rmtree(workspace.project_root_for(task["project"]) / "target",
-                          ignore_errors=True)
+                  "wiping target/build derived output and re-running the gate once "
+                  "(zero-session repair)")
+            heal_interrupted_build(workspace.project_root_for(task["project"]))
             try:
                 completed = subprocess.run(
                     tool_command, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,

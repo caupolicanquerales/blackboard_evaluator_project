@@ -1,0 +1,98 @@
+{
+  "id": "T1-016",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/pulsestream/telemetry/ingestion/application/IngestTelemetryUseCaseTest.java",
+  "export": "IngestTelemetryUseCaseTest",
+  "intent": "IngestTelemetryUseCaseTest with Mockito doubles and StepVerifier: valid sample appended and ingested event published; out-of-bound sample tagged VALIDATION_FAILED, payload kept; identical retry appends nothing (duplicate); changed value appends a revision; both resend classes covered; packets ordered by t_device not t_ingress; foreign device refused and audited; batch size respected.",
+  "layer": "application",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "SensorMetricBoundary",
+        "task_id": "T2-006"
+      },
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-007"
+      },
+      {
+        "type": "IngestionEvent",
+        "task_id": "T2-008"
+      },
+      {
+        "type": "TelemetryRecordStore",
+        "task_id": "T2-009"
+      },
+      {
+        "type": "EventPublisher",
+        "task_id": "T2-010"
+      },
+      {
+        "type": "AuditPort",
+        "task_id": "T2-011"
+      },
+      {
+        "type": "DeviceBindingPolicy",
+        "task_id": "T2-013"
+      },
+      {
+        "type": "AppendConcurrencyGuard",
+        "task_id": "T2-014"
+      },
+      {
+        "type": "AppendRetryPolicy",
+        "task_id": "T2-015"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Flux<TelemetrySample> ingest(String authenticatedDeviceId, List<TelemetrySample> samples)",
+        "returns": "Flux<TelemetrySample>",
+        "semantics": "samples must not be empty"
+      }
+    ],
+    "meters": [
+      {
+        "name": "telemetry.ingest.samples",
+        "duty": "owns"
+      },
+      {
+        "name": "telemetry.ingest.validation_failed",
+        "duty": "owns"
+      },
+      {
+        "name": "telemetry.ingest.duplicates",
+        "duty": "owns"
+      },
+      {
+        "name": "telemetry.ingest.revisions",
+        "duty": "owns"
+      },
+      {
+        "name": "telemetry.ingest.append.latency",
+        "duty": "owns"
+      }
+    ],
+    "routes": [],
+    "config": [
+      {
+        "path": "telemetry.ingestion.reorder.window",
+        "kind": "value",
+        "value": "60s"
+      },
+      {
+        "path": "telemetry.ingestion.batch.size",
+        "kind": "value"
+      }
+    ]
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "id": "T2-023",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-023",
+    "T0-001",
+    "T2-007"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/interfaces/IngressPacketRequest.java",
+  "export": "IngressPacketRequest",
+  "intent": "IngressPacketRequest is the anti-corruption DTO of the device payload: jakarta.validation constraints (NotBlank device_id, NotEmpty samples, NotNull metric and t_device) mapped to TelemetrySample commands at the boundary, stamping t_ingress.",
+  "layer": "interface",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.interfaces",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-007"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "List<TelemetrySample> toSamples(Instant tIngress)",
+        "returns": "List<TelemetrySample>"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

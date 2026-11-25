@@ -1,0 +1,15 @@
+{
+  "id": "T3-029",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-029"
+  ],
+  "kind": "refactor",
+  "path": "src/main/java/com/pulsestream/telemetry/distribution/infrastructure/ServiceCredentialAuthenticationManager.java",
+  "export": "ServiceCredentialAuthenticationManager",
+  "intent": "Refactor ServiceCredentialAuthenticationManager: keep the tabled contract and the paired tests green; no behavior, status, meter or route change.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "telemetry-ingestion-processing"
+}

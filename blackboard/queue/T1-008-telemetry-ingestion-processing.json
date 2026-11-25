@@ -1,0 +1,42 @@
+{
+  "id": "T1-008",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/pulsestream/telemetry/ingestion/domain/IngestionEventTest.java",
+  "export": "IngestionEventTest",
+  "intent": "IngestionEventTest proves each factory builds the matching kind (TelemetrySampleIngested, TelemetrySampleValidationFailed, TelemetryBackfillRevisionAppended) carrying the sample unchanged, and that the three kinds are distinct.",
+  "layer": "domain",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.domain",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-007"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "IngestionEvent ingested(TelemetrySample sample)",
+        "returns": "IngestionEvent"
+      },
+      {
+        "signature": "IngestionEvent validationFailed(TelemetrySample sample)",
+        "returns": "IngestionEvent"
+      },
+      {
+        "signature": "IngestionEvent backfillRevisionAppended(TelemetrySample sample)",
+        "returns": "IngestionEvent"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

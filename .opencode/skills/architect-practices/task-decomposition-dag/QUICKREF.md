@@ -1,87 +1,91 @@
 # task-decomposition-dag - QUICK REFERENCE (planning sessions)
 
-The full contract (rules (a)-(z), history) is `SKILL.md`; this map is the default read.
-Open SKILL.md ONLY on an unsummarized `ERR` pointer or a first new-stack plan.
+Default read. `SKILL.md` = one-line invariants keyed by the `ERR` pointer's letter;
+open it ONLY for shapes this map does not summarize. `DECISIONS.md` = history, never
+read.
 
 ## Draft record - what you write
 
-TWO honest shapes, both expanded by the engine, never mixed mid-file: BOARD TASK
-OBJECTS - the T1+T2+T3 per unit in id order, keys exactly `id`
-(T<stage>-<3 digits>), `targetAgent`, `stage`, `dependsOn`, `path`, `kind`, `layer`,
-`feature`, `export`, `project`, `intent`, `ast_hints` (required 1-2) - or the COMPACT
-TRIAD `{"n": 7, "test": {...}, "code": {...}}` (ids derive from n). Never a script or a
-file per task. T1 and T2 carry IDENTICAL `ast_hints` tables (z4); the lone exception:
-the ONE canonical stage-0 build-manifest record.
+TWO honest shapes, one shape per file, both expanded through ONE validator. The
+COMPACT form is the taught DEFAULT; board objects stay honest but pay ~3x the
+output tokens:
+- COMPACT UNIT FORM:
+  `{"n": 7, "project", "layer", "feature", "dependsOn": {"test": [], "code": []},
+  "test": {"path", "export", "intent"},
+  "code": {"path", "export", "intent", "ast_hints",
+  "uses_meters"?, "uses_routes"?, "uses_config"?, "claims_steps"?, "root_gate"?},
+  "refactor_intent"?}`
+- BOARD TASK OBJECTS: full T1+T2+T3 records, keys exactly `id` (T<stage>-<3 digits>),
+  `targetAgent`, `stage`, `dependsOn`, `path`, `kind`, `layer`, `feature`, `export`,
+  `project`, `intent`, `ast_hints` (required 1-2), `observability` (stage-2).
+Extras allowed: the (p) slice's lone stage-1 (the build manifest is ENGINE-queued;
+the config unit and the root gate belong to the ROOT pass). OMISSIONS the engine
+COMPLETES (R4): in BOARD objects you may omit T3 records and T1's `ast_hints` -
+the code side owns the interface; claim issues the triple and mirrors the table.
+Never a generator script or a per-task file. In the
+COMPACT form the step-log syntax is `claims_steps` ONLY: never type
+`code.observability` - the engine creates `observability.step_logs` at hydration
+(rule (j) names the canonical field because the BOARD side - and the claimed,
+hydrated compact side both end up carrying it). T1/T2 carry IDENTICAL
+`ast_hints` tables - type the table ONCE per unit (z4).
 
-## Stage / agent / kind / path
+## Graph & shapes (lint-checked)
 
-- stage 1 -> `agent-tester`, kind `test`, path = the test file (never production, never
-  the paired stage-2 path - rule w); stage 2 -> `agent-coder`, kind `code`, path = the
-  production file; stage 3 -> `agent-evaluator`, kind `refactor`, shares stage 2's file.
-- The (p) request-path slice may stand as a lone stage-1 (green at the terminal suite),
-  asserting only outcomes the plan tables; no second contract.
-- The stage graph: T1 dependsOn stage-0 scaffold + earlier T1 tasks - NEVER a stage-2
-  task; T2 on its own T1 + the T2 tasks of pinned producers; T3 on its T2.
+- T1 dependsOn stage-0 + earlier T1s - NEVER a T2; T2 on its own T1 + the T2s of
+  pinned producers; T3 on its own T2.
+- stage 1 -> `agent-tester`, kind `test`, path = the TEST file (never the stage-2
+  path); stage 2 -> `agent-coder`, kind `code`, production path; stage 3 ->
+  `agent-evaluator`, kind `refactor`, stage-2's file.
+- (p) DUTY: a project with inbound adapter units needs its request-path slice; the
+  slice's stage-1 intent spells a marker the gate greps - `end-to-end`,
+  `integration slice`, `request-path` - asserts only TABLED outcomes, citing them,
+  and NAMES its isolation choice: UNIQUE identity per case, a RELATIVE delta
+  against its own baseline, or a CLEANUP.
+- Ids from the brief's next-free; pins resolve ONLY against queue/complete, the
+  symbol table, or this file.
 
-## `ast_hints` - the single interface truth (assert and build from THIS, ONLY)
+## Tables & references (ast_hints - the single interface truth)
 
-Keys are BOARD SLOTS - the active tech-stack skill's Record-keys section spells each
-one, and may declare some not applicable. `package`, `implements`, `dependencies`
-[{type, task_id}] - one pin per collaborator, to the task producing it; a consumed
-type's table spells every member consumers touch. `methods`
-[{signature, returns, semantics?}] - types as the language declares; `returns` ""
-when none; `semantics` REQUIRED when the intent rejects null or bounds an argument
-(rule d).
-`meters` [{name, duty: owns|uses}] - meter names live ONLY here (rule z): `owns` on the
-ONE registrant, `uses` on every recorder.
-`routes` [{method, path, duty: serves|uses}] - inbound addresses live ONLY here:
-`serves` on the ONE unit answering each.
-`config` [{path, kind: value|list|map, fields?}] - property paths live ONLY here (rule
-z5): the unit whose record BINDS a path owns its shape; others cite it VERBATIM.
+Keys are BOARD SLOTS: the stack skill's Record-keys section gives each its language
+reality. You type: `package`, `implements`, `dependencies` [{type, task_id}],
+`methods` [{signature, returns, semantics?}] - EVERY boundary method, `returns` ""
+when none, `semantics` REQUIRED when the intent rejects null or bounds an argument; a
+signal's on_true/on_false behavior lives in the CONSUMER's intent (m).
+You REFERENCE what other units own; the engine tables the canonical entry at claim -
+`uses_meters`: [names] -> `ast_hints.meters` {name, duty: uses} (z);
+`uses_routes`: ["METHOD /path"] -> `ast_hints.routes` {method, path, duty: uses};
+`uses_config`: [paths] -> `ast_hints.config` {path, kind: value|list|map, fields?}
+(z5); `claims_steps`: [strategy floor strings] -> `observability.step_logs` (j) - a
+METER never claims a step; `root_gate`: true (typed by the ROOT pass ONLY) -> one per project, the engine tables
+the root's whole address list into its routes (y4). The join (z) stays the batch
+defense. A published `returns` type needs its consumer's pin or an out-of-process
+boundary (k); the engine closes guarded-surface wiring (z6) and budget pair-tests (z7). A BOARD-object draft carries the same reference
+keys directly on the stage-2 record - hydration is identical for both shapes.
 
-## Claim form (machine-checked at emit)
+## Persistence & config (emit-checked)
 
-Digest duties arrive COMPLETE - every key, matched `table_row` in hand. Discharge each
-INSIDE the enforcing STAGE-2 unit: spell `spec_ref` AND `capability` VERBATIM beside the
-copied mechanism - a bare id cites, it does not map. Security adds the geometry: the
-unit that IS the surface (intent names `surfaces[].name` verbatim) pins the enforcing
-unit and its T1 carries the row id + the CROSS-OWNER case (y1/y2/y3). Performance/AI
-ride (y1) only; assumptions and role entries never claim. Board keys take their language
-meaning from the active tech-stack skill.
-(y4) ONE ROOT GATE: ONE entry-admission decision for the root (the stack's own inbound
-gate), owned by the context that drafts it FIRST - it admits-and-guards its own tabled
-addresses and ADMITS foreign ones in `composition_root_surfaces` unguarded;
-default-closure ends the rest. A later context PINs that gate, adds at most rules for its own surfaces, and tables no foreign
-address.
-(y5) SURFACE ENTRY IS PER-KIND: `kind` picks the entry - `http` or routed
-`consumer`: the unit whose `routes` answers the tabled `method`+`path` (cross-owner = a
-valid identifier owned by another); `internal-call`/address-less `consumer`: the adapter
-events ARRIVE at (cross-owner = a forged producer's valid event refused + audited);
-`job`/`cli`: the runner.
-RULE VALUES: slice `rules` literals land in the enforcing intent or a config DEFAULT
-VALUE - never invented, never an open bound closed. COORDINATES: `build_coordinates`
-empty => schedule no manifest; a unit needing a scaffold-missing coordinate dependsOn
-the build-manifest task id, scheduled by the first finder, present before red compile;
-the engine wires missing edges.
+- (o) statements against a schema => the paired test demands the REAL migrated
+  substrate run.
+- (b) ONE config unit per domain (ROOT pass) seeds every `rules` default, every
+  enabled reader's own keys (h), PACKAGED migration locations (r), the test-profile
+  activation route, and the BOOT POSTURE of any seeded key whose mechanism row names
+  one; `${VAR}` defaultable or seeded.
+- (v) table the semantic path; the artifact's own kind spells the file layout.
 
-## Emission
+## Security & egress (emit-checked)
 
-ONE array per context at the brief's draft path, edited in the fewest calls (cascades
-re-send the transcript). Lint with the command the brief prints; fix `ERR [id.field]:`
-pointers; a defect shape repeated across tasks is ONE law missed. The
-ENGINE runs `--emit` on the batch after the last context; claims, provider closure and
-literal joins are batch laws DEFERRED past lint.
+- Entry unit per surface kind (y5): its intent names `surfaces[].name` verbatim and
+  pins the enforcing unit; its T1 carries the row id + the per-kind cross-owner
+  refusal case (y1-y3).
+- (q) retryable inbound over append-only => named dedup identity; (s) corrections =>
+  the identity-axis sentence spelled, both resend classes tested.
+- (i) every published stream names its consumer unit - or the publisher's OWN intent
+  spells the boundary (`out-of-process`/`external subscribers`/`downstream subscribers`).
+- A refusal status is a TABLED fact - spec, `rules` or a stack line names it; else
+  assert the behavior (refused + code-only body), never an invented oracle number.
 
-## observability floor
+## Intent economy
 
-Every strategy step log (either floor spelling) is claimed VERBATIM by exactly ONE
-stage-2 unit's `observability.step_logs` (rule j); every floor meter owned once and
-paired with a step (rule u); correlation: one unit; sink/format/rolling: config literals.
-
-## intent and shared literals
-
-Intent 40-80 words; 180 refused at planning. Prose carries what the gates demand
-(claim, literals, both signal branches); a tabled fact is never re-spelled; a
-collaborator's method NAMED, never its parameters. Rule (z): one owner per literal, one
-verbatim spelling, tabled in `ast_hints.meters` / `ast_hints.routes` /
-`ast_hints.config` - never prose. SKILL.md (z4)-(z6).
+40-80 words (180 refused): claim, config literals, both signal branches. Never
+re-spell a tabled fact; a collaborator's method is NAMED, not its parameters; values
+come from `rules` - never invented, no open bound closed.

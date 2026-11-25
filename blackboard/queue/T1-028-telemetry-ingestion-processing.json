@@ -1,0 +1,65 @@
+{
+  "id": "T1-028",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-008",
+    "T1-011",
+    "T1-012",
+    "T1-026",
+    "T1-027"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/pulsestream/telemetry/distribution/application/WindowBroadcastServiceTest.java",
+  "export": "WindowBroadcastServiceTest",
+  "intent": "WindowBroadcastServiceTest proves ingested and backfill events reach the window, a validation-failed event never does, subscribers receive the window broadcast, the audit start and stop records are appended, and logged window contents and device ids are masked.",
+  "layer": "application",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.distribution.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "IngestionEvent",
+        "task_id": "T2-008"
+      },
+      {
+        "type": "AuditPort",
+        "task_id": "T2-011"
+      },
+      {
+        "type": "RedactionPort",
+        "task_id": "T2-012"
+      },
+      {
+        "type": "WindowedTelemetryBroadcast",
+        "task_id": "T2-026"
+      },
+      {
+        "type": "SlidingWindowBuffer",
+        "task_id": "T2-027"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> accept(IngestionEvent event)",
+        "returns": "Mono<Void>",
+        "semantics": "rejects null"
+      },
+      {
+        "signature": "Flux<WindowedTelemetryBroadcast> stream()",
+        "returns": "Flux<WindowedTelemetryBroadcast>"
+      }
+    ],
+    "meters": [
+      {
+        "name": "telemetry.stream.broadcast",
+        "duty": "uses"
+      }
+    ],
+    "routes": [],
+    "config": []
+  }
+}

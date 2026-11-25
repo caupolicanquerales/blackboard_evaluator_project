@@ -71,32 +71,27 @@ def _resolvable_types(project, exclude_id):
     return resolvable
 
 
-_SYMBOL_SHAPE_RE = re.compile(r"symbol:\s+(?:class|variable|method)\s+([A-Za-z]\w*)")
-_LOCATION_PACKAGE_RE = re.compile(r"location:\s+package\s+([\w.]+)")
+def _package_demand_map(result):
+    """{symbol: {packages}} for classes missing from packages that RESOLVE.
 
-
-def _excerpt_package_locations(result):
-    """{symbol: {packages}} for javac 'cannot find symbol' errors located in a PACKAGE.
-
-    javac prints `location: package X` ONLY when X RESOLVES - the package exists on the
-    classpath and merely lacks the class. That is a payload defect of the importing file:
-    no planner can schedule a unit that exports a class into someone else's library, and
-    the importing unit's own gate must bounce its coder (2026-11-18 live: a coder wrote
-    import org.springframework.r2dbc.core.Parameters; the classification read the bare
-    token as a scheduling hole and aborted a healthy domain at task 8 of ~110).
+    (O1 2026-11-25) This used to be a javac pairing scan over the excerpt text; the
+    tool now normalizes `symbol:` + `location: package` into package_symbol_demands,
+    and the engine reads the field. javac prints `location: package X` ONLY when X
+    RESOLVES - the package exists on the classpath and merely lacks the class. That
+    is a payload defect of the importing file: no planner can schedule a unit that
+    exports a class into someone else's library, and the importing unit's own gate
+    must bounce its coder (2026-11-18 live: a coder wrote import
+    org.springframework.r2dbc.core.Parameters; the classification read the bare token
+    as a scheduling hole and aborted a healthy domain at task 8 of ~110).
     """
     out = {}
-    pending = None
-    for line in (result.get("excerpt") or []):
-        text = str(line).replace("[ERROR]", "").strip()
-        hit = _SYMBOL_SHAPE_RE.search(text)
-        if hit:
-            pending = hit.group(1)
+    for d in (result.get("package_symbol_demands") or []):
+        if not isinstance(d, dict):
             continue
-        hit = _LOCATION_PACKAGE_RE.search(text)
-        if hit and pending:
-            out.setdefault(pending, set()).add(hit.group(1))
-            pending = None
+        symbol = str(d.get("symbol") or "").split("<")[0]
+        pkg = str(d.get("package") or "")
+        if symbol and pkg:
+            out.setdefault(symbol.split(".")[-1], set()).add(pkg)
     return out
 
 
@@ -131,9 +126,9 @@ def _unresolvable_missing(result, task):
                                          or demand.get("owner") == tasks.exported_product(task)):
             tokens -= _identifier_tokens(str(demand.get("member") or ""))
     # A class the log locates INSIDE an existing classpath package is a code defect of the
-    # importing unit, never a schedulable type (see _excerpt_package_locations). Only a
+    # importing unit, never a schedulable type (see _package_demand_map). Only a
     # package that is itself unknown is left as a possible planning hole, conservatively.
-    located = _excerpt_package_locations(result)
+    located = _package_demand_map(result)
     if located:
         ext = test_gate.external_type_index(workspace.project_root_for(task.get("project", "")))
         ext_packages = {fqn.rsplit(".", 1)[0] for names in ext.values() for fqn in names}
@@ -425,17 +420,22 @@ def execute_with_tdd(task, invoke, verify):
     return False, reason
 
 
-def _t3_foreign_symbols(task, reason):
-    """CamelCase symbols the evaluator's module build misses while a LIVE sibling T2
-    unit still owns them (queued OR quarantined).
+def _t3_foreign_symbols(task, result):
+    """Symbols the evaluator's module build misses while a LIVE sibling T2 unit still
+    owns them (queued OR quarantined).
 
     The evaluator gate compiles the WHOLE module: while the owner of CorrelationContext
     was being re-attempted, thirteen evaluators died - and were CHARGED - on that peer's
-    absence (seed-002 rerun 15:30: collateral storm with zero information value). The
-    reason string is a hint here, not grammar: intersection with real pending exports is
-    what defers, and deferral bills nothing.
+    absence (seed-002 rerun 15:30: collateral storm with zero information value).
+    (O1 2026-11-25) The candidates come from the TYPED verdict - `missing_symbols`,
+    normalized by the tool from the build output - never from CamelCase scraping of
+    the reason string: the intersection with real pending exports is the decision,
+    and a decision that bills nothing must still not rest on prose.
     """
-    toks = {t for t in _identifier_tokens(str(reason or ""))
+    if not isinstance(result, dict):
+        return set()
+    raw = " ".join(str(item) for item in (result.get("missing_symbols") or []))
+    toks = {t for t in _identifier_tokens(raw)
             if t[:1].isupper() and tasks.is_type_shape(t)}
     return toks & _pending_symbols_of(task.get("project", ""), task.get("id", ""))
 
@@ -450,7 +450,7 @@ def _reopen_contract_regression(result, task):
     Returns True when at least one unit was reopened."""
     if not isinstance(result, dict) or result.get("status") not in ("compile_error", "error"):
         return False
-    blamed = {name for name, _ in test_gate.error_locations(result)}
+    blamed = set(result.get("blamed_files") or [])   # O1: typed blame, no text scan
     if not blamed:
         return False
     completed = {}
@@ -525,7 +525,7 @@ def terminal_suite_gate():
         suite = test_gate._suite_command(command) if command else None
         if not suite:
             continue
-        fixed = test_gate.repair_test_imports(root)
+        fixed = test_gate.canonicalize_tree(root)   # O4 boundary
         if fixed:
             print(f"[suite ] {slug}: repaired missing imports in {fixed} test file(s)")
         fp = test_gate._tree_fingerprint(root)
@@ -548,7 +548,10 @@ def terminal_suite_gate():
             # same refusal as the per-unit wave door: a fork that died on corrupted
             # build output is a tooling wound, not a verdict on the delivered tree
             cache_file.unlink(missing_ok=True)
-            shutil.rmtree(root / "target", ignore_errors=True)
+            # O4 boundary: ONE heal knows which derived outputs exist (maven target,
+            # gradle build, generic out, truncated .tsbuildinfo) - the terminal gate
+            # no longer hardcodes the Maven directory name
+            test_gate.heal_interrupted_build(root)
             data = test_gate._run_suite_once(root, suite, stamp)
             if not isinstance(data, dict):
                 continue
@@ -563,9 +566,16 @@ def terminal_suite_gate():
             for dep in rec.get("dependsOn") or []:
                 pair = index.get(str(dep))
                 if pair and int(pair.get("stage") or 0) == 1:
-                    stem = str(pair.get("path", "")).split("/")[-1].rsplit(".", 1)[0]
-                    if stem:
-                        owners[stem.lower()] = tid
+                    # (O2 2026-11-25) The declared EXPORT is the join key first - it is
+                    # the class name the suite reports. The file stem stays as a second
+                    # tier only because lint keeps stage-1 stem == export; a skill edit
+                    # that renames files cannot desync an export-keyed join.
+                    export = str(tasks.exported_product(pair) or "")
+                    tiers = [export.split(".")[-1] if export else "",
+                             str(pair.get("path", "")).split("/")[-1].rsplit(".", 1)[0]]
+                    for key in tiers:
+                        if key:
+                            owners.setdefault(key.lower(), tid)
         deferred, ownerless, mine = [], [], []
         # A red class whose failure is a MOCKABILITY gap on a FOREIGN closed type is a
         # victim: its owner cannot edit either the frozen test or the peer's modifier.
@@ -576,7 +586,10 @@ def terminal_suite_gate():
             mt = str((fl or {}).get("mock_type") or "")
             if mt not in mock_closed:
                 continue
-            base = str(fl.get("test", "")).rsplit(".", 1)[0].split("$")[0].split(".")[-1].lower()
+            # (O2) the tool types the failing class; the test-name tail is legacy shape
+            cls = str(fl.get("class") or "")
+            base = (cls.split(".")[-1] if cls else
+                    str(fl.get("test", "")).rsplit(".", 1)[0].split("$")[0].split(".")[-1]).lower()
             owner = owners.get(base)
             op = tasks.exported_product(index.get(owner)) if owner and index.get(owner) else ""
             if owner and op != mt:
@@ -597,7 +610,8 @@ def terminal_suite_gate():
         # added a constructor guard to TelemetrySample.java; SampleValidatorTest - which
         # legitimately builds invalid samples for the VALIDATOR to judge - went red, and
         # the validator's owner T2-008 was charged for a file it must not touch).
-        # error_locations is the engine's existing stack-agnostic file+line scanner.
+        # O1: the verdict's blamed_files field is the blame set; ownership is the
+        # task registry (declared path basename -> id), never a text scan.
         file_owner = {}
         for f in settings.COMPLETE_DIR.glob("T2-*.json"):
             rec = _safe_read(f)
@@ -606,7 +620,8 @@ def terminal_suite_gate():
             base = str(rec.get("path", "")).replace("\\", "/").split("/")[-1]
             if base:
                 file_owner[base] = str(rec.get("id", ""))
-        for name, _tail in test_gate.error_locations(data):
+        for name in ((data.get("blamed_files") or [])
+                    + (data.get("stack_files") or [])):   # O1: compile + runtime blame, both typed
             blame = file_owner.get(name)
             if blame and blame not in error_ids:
                 mine.append((blame, f"file:{name}"))
@@ -743,35 +758,13 @@ def _peers_outstanding(task):
 # Structural-compile phrases naming a SUPERTYPE signature conflict (javac:
 # "does not override or implement a method from a supertype"; tsc: "incorrectly
 # implements"). Generic text, like every other rule in this module.
-SUPERTYPE_CONFLICT_PHRASES = ("does not override", "from a supertype",
-                              "incorrectly implements", "does not implement")
-
-
-def _declared_supertypes_of_source(task):
-    """Legacy fallback: the runner field carries these names; source grammar otherwise."""
-    import re
-    source = workspace.project_root_for(task["project"]) / str(task.get("path", ""))
-    try:
-        text = source.read_text(encoding="utf-8", errors="ignore")
-    except OSError:
-        return set()
-    declared = set()
-    for match in re.finditer(r"\b(?:implements|extends)\s+([\w.]+(?:\s*,\s*[\w.]+)*)", text):
-        for part in match.group(1).split(","):
-            name = part.strip().split("<")[0].split(".")[-1].strip()
-            if name:
-                declared.add(name)
-    return declared
-
-
 def _own_declared_supertypes(task, result):
-    """Supertype names the adapter's own file claims: the runner's field first, source
-    grammar only for verdicts recorded before it existed."""
+    """Supertype names the runner attributes to MY file (O1: the typed field is the
+    ONLY source; the tool read the file's grammar, the engine never does)."""
     own = str(task.get("path", "")).split("/")[-1]
-    names = {str(s) for p in (result.get("problem_kinds") or [])
-             if isinstance(p, dict) and p.get("file") == own and p.get("kind") == "supertype"
-             for s in (p.get("supertypes") or [])}
-    return names or _declared_supertypes_of_source(task)
+    return {str(s) for p in (result.get("problem_kinds") or [])
+            if isinstance(p, dict) and p.get("file") == own and p.get("kind") == "supertype"
+            for s in (p.get("supertypes") or [])}
 
 
 def _peer_supertype_materialized(task, result):
@@ -784,7 +777,20 @@ def _peer_supertype_materialized(task, result):
     declared = _own_declared_supertypes(task, result)
     if not declared:
         return False
-    stems = {f.stem for f in test_gate.source_files(workspace.project_root_for(task["project"]))}
+    # (O2/O3 2026-11-25) A port is materialized when a COMPLETED task declares a
+    # path that exists on disk and exports the name (registry fact), or the file is
+    # simply on the tree (filesystem fact). Neither answer reads text.
+    project = task["project"]
+    root = workspace.project_root_for(project)
+    for f in settings.COMPLETE_DIR.glob(f"T2-*-{project}.json"):
+        rec = _safe_read(f)
+        if not isinstance(rec, dict):
+            continue
+        export = str(tasks.exported_product(rec) or "")
+        if (export in declared or export.split(".")[-1] in declared) \
+                and (root / str(rec.get("path", ""))).is_file():
+            return True
+    stems = {f.stem for f in test_gate.source_files(root)}
     return bool(declared & stems)
 
 
@@ -795,36 +801,28 @@ def _peer_supertype_conflict(task, result):
     contract (observed once: seven paid sessions on one identical conflict). The remedy
     is the peer landing, not another coder session: defer.
 
-    Phrase classing and the blamed file's declared supertypes come from the runner's
-    `problem_kinds` field (it owns every toolchain grammar); the message/regex paths
-    remain only as fallback for verdicts recorded before the field existed.
+    The runner's `problem_kinds` field owns every toolchain grammar (O1 - the engine
+    decision input is typed; the prose fallback was deleted 2026-11-25 together with
+    the phrase tables, since caches no longer accept pre-schema verdicts).
     """
-    own = str(task.get("path", "")).split("/")[-1]
-    problems = [p for p in (result.get("problem_kinds") or [])
-                if isinstance(p, dict) and p.get("file") == own and p.get("kind") == "supertype"]
-    if problems:
-        declared = {str(name) for p in problems for name in (p.get("supertypes") or [])}
-        if not declared:
-            declared = _declared_supertypes_of_source(task)
-        return bool(declared & _pending_symbols_of(task.get("project", ""), task["id"]))
-    messages = " ".join(message for name, message in test_gate.error_locations(result)
-                        if name == own).lower()
-    if not any(phrase in messages for phrase in SUPERTYPE_CONFLICT_PHRASES):
+    # (O1 2026-11-25) The tool classified MY positioned compile errors and carried the
+    # blamed file's declared supertypes; the engine intersects with pending exports.
+    # The message-phrase fallback is DELETED: memo/wave/verify caches refuse
+    # pre-schema verdicts, so no decision path can ever see untyped text again.
+    declared = _own_declared_supertypes(task, result)
+    if not declared:
         return False
-    declared = _declared_supertypes_of_source(task)
     return bool(declared & _pending_symbols_of(task.get("project", ""), task["id"]))
 
 
-def _own_structural(result, own, locations):
-    """A failure in MY file that is more than ripple from a foreign broken definition:
-    the runner's problem kinds decide (anything but `missing-symbol` is structural);
-    the cascade-shape table only answers for verdicts predating the field."""
-    problems = [p for p in (result.get("problem_kinds") or []) if isinstance(p, dict)]
-    if problems:
-        return any(p.get("file") == own and p.get("kind") != "missing-symbol"
-                   for p in problems)
-    return any(name == own and not test_gate.is_cascade(message)
-               for name, message in locations)
+def _own_structural(result, own, locations=()):
+    """A failure in MY file that is more than ripple from a foreign broken definition.
+
+    (O1 2026-11-25) ONLY the runner's typed `problem_kinds` decide - anything but
+    `missing-symbol` is structural. The cascade-shape prose table is deleted; the
+    `locations` parameter survives for call compatibility and is never read."""
+    return any(p.get("file") == own and p.get("kind") != "missing-symbol"
+               for p in (result.get("problem_kinds") or []) if isinstance(p, dict))
 
 
 def _own_type_member_demand(result, task):
@@ -1004,7 +1002,7 @@ def _unambiguous_member_demand(result, task):
     return False
 
 
-def _own_hallucinated_import(result, task, locations):
+def _own_hallucinated_import(result, task, locations=()):
     """True when a symbol miss IN MY FILE names a class inside an EXISTING external package.
 
     Such an import references a type no task of this domain can ever produce and no peer edit
@@ -1016,9 +1014,9 @@ def _own_hallucinated_import(result, task, locations):
     consumed stayed 0, and the domain re-fatals on stuck passes forever).
     """
     own = str(task.get("path", "")).split("/")[-1]
-    if not any(name == own for name, _ in locations):
+    if own not in set(result.get("blamed_files") or []):
         return False
-    located = _excerpt_package_locations(result)
+    located = _package_demand_map(result)
     if not located:
         return False
     ext = test_gate.external_type_index(workspace.project_root_for(task.get("project", "")))
@@ -1045,8 +1043,8 @@ def _blocked_by_peers(result, task):
         return False
     owners = _queued_main_file_owners(task.get("project", ""))
     own = str(task.get("path", "")).split("/")[-1]
-    locations = test_gate.error_locations(result)
-    main_names = {name for name, _ in locations if name in owners}
+    blamed = set(result.get("blamed_files") or [])      # O1: typed, no text scan
+    main_names = blamed & set(owners)
     if own in main_names:
         # OWN FILE FIRST: a structural error in this unit's own file is always fixable
         # by its payload, no matter which peer symbols are missing - deferring on the
@@ -1055,14 +1053,14 @@ def _blocked_by_peers(result, task):
         # for the wiring file - observed live 14:58, both sides provably idle).
         # A "cannot find symbol" in the own file is still a cascade from a foreign
         # broken definition, which no payload of this unit can repair - defer.
-        own_structural = _own_structural(result, own, locations)
+        own_structural = _own_structural(result, own)
         if own_structural and _peer_supertype_conflict(task, result) \
                 and not _peer_supertype_materialized(task, result):
             return True    # the supertype is not on the tree yet: nothing to adapt to, defer
                            # (materialized port: fall through to charge - deferral would
                            # deadlock both gates on the same module-wide compile failure)
         if not own_structural and any(owners.get(name) != task["id"] for name in main_names) \
-                and not _own_hallucinated_import(result, task, locations):
+                and not _own_hallucinated_import(result, task):
             return True
         return False                       # the own file is structurally broken: real retry
     if _own_type_member_demand(result, task):
@@ -1084,7 +1082,7 @@ def _blocked_by_peers(result, task):
             return True          # a queued peer will resolve this symbol; do not burn attempts
     if main_names and all(owners.get(name) != task["id"] for name in main_names):
         return True              # every blamed production file belongs to other queued units
-    if locations and not main_names:
+    if blamed and not main_names:
         # 1) A compile error in a frozen test is FIRST the contract duty of that test's
         #    OWN implementer (the stage-2 unit whose T1 record points at this test file):
         #    its payload must make the call its own contract shows compile - add the
@@ -1092,9 +1090,8 @@ def _blocked_by_peers(result, task):
         #    for the service unit, not for the units whose types merely APPEAR in the
         #    message (an earlier drain charged the argument type's owner for a call its
         #    file does not declare).
-        blamed_files = {name for name, _ in locations}
         my_test = _own_test_file(task)
-        if my_test and my_test in blamed_files:
+        if my_test and my_test in blamed:
             return False                   # my contract's own test file fails: real retry
         # 2) Otherwise only DEMANDS attribute: `member_demands` is the runner's normalized
         #    "type X lacks member m" fact (the tool owns every compiler's phrasing; the
@@ -1361,7 +1358,7 @@ def _tester_close_out(task):
         # unique owner elsewhere: the deterministic repair can reroute it. Give it the
         # chance BEFORE aborting - then re-derive the red record from the repaired file.
         project_root = workspace.project_root_for(task.get("project", ""))
-        if test_gate.repair_test_imports(project_root):
+        if test_gate.canonicalize_tree(project_root):
             dispatchers.rerecord_red_phase(task)
             gap = dispatchers.red_phase_dependency_gap(task)
     if gap:
@@ -1415,7 +1412,7 @@ def drain_queue(args, invoke_for_task):
         # first, the classpath then re-checks per task at close-out.
         index = task_queue.load_index(include_error=True)
         for project in list(gaps):
-            test_gate.repair_test_imports(workspace.project_root_for(project))
+            test_gate.canonicalize_tree(workspace.project_root_for(project))
             for record_path in settings.RED_PHASE_DIR.glob("*.json"):
                 try:
                     tid = str(json.loads(record_path.read_text(encoding="utf-8")).get("task_id")
@@ -1553,10 +1550,14 @@ def drain_queue(args, invoke_for_task):
                 # re-verify a module that could not compile because a peer T2's class
                 # was missing while its owner re-attempted. Defer before paying the
                 # session: the same free evidence check the verify gate uses.
+                root_b = workspace.project_root_for(task["project"])
                 ok_b, reason_b = verification.verify_project(
-                    workspace.project_root_for(task["project"]), args.verify, args.verify_timeout)
+                    root_b, args.verify, args.verify_timeout)
                 if not ok_b:
-                    foreign = _t3_foreign_symbols(task, reason_b)
+                    # O1: the deferral reads the build verdict NORMALIZED BY THE TOOL
+                    # (verification routes the same parse() the test CLI uses)
+                    foreign = _t3_foreign_symbols(
+                        task, verification.verify_verdict(root_b, args.verify))
                     if foreign:
                         raise DeferredTask(
                             f"module build misses {', '.join(sorted(foreign)[:3])}: owned by "
@@ -1633,7 +1634,8 @@ def drain_queue(args, invoke_for_task):
                 ok_build, reason_build = verification.verify_project(
                     project_root, args.verify, args.verify_timeout)
                 if not ok_build:
-                    foreign = _t3_foreign_symbols(task, reason_build)
+                    foreign = _t3_foreign_symbols(
+                        task, verification.verify_verdict(project_root, args.verify))
                     if foreign:
                         raise DeferredTask(
                             f"module build misses {', '.join(sorted(foreign)[:3])}: owned by "

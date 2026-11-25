@@ -1,0 +1,183 @@
+{
+  "id": "T1-001",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/pulsestream/telemetry/shared/ApplicationConfigArtifactTest.java",
+  "export": "ApplicationConfigArtifactTest",
+  "intent": "Loads application.yml with YamlPropertySourceLoader and asserts nested YAML form, flyway locations classpath:db/migration, distinct JDBC and R2DBC placeholders with no H2 in the base document, the ECS rolling file sink literals, and the test profile document seeding H2 and the credential entries.",
+  "layer": "shared",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.shared",
+    "implements": [],
+    "dependencies": [],
+    "methods": [],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "spring.flyway.locations",
+        "kind": "value",
+        "value": "classpath:db/migration"
+      },
+      {
+        "path": "spring.flyway.url",
+        "kind": "value",
+        "value": "${TELEMETRY_JDBC_URL}"
+      },
+      {
+        "path": "spring.r2dbc.url",
+        "kind": "value",
+        "value": "${TELEMETRY_R2DBC_URL}"
+      },
+      {
+        "path": "logging.file.name",
+        "kind": "value",
+        "value": "logs/telemetry-ingestion-processing.log"
+      },
+      {
+        "path": "logging.structured.format.file",
+        "kind": "value",
+        "value": "ecs"
+      },
+      {
+        "path": "logging.logback.rollingpolicy.max-file-size",
+        "kind": "value",
+        "value": "10MB"
+      },
+      {
+        "path": "logging.logback.rollingpolicy.max-history",
+        "kind": "value",
+        "value": "14"
+      },
+      {
+        "path": "server.error.include-message",
+        "kind": "value",
+        "value": "never"
+      },
+      {
+        "path": "server.error.include-stacktrace",
+        "kind": "value",
+        "value": "never"
+      },
+      {
+        "path": "server.error.include-binding-errors",
+        "kind": "value",
+        "value": "never"
+      },
+      {
+        "path": "management.metrics.tags",
+        "kind": "map"
+      },
+      {
+        "path": "telemetry.ingestion.append.permits",
+        "kind": "value"
+      },
+      {
+        "path": "telemetry.ingestion.append.retry.max-attempts",
+        "kind": "value",
+        "value": "3"
+      },
+      {
+        "path": "telemetry.ingestion.append.retry.backoff",
+        "kind": "value"
+      },
+      {
+        "path": "telemetry.ingestion.append.timeout",
+        "kind": "value"
+      },
+      {
+        "path": "telemetry.ingestion.reorder.window",
+        "kind": "value",
+        "value": "60s"
+      },
+      {
+        "path": "telemetry.ingestion.batch.size",
+        "kind": "value"
+      },
+      {
+        "path": "spring.ssl.bundle.pem.telemetry-payload.keystore.private-key",
+        "kind": "value"
+      },
+      {
+        "path": "telemetry.ingestion.page.size",
+        "kind": "value"
+      },
+      {
+        "path": "telemetry.ingestion.page.max",
+        "kind": "value"
+      },
+      {
+        "path": "spring.r2dbc.pool.max-size",
+        "kind": "value"
+      },
+      {
+        "path": "spring.r2dbc.pool.max-idle-time",
+        "kind": "value"
+      },
+      {
+        "path": "spring.r2dbc.pool.max-acquire-time",
+        "kind": "value"
+      },
+      {
+        "path": "telemetry.ingestion.device-credentials",
+        "kind": "list",
+        "fields": [
+          "id",
+          "secret-hash",
+          "scope"
+        ]
+      },
+      {
+        "path": "spring.codec.max-in-memory-size",
+        "kind": "value"
+      },
+      {
+        "path": "telemetry.ingestion.rate.limit",
+        "kind": "value"
+      },
+      {
+        "path": "telemetry.ingestion.rate.burst",
+        "kind": "value"
+      },
+      {
+        "path": "telemetry.ingestion.reorder.buffer-capacity",
+        "kind": "value"
+      },
+      {
+        "path": "telemetry.stream.window.capacity",
+        "kind": "value"
+      },
+      {
+        "path": "telemetry.stream.window.duration",
+        "kind": "value"
+      },
+      {
+        "path": "telemetry.stream.service-credentials",
+        "kind": "list",
+        "fields": [
+          "id",
+          "secret-hash",
+          "scope"
+        ]
+      },
+      {
+        "path": "telemetry.stream.subscribers.max",
+        "kind": "value"
+      },
+      {
+        "path": "telemetry.stream.subscriber.buffer-capacity",
+        "kind": "value"
+      },
+      {
+        "path": "telemetry.stream.intake.queue-capacity",
+        "kind": "value"
+      }
+    ]
+  }
+}

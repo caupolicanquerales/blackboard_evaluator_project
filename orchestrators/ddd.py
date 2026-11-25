@@ -450,7 +450,7 @@ def write_phase2_digest(slug):
     # stale slices of SUPERSEDED context names must not linger (2026-11-20 audit: /tmp
     # held slices of two contexts this board no longer has - a wrong-path read could
     # have loaded a dead generation's duties)
-    keep = {context_stem(c) for c in digest["draft_order"]}
+    keep = {context_stem(c) for c in digest["draft_order"]} | {context_stem(ROOT_CONTEXT)}
     for prefix in (PHASE2_SLICE_PREFIX, STRATEGY_SLICE_PREFIX):
         for stale_slice in Path("/tmp").glob(f"{prefix}{slug}-*.json"):
             stem = stale_slice.name[len(prefix) + len(slug) + 1:-len(".json")]
@@ -468,6 +468,13 @@ def write_phase2_digest(slug):
 # construction, and the final batch emit is the only full-plan gate.
 PHASE2_SLICE_PREFIX = "phase2-slice-"
 STRATEGY_SLICE_PREFIX = "strategy-slice-"
+
+# PHASE 1.5 (2026-11-25 root restructure): the domain-wide singletons - the ONE
+# configuration-artifact unit and the ONE root admission gate - belong to a dedicated
+# micro-planning pass, not to "whichever bounded context drafted first". The manifest
+# itself is pure data and is ENGINE-queued by plan_build_manifest(). ROOT_CONTEXT is a
+# reserved pseudo-context name; strategy validation refuses a real context that claims it.
+ROOT_CONTEXT = "Root & Infrastructure"
 # the flattened duty - everything a claim needs travels ON the duty (2026-11-20 context
 # audit round 2: the slice's rules map repeated 5.2KB of spec rows the duties already
 # joined; the planner session never needs authorization_matrix, principals, assumptions,
@@ -506,6 +513,33 @@ def write_strategy_slice(slug, context):
     strategy = strategy_for(slug)
     if strategy is None:
         return None, [f"no readable execution strategy for {slug}"]
+    if str(context or "") == ROOT_CONTEXT:
+        # the ROOT pass sees the WHOLE domain: every surface (the gate must account for
+        # all of them), every rule (the config unit seeds their defaults), the full
+        # floor, the persistence drivers - nothing is filtered away, because ROOT owns
+        # exactly the responsibilities no bounded context may own
+        root_payload = {
+            "slug": slug, "context": ROOT_CONTEXT,
+            "project_root": strategy.get("project_root"),
+            "tech_stack": strategy.get("tech_stack"),
+            "layers": strategy.get("layers"),
+            "module_layout": strategy.get("module_layout") or {},
+            "bounded_contexts": strategy_contexts(slug),
+            "surfaces": [s for s in (strategy.get("surfaces") or []) if isinstance(s, dict)],
+            "composition_root_surfaces": [
+                {k: v for k, v in s.items() if k in ("name", "context", "kind", "method", "path")}
+                for s in (strategy.get("surfaces") or []) if isinstance(s, dict)
+                and str(s.get("name", "")).strip()],
+            "rules": [r for r in (strategy.get("rules") or []) if isinstance(r, dict)],
+            "persistence": strategy.get("persistence") or {},
+            "observability": dict(strategy.get("observability") or {}),
+        }
+        root_path = strategy_slice_path(slug, ROOT_CONTEXT)
+        try:
+            root_path.write_text(json.dumps(root_payload, indent=1), encoding="utf-8")
+        except OSError as exc:
+            return None, [f"strategy root-slice write failed: {exc}"]
+        return root_path, []
     persistence = strategy.get("persistence") or {}
     data_model = persistence.get("data_model") or []
     owned = bool(data_model) or bool(persistence.get("drivers"))
@@ -613,6 +647,114 @@ def _duty_context(duty, rules, surfaces):
     return None
 
 
+# ---------------------------------------------------------------------------
+# PHASE 1.5 - the build manifest is ENGINE data (2026-11-25 root restructure).
+# The stack tables' `# Build coordinates` rows are machine-readable pipe rows; the
+# digest carries them per spec phase. The union of the rows whose capability
+# condition is satisfied by the PLANNED duty set becomes the ONE stage-0 manifest
+# task, queued deterministically before any planning session - which deletes the
+# first-drafter bootstrap, the `missing_coordinates` gap channel and the asymmetric
+# cognitive load from the plan, and makes every bounded-context session symmetric.
+CAPABILITY_TOKEN_RE = re.compile(r"`([a-z][a-z0-9-]*)`")
+
+
+def _manifest_rows(slug):
+    """(coordinate, scope) pairs from the digest's build_coordinates, filtered by the
+    planned capability set. A scope cell that names capability-shaped tokens is a
+    CONDITION; it schedules when any named token is planned. Over-inclusion costs one
+    inert dependency the container merges blindly; under-inclusion kills the first red
+    compile - so the safe direction is to include, and the scope text rides the intent
+    for the operator's eye."""
+    path, problems = write_phase2_digest(slug)
+    if problems:
+        return None, problems
+    try:
+        digest = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return None, [f"digest {path.name} unreadable: {exc}"]
+    planned = {str(d.get("capability", "")).strip().lower() for d in digest.get("duties") or []}
+    rows = []
+    for phase in sorted((digest.get("build_coordinates") or {})):
+        entry = digest["build_coordinates"][phase] or {}
+        for cells in entry.get("rows") or []:
+            if not isinstance(cells, list) or not cells:
+                continue
+            coordinate = str(cells[0]).strip()
+            if not coordinate:
+                continue
+            scope = " ".join(str(c).strip() for c in cells[1:])
+            scope = re.sub(r"[*`]", "", scope)
+            tokens = {t for t in CAPABILITY_TOKEN_RE.findall(" ".join(str(c) for c in cells[1:]))}
+            if tokens and planned and not (tokens & planned):
+                continue  # condition not planned - schedule nothing for it
+            rows.append((coordinate, scope))
+    return rows, []
+
+
+def build_manifest_state(slug):
+    """The manifest row the board already carries, or None (resume-safe read of
+    queue/complete/error only - directories, zero sessions)."""
+    for folder in (settings.QUEUE_DIR, settings.COMPLETE_DIR, settings.ERROR_DIR):
+        for file in folder.glob(f"T0-*-{slug}.json"):
+            try:
+                task = json.loads(file.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            if (isinstance(task, dict)
+                    and str(task.get("export", "")).strip() == settings.BUILD_MANIFEST_EXPORT
+                    and str(task.get("project", "")) == slug):
+                return {"id": str(task.get("id")), "intent": str(task.get("intent") or "")}
+    return None
+
+
+def plan_build_manifest(slug):
+    """Queue the ONE stage-0 build-manifest task deterministically. Returns
+    (task_id or None, notes, problems). Idempotent: an already-queued manifest is
+    kept byte-exact and a relaunch says so."""
+    rows, problems = _manifest_rows(slug)
+    if problems:
+        return None, [], problems
+    existing = build_manifest_state(slug)
+    if existing:
+        return existing["id"], [f"build manifest already on the board: {existing['id']}"], []
+    if not rows:
+        return None, ["build_coordinates empty across every planned duty - the scaffold "
+                      "carries every dependency; NO manifest scheduled (rule (b)'s "
+                      "coordinate half: empty => none)"], []
+    scaffold = None
+    for folder in (settings.QUEUE_DIR, settings.COMPLETE_DIR):
+        for file in folder.glob(f"T0-*-{slug}.json"):
+            try:
+                task = json.loads(file.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            if (isinstance(task, dict)
+                    and str(task.get("export", "")).strip() == settings.SCAFFOLD_EXPORT):
+                scaffold = task
+    if scaffold is None:
+        return None, [], [f"{slug}: no stage-0 scaffold task on the board - the manifest "
+                          "patches the scaffold's build file, so phase 1 must land first"]
+    used = {str(f.name.split("-")[1]) for folder in (settings.QUEUE_DIR, settings.COMPLETE_DIR,
+                                                     settings.ERROR_DIR)
+            for f in folder.glob(f"T0-*-{slug}.json")}
+    number = 1
+    while f"T0-{number:03d}" in used:
+        number += 1
+    tid = f"T0-{number:03d}"
+    spelled = "; ".join(f"{c} ({s})" if s else c for c, s in rows)
+    task = {"id": tid, "targetAgent": settings.STAGE_AGENTS[0], "stage": 0, "dependsOn": [],
+            "path": scaffold.get("path") or "pom.xml", "kind": settings.STAGE_KINDS[0][0],
+            "layer": "root", "feature": None, "export": settings.BUILD_MANIFEST_EXPORT,
+            "project": slug,
+            "intent": ("Add generator-native dependencies to the scaffold build file; the "
+                       f"parent owns versions: {spelled}. Engine-queued from the stack "
+                       "table's Build coordinates (PHASE 1.5) - never a second manifest.")}
+    destination = settings.QUEUE_DIR / f"{tid}-{slug}.json"
+    destination.write_text(json.dumps(task, indent=2) + "\n", encoding="utf-8")
+    return tid, [f"{tid}: build manifest queued by the ENGINE from the stack table "
+                 f"({len(rows)} coordinate row(s)) - zero sessions"], []
+
+
 def write_phase2_digest_slice(slug, context):
     """Build /phase2-slice-<slug>-<stem>.json for ONE context's planning session: the
     duties attributable to it (plus the deterministic unattributed share), only the rule
@@ -629,13 +771,45 @@ def write_phase2_digest_slice(slug, context):
     order = full.get("draft_order") or []
     first = order[0] if order else None
     surfaces = full.get("surfaces") or []
+    if str(context or "") == ROOT_CONTEXT:
+        root_duties = [d for d in (full.get("duties") or []) if isinstance(d, dict)
+                       and _duty_context(d, full.get("rules") or {}, surfaces) is None]
+        mechanisms = {}
+        for phase, mech in (full.get("mechanisms") or {}).items():
+            if not any(d.get("spec") == phase for d in root_duties):
+                continue
+            mechanisms[phase] = {"table": mech.get("table"), "header": mech.get("header"),
+                                 "rows": mech.get("rows")}
+        root_slice = {
+            "slug": slug, "context": ROOT_CONTEXT,
+            "engine_build_manifest": build_manifest_state(slug),
+            "duties": root_duties,
+            "rules": {k: v for k, v in (full.get("rules") or {}).items()},
+            "mechanisms": mechanisms,
+            "surfaces": surfaces,
+            "specs": full.get("specs") or {},
+            "bounded_contexts": order,
+            "observability": full.get("observability") or {},
+        }
+        # the two slices are generated together for ROOT too: no session may see one
+        # generation's digest with the other generation's strategy bytes
+        write_strategy_slice(slug, ROOT_CONTEXT)
+        root_slice_path = phase2_slice_path(slug, ROOT_CONTEXT)
+        try:
+            root_slice_path.write_text(json.dumps(root_slice, indent=1), encoding="utf-8")
+        except OSError as exc:
+            return None, [f"root slice write failed: {exc}"]
+        return root_slice_path, []
     duties = []
     for duty in full.get("duties") or []:
         owner = _duty_context(duty, full.get("rules") or {}, surfaces)
         if owner is not None and owner != context:
             continue
-        if owner is None and context != first:
-            continue  # unattributed duties ride the FIRST slice: one lawful home, no race
+        if owner is None:
+            # unattributed duties ride the ROOT slice ONLY (2026-11-25): "whichever
+            # context drafts first" inherited them before, which made the first session
+            # carry the whole domain's singleton load and made sibling order load-bearing
+            continue
         # the duty arrives COMPLETE (2026-11-20 audit round 2): the fields the planner
         # cites - surface, test_duty, measurement, effect_on_deny, statement, class,
         # operation, threat - are JOINED OFF the rule row INTO the duty, so the slice
@@ -1064,9 +1238,10 @@ def validate_security_spec(slug):
         framework or library name, an annotation, a framework-suffixed class, a file name, a
         package path, a task id or a board folder in any string means the security step
         decided the architect's job; the leak is reported at its exact JSON path;
-    (2) DUTY CLOSURE - every authorization row and every invariant is discharged by at least
-        one duty, and every duty `spec_ref` resolves. A rule with no owning unit is prose,
-        the same failure class the step-log claim gate killed for observability;
+    (2) DUTY CLOSURE - every authorization row, every invariant, and every PII data class
+        whose masking posture promises work is discharged by at least one duty, and every
+        duty `spec_ref` resolves. A rule with no owning unit is prose, the same failure
+        class the step-log claim gate killed for observability;
     (3) the IDOR law - a row addressed by client-supplied identifiers states an ownership
         predicate or declares the resource public;
     (4) the disclosure law - `restricted` data is forbidden in logs, errors and exports.
@@ -1176,6 +1351,24 @@ def validate_security_spec(slug):
         if rid and rid not in claimed:
             problems.append(f"{rid}: rule with no owning duty - a rule nobody schedules is prose, "
                             "and the decomposition is refused until one unit claims it")
+    # (2026-11-25 cold6 audit, DC closure) A PII data class whose masking posture
+    # PROMISES work ("partial", "yes", anything but "none") and which no duty claims
+    # is a redaction obligation scheduled nowhere: the board can be lawful today only
+    # because a prose duty text happens to mention the class - the same implicit
+    # binding the (y)-discharge hole was. Retention/deletion postures carry their own
+    # decision in the value ("operator-defined" rides the visible risk channel);
+    # masking does not, so the claim must be a machine edge.
+    for entry in [e for e in (spec.get("data_classification") or []) if isinstance(e, dict)]:
+        cid = str(entry.get("id", "")).strip()
+        masking = str(entry.get("masking", "")).strip().lower()
+        pii = str(entry.get("pii", "")).strip().lower() == "true"
+        if cid and pii and masking not in ("", "none", "n/a", "not-applicable") \
+                and cid not in claimed:
+            problems.append(
+                f"{cid}: PII data class with masking posture {entry.get('masking')!r} is "
+                "discharged by NO duty - add the duty id whose spec_ref or covers names "
+                f"{cid} (the redaction or envelope duty that already guards this class), "
+                "or set masking to 'none' to declare the posture as a decision (rule (2))")
     problems.extend(_security_risk_errors(spec, declared))
     problems.extend(_security_strategy_errors(slug, spec, rows))
     if problems:

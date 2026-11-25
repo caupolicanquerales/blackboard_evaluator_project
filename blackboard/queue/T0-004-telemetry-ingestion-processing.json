@@ -5,11 +5,11 @@
   "dependsOn": [
     "T0-001"
   ],
-  "path": "services/telemetry-ingestion-processing/src/main/resources/db/migration/V3__create_audit_trail.sql",
+  "path": "src/main/resources/db/migration/BACKUP_RECOVERY.md",
   "kind": "bootstrap",
   "layer": "root",
   "feature": null,
-  "export": "V3__create_audit_trail.sql",
-  "intent": "Schema migration for Telemetry Event Log: PostgreSQL (Flyway) append-only audit_trail table (actor, action, outcome, occurred_at, correlation_id) in the versioned Flyway script at this path.",
+  "export": "BACKUP_RECOVERY.md",
+  "intent": "Backup/recovery runbook for the PostgreSQL store of context Telemetry Ingestion & Validation: periodic backup plus point-in-time restore, forward-fix rollback posture, append-only count verification.",
   "project": "telemetry-ingestion-processing"
 }

@@ -1,0 +1,53 @@
+{
+  "id": "T2-002",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-002",
+    "T0-001"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/pulsestream/telemetry/shared/ErrorCodeResponseHandler.java",
+  "export": "ErrorCodeResponseHandler",
+  "intent": "Discharges SI-07 error-code-only (covers SI-08): ServerAuthenticationEntryPoint + ServerAccessDeniedHandler on the chain's exceptionHandling, answering code, human-safe message, correlation key (requestId, read from the exchange attributes) and nothing else. Binds server.error.include-message, server.error.include-stacktrace, server.error.include-binding-errors, all never.",
+  "layer": "interface",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.shared",
+    "implements": [
+      "ServerAuthenticationEntryPoint",
+      "ServerAccessDeniedHandler"
+    ],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "Mono<Void> commence(ServerWebExchange exchange, AuthenticationException ex)",
+        "returns": "Mono<Void>"
+      },
+      {
+        "signature": "Mono<Void> handle(ServerWebExchange exchange, AccessDeniedException denied)",
+        "returns": "Mono<Void>"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "server.error.include-message",
+        "kind": "value",
+        "value": "never"
+      },
+      {
+        "path": "server.error.include-stacktrace",
+        "kind": "value",
+        "value": "never"
+      },
+      {
+        "path": "server.error.include-binding-errors",
+        "kind": "value",
+        "value": "never"
+      }
+    ]
+  }
+}

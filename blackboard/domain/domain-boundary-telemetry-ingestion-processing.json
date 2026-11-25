@@ -2,220 +2,192 @@
   "schema_version": "1.0",
   "report_type": "domain-slice",
   "metadata": {
-    "generated_at": "2026-11-24T17:14:54-03:00",
+    "generated_at": "2026-11-25T14:12:14-03:00",
     "agent": "domain-boundary-discovery",
     "source_description": "/home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/seed/002_description.md"
   },
   "subdomain": {
     "name": "Telemetry Ingestion & Processing",
     "type": "core",
-    "capability": "Continuous, high-throughput, non-blocking ingestion of raw 1Hz time-series sensor payloads (heart rate, power, cadence, ground contact time, respiration, swim stroke telemetry) from IoT edge devices, bike computers and smart wearables; enforces Sensor Metric Boundaries, reconciles out-of-order backfills and buffers windowed telemetry streams for streaming analytics (PulseStream Engine).",
-    "why_distinct": "Core component of the endurance athletic analytics platform with its own language (Telemetry Sample, Ingress Packet, Backfill Reorder Window), cadence (1Hz bursts) and owned invariants (validation, chronological reordering, append-only history)."
+    "capability": "Continuous, high-throughput ingestion of raw 1Hz time-series sensor payloads (heart rate, power, cadence, ground contact time, respiration, swim stroke telemetry) from IoT edge devices, bike computers and smart wearables; enforces Sensor Metric Boundaries, reconciles out-of-order backfills and buffers windowed telemetry streams for streaming analytics (PulseStream Engine).",
+    "why_distinct": "Core component of the endurance athletic analytics platform with its own language (t_device vs t_ingress, Backfill Reorder Window), its own rules (boundary validation, reordering, append-only revisions) and a reactive backpressure-driven cadence distinct from downstream analytics."
   },
   "ubiquitous_language": [
     {
       "term": "Telemetry Sample",
-      "context": "Sample Ingestion & Validation",
+      "context": "Telemetry Ingestion & Validation",
       "definition": "Individual 1Hz data point of a sensor metric."
     },
     {
       "term": "Ingress Packet",
-      "context": "Sample Ingestion & Validation",
-      "definition": "Raw payload received from a device carrying Telemetry Samples."
+      "context": "Telemetry Ingestion & Validation",
+      "definition": "Raw payload received from an edge device carrying Telemetry Samples."
     },
     {
       "term": "Device Timestamp (t_device)",
-      "context": "Backfill Reordering & Windowing",
+      "context": "Telemetry Ingestion & Validation",
       "definition": "Device-generated epoch timestamp; the chronological ordering key."
     },
     {
       "term": "Ingress Timestamp (t_ingress)",
-      "context": "Sample Ingestion & Validation",
+      "context": "Telemetry Ingestion & Validation",
       "definition": "Arrival time at the ingestion entry point; never used for ordering."
     },
     {
       "term": "Backfill Reorder Window",
-      "context": "Backfill Reordering & Windowing",
-      "definition": "60-second window within which delayed out-of-order packets are re-indexed by t_device."
-    },
-    {
-      "term": "Reactive Stream Backpressure",
-      "context": "Sample Ingestion & Validation",
-      "definition": "Demand-driven flow control keeping ingestion non-blocking under burst load."
+      "context": "Telemetry Ingestion & Validation",
+      "definition": "60-second window within which delayed out-of-order packets are re-indexed chronologically."
     },
     {
       "term": "Sensor Metric Boundary",
-      "context": "Sample Ingestion & Validation",
-      "definition": "Physical physiological/mechanical limit a metric value must respect."
+      "context": "Telemetry Ingestion & Validation",
+      "definition": "Physical physiological/mechanical constraint a metric must satisfy (e.g. HR 30-240 BPM)."
     },
     {
       "term": "VALIDATION_FAILED",
-      "context": "Sample Ingestion & Validation",
-      "definition": "Status flag tagged on invalid samples; the payload is retained."
+      "context": "Telemetry Ingestion & Validation",
+      "definition": "Status flag tagged on samples violating a Sensor Metric Boundary; payload is kept."
+    },
+    {
+      "term": "Reactive Stream Backpressure",
+      "context": "Telemetry Ingestion & Validation",
+      "definition": "Demand-signalling control keeping the ingestion entry point non-blocking under burst load."
     },
     {
       "term": "Event Revision",
-      "context": "Telemetry Event Log",
-      "definition": "Appended record carrying a corrective or backfilled frame; never overwrites earlier records."
+      "context": "Telemetry Ingestion & Validation",
+      "definition": "Appended record representing a corrective or backfilled frame; raw records are never mutated."
+    },
+    {
+      "term": "Windowed Telemetry Stream",
+      "context": "Telemetry Stream Distribution",
+      "definition": "Sliding-window buffered stream of validated telemetry offered to streaming analytics and downstream event streams."
     }
   ],
   "bounded_contexts": [
     {
-      "name": "Sample Ingestion & Validation",
-      "responsibility": "Accept Ingress Packets with backpressure and validate each Telemetry Sample against Sensor Metric Boundaries before downstream propagation.",
+      "name": "Telemetry Ingestion & Validation",
+      "responsibility": "Accept Ingress Packets, validate Telemetry Samples against Sensor Metric Boundaries, reorder by t_device within the Backfill Reorder Window, and persist append-only raw records and revisions.",
       "in_scope": [
-        "non-blocking intake of Ingress Packets",
-        "recording t_ingress",
-        "Sensor Metric Boundary validation",
-        "tagging VALIDATION_FAILED without dropping payload"
+        "1Hz sample ingestion for heart rate, power, cadence, ground contact time, respiration, swim stroke telemetry",
+        "Boundary validation and VALIDATION_FAILED tagging",
+        "Backfill reordering by t_device within 60 seconds",
+        "Append-only storage with Event Revisions",
+        "Backpressure at the ingestion entry point"
       ],
       "out_of_scope": [
-        "chronological reordering",
-        "persistence of records",
-        "downstream analytics"
+        "Downstream analytics computation",
+        "Device provisioning and athlete identity",
+        "Broadcasting to downstream event streams"
       ],
       "ubiquitous_language": [
         "Telemetry Sample",
         "Ingress Packet",
+        "Device Timestamp (t_device)",
         "Ingress Timestamp (t_ingress)",
-        "Reactive Stream Backpressure",
+        "Backfill Reorder Window",
         "Sensor Metric Boundary",
-        "VALIDATION_FAILED"
+        "VALIDATION_FAILED",
+        "Reactive Stream Backpressure",
+        "Event Revision"
       ],
       "invariants": [
-        "Every incoming 1Hz Telemetry Sample is validated before downstream propagation (HR 30-240 BPM, Power 0-2500W, Cadence 0-220 RPM, Swimming Pace >45 sec/100m)",
+        "Every Telemetry Sample is validated against its Sensor Metric Boundary (HR: 30-240 BPM, Power: 0-2500W, Cadence: 0-220 RPM, Swimming Pace: >45 sec/100m) before downstream propagation",
         "Invalid samples are tagged VALIDATION_FAILED and the underlying payload is never dropped",
-        "Ingestion entry point keeps backpressure control with zero blocking I/O on thread pools under burst load (thousands of simultaneous 1Hz transmissions)"
+        "Packets delayed up to 60 seconds are ordered by t_device, not t_ingress",
+        "Ingestion entry point applies reactive backpressure with zero blocking I/O on thread pools",
+        "Raw time-series records are strictly append-only; corrections and backfills append new Event Revisions"
       ],
       "source_of_truth": [
-        "Sensor Metric Boundary definitions",
-        "Validation status of a Telemetry Sample"
+        "Raw telemetry records and their Event Revisions",
+        "Sample validation status"
       ],
       "publishes": [
-        "TelemetrySampleValidated",
-        "TelemetrySampleValidationFailed"
+        "TelemetrySampleIngested",
+        "TelemetrySampleValidationFailed",
+        "TelemetryBackfillRevisionAppended"
       ],
-      "consumes": [
-        "Ingress Packet from IoT edge devices, bike computers, smart wearables"
-      ],
+      "consumes": [],
       "actors": [
         "IoT edge device",
         "Bike computer",
         "Smart wearable"
       ],
       "external_systems": [
-        "Device transmitters"
+        "Edge device transmitters"
       ],
       "confidence": "high"
     },
     {
-      "name": "Backfill Reordering & Windowing",
-      "responsibility": "Re-index delayed out-of-order samples chronologically by t_device within the 60-second Backfill Reorder Window and buffer windowed streams for streaming analytics.",
+      "name": "Telemetry Stream Distribution",
+      "responsibility": "Buffer validated telemetry into sliding-window streams and broadcast them with backpressure awareness to downstream event streams and streaming analytics.",
       "in_scope": [
-        "ordering by t_device not t_ingress",
-        "60-second Backfill Reorder Window",
-        "sliding-window buffering",
-        "backfill detection"
+        "Sliding-window buffering of telemetry streams",
+        "Backpressure-aware event broadcasting",
+        "Real-time metrics backfilling propagation to consumers"
       ],
       "out_of_scope": [
-        "metric validation",
-        "durable storage",
-        "analytics computation"
+        "Validation rules",
+        "Raw storage",
+        "Analytics computation by consumers"
       ],
       "ubiquitous_language": [
-        "Device Timestamp (t_device)",
-        "Backfill Reorder Window",
-        "Telemetry Sample"
+        "Windowed Telemetry Stream",
+        "Reactive Stream Backpressure"
       ],
       "invariants": [
-        "Packets delayed up to 60 seconds are re-indexed chronologically on t_device rather than t_ingress"
+        "Broadcast honours downstream backpressure and does not block",
+        "Only samples already validated by Telemetry Ingestion & Validation are propagated"
       ],
       "source_of_truth": [
-        "Chronological ordering of samples within the window"
+        "Windowed buffer state (derived, transient)"
       ],
       "publishes": [
-        "TelemetryWindowBuffered",
-        "TelemetrySampleBackfilled",
-        "OrderedTelemetryStreamBroadcast"
+        "WindowedTelemetryBroadcast"
       ],
       "consumes": [
-        "TelemetrySampleValidated",
-        "TelemetrySampleValidationFailed"
+        "TelemetrySampleIngested",
+        "TelemetrySampleValidationFailed",
+        "TelemetryBackfillRevisionAppended"
       ],
       "actors": [
-        "Streaming analytics consumers (downstream)"
+        "Downstream streaming analytics consumers"
       ],
       "external_systems": [
         "Downstream event streams"
-      ],
-      "confidence": "medium"
-    },
-    {
-      "name": "Telemetry Event Log",
-      "responsibility": "Append-only record of raw time-series records and corrective/backfilled revisions, preserving auditability.",
-      "in_scope": [
-        "append of raw records",
-        "append of Event Revisions for corrections and backfills"
-      ],
-      "out_of_scope": [
-        "validation",
-        "reordering",
-        "updates or deletes of existing records"
-      ],
-      "ubiquitous_language": [
-        "Event Revision",
-        "Telemetry Sample"
-      ],
-      "invariants": [
-        "Raw time-series records are strictly append-only",
-        "Corrective streams or backfilled frames append new Event Revisions, never mutate history"
-      ],
-      "source_of_truth": [
-        "Raw time-series history and its revisions"
-      ],
-      "publishes": [
-        "TelemetryRevisionAppended"
-      ],
-      "consumes": [
-        "TelemetrySampleValidated",
-        "TelemetrySampleValidationFailed",
-        "TelemetrySampleBackfilled"
-      ],
-      "actors": [
-        "Audit reviewers"
       ],
       "confidence": "medium"
     }
   ],
   "assumptions": [
     {
-      "item": "Ambiguity/open question: transport posture of Ingress Packet delivery (at-most-once vs at-least-once) is not stated, and no dedup identity is named for the append-only log. If natural (device, metric, t_device), is the mutable payload value part of the identity or excluded, and what then separates a retry from a correction revision?",
+      "item": "Split into ingestion/validation and stream distribution contexts because the description names windowed buffering and broadcasting as a distinct cadence and consumer; description itself calls it a single domain focus.",
+      "type": "Assumption",
+      "impact_on_boundaries": "Could merge into one context if buffering shares consistency with storage.",
+      "confidence": "medium"
+    },
+    {
+      "item": "Transport posture: delivery from edge devices is not stated. Likely at-least-once (retries), yet append-only revisions need an identity distinguishing a retry from a new event. Candidate natural identity (device, metric, t_device): is the mutable payload value part of it or excluded, and what then separates a retry from a legitimate correction? Alternatives: client-supplied key, or accept duplicates.",
       "type": "Ambiguity",
-      "impact_on_boundaries": "Decides who in Telemetry Event Log distinguishes retries from corrections; a value-excluding identity would turn corrections into no-op duplicates.",
+      "impact_on_boundaries": "Determines dedup duty of the ingestion context and whether corrections become no-op duplicates.",
       "confidence": "low"
     },
     {
-      "item": "Operator list of metrics named without ranges, left unbounded/disabled pending an answer: ground contact time, respiration, swim stroke telemetry. Swimming Pace has only a lower bound (>45 sec/100m); no upper bound invented.",
-      "type": "Assumption",
-      "impact_on_boundaries": "Validation in Sample Ingestion & Validation cannot flag these metrics until ranges are supplied.",
-      "confidence": "medium"
-    },
-    {
-      "item": "Description names one domain; split into three contexts by invariant ownership (validation, ordering, append-only history).",
-      "type": "Assumption",
-      "impact_on_boundaries": "Could merge into one context if consistency demands it.",
-      "confidence": "medium"
-    },
-    {
-      "item": "Backpressure-aware event broadcasting to downstream event streams is attributed to Backfill Reordering & Windowing; downstream consumers are outside this subdomain.",
-      "type": "Assumption",
-      "impact_on_boundaries": "Broadcast could become a separate context if its rules grow.",
-      "confidence": "medium"
-    },
-    {
-      "item": "Samples arriving later than the 60-second window are unspecified; their handling (rejected, or appended as backfill Event Revisions) is undecided.",
+      "item": "Unbounded quantities (collected list): ground contact time, respiration and swim stroke telemetry have no named ranges; Swimming Pace has only a lower bound (>45 sec/100m) and no upper bound. No range invented; posture is unbounded/validation disabled pending operator answer.",
       "type": "Open question",
-      "impact_on_boundaries": "Affects Reordering vs Event Log responsibility for late data.",
+      "impact_on_boundaries": "Affects completeness of Sensor Metric Boundary invariant ownership, not context split.",
+      "confidence": "high"
+    },
+    {
+      "item": "Samples arriving later than the 60-second Backfill Reorder Window are undefined by the description; handling (reject, append as revision, flag) is unspecified.",
+      "type": "Open question",
+      "impact_on_boundaries": "Ownership stays in ingestion context; outcome affects revision rules.",
+      "confidence": "medium"
+    },
+    {
+      "item": "Sliding-window size and the relationship between 'sliding-window validation' and the 60-second reorder window are not specified.",
+      "type": "Ambiguity",
+      "impact_on_boundaries": "Validation might partly belong to the distribution context if windowed.",
       "confidence": "low"
     }
   ]

@@ -1,8 +1,10 @@
-# Backup and recovery - telemetry event log (PostgreSQL)
+# Backup and recovery - telemetry-ingestion-processing
 
-Owner: platform operations. Tables: `telemetry_records`, `telemetry_event_revisions`, `audit_trail` (all append-only).
+Store: PostgreSQL (relational, append-only). Embedded H2 is boot/test only.
 
-- Backup: periodic logical dump (`pg_dump --format=custom`) of the three tables plus `flyway_schema_history`; retain per data-classification policy (athlete biometric data: encrypt at rest, restrict access).
-- Recovery: restore the latest dump into an empty database, then start the service so Flyway applies any newer `V<n>__*.sql` scripts. Records newer than the dump are replayed from upstream devices/log shipper; history is append-only, so replay only appends.
-- Rollback posture: expand-only migrations; fix forward with a new script, or restore from backup. Never edit an applied script.
-- The in-memory reordering window is transient and rebuilt from `telemetry_records`.
+- Backup: operator-owned periodic full backup plus WAL archiving for point-in-time restore of `raw_telemetry_records`, `event_revisions`, `audit_trail`.
+- Restore: restore the latest backup, replay WAL to the target time, then start the application; Flyway applies any missing `V<n>__*.sql` forward.
+- Rollback: no down-scripts; migrations are expand-only, so recovery is forward-fix or restore from backup.
+- Verification: compare row counts and `max(revision_number)` per (device_id, metric, t_device) between backup and restored store; the data is append-only so counts never decrease.
+- Derived state: the distribution sliding window is in-memory and rebuilt from new events; nothing to restore.
+- Open: retention/archival period and capacity sizing are operator decisions.

@@ -1,0 +1,15 @@
+{
+  "id": "T3-017",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-017"
+  ],
+  "kind": "refactor",
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/infrastructure/AesGcmPayloadCipher.java",
+  "export": "AesGcmPayloadCipher",
+  "intent": "Refactor AesGcmPayloadCipher: keep the tabled contract and the paired tests green; no behavior, status, meter or route change.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "telemetry-ingestion-processing"
+}

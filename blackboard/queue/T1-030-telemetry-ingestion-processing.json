@@ -1,0 +1,37 @@
+{
+  "id": "T1-030",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/pulsestream/telemetry/distribution/interfaces/StreamSubscriberLimitGuardTest.java",
+  "export": "StreamSubscriberLimitGuardTest",
+  "intent": "StreamSubscriberLimitGuardTest proves subscribers up to the cap pass, the subscriber beyond the cap receives 503 with a code-only body, and a released permit on cancel or completion admits the next subscriber.",
+  "layer": "interface",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.distribution.interfaces",
+    "implements": [
+      "WebFilter"
+    ],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain)",
+        "returns": "Mono<Void>",
+        "semantics": "rejects null exchange"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "telemetry.stream.subscribers.max",
+        "kind": "value"
+      }
+    ]
+  }
+}

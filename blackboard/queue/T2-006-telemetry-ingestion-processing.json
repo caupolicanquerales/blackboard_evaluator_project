@@ -1,0 +1,37 @@
+{
+  "id": "T2-006",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-006",
+    "T0-001",
+    "T2-005"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/domain/SensorMetricBoundary.java",
+  "export": "SensorMetricBoundary",
+  "intent": "SensorMetricBoundary validates a sample value against its metric: HR 30-240 BPM, Power 0-2500W, Cadence 0-220 RPM, Swimming Pace strictly above 45 sec/100m (one-sided). A violation yields VALIDATION_FAILED, otherwise VALID; the payload is never dropped. Unknown metric kind is refused.",
+  "layer": "domain",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.domain",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ValidationStatus",
+        "task_id": "T2-005"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "ValidationStatus validate(String metric, double value)",
+        "returns": "ValidationStatus",
+        "semantics": "metric must be one of HR, POWER, CADENCE, SWIM_PACE; otherwise IllegalArgumentException"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

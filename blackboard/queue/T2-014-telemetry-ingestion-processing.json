@@ -1,0 +1,35 @@
+{
+  "id": "T2-014",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-014",
+    "T0-001"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/application/AppendConcurrencyGuard.java",
+  "export": "AppendConcurrencyGuard",
+  "intent": "PB-03 bounded-semaphore: a Semaphore(int) with the configured permit count wraps the critical append path, so concurrent appends never exceed the permits; excess work waits non-blocking and the permit is released on every signal.",
+  "layer": "application",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.application",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "<T> Mono<T> guard(Mono<T> append)",
+        "returns": "Mono<T>"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "telemetry.ingestion.append.permits",
+        "kind": "value"
+      }
+    ]
+  }
+}

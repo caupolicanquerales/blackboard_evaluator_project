@@ -1,0 +1,42 @@
+{
+  "id": "T1-029",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/pulsestream/telemetry/distribution/infrastructure/ServiceCredentialAuthenticationManagerTest.java",
+  "export": "ServiceCredentialAuthenticationManagerTest",
+  "intent": "ServiceCredentialAuthenticationManagerTest proves a configured service with the right secret and scope authenticates, an unknown or wrong-secret credential is refused, and a valid service lacking the stream scope is refused (cross-owner case); no secret literal appears.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.distribution.infrastructure",
+    "implements": [
+      "ReactiveAuthenticationManager"
+    ],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "Mono<Authentication> authenticate(Authentication authentication)",
+        "returns": "Mono<Authentication>",
+        "semantics": "rejects null; empty Mono when credential unknown"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "telemetry.stream.service-credentials",
+        "kind": "list",
+        "fields": [
+          "id",
+          "secret-hash",
+          "scope"
+        ]
+      }
+    ]
+  }
+}

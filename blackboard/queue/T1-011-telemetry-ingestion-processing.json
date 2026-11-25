@@ -1,0 +1,29 @@
+{
+  "id": "T1-011",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/pulsestream/telemetry/ingestion/application/AuditPortTest.java",
+  "export": "AuditPortTest",
+  "intent": "AuditPortTest uses a Mockito double to pin the append-only port contract: record takes actor, action, outcome and correlation id, completes empty, and the interface exposes no read-modify or delete member.",
+  "layer": "application",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.application",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "Mono<Void> record(String actor, String action, String outcome, String correlationId)",
+        "returns": "Mono<Void>"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

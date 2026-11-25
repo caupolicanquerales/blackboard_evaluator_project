@@ -597,10 +597,15 @@ for index, arch in enumerate(planner_bodies):
           "on the slice's unmapped_duties, and closes with the per-duty mapping report - a "
           "bare token would otherwise satisfy the law in prose while realizing nothing",
           "digest slice" in FLAT
-          and "`spec_ref` AND `capability` VERBATIM" in FLAT
-          and "`table_row`" in FLAT and "CROSS-OWNER case" in FLAT
+          and "`table_row`" in FLAT
           and "unmapped_duties" in FLAT and "never run `--emit` yourself" in FLAT
-          and "spec_ref ->" in FLAT and "claiming unit ids" in FLAT)
+          and "spec_ref ->" in FLAT and "claiming unit ids" in FLAT
+          # 2026-11-25 carrier compression: the CLAIM law's exact words live in the
+          # per-context brief (one home for the law the emit gate enforces); the
+          # profile is role + loop only and must not restate it
+          and "`spec_ref` AND `capability` VERBATIM" in " ".join(
+              prompts.ARCHITECT_PLANNER_PROMPT.split())
+          and "CROSS-OWNER case" in prompts.ARCHITECT_PLANNER_PROMPT)
 DAG_TEXT = (REPO / ".opencode/skills/architect-practices/task-decomposition-dag/SKILL.md").read_text()
 DAG_MARKERS = re.findall(r"^- \(([a-z])\) ", DAG_TEXT, re.M)
 check("Q14 the split moved the refusal restatement OUT of both profiles and INTO the skill "
@@ -615,7 +620,8 @@ check("Q14 the split moved the refusal restatement OUT of both profiles and INTO
       not re.findall(r"^\s+\(([a-z])\) ", planner_bodies[0], re.M)
       and not re.findall(r"^\s+\(([a-z])\) ", strategy_bodies[0], re.M)
       and "five laws" not in planner_bodies[0].lower()
-      and all(tag in planner_bodies[0] for tag in ("(y)", "(z)", "(b)"))
+      and all(tag in DAG_TEXT for tag in ("(y)", "(z)", "(b)"))
+      and "(z)" in (REPO / ".opencode/skills/architect-practices/task-decomposition-dag/QUICKREF.md").read_text()
       and DAG_MARKERS == list(string.ascii_lowercase[:26])
       and "ERR [" in (REPO / "orchestrators/task_queue.py").read_text()
       and "by EDITING the named task objects" in (REPO / "orchestrators/task_queue.py").read_text())
@@ -823,13 +829,13 @@ check("AG3 TWO honest draft shapes, no conversion war (2026-11-24 v4 live stop: 
       '"n": 7' in prompts.ARCHITECT_PLANNER_PROMPT
       and "TWO honest draft shapes" in prompts.ARCHITECT_PLANNER_PROMPT
       and "keep ONE shape for the whole file" in prompts.ARCHITECT_PLANNER_PROMPT
-      and "build-manifest bootstrap" in prompts.ARCHITECT_PLANNER_PROMPT
+      and "build-manifest bootstrap" not in prompts.ARCHITECT_PLANNER_PROMPT
+      and "You NEVER schedule a manifest" in prompts.ARCHITECT_PLANNER_PROMPT
       and "You NEVER emit task objects" not in prompts.ARCHITECT_PLANNER_PROMPT
       and "TWO honest shapes" in (REPO / ".opencode/skills/architect-practices/"
                                   "task-decomposition-dag/QUICKREF.md").read_text()
       and "## Draft record - what you write" in (REPO / ".opencode/skills/"
                                   "architect-practices/task-decomposition-dag/QUICKREF.md").read_text()
-      and all("TWO honest draft shapes" in b for b in planner_bodies)
       and all("You NEVER type stage-1/2/3 task objects" not in b for b in planner_bodies))
 
 
@@ -1391,6 +1397,7 @@ check("Q31 the emission shape is ONE planning session per BOUNDED CONTEXT writin
 #     seed-002 board; the "write tool" sentence was a Copilot-backend lie (its profile
 #     grants read/search/execute/edit - the drafts must be CREATED with `edit`).
 import settings  # noqa: E402
+import tasks  # noqa: E402
 import task_queue  # noqa: E402
 JAVA_JUNIT5 = (REPO / ".opencode/skills/tester-framework/java-junit5/SKILL.md").read_text()
 QUICKREF_TEXT = (REPO / ".opencode/skills/architect-practices/"
@@ -1410,13 +1417,18 @@ check("AG5 the ONE-gate root admission + per-kind entry laws (v4 fatal) carry na
       and "ENTRY IS PER-KIND" in prompts.ARCHITECT_PLANNER_PROMPT
       and "ROOT-WIDE ADMISSION law" in prompts.ARCHITECT_PLANNER_PROMPT
       and "route JOIN AUTHORITY" in prompts.ARCHITECT_STRATEGY_PROMPT
-      and all("ONE GATE PER ROOT" in b for b in planner_bodies)
-      and all("ENTRY IS PER-KIND" in b for b in planner_bodies)
       and "ONE GATE PER ROOT" in dag_skill
       and "SURFACE ENTRY IS PER-KIND" in dag_skill
-      and "(y4) ONE ROOT GATE" in QUICKREF_TEXT
-      and "(y5) SURFACE ENTRY IS PER-KIND" in QUICKREF_TEXT
+      and "(y4)" in QUICKREF_TEXT and "(y5)" in QUICKREF_TEXT
       and "ONE GATE PER ROOT (batch law)" not in prompts.ARCHITECT_STRATEGY_PROMPT)
+check("AG5b the (p) slice survives BOTH format laws - the v6 contradiction, pinned: "
+      "the brief, BOTH profile mirrors and the quickref each name the sanctioned lone "
+      "stage-1 as the ONLY lawful extra object in a compact file (2026-11-24 v6 live: "
+      "the mixing ban and the (p) law collided, the session obeyed the ban and DROPPED "
+      "the requirement - a collision between two laws is resolved in the CARRIERS, and "
+      "the carriers must show the resolution to all three of their readers)",
+      "the (p) slice's lone" in " ".join(QUICKREF_TEXT.split())
+      and "the (p) slice's lone" in " ".join(prompts.ARCHITECT_PLANNER_PROMPT.split()))
 check("AG6 the repair tier cannot exploit what the drafting tier just learned (2026-11-24 "
       "v4: the repair session rewrote drafts with a Python SCRIPT to stay inside its call "
       "budget, deleted and re-added a cross-context route to satisfy two different laws, "
@@ -1430,7 +1442,9 @@ check("AG6 the repair tier cannot exploit what the drafting tier just learned (2
       and "unmentioned fields stay" in prompts.ARCHITECT_PLANNER_REPAIR_PROMPT
       and "ONE ROOT GATE" in prompts.ARCHITECT_PLANNER_REPAIR_PROMPT)
 
-_z_docs = planner_bodies + [prompts.ARCHITECT_PLANNER_PROMPT, QUICKREF_TEXT, dag_skill]
+# 2026-11-25 carrier compression: the planner PROFILES are the loop, not the law;
+# the fields they used to restate are taught once, in the map + brief + contract.
+_z_docs = [prompts.ARCHITECT_PLANNER_PROMPT, QUICKREF_TEXT, dag_skill]
 check("SE1 the two vocabulary fields (`ast_hints.meters`, `ast_hints.routes`) and rule (z) "
       "are named by every carrier the phase-2 planner reads - both planner profiles, the "
       "per-context brief, the QUICKREF (the default contract read since the 2026-11-20 "
@@ -1460,7 +1474,13 @@ check("SE4 no architect carrier sends the session to a tool the profiles do not 
 check("SE5 the emit gate's refusals carry the remedy shape the SD3 doctrine demands: every "
       "(z) message names the literal, the offending unit ids, and the exact edit (the duty "
       "word, the field) - not a rewrite",
-      all(phrase in inspect.getsource(task_queue._shared_literal_errors)
+      # 2026-11-25: the per-record joins (z3 prose, signal semantics) moved OUT of
+      # _shared_literal_errors into bodies lint also runs - the remedy shape must be
+      # scanned across the join tier, not one function (the doctrine survives: every
+      # refusal names the literal, the ids and the exact edit)
+      all(phrase in (inspect.getsource(task_queue._shared_literal_errors)
+                     + inspect.getsource(task_queue._z3_prose_problems)
+                     + inspect.getsource(tasks.per_record_signal_problems))
           for phrase in ("OWNED by none", "SERVED by none", "ast_hints.routes",
                          "ast_hints.meters", "IDENTICAL", "--replan")))
 
@@ -1852,10 +1872,10 @@ check("PF4b the planner loads each mapping table ONLY when its digest slice list
       "skill-hunt) and the claim law reaches the new specs in (y1) form",
       "ONLY when your digest slice lists `unmapped_duties`" in planner_bodies[0]
       and "Performance and AI duties follow the same STAGE-2 placement"
-          in " ".join(planner_bodies[0].split())
+          in " ".join(prompts.ARCHITECT_PLANNER_PROMPT.split())
       and "the digest's `spec` label names each family"
-          in " ".join(planner_bodies[0].split())
-      and "without the reach law" in " ".join(planner_bodies[0].split()))
+          in " ".join(prompts.ARCHITECT_PLANNER_PROMPT.split())
+      and "without the reach law" in " ".join(prompts.ARCHITECT_PLANNER_PROMPT.split()))
 _db_text = (REPO / ".opencode/agents/agent-database-architect.md").read_text()
 _db_paths = sorted(set(re.findall(r"`(\.opencode/skills/[\w./<>-]+/SKILL\.md)`", _db_text)))
 check("PF5 the database profile got the A4 fix: every skill it must read is named by an "
@@ -1883,8 +1903,7 @@ check("SE10 the prompt-contract channel law is carried wherever a plan author or
                         ".github/agents/agent-ai-architect.agent.md"))
       and "HOME OF THE ARTIFACT" in prompts.ARCHITECT_PLANNER_PROMPT
       and "writable channel" in prompts.ARCHITECT_PLANNER_PROMPT
-      and all("HOME OF THE ARTIFACT" in (REPO / f).read_text()
-              and "writable channel" in (REPO / f).read_text()
+      and all("writable" not in (REPO / f).read_text()
               for f in (".opencode/agents/agent-planner-architect.md",
                         ".github/agents/agent-planner-architect.agent.md")))
 
@@ -1997,12 +2016,14 @@ check("AS4 the worked example is STACK-SOURCED: every supported tech-stack skill
           for s in ("tech-stack/java-springboot3/SKILL.md",
                     "tech-stack/typescript-nestjs/SKILL.md",
                     "tech-stack/python-fastapi/SKILL.md"))
-      and "Worked example - the stack's flavor" in planner_bodies[0]
       and not re.search(r"```json", planner_bodies[0])
+      and not re.search(r"```", planner_bodies[0])
+      and "Worked example" not in planner_bodies[0]
+      and "{worked_example}" in prompts.ARCHITECT_PLANNER_PROMPT
       and not re.search(r"Java|Spring|src/main/java|src/test/java|com\.acme|ResponseEntity|"
                         r"WebFlux|middleware|controller|\bHTTP\b|Initializr|Flyway|\.pom|npm",
                         planner_bodies[0] + planner_bodies[1], re.I)
-      and '"T1-021"' in planner_bodies[0] and "IDENTICAL" in planner_bodies[0])
+      and "IDENTICAL" in QUICKREF_TEXT)
 _pl_examples = {}
 for _stack in ("java-springboot3", "typescript-nestjs", "python-fastapi"):
     _txt = (REPO / ".opencode/skills/tech-stack" / _stack / "SKILL.md").read_text()
@@ -2011,7 +2032,7 @@ for _stack in ("java-springboot3", "typescript-nestjs", "python-fastapi"):
     _units = json.loads(_fence.group(1)) if _fence else []
     _exp, _errs = task_queue.expand_unit_draft(_units)
     _pl_examples[_stack] = (_units, _exp, _errs)
-check("AS4b EVERY stack's worked example EXPANDS into a VALID, LAWFUL pair: the fenced "
+check("AS4b EVERY stack's worked example EXPANDS a VALID, LAWFUL OWNER+CONSUMER pair of triads: the fenced "
       "block parses as JSON, is detected as a unit record (no stage/id typed), the expander "
       "reports no errors and derives exactly the T1/T2/T3 triad (ids from n: T1-021, T2-021, "
       "T3-021), the T1/T2 ast_hints tables are byte-identical (rule (z4) practiced as it is "
@@ -2021,15 +2042,33 @@ check("AS4b EVERY stack's worked example EXPANDS into a VALID, LAWFUL pair: the 
       "intent carries the row id and the cross-owner case - per stack, because a broken "
       "example in ANY stack teaches a broken contract there (and 2026-11-24 v4 proved the "
       "model follows the concrete record wherever it is written)",
-      all(len(u) == 1 and "stage" not in u[0] and errs == [] and len(exp) == 3
+      all(len(u) == 2 and "stage" not in u[0] and errs == [] and len(exp) == 6
           and exp[0]["id"] == "T1-021" and exp[1]["id"] == "T2-021" and exp[2]["id"] == "T3-021"
+          and exp[3]["id"] == "T1-022" and exp[4]["id"] == "T2-022" and exp[5]["id"] == "T3-022"
           and exp[0].get("ast_hints") == exp[1].get("ast_hints")
+          and exp[3].get("ast_hints") == exp[4].get("ast_hints")
           and all(t["ast_hints"]["routes"][0]["duty"] == "serves" for t in exp[:2])
           and all(m["duty"] == "owns" for t in exp[:2] for m in t["ast_hints"]["meters"])
           and exp[2]["kind"] == "refactor" and exp[2]["path"] == exp[1]["path"]
           and exp[1]["dependsOn"][0] == "T1-021"
+          and exp[4]["dependsOn"][0] == "T1-022"
           and "AZ-02" in exp[1]["intent"]
           and "AZ-02" in exp[0]["intent"] and "cross-owner" in exp[0]["intent"].lower()
+          # 2026-11-25 speed pass: unit 22 is the CONSUMER the model must learn to copy -
+          # references ride the record, its OWN tables stay empty, and the reference keys
+          # survive expansion onto the code side (where hydrate_batch resolves them)
+          and exp[4].get("uses_meters") == ["telemetry.ingest.accepted"]
+          and exp[4].get("uses_routes") == ["POST /ingress/packets"]
+          and exp[4].get("claims_steps") == ["packet received"]
+          and exp[4]["ast_hints"]["meters"] == [] and exp[4]["ast_hints"]["routes"] == []
+          and "uses_meters" not in exp[5]
+          # (2026-11-25 bleeding stop) ONE step-log syntax: the map said claims_steps
+          # ONLY, the exemplar shipped code.observability, and live drafts oscillated
+          # between the two across edit rounds (14:23 session: 9 edits chasing itself).
+          # The exemplar references; the engine hydrates; nothing else encodes the step.
+          and all("observability" not in (rec.get("code") or {}) for rec in u)
+          and u[0]["code"].get("claims_steps") == ["packet received"]
+          and u[1]["code"].get("claims_steps") == ["packet received"]
           for u, exp, errs in _pl_examples.values()),
       {k: (v[1] and [t["id"] for t in v[1]], v[2])[:2] for k, v in _pl_examples.items()})
 check("AS4d the example teaches the naming law, not just the claim law: a collaborator's "
@@ -2037,9 +2076,21 @@ check("AS4d the example teaches the naming law, not just the claim law: a collab
       "belongs to the producing unit's table (2026-11-20 operator review: the shipped "
       "example spelled byIdAndTenant(id, tenantId) right under the line forbidding prose "
       "re-spell of tabled signatures - an LLM copies the example, not the caveat)",
-      "COLLABORATOR's" in planner_bodies[0]
-      and "never spelled with its parameter list" in " ".join(planner_bodies[0].split())
+      "never spelled with its parameter list" in " ".join(prompts.ARCHITECT_PLANNER_PROMPT.split())
       and "byIdAndTenant(" not in _pl_examples["java-springboot3"][1][1]["intent"])
+check("A7 the 2026-11-25 task audit's three carrier laws are pinned where the session "
+      "reads them: the map carries the slice isolation choice, the refusal-status "
+      "tabledness and the ROOT boot-posture carry; the brief repeats all three (the "
+      "audit found slices shipping with no isolation choice named, 401 frozen as an "
+      "oracle from no tabled source, and the custody posture landing on the wrong "
+      "contract once the config unit moved to the ROOT pass)",
+      "NAMES its isolation choice" in QUICKREF_TEXT.replace("\n", " ")
+      and "A refusal status is a TABLED fact" in QUICKREF_TEXT.replace("\n", " ")
+      and "BOOT POSTURE" in QUICKREF_TEXT.replace("\n", " ")
+      and "NAMES the isolation choice" in " ".join(prompts.ARCHITECT_PLANNER_PROMPT.split())
+      and "BOOT POSTURE" in inspect.getsource(prompts.build_planner_prompt)
+      and "no tabled source" in " ".join(prompts.ARCHITECT_PLANNER_PROMPT.split()))
+
 _plf = " ".join(prompts.ARCHITECT_PLANNER_PROMPT.split()).lower()
 _plprof = " ".join(planner_bodies[0].split()).lower()
 check("AS10 the stage graph, the T1+T2+T3 triple, and the manifest task SHAPE are taught in "
@@ -2050,16 +2101,14 @@ check("AS10 the stage graph, the T1+T2+T3 triple, and the manifest task SHAPE ar
       "the same draft carried NO stage-3 tasks - obeying a stale skill line that promised the "
       "engine mirrors them; and a manifest task was drafted with the wrong targetAgent - the "
       "shape was in no carrier after the compression)",
-      "stage graph is law" in _plprof
-      and "never on a stage-2 task" in _plprof
-      and "t3 on its own t2" in _plprof
-      and "the graph is law" in _plf and "t1+t2+t3 triple" in _plf
+      # 2026-11-25 carrier compression: the loop-only profile no longer restates the
+      # graph; the brief and the contract carry it, the linter and emit enforce it
+      "stage graph is law" not in _plprof and "the graph is law" in _plf and "t1+t2+t3 triple" in _plf
       and "never a stage-2 task" in _plf and "t3 dependson its own t2" in _plf
       and "stage graph is law" in DAG_TEXT.lower()
       and "engine mirrors" not in DAG_TEXT.lower()
       and "planner emits all three" in DAG_TEXT.lower()
-      and "kind bootstrap" in _plprof and "stage-0 build-manifest bootstrap" in _plprof
-      and "kind bootstrap" in _plf and "kind bootstrap" in _pb
+      and "kind bootstrap" not in _plf  # PHASE 1.5: no session types the manifest shape
       # the stage-0 targetAgent is the ENGINE's roster value, injected at build time
       and "settings.STAGE_AGENTS[0]" in (REPO / "orchestrators/prompts.py").read_text()
       and ".opencode/skills/tech-stack-architect/java-reactive-patterns/SKILL.md"
@@ -2070,10 +2119,11 @@ check("AS15 the manifest-WIRING law has carriers everywhere a claim is planned (
       "tester; the table's own 'schedule the manifest duty before any tester runs' had no line "
       "in the carriers a stage-2 claim reads, and no stack-neutral gate CAN see an annotation): "
       "the unit that copies a coordinate-bearing mechanism dependsOn the build-manifest id - "
-      "profile, quickref and the per-context brief each carry the law",
+      "both planner profiles and the per-context brief each carry it - the quickref is "
+      "the pure schema cheat sheet and the batch WIREs the edge mechanically anyway "
+      "(2026-11-25 carrier compression)",
       "build-manifest task id" in " ".join(planner_bodies[0].split())
       and "build-manifest task id" in " ".join(planner_bodies[1].split())
-      and "dependsOn the build-manifest task id" in " ".join(QUICKREF_TEXT.split())
       and "build-manifest task id in its `dependsOn`" in " ".join(prompts.ARCHITECT_PLANNER_PROMPT.split()))
 check("AS4e rule (t) never dangles: the planner profiles and the per-context brief spell "
       "the amendment's meaning next to the letter (2026-11-20: the (a)-(z) wall moved into "
@@ -2089,14 +2139,14 @@ check("AS4f the build-manifest ONE-task law is taught where it is used: both pla
       "opens the coordinate paragraph with it and ends it with report-don't-duplicate (the "
       "machine half - lint/emit refusing a second manifest - is pinned by SP5; carriers "
       "and gate must say the same law or the session obeys whichever it read last)",
-      all("build_manifest" in b for b in planner_bodies)
-      and all("missing_coordinates" in b for b in planner_bodies)
-      and "{gaps}" in prompts.ARCHITECT_PLANNER_PROMPT
-      and "consult the symbol table's `build_manifest` FIRST" in prompts.ARCHITECT_PLANNER_PROMPT
-      and "second manifest" in " ".join(prompts.ARCHITECT_PLANNER_PROMPT.split())
+      "def plan_build_manifest" in (REPO / "orchestrators/ddd.py").read_text()
+      and "ddd.plan_build_manifest(slug)" in (REPO / "orchestrators/pipeline.py").read_text()
+      and "def apply_coordinate_gaps" in _tq_src
+      and "return [], []" in _tq_src
+      and "You NEVER schedule a manifest" in " ".join(
+          prompts.ARCHITECT_PLANNER_PROMPT.split())
       and "_stage0_family_errors" in (REPO / "orchestrators/task_queue.py").read_text()
-      and "def apply_coordinate_gaps" in (REPO / "orchestrators/task_queue.py").read_text()
-      and "apply_coordinate_gaps" in (REPO / "orchestrators/pipeline.py").read_text())
+      and "apply_coordinate_gaps" not in (REPO / "orchestrators/pipeline.py").read_text())
 for mirror_index, doc in enumerate(planner_bodies):
     check(f"AS4c.{mirror_index + 1} planner profile {mirror_index} carries NO fenced json "
           "example - the worked pair is STACK-SOURCED and reaches the session through the "
@@ -2117,7 +2167,7 @@ check("AS13 the QUICKREF replaces the 5,967-word full contract as the DEFAULT pe
       (REPO / ".opencode/skills/architect-practices/task-decomposition-dag/QUICKREF.md").is_file()
       and len(QUICKREF_TEXT.split()) <= 800
       and all(k in QUICKREF_TEXT for k in ("targetAgent", "ast_hints", "dependsOn", "semantics"))
-      and "IDENTICAL" in QUICKREF_TEXT and "CROSS-OWNER" in QUICKREF_TEXT
+      and "IDENTICAL" in QUICKREF_TEXT and "cross-owner" in QUICKREF_TEXT
       and "QUICKREF" in planner_bodies[0]
       and "ONLY when a lint or emit" in " ".join(planner_bodies[0].split()))
 check("AS14 the repair brief carries the pattern law the planning sessions learned the hard "
@@ -2157,7 +2207,9 @@ check("AS6 the draft-order law: providers draft before consumers from the contex
       and '"draft_order"' in _ddd_src
       and "def draft_is_fresh" in _tq_src and "draft_is_fresh" in _pl_src
       and "cleared stale drafts" in _pl_src
-      and "owner is None and context != first" in _ddd_src)
+      and "if owner is None:" in _ddd_src and "ROOT_CONTEXT" in _ddd_src
+      and "unattributed duties ride the ROOT slice ONLY" in _ddd_src
+      and "ddd.ROOT_CONTEXT" in _pl_src)
 check("AS9 the carrier preflight is real: agent_profiles_problems parses both profile trees' "
       "YAML headers (with a quoted-colon heuristic when PyYAML is absent), every CURRENT "
       "profile passes, and pipeline.run stops the launch on a header problem BEFORE phase 0 "

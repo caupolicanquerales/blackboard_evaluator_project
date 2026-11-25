@@ -1,0 +1,39 @@
+{
+  "id": "T1-026",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-007"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/pulsestream/telemetry/distribution/domain/WindowedTelemetryBroadcastTest.java",
+  "export": "WindowedTelemetryBroadcastTest",
+  "intent": "WindowedTelemetryBroadcastTest proves the published-language value keeps the samples of one window in the order given, exposes its window start and end, and that its sample list is immutable to callers.",
+  "layer": "domain",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.distribution.domain",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-007"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "static WindowedTelemetryBroadcast of(List<TelemetrySample> samples, Instant windowStart, Instant windowEnd)",
+        "returns": "WindowedTelemetryBroadcast"
+      },
+      {
+        "signature": "List<TelemetrySample> samples()",
+        "returns": "List<TelemetrySample>"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

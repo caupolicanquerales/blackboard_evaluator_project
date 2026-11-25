@@ -379,9 +379,210 @@ def _signature_param_text(signature):
 
 
 def _config_entry_shape(record):
+    """(path, kind, fields, value) - value joins the shape tuple 2026-11-25: the seeded
+    DEFAULT is part of the one-owner fact (rule (l)'s impossible pair made mechanical:
+    two binders of one path may differ only where one of them spells no value)."""
     return [(str(e.get("path")), str(e.get("kind")),
-             tuple(sorted(_config_canon(f) for f in (e.get("fields") or []))))
+             tuple(sorted(_config_canon(f) for f in (e.get("fields") or []))),
+             ("" if e.get("value") is None else str(e.get("value")).strip()))
             for e in _z_tables(record, "config") if isinstance(e, dict) and e.get("path")]
+
+
+def wire_root_gate(staged, index):
+    """PHASE 1.5 composition closure (2026-11-25): the ROOT gate is drafted BEFORE the
+    bounded contexts, so the managers, handlers and credential stores that live INSIDE
+    the admission chain - claimed by contexts that do not exist yet - can never be
+    typed into its table at drafting time. At the batch they are all visible, and the
+    join is pure data: every claimed duty whose digest row is a chain-composition row
+    (the mechanism cells name the root chain - a composition chain in every stack's
+    vocabulary) or is UNATTRIBUTED (no surface owns it: the gate is its natural host)
+    adds its claimant's product to the gate's collaborator table and its code-task id
+    to dependsOn, mirrored onto the twin (z4). Under-pinning the gate is the R3/
+    NoSuchBeanDefinition death the join refuses; over-pinning costs one import in a
+    test that never uses it - so every chain-role claimant is pinned, and the gate
+    still cites no address (routes belong to hydrate_batch's root_gate injection)."""
+    world = dict(index)
+    world.update({str(t.get("id")): t for t in staged if isinstance(t, dict) and t.get("id")})
+    twins = {}
+    for record in world.values():
+        if isinstance(record, dict) and int(record.get("stage") or 0) in (1, 2):
+            twins.setdefault(_unit_family(record), {})[int(record["stage"])] = record
+    staged_ids = {str(t.get("id")) for t in staged if isinstance(t, dict) and t.get("id")}
+    notes = []
+    gates = [t for t in staged if isinstance(t, dict) and t.get("root_gate")
+             and str(t.get("id")) in staged_ids
+             and int(t.get("stage") or 0) == settings.TDD_STAGE]
+    for gate in gates:
+        slug = str(gate.get("project", ""))
+        try:
+            digest = json.loads((Path("/tmp") / f"phase2-digest-{slug}.json")
+                                .read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            notes.append(f"{gate.get('id')}: root gate kept as drafted - no readable "
+                         "digest to close its chain composition")
+            continue
+        surfaces = digest.get("surfaces") or []
+        rules_map = digest.get("rules") or {}
+        stage2_claims = [t for t in staged if isinstance(t, dict)
+                         and int(t.get("stage") or 0) == settings.TDD_STAGE]
+        pinned = {str(d.get("task_id")) for d in _z_tables(gate, "dependencies")
+                  if isinstance(d, dict)}
+        for duty in digest.get("duties") or []:
+            if not isinstance(duty, dict):
+                continue
+            ref = str(duty.get("spec_ref") or "").strip()
+            cap = str(duty.get("capability") or "").strip()
+            if not ref or not cap:
+                continue
+            row = duty.get("table_row") or {}
+            cells = " ".join(str(c) for c in (row.get("cells") or [])).lower()
+            attributed = _duty_context_probe(duty, rules_map, surfaces)
+            chain_role = "chain" in cells
+            if not (chain_role or attributed is None):
+                continue
+            claimant = next((t for t in stage2_claims
+                             if ref in str(t.get("intent") or "")
+                             and cap in str(t.get("intent") or "")), None)
+            if claimant is None or str(claimant.get("id")) in pinned \
+                    or _unit_family(claimant) == _unit_family(gate):
+                continue
+            product = tasks.exported_product(claimant) or str(claimant.get("export"))
+            entry = {"type": str(product), "task_id": str(claimant.get("id"))}
+            for holder in (gate, twins.get(_unit_family(gate), {}).get(1)):
+                if isinstance(holder, dict) and isinstance(holder.get("ast_hints"), dict):
+                    table = holder["ast_hints"].setdefault("dependencies", [])
+                    if not any(isinstance(e, dict) and str(e.get("task_id")) == entry["task_id"]
+                               for e in table):
+                        table.append(dict(entry))
+            depends = gate.setdefault("dependsOn", [])
+            if entry["task_id"] not in [str(d) for d in depends]:
+                depends.append(entry["task_id"])
+            pinned.add(entry["task_id"])
+            notes.append(f"{gate.get('id')}: chain composition closed - pins {product} "
+                         f"({entry['task_id']}, duty {ref}) claimed by the batch")
+    return notes
+
+
+def _duty_context_probe(duty, rules_map, surfaces):
+    """The digest's own attribution rule, re-evaluated for the gate wire (unattributed
+    duties are the ROOT's; a duty with a surface belongs to a bounded context)."""
+    owner = str(duty.get("owner_context") or "").strip()
+    if owner:
+        return owner
+    entry = (rules_map.get(str(duty.get("spec_ref", ""))) or {}).get("entry") or {}
+    surface = str(entry.get("surface") or "").strip()
+    if surface:
+        norm = ddd.norm_surface(surface)
+        for s in surfaces:
+            if isinstance(s, dict) and ddd.norm_surface(s.get("name")) == norm:
+                ctx = str(s.get("context") or "").strip()
+                if ctx:
+                    return ctx
+    return None
+
+
+def wire_pin_edges(staged, index):
+    """(P1 root fix, 2026-11-25 audit) a collaborator pin without its code-task edge:
+    the payload contract has said "the producer must also be in `dependsOn`" since it
+    existed, three carriers repeat it, and NOTHING enforced it - so a session that
+    pinned without the edge shipped a red compile ordered by luck (the drain runs
+    dependsOn only; the tester doubles from the table, but the TYPE the code side
+    imports must already exist). Pin-to-edge closure is pure graph arithmetic: the
+    engine completes the edge, mechanically, like the manifest and guard wires."""
+    world = dict(index)
+    world.update({str(t.get("id")): t for t in staged if isinstance(t, dict) and t.get("id")})
+    notes = []
+    for task in staged:
+        if not isinstance(task, dict) or int(task.get("stage") or 0) != settings.TDD_STAGE:
+            continue
+        depends = task.setdefault("dependsOn", [])
+        have = {str(d) for d in depends}
+        for pin in (task.get("ast_hints") or {}).get("dependencies") or []:
+            if not isinstance(pin, dict):
+                continue
+            pid = str(pin.get("task_id") or "").strip()
+            prod = world.get(pid)
+            if (pid and pid not in have and isinstance(prod, dict)
+                    and int(prod.get("stage") or 0) == settings.TDD_STAGE
+                    and pid != str(task.get("id"))):
+                depends.append(pid)
+                have.add(pid)
+                notes.append(f"{task.get('id')}: dependsOn += {pid} "
+                             "(pin edge wired by the engine - the table already owned it)")
+    return notes
+
+
+def wire_config_coverage(staged, index):
+    """PHASE 1.5 completion (2026-11-25, the user's "engine merges all contexts into
+    the ONE generated config unit at --emit"): the configuration-artifact unit's table
+    is the UNION of every path the board tables, copied VERBATIM from the binding
+    entries - a value the binder spells fills an empty seed slot; conflicting values
+    are left to the z5 join to refuse (one path, one fact). Sessions never copy a path
+    into the config unit and never patch it through a gaps file: the coverage is a
+    wire, disclosed like the manifest edges."""
+    world = dict(index)
+    world.update({str(t.get("id")): t for t in staged if isinstance(t, dict) and t.get("id")})
+    notes, errors = [], []
+    batch_ids = {str(t.get("id")) for t in staged if isinstance(t, dict) and t.get("id")}
+    projects = {str(t.get("project", "")) for t in staged if isinstance(t, dict) and t.get("project")}
+    for slug in sorted(projects):
+        hosts = [t for t in staged if isinstance(t, dict)
+                 and int(t.get("stage") or 0) == settings.TDD_STAGE
+                 and str(t.get("project", "")) == slug
+                 and tasks._path_is_config_artifact(t.get("path"))]
+        if not hosts:
+            continue  # no host in THIS batch: the join below refuses bound-but-unhosted
+                      # paths only when a config unit exists nowhere on the board
+        if any(str(t.get("id")) not in batch_ids
+               and int(t.get("stage") or 0) == settings.TDD_STAGE
+               for t in index.values() if isinstance(t, dict)
+               and str(t.get("project", "")) == slug
+               and tasks._path_is_config_artifact(t.get("path"))):
+            # a DELIVERED config unit is frozen - emit_tasks folds the batch's own
+            # records into `index` while staging, so "delivered" must mean "on the
+            # board and NOT in this batch" (2026-11-25: the first wire cut treated
+            # the batch's own host as delivered and silently wired nothing - SF15
+            # caught it as a written record with no table)
+            continue  # coverage of a delivered artifact moves with --replan
+        host = hosts[0]
+        table = host.setdefault("ast_hints", {}).setdefault("config", [])
+        # the twin mirror (z4): records arrive from disk as SEPARATE dicts, so every
+        # wired entry lands on the unit's stage-1 twin too - the pair must stay one table
+        twin = next((r for r in world.values() if isinstance(r, dict)
+                     and int(r.get("stage") or 0) == 1
+                     and _unit_family(r) == _unit_family(host)
+                     and str(r.get("project", "")) == slug), None)
+        def _host_tables():
+            yield table
+            if isinstance(twin, dict):
+                yield twin.setdefault("ast_hints", {}).setdefault("config", [])
+        seeded = {}
+        for entry in table:
+            if isinstance(entry, dict) and entry.get("path"):
+                seeded[_config_canon(entry["path"])] = entry
+        for record in world.values():
+            if (not isinstance(record, dict) or record is host
+                    or int(record.get("stage") or 0) != settings.TDD_STAGE
+                    or str(record.get("project", "")) != slug):
+                continue
+            for entry in _z_tables(record, "config"):
+                if not (isinstance(entry, dict) and entry.get("path")):
+                    continue
+                canon = _config_canon(entry["path"])
+                if canon not in seeded:
+                    for holder in _host_tables():
+                        if not any(isinstance(e, dict) and _config_canon(e.get("path")) == canon
+                                   for e in holder):
+                            holder.append(json.loads(json.dumps(entry)))
+                    seeded[canon] = entry
+                    notes.append(f"{host.get('id')}: tables {entry['path']} copied from "
+                                f"{record.get('id')} (config coverage wired by the engine)")
+                elif (str(seeded[canon].get("value") or "").strip() == ""
+                      and str(entry.get("value") or "").strip()):
+                    seeded[canon]["value"] = entry["value"]
+                    notes.append(f"{host.get('id')}: {entry['path']} default seeded from "
+                                f"{record.get('id')}'s tabled value")
+    return notes, errors
 
 def _unit_family(record):
     """The id number one unit's T1/T2/T3 records share - owners are counted per unit."""
@@ -423,6 +624,107 @@ def _z_tables(record, key):
 def _z_has_table(record, key):
     hints = record.get("ast_hints") if isinstance(record.get("ast_hints"), dict) else {}
     return isinstance(hints.get(key), list)
+
+
+def mirror_pair_tables(records):
+    """z4 as a WIRE (2026-11-25 bleeding stop): the carriers have always promised the
+    engine mirrors the pair's table - true for the compact form since 2026-11-24, but a
+    BOARD-object draft kept T1 and T2 as separate typed copies, so every repair edit of a
+    code-side table manufactured a fresh twin-dr refusal and burned a whole round
+    (v5 live: repair #1 fixed seven lines and created two). The CODE side owns the
+    interface; its table is mirrored byte-identical onto the test twin. Idempotent."""
+    by_family = {}
+    for record in records:
+        if isinstance(record, dict) and int(record.get("stage") or 0) in (1, 2):
+            by_family.setdefault(_unit_family(record), {})[int(record["stage"])] = record
+    mirrored = 0
+    for sides in by_family.values():
+        t1, t2 = sides.get(1), sides.get(2)
+        if not (isinstance(t1, dict) and isinstance(t2, dict)):
+            continue
+        hints = t2.get("ast_hints")
+        if isinstance(hints, dict) and t1.get("ast_hints") != hints:
+            t1["ast_hints"] = json.loads(json.dumps(hints))
+            mirrored += 1
+    return mirrored
+
+
+def _strategy_meter_floor(slug):
+    """The strategy's floor meter names - the same flattening the batch join uses."""
+    strategy = {}
+    try:
+        strategy = json.loads((settings.COMPLETE_DIR
+                               / f"execution-strategy-{slug}.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return set()
+    obs = strategy.get("observability") if isinstance(strategy, dict) else {}
+    floor = set()
+    for entry in (obs or {}).get("metrics") or []:
+        name = str((entry or {}).get("name") if isinstance(entry, dict) else entry).strip()
+        if name:
+            floor.add(name)
+    return floor
+
+
+def _z3_prose_problems(records, floor):
+    """(z3) prose-vs-own-table, a PER-RECORD join (route-shaped and floor-meter
+    literals a unit spells but its own table omits). Extracted 2026-11-25 so LINT says
+    it inside the session's budget; the batch keeps calling it (one body, two tiers).
+
+    (2026-11-25 cold5 livelaw fix) For a STAGE-1 record the remedy points at the
+    code-side twin, never the record's own table: mirror_pair_tables rewrites every
+    test-side table from the code side at claim AND at every emit revalidation - an
+    edit typed onto T1 is deleted before the repair sees the next verdict, so the
+    refusal looped until the no-op guard fatals a healthy board (cold5: the repair
+    DID table 'telemetry.ingest.samples' on T1-025 and the mirror ate it). The
+    repairable home of a stage-1 table is its stage-2 twin."""
+    twins = {}
+    for rec in records:
+        if isinstance(rec, dict) and int(rec.get("stage") or 0) in (1, 2):
+            twins.setdefault(_unit_family(rec), {})[int(rec["stage"])] = rec
+    errors = []
+    for record in records:
+        if (not isinstance(record, dict)
+                or int(record.get("stage") or 0) not in (1, 2)):
+            continue
+        home = f"{record.get('id')}'s own"
+        if int(record.get("stage") or 0) == 1:
+            t2 = twins.get(_unit_family(record), {}).get(2)
+            if isinstance(t2, dict) and t2.get("id"):
+                home = (f"{t2['id']}'s (the CODE-side twin of {record.get('id')} - a "
+                        f"table typed on {record.get('id')} is mirrored away at the "
+                        "next validation; the code side owns the interface)")
+        text = " ".join([str(record.get("intent", ""))]
+                         + [str(m.get("semantics") or "")
+                            for m in (record.get("ast_hints") or {}).get("methods") or []
+                            if isinstance(m, dict)])
+        own_routes = {_route_key(e.get("method"), e.get("path"))
+                      for e in _z_tables(record, "routes") if isinstance(e, dict)}
+        for literal in _route_prose(text):
+            hit = any(path == literal for _method, path in own_routes)
+            if not hit:
+                errors.append(
+                    f"{record.get('id')}: its text spells the route '{literal}' but the unit's "
+                    "ast_hints.routes does not carry it - a route named in prose is a contract "
+                    "the paired tester never receives (the seed-002 test posted "
+                    "'/ingress/packets' while every tabled contract said '/telemetry/ingress'): "
+                    f"add {{method, path, duty}} to {home} ast_hints.routes (serves for the unit that "
+                    "answers it, uses for a guard/caller/slice) or move the sentence out of "
+                    "the unit's text (rule (z3))")
+        own_meters = {str(e.get("name")) for e in _z_tables(record, "meters")
+                      if isinstance(e, dict)}
+        for name in sorted(floor):
+            if (re.search(rf"(?<![\w.\-]){re.escape(name)}(?![\w\-])", text)
+                    and name not in own_meters):
+                errors.append(
+                    f"{record.get('id')}: its text spells the floor meter '{name}' but the "
+                    "unit's ast_hints.meters does not carry it - the two frozen tests written "
+                    "from prose while the table holds silence is how one board froze both "
+                    f"spellings of one meter: add {{name, duty}} to {home} ast_hints.meters ('uses' "
+                    "when this unit records or asserts it; 'owns' belongs to exactly one "
+                    f"unit, the one registering '{name}') or move the name out of the unit's "
+                    "text (rule (z3))")
+    return errors
 
 
 def _shared_literal_errors(staged, index):
@@ -505,41 +807,8 @@ def _shared_literal_errors(staged, index):
                     slot = routes.setdefault(key, {"serves": set(), "uses": set()})
                     slot[entry.get("duty")].add(_unit_family(record))
 
-        # z3 - prose spelled into the table (staged records: only they can still be edited)
-        for record in staged:
-            if (str(record.get("project", "")) != slug
-                    or int(record.get("stage") or 0) not in (1, 2)):
-                continue
-            text = " ".join([str(record.get("intent", ""))]
-                             + [str(m.get("semantics") or "")
-                                for m in (record.get("ast_hints") or {}).get("methods") or []
-                                if isinstance(m, dict)])
-            own_routes = {_route_key(e.get("method"), e.get("path"))
-                          for e in _z_tables(record, "routes") if isinstance(e, dict)}
-            for literal in _route_prose(text):
-                hit = any(path == literal for _method, path in own_routes)
-                if not hit:
-                    errors.append(
-                        f"{record.get('id')}: its text spells the route '{literal}' but the unit's "
-                        "ast_hints.routes does not carry it - a route named in prose is a contract "
-                        "the paired tester never receives (the seed-002 test posted "
-                        "'/ingress/packets' while every tabled contract said '/telemetry/ingress'): "
-                        "add {method, path, duty} to ast_hints.routes (serves for the unit that "
-                        "answers it, uses for a guard/caller/slice) or move the sentence out of "
-                        "the unit's text (rule (z3))")
-            own_meters = {str(e.get("name")) for e in _z_tables(record, "meters")
-                          if isinstance(e, dict)}
-            for name in sorted(floor):
-                if (re.search(rf"(?<![\w.\-]){re.escape(name)}(?![\w\-])", text)
-                        and name not in own_meters):
-                    errors.append(
-                        f"{record.get('id')}: its text spells the floor meter '{name}' but the "
-                        "unit's ast_hints.meters does not carry it - the two frozen tests written "
-                        "from prose while the table holds silence is how one board froze both "
-                        "spellings of one meter: add {name, duty} to ast_hints.meters ('uses' "
-                        "when this unit records or asserts it; 'owns' belongs to exactly one "
-                        f"unit, the one registering '{name}') or move the name out of the unit's "
-                        "text (rule (z3))")
+        errors.extend(_z3_prose_problems([r for r in staged if str(r.get("project", "")) == slug], floor))
+        errors.extend(_perf_budget_closure_errors(slug, staged, index))
 
         # z1 - meter ownership and verbatim joins (law armed by the fields)
         if meters:
@@ -596,12 +865,15 @@ def _shared_literal_errors(staged, index):
         # z5 - property paths: one path, one shape (the binder's record is the shape truth)
         shapes = {}  # canon path -> {kind: {family...}, fields: {tuple: {family...}}}
         for record in units:
-            for path, kind, fields in _config_entry_shape(record):
+            for path, kind, fields, value in _config_entry_shape(record):
                 slot = shapes.setdefault(_config_canon(path),
-                                         {"raw": path, "kind": {}, "fields": {}})
+                                         {"raw": path, "kind": {}, "fields": {}, "value": {}})
                 slot["kind"].setdefault(kind, set()).add(_unit_family(record))
                 if fields:
                     slot["fields"].setdefault(fields, set()).add(_unit_family(record))
+                if value:
+                    slot.setdefault("value", {}).setdefault(value, set()).add(
+                        _unit_family(record))
         if shapes:
             for canon, slot in sorted(shapes.items()):
                 if len(slot["kind"]) > 1:
@@ -619,6 +891,14 @@ def _shared_literal_errors(staged, index):
                         f"{slug}: property path '{canon}' is tabled with conflicting element "
                         f"fields {detail} - the element shape belongs to the binding record; "
                         "every other unit cites the same `fields` VERBATIM (rule (z5))")
+                if len(slot.get("value", {})) > 1:
+                    detail = {k: sorted(v) for k, v in sorted(slot["value"].items())}
+                    errors.append(
+                        f"{slug}: property path '{canon}' is tabled with conflicting seeded "
+                        f"VALUES {detail} - one operational path, one default (rule (l)'s "
+                        "impossible pair made machine-visible by (z5)'s value field): pick "
+                        "the owner's value and cite it VERBATIM, or split DISTINCT keys per "
+                        "reader form")
                 for other in sorted(shapes):
                     if (other != canon and canon.startswith(other + ".")
                             and "list" in shapes[other]["kind"]):
@@ -630,19 +910,44 @@ def _shared_literal_errors(staged, index):
                             "`devices` list is unreadable by every binder and unmissable by "
                             "every test)")
                         break
-            # the config-artifact unit tables every path its document seeds (once the law is armed)
-            for record in staged:
+            # (b) host leg (2026-11-25 root restructure): coverage is a WIRE
+            # (wire_config_coverage ran before this join and copied every tabled path
+            # into the ONE config unit); what remains refused here is the shape the
+            # wire cannot invent for the plan: a domain that tables operational paths
+            # with no configuration-artifact unit anywhere - the ROOT pass owes it.
+            config_units = [record for record in units
+                            if str(record.get("project", "")) == slug
+                            and int(record.get("stage") or 0) == settings.TDD_STAGE
+                            and tasks._path_is_config_artifact(record.get("path"))]
+            bound = {}
+            for record in units:
                 if (str(record.get("project", "")) != slug
-                        or int(record.get("stage") or 0) != settings.TDD_STAGE
-                        or not tasks._path_is_config_artifact(record.get("path"))):
+                        or int(record.get("stage") or 0) != settings.TDD_STAGE):
                     continue
-                if not _z_has_table(record, "config"):
+                for path, _kind, _fields, _value in _config_entry_shape(record):
+                    bound.setdefault(_config_canon(path), set()).add(str(record.get("id")))
+            if bound and not config_units:
+                sample = ", ".join(f"'{p}'" for p in sorted(bound)[:8])
+                errors.append(
+                    f"{slug}: {len(bound)} property path(s) are bound by stage-2 units "
+                    f"({sample}...) but the domain has NO stage-2 configuration-artifact "
+                    "unit - rule (b): the ROOT pass schedules the ONE config unit; until "
+                    "it exists, every runtime default is a number the coder invents. The "
+                    "coverage itself is NOT your typing job: once the unit exists the "
+                    "engine wires every tabled path into its ast_hints.config table")
+            elif bound and config_units:
+                seeded = set()
+                for record in config_units:
+                    for path, _kind, _fields, _value in _config_entry_shape(record):
+                        seeded.add(_config_canon(path))
+                missing = sorted(p for p in bound if p not in seeded)
+                if missing and not any(str(r.get("id")) in staged_ids
+                                       for cu in config_units for r in [cu]):
                     errors.append(
-                        f"{record.get('id')}: the runtime configuration document seeds paths the "
-                        "board now tables in `ast_hints.config`, yet this unit carries none - the "
-                        "config unit lists EVERY operational path its artifact writes (citing the "
-                        "binding units' shapes VERBATIM); an untabled path is a key a later reader "
-                        "may reshape without a gate noticing (rule (z5))")
+                        f"{slug}: {len(missing)} property path(s) tabled by the board are "
+                        "not seeded in the DELIVERED config unit - the frozen artifact "
+                        "cannot be rewritten by a later batch; relaunch with --replan "
+                        + slug + " so the ROOT pass re-plans the full surface")
 
         # z6 - the slice that imports a guard must be able to construct the chain
         by_product = {}
@@ -1337,9 +1642,11 @@ def emit_tasks(paths):
     rewrote a whole domain plan (10-30k output tokens) where the fix was a few hundred.
     """
     index = load_index()
+    board_ids = set(index)
     staged = []
     errors = []
     with telemetry.span("blackboard.emit", {"tasks.requested": len(paths)}) as current:
+        loaded_batches = []
         for raw in paths:
             source = Path(raw)
             try:
@@ -1348,7 +1655,24 @@ def emit_tasks(paths):
                 reason = f"{source}: unreadable JSON: {exc}"
                 telemetry.mark_error(current, reason)
                 return reason
-            batch = loaded if isinstance(loaded, list) else [loaded]
+            loaded_batches.append((source, loaded if isinstance(loaded, list) else [loaded]))
+        # BATCH-FIRST INDEXING (2026-11-25 bleeding stop): the batch is validated as ONE
+        # unit - that is SP3's own contract - but staging used to interleave loading and
+        # validating, so a record in file 1 pinning file 3's ids failed tasks.validate on
+        # ordering alone. A rejected record never reaches `staged`, the z4 mirror and the
+        # coverage/gate wires skip it, and its siblings refuse cascade into phantom
+        # defects a premium repair session then "fixes" by hand-inventing pins (v6 live:
+        # ERR [T2-009] dependsOn T2-038 not resolvable - the id was real, the order was
+        # wrong; T1-009's "delivered twin" message was pure fallout). Pre-index every id
+        # the batch itself will define; file order can no longer manufacture refusals.
+        batch_ids = {}
+        for _source, batch in loaded_batches:
+            for task in batch:
+                if isinstance(task, dict) and isinstance(task.get("id"), str) and task["id"]:
+                    batch_ids.setdefault(task["id"], task)
+        index.update(batch_ids)
+        seen_batch_ids = set()
+        for source, batch in loaded_batches:
             for position, task in enumerate(batch, start=1):
                 # The POINTER is the label: a task id where one exists, else file[entry].
                 # The LLM does not have to memorize the contract to heal a plan: the
@@ -1362,16 +1686,25 @@ def emit_tasks(paths):
                 reason = tasks.validate(task, index, planning=True)
                 if reason:
                     errors.append(f"{label}: {reason}")
-                    if isinstance(task.get("id"), str) and task["id"] not in index:
-                        # Still resolve same-batch dependsOn against it: otherwise every sibling
-                        # task gets a cascading "not resolvable" error that hides the real one.
-                        index[task["id"]] = task
                     continue
-                if task["id"] in index:
+                if task["id"] in board_ids:
                     errors.append(f"{task['id']}: id already exists in queue or complete")
                     continue
-                index[task["id"]] = task
+                if task["id"] in seen_batch_ids:
+                    errors.append(f"{task['id']}: id already exists in this batch - one "
+                                  "id, one task, across every file of this emit")
+                    continue
+                seen_batch_ids.add(task["id"])
                 staged.append(task)
+        # z4 mirror FIRST (2026-11-25): a repair pass edits the code-side table and the
+        # twin follows - the drift the v5 run paid two rounds for cannot be manufactured
+        # at the batch any more. Silent, idempotent, mechanical.
+        mirror_pair_tables(staged)
+        pin_edge_notes = wire_pin_edges(staged, index)
+        # z6 closure is MECHANICAL (2026-11-25): wire the guard chains before the joins
+        # read the tables, exactly as the manifest edges are wired below
+        root_gate_notes = wire_root_gate(staged, index)
+        wiring_notes = _wire_guard_visibility(staged, index)
         # Cross-task completeness: a unit pinned by anyone as a collaborator must spell
         # the surface its consumers touch - an empty method table there forces two
         # consumers to improvise the same type differently (the seed-002 pair-defect root).
@@ -1399,6 +1732,8 @@ def emit_tasks(paths):
                     "spell the surface (accessors included) every consumer touches")
         # Plan validity across units (seed-002 D1..D3): unowned file duties, config-less
         # runtime plans and request-encoding contradictions die here, at zero sessions.
+        coverage_notes, coverage_errors = wire_config_coverage(staged, index)
+        errors.extend(coverage_errors)
         errors.extend(tasks.plan_consistency(staged, index))
         errors.extend(_steplog_claim_errors(staged, index))
         errors.extend(_shared_literal_errors(staged, index))
@@ -1422,7 +1757,8 @@ def emit_tasks(paths):
                 "a few hundred) - then re-emit the same files in ONE command."])
             telemetry.mark_error(current, reason)
             return reason
-        for note in manifest_notes:
+        for note in (manifest_notes + pin_edge_notes + root_gate_notes
+                      + coverage_notes + wiring_notes):
             print(f"[wire  ] {note}")
         for task in staged:
             destination = settings.QUEUE_DIR / tasks.task_file_name(task)
@@ -1489,10 +1825,11 @@ def clear_drafts(slug):
     """A stale draft of a previous (aborted) plan must not join this one's batch."""
     removed = []
     for path in sorted(DRAFT_DIR.glob(f"{slug}-*.json")):
-        if path.name.startswith(f"T0-{slug}"):
+        if path.name.startswith(f"T0-{slug}") or path.name.endswith(".draft-meta.json"):
             continue
         path.unlink(missing_ok=True)
         removed.append(path.name)
+        path.with_name(path.name[:-len(".json")] + ".draft-meta.json").unlink(missing_ok=True)
     return removed
 
 
@@ -1502,7 +1839,7 @@ def draft_world(slug, exclude=None):
     world = load_index()
     for path in sorted(DRAFT_DIR.glob(f"{slug}-*.json")):
         if path == exclude or path.name.startswith(f"T0-{slug}") \
-                or path.name.endswith(".gaps.json"):
+                or path.name.endswith((".gaps.json", DB_TASKS_SUFFIX)):
             continue
         try:
             loaded = json.loads(path.read_text(encoding="utf-8"))
@@ -1627,6 +1964,11 @@ def expand_unit_draft(batch):
             t2["ast_hints"] = json.loads(json.dumps(hints))
         if code.get("observability") is not None:
             t2["observability"] = json.loads(json.dumps(code["observability"]))
+        # REFERENCE keys ride to the code side for hydrate_batch (2026-11-25): the session
+        # declares WHAT it consumes; the engine looks the owner up and tables the literal.
+        for key in SHORTHAND_KEYS:
+            if code.get(key) is not None:
+                t2[key] = json.loads(json.dumps(code[key]))
         intent3 = str(entry.get("refactor_intent") or "").strip() or (
             f"Refactor {code['export']}: keep the tabled contract and the paired tests "
             "green; no behavior, status, meter or route change.")
@@ -1635,6 +1977,630 @@ def expand_unit_draft(batch):
               "path": code["path"], "export": code["export"], "intent": intent3, **shared}
         out.extend([t1, t2, t3])
     return out, errors
+
+
+SHORTHAND_KEYS = ("uses_meters", "uses_routes", "uses_config", "claims_steps", "root_gate")
+DB_TASKS_SUFFIX = "-db-tasks.json"  # the database architect's CHANNEL file (the database
+# prompt emits /tmp/tasks/{slug}-db-tasks.json directly) is NOT a planning draft: it
+# shares DRAFT_DIR and the {slug}- prefix, so without this exception draft_world treats
+# already-queued stage-0 records as pins-of-a-draft-generation (2026-11-25 fresh-board
+# audit: the stale channel from the v2 run sat beside the cleaned blackboard and its ids
+# would have answered _next_free_for's T0 numbers as "used" against a board that moved on)
+
+def hydrate_batch(batch, slug, world):
+    """THE MECHANICAL JOINS ARE PYTHON'S, NOT SESSIONS' (2026-11-25 bottleneck pass). A
+    draft record may REFERENCE a shared fact instead of copying it; this step resolves
+    each reference against the batch and the drafted world and tables the canonical entry
+    VERBATIM where the emit law demands it, stripping the reference key after. Why: the
+    verbatim-copy law (z)/(z5)/(j) is symbol-table bookkeeping across 40-60 objects -
+    the class of work an LLM drifts on and a repair session pays for at premium rates
+    (2026-11-25 v7: four refusal families were exactly this - unowned step logs,
+    uncited meter spellings, orphaned config shapes). Contract:
+      uses_meters  [name]      -> ast_hints.meters {name, duty: uses} from the OWNING unit
+      uses_routes  ["M /path"] -> ast_hints.routes {method, path, duty: uses} from the SERVING unit
+      uses_config  [path]      -> ast_hints.config {path, kind, fields?} from the BINDING unit
+      claims_steps [string]    -> observability.step_logs, VERBATIM from the strategy floor
+      root_gate    true        -> the engine tables every addressed surface of the
+                                  composition root (own AND foreign) into this unit's
+                                  routes: the ONE gate accounts for the whole root, and
+                                  the session types zero foreign citations
+    An unresolvable reference is a one-line deterministic problem naming the closest
+    tabled spelling - fail fast at lint, never a billed repair guess. `root_gate` is the
+    ONE reference key that STAYS on the record: it is a machine-checked marker (one gate
+    per project, the symbol table shows it to later contexts)."""
+    problems, notes = [], []
+    by_id = dict(world)
+    for record in batch:
+        if isinstance(record, dict) and record.get("id"):
+            by_id[str(record["id"])] = record
+    twins = {}
+    for record in batch:
+        if isinstance(record, dict) and int(record.get("stage") or 0) in (1, 2):
+            twins.setdefault(_unit_family(record), {})[
+                int(record["stage"])] = record
+    strategy = {}
+    try:
+        strategy = json.loads((settings.COMPLETE_DIR
+                               / f"execution-strategy-{slug}.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        strategy = {}
+    floor = {}
+    for entry in tasks.step_log_entries(
+            (strategy.get("observability") or {}).get("step_logs")):
+        key = _claim_norm(entry)
+        if key:
+            floor[key] = str(entry).strip()
+    metric_floor = set()
+    for m in ((strategy.get("observability") or {}).get("metrics") or []):
+        if isinstance(m, dict) and str(m.get("name", "")).strip():
+            metric_floor.add(str(m["name"]).strip())
+        elif isinstance(m, str) and m.strip():
+            metric_floor.add(m.strip())
+    surfaces = [s for s in (strategy.get("surfaces") or []) if isinstance(s, dict)]
+    claimed_steps = {}
+    for source, record in by_id.items():
+        if isinstance(record, dict) and int(record.get("stage") or 0) == 2:
+            for entry in ((record.get("observability") or {}).get("step_logs") or []):
+                claimed_steps.setdefault(_claim_norm(entry), str(record.get("id")))
+    for record in batch:
+        if not (isinstance(record, dict) and int(record.get("stage") or 0) == 2):
+            for key in SHORTHAND_KEYS:
+                if isinstance(record, dict) and record.pop(key, None) is not None:
+                    problems.append(f"ERR [{record.get('id')}].{key}: references belong to "
+                                    "the stage-2 side - the pair's table mirrors them")
+            continue
+        label = str(record.get("id"))
+        hints = record.setdefault("ast_hints", {}) if isinstance(
+            record.get("ast_hints", {}) or {}, dict) else None
+        if hints is None:
+            problems.append(f"ERR [{label}].ast_hints: must be an object to hydrate")
+            continue
+        twin = twins.get(_unit_family(record), {}).get(1)
+        def _append_both(key, entry):
+            holders = [hints]
+            if isinstance(twin, dict) and isinstance(twin.get("ast_hints"), dict):
+                holders.append(twin["ast_hints"])
+            for holder in holders:
+                table = holder.setdefault(key, [])
+                if key == "meters" and not any(
+                        isinstance(e, dict) and str(e.get("name")) == str(entry.get("name"))
+                        for e in table):
+                    table.append(json.loads(json.dumps(entry)))
+                elif key == "routes" and not any(
+                        isinstance(e, dict) and _route_key(e.get("method"), e.get("path"))
+                        == _route_key(entry.get("method"), entry.get("path")) for e in table):
+                    table.append(json.loads(json.dumps(entry)))
+                elif key == "config" and not any(
+                        isinstance(e, dict) and _config_canon(e.get("path"))
+                        == _config_canon(entry.get("path")) for e in table):
+                    table.append(json.loads(json.dumps(entry)))
+        for name in (record.pop("uses_meters", None) or []):
+            owner, owner_id = None, None
+            for source, candidate in by_id.items():
+                if not isinstance(candidate, dict):
+                    continue
+                for entry in _z_tables(candidate, "meters"):
+                    if (isinstance(entry, dict) and entry.get("duty") == "owns"
+                            and str(entry.get("name", "")).strip() == str(name).strip()):
+                        owner, owner_id = entry, str(source)
+            if owner is None and str(name).strip() in metric_floor:
+                # a floor meter is a strategy TABLED name: the first context may lawfully
+                # reference a sibling's meter before the owning unit is drafted - the
+                # batch join still demands exactly one `owns` when the batch completes (z1)
+                _append_both("meters", {"name": str(name).strip(), "duty": "uses"})
+                notes.append(f"{label}: meter '{str(name).strip()}' cited from the floor "
+                             "(the registering unit owes the 'owns' entry at batch)")
+                continue
+            if owner is None:
+                problems.append(f"ERR [{label}].uses_meters: no unit owns '{name}' and no "
+                                "floor meter carries it - the registering unit must table "
+                                "it with duty 'owns' (or the strategy must plan it)"
+                                + _closest_spelling(name, {
+                                    str(e.get("name")) for r in by_id.values()
+                                    if isinstance(r, dict) for e in _z_tables(r, "meters")}))
+                continue
+            _append_both("meters", {"name": str(owner.get("name")), "duty": "uses"})
+        for ref in (record.pop("uses_routes", None) or []):
+            parts = str(ref).split(None, 1)
+            if len(parts) != 2:
+                problems.append(f"ERR [{label}].uses_routes: '{ref}' is not "
+                                "'<METHOD> /path' - spell the reference like the serving "
+                                "unit tables it")
+                continue
+            method, path = parts[0].upper(), "/" + parts[1].strip().lstrip("/")
+            server = None
+            for _source, candidate in by_id.items():
+                for entry in _z_tables(candidate, "routes"):
+                    if (isinstance(entry, dict) and entry.get("duty") == "serves"
+                            and _route_key(entry.get("method"), entry.get("path"))
+                            == _route_key(method, path)):
+                        server = entry
+            if server is None:
+                row = next((s for s in surfaces
+                            if str(s.get("method", "")).strip().upper() == method
+                            and "/" + str(s.get("path", "")).strip().lstrip("/") == path), None)
+                if row is not None:
+                    # the address is a strategy TABLED surface: a sibling's inbound unit
+                    # will answer it in the same batch - the join still demands the server
+                    _append_both("routes", {"method": method, "path": path, "duty": "uses"})
+                    notes.append(f"{label}: route {method} {path} cited from the strategy "
+                                 "surface table (the serving unit owes 'serves' at batch)")
+                    continue
+                problems.append(f"ERR [{label}].uses_routes: no unit serves {method} {path} "
+                                "and the strategy tables no such address - the inbound unit "
+                                "must table it with duty 'serves' first"
+                                + _closest_spelling(path, {
+                                    str(e.get("path")) for r in by_id.values()
+                                    if isinstance(r, dict) for e in _z_tables(r, "routes")}))
+                continue
+            _append_both("routes", {"method": str(server.get("method")),
+                                    "path": str(server.get("path")), "duty": "uses"})
+        for path in (record.pop("uses_config", None) or []):
+            binder = None
+            shapes = []
+            for _source, candidate in by_id.items():
+                for entry in _z_tables(candidate, "config"):
+                    if (isinstance(entry, dict)
+                            and _config_canon(entry.get("path")) == _config_canon(path)):
+                        shapes.append({k: v for k, v in entry.items()
+                                       if k in ("kind", "fields")})
+                        binder = binder or entry
+            if binder is None:
+                problems.append(f"ERR [{label}].uses_config: no unit tables '{path}' - the "
+                                "binding unit owns the shape; table it there first"
+                                + _closest_spelling(path, {
+                                    str(e.get("path")) for r in by_id.values()
+                                    if isinstance(r, dict) for e in _z_tables(r, "config")}))
+                continue
+            if len({json.dumps(s, sort_keys=True) for s in shapes}) > 1:
+                problems.append(f"ERR [{label}].uses_config: '{path}' is tabled in two "
+                                "shapes - one path, one shape (rule (z5)): fix the binders, "
+                                "the reference cannot pick")
+                continue
+            entry = json.loads(json.dumps(binder))
+            entry["path"] = str(entry.get("path"))
+            _append_both("config", entry)
+        steps = record.pop("claims_steps", None)
+        if steps:
+            obs = record.setdefault("observability", {})
+            table = obs.setdefault("step_logs", [])
+            if isinstance(twin, dict):
+                twin.setdefault("observability", {}).setdefault("step_logs", table)
+            for step in (steps if isinstance(steps, list) else [steps]):
+                key = _claim_norm(step)
+                if key not in floor:
+                    problems.append(f"ERR [{label}].claims_steps: '{step}' is not on the "
+                                    "strategy floor - claim the floor's string VERBATIM"
+                                    + _closest_spelling(str(step).strip(), set(floor.values())))
+                    continue
+                if claimed_steps.get(key) not in (None, label):
+                    problems.append(f"ERR [{label}].claims_steps: '{floor[key]}' is already "
+                                    f"claimed by {claimed_steps[key]} - one owner per step "
+                                    "(rule (j))")
+                    continue
+                if floor[key] not in table:
+                    table.append(floor[key])
+                    claimed_steps[key] = label
+                    notes.append(f"{label}: claims '{floor[key]}' VERBATIM from the floor")
+        if record.get("root_gate"):
+            others = [str(r.get("id")) for r in by_id.values()
+                      if isinstance(r, dict) and r.get("root_gate")
+                      and str(r.get("project", "")) == str(record.get("project", ""))
+                      and str(r.get("id")) != label]
+            if others:
+                problems.append(f"ERR [{label}].root_gate: {others[0]} already carries the "
+                                "ONE root gate for this project - PIN that unit (add its "
+                                "type to your dependencies); never a second gate (y4)")
+                record["root_gate"] = False
+            else:
+                for s in surfaces:
+                    if not (str(s.get("method", "")).strip() and str(s.get("path", "")).strip()):
+                        continue
+                    _append_both("routes", {"method": str(s["method"]).upper(),
+                                            "path": "/" + str(s["path"]).strip().lstrip("/"),
+                                            "duty": "uses"})
+                notes.append(f"{label}: root gate - the engine tabled every addressed "
+                             "surface of the composition root (y4 hydration; a session "
+                             "never cites a foreign address itself)")
+    return problems, notes
+
+
+def _wire_guard_visibility(staged, index):
+    """Rule (z6) as a WIRING, not a typing job (2026-11-25): a surface unit that serves a
+    route some guard cites must pin every project product the guard's own table declares,
+    or no slice importing the chain can construct it. The graph walk that computes the
+    missing set is deterministic; leaving it to the session cost a repair family per run
+    (2026-11-19 R3 died it manually). Python appends the missing collaborator entries to
+    BOTH twins' tables and the producer's code-task id to the surface's dependsOn, then
+    `_shared_literal_errors` keeps its teeth as the assertion it was written to be."""
+    world = dict(index)
+    world.update({str(task.get("id")): task for task in staged
+                  if isinstance(task, dict) and task.get("id")})
+    twins = {}
+    for record in world.values():
+        if isinstance(record, dict) and int(record.get("stage") or 0) in (1, 2):
+            twins.setdefault(_unit_family(record), {})[
+                int(record["stage"])] = record
+    by_product = {}
+    for record in world.values():
+        if isinstance(record, dict) and int(record.get("stage") or 0) == settings.TDD_STAGE:
+            product = tasks.exported_product(record)
+            if product:
+                by_product.setdefault(str(product).lower(), record)
+    served_by_family = {}
+    for record in world.values():
+        if not isinstance(record, dict):
+            continue
+        for entry in _z_tables(record, "routes"):
+            if isinstance(entry, dict) and entry.get("duty") == "serves":
+                served_by_family.setdefault(_unit_family(record), set()).add(
+                    _route_key(entry.get("method"), entry.get("path")))
+    notes = []
+    staged_ids = {str(t.get("id")) for t in staged if isinstance(t, dict)}
+    for record in staged:
+        if not isinstance(record, dict) or int(record.get("stage") or 0) != settings.TDD_STAGE:
+            continue
+        family = _unit_family(record)
+        if family not in served_by_family:
+            continue
+        pinned = {str(d.get("task_id")) for d in _z_tables(record, "dependencies")
+                  if isinstance(d, dict)}
+        for guard in world.values():
+            if (guard is record or not isinstance(guard, dict)
+                    or int(guard.get("stage") or 0) != settings.TDD_STAGE):
+                continue
+            guard_cites = {_route_key(e.get("method"), e.get("path"))
+                           for e in _z_tables(guard, "routes")
+                           if isinstance(e, dict) and e.get("duty") == "uses"}
+            if not (guard_cites & served_by_family[family]):
+                continue
+            wanted = []
+            for dep in _z_tables(guard, "dependencies"):
+                if isinstance(dep, dict):
+                    name = str(dep.get("type", "")).rsplit(".", 1)[-1]
+                    if name.lower() in by_product:
+                        wanted.append((name, str(dep.get("task_id"))))
+            for member in _z_tables(guard, "methods"):
+                if isinstance(member, dict):
+                    for token in tasks.CAMEL_TYPE_RE.findall(
+                            _signature_param_text(member.get("signature"))):
+                        if token.lower() in by_product:
+                            wanted.append((token,
+                                           str(tasks.exported_product(by_product[token.lower()]))))
+            for name, _hint in wanted:
+                producer = by_product.get(name.lower())
+                if producer is None:
+                    continue
+                pid = str(producer.get("id"))
+                if (pid in pinned or pid == str(record.get("id"))
+                        or _unit_family(producer) == family):
+                    continue
+                entry = {"type": name, "task_id": pid}
+                for holder in (record, twins.get(family, {}).get(1)):
+                    if isinstance(holder, dict) and isinstance(holder.get("ast_hints"), dict):
+                        table = holder["ast_hints"].setdefault("dependencies", [])
+                        if not any(isinstance(e, dict) and str(e.get("task_id")) == pid
+                                   for e in table):
+                            table.append(dict(entry))
+                depends = record.setdefault("dependsOn", [])
+                if pid not in [str(d) for d in depends]:
+                    depends.append(pid)
+                pinned.add(pid)
+                notes.append(f"{record.get('id')}: dependsOn += {pid} and pins {name} "
+                             "(guard chain closed by the engine - z6, mechanical)")
+    return notes
+
+
+def _perf_budget_closure_errors(slug, staged, index=None):
+    """(z7 2026-11-25 cold6 audit) The performance spec tables each budget with a
+    machine-readable `measurement` - kind and assertion text. Enforcement was wired
+    (every PB id sits in some stage-2 intent) but NOTHING demanded the bound reach a
+    FROZEN TEST: cold6 shipped PB-05 and PB-06 with zero stage-1 citations - a limit
+    that exists in code and in the spec, proved nowhere, is a limit that regresses
+    silently. The law mirrors the security test_duty rule: a promised measurement
+    must be asserted, and the pair-test is the only place a bound survives refactors.
+    LINT tier (one context): fires only when THIS context enforces the budget; EMIT
+    tier (whole board): every declared budget must be cited by some stage-1 record."""
+    path = settings.COMPLETE_DIR / f"performance-spec-{slug}.json"
+    try:
+        spec = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+    rows = [b for b in (spec.get("budgets") or []) if isinstance(b, dict)
+            and str(b.get("id", "")).startswith("PB-")]
+    if not rows:
+        return []
+    records = list(staged) + list((index or {}).values())
+    t1_blobs = [json.dumps(r) for r in records
+                if isinstance(r, dict) and int(r.get("stage") or 0) == 1]
+    own_t1 = [json.dumps(r) for r in staged
+              if isinstance(r, dict) and int(r.get("stage") or 0) == 1]
+    errors = []
+    for b in rows:
+        pid = str(b.get("id"))
+        enforcers = sorted(str(r.get("id")) for r in records
+                           if isinstance(r, dict) and int(r.get("stage") or 0) == 2
+                           and pid in json.dumps(r))
+        if index is None:
+            if pid not in enforcers_text(staged) or not enforcers:
+                continue  # this context enforces nothing of it: the batch decides
+            pool = own_t1
+        else:
+            pool = t1_blobs
+        if any(pid in blob for blob in pool):
+            continue
+        meas = b.get("measurement") or {}
+        label = enforcers[0] if enforcers else pid
+        errors.append(
+            f"ERR [{label}]: performance budget {pid} ({b.get('target')}) is enforced "
+            "but asserted by NO stage-1 test - the spec tables its measurement "
+            f"(kind {meas.get('kind')!r}: {str(meas.get('assertion') or '')[:90]}). "
+            f"Table the bound into the enforcing unit's twin test - one intent "
+            f"sentence naming {pid} and its limit; a limit proved nowhere is a limit "
+            "that regresses silently (rule (z7))")
+    return errors
+
+
+def enforcers_text(staged):
+    return " ".join(json.dumps(r) for r in staged
+                    if isinstance(r, dict) and int(r.get("stage") or 0) == 2)
+
+
+def _slice_isolation_problems(staged):
+    """(P2 root fix, 2026-11-25 audit) the (p) slice shares ONE embedded substitute
+    across every case of its class - R5 froze test-runner order into a contract by
+    asserting a bare global count. The law (STATE IS A CONTRACT TOO) lived only in
+    SKILL.md, the carrier sessions open ONLY on an unsummarized pointer - and the
+    v7 batch shipped four slices, none naming its isolation choice, one asserting
+    global counters. The law moves to the map; its machine leg lives here, where
+    one file can decide it: a stage-1 whose intent spells a slice marker must also
+    name the choice - a UNIQUE identity per case, a RELATIVE delta against its own
+    baseline, or a CLEANUP between cases."""
+    errors = []
+    marker = re.compile(r"end[- ]to[- ]end|integration slice|request[- ]path", re.I)
+    choice = re.compile(r"unique|baseline|delta|cleanup|isolat|its own (?:device|id|key)", re.I)
+    for record in staged:
+        if not isinstance(record, dict) or int(record.get("stage") or 0) != 1:
+            continue
+        intent = str(record.get("intent") or "")
+        if marker.search(intent) and not choice.search(intent):
+            errors.append(
+                f"ERR [{record.get('id')}]: the request-path slice drives a shared "
+                "substitute but names no isolation choice - STATE IS A CONTRACT TOO: "
+                "each case seeds a UNIQUE identity, asserts a RELATIVE delta against "
+                "its own baseline, or the support unit provides a CLEANUP between "
+                "cases; say which (a bare global count freezes test order into the "
+                "contract - rule (p), R5)")
+    return errors
+
+
+def route_refusals(reason, slug, contexts):
+    """(R3 2026-11-25) Batch refusals carry id pointers; id pointers carry blame.
+    Routes every `ERR` line to the ONE context file whose claimed bytes define its
+    first id; lines with no id, or whose ids span several files (the true
+    cross-context laws), route to "domain". A domain-wide repair read every draft
+    file and rewrote whole generations for a defect living in one unit - the
+    round-cost the plan phase bled on. Returns {"domain": [lines], "<context>":
+    [lines]} - empty lists omitted."""
+    import collections
+    owner = {}
+    for context in contexts:
+        path = draft_path(slug, context)
+        try:
+            batch = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        for task in (batch if isinstance(batch, list) else [batch]):
+            if isinstance(task, dict) and task.get("id"):
+                owner.setdefault(str(task["id"]), set()).add(context)
+    buckets = collections.defaultdict(list)
+    current = None
+
+    def bucket_for(pointer_line):
+        ids = re.findall(r"T\d-\d{3}", pointer_line[:120])
+        contexts = set()
+        for i in ids:
+            owners_of_id = owner.get(i)
+            if not owners_of_id:
+                continue  # queue/complete id or unknown: not a draft-file blame
+            contexts |= set(owners_of_id)
+        if len(contexts) != 1:
+            return "domain"  # no id, several files blamed, or unresolvable: whole-batch law
+        return next(iter(contexts))
+
+    for line in (reason or "").splitlines():
+        if line.startswith("ERR"):
+            current = line
+            buckets[bucket_for(line)].append(line)
+        elif current is not None and line.strip():
+            # follow-up detail lines belong to the last pointer's bucket
+            buckets[bucket_for(current)].append(line)
+        elif not line.strip():
+            current = None
+    return {k: v for k, v in buckets.items() if v}
+
+
+# R1 (2026-11-25 cross-launch damage stop): the plan phase snapshots its binding
+# inputs before ANY session runs, re-validates them at every mutation boundary, and
+# RESTORES phase 1 bytes on unlawful mutation instead of letting the damage kill the
+# NEXT launch after a fully paid plan (live: a repair answered the (k) remedy by
+# adding an invented key to the strategy; the next cold launch died at the shape
+# gate with zero sessions run). A lawful amendment has the SAME schema shape and
+# passes the input's own gate; restructuring is never an amendment.
+PLAN_SNAPSHOT_VERSION = 1
+_INPUT_VALIDATORS = {
+    "execution-strategy": "validate_strategy",
+    "security-spec": "validate_security_spec",
+    "performance-spec": "validate_performance_spec",
+    "ai-spec": "validate_ai_spec",
+}
+
+
+def _snapshot_input_files(slug):
+    return [f for f in settings.COMPLETE_DIR.glob(f"*{slug}.json")
+            if any(f.name.startswith(k) for k in _INPUT_VALIDATORS)]
+
+
+def snapshot_plan_inputs(slug):
+    files = {}
+    for f in _snapshot_input_files(slug):
+        try:
+            files[f.name] = f.read_text(encoding="utf-8")
+        except OSError:
+            pass
+    snap = settings.BLACKBOARD / "snapshots" / f"{slug}-plan-inputs.json"
+    snap.parent.mkdir(parents=True, exist_ok=True)
+    snap.write_text(json.dumps({"version": PLAN_SNAPSHOT_VERSION, "files": files},
+                               indent=1), encoding="utf-8")
+    return snap
+
+
+def _shape(doc):
+    if isinstance(doc, dict):
+        return {k: _shape(v) for k, v in doc.items()}
+    if isinstance(doc, list):
+        return [_shape(v) for v in doc]
+    return "leaf"
+
+
+def verify_plan_inputs(slug):
+    """Returns (restored_names, amended_names). restored = unlawful mutation rolled
+    back to the phase-1 snapshot; amended = shape-identical text change that still
+    passes the input's own gate (rule (t)/(k) amendments: accepted, phase 1 stays
+    the truth in the snapshot). Called at launch start (heals previous-run damage
+    instead of dying on it) and after every session/repair boundary."""
+    snap = settings.BLACKBOARD / "snapshots" / f"{slug}-plan-inputs.json"
+    try:
+        saved = json.loads(snap.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return [], []
+    restored, amended = [], []
+    for name, old_text in (saved.get("files") or {}).items():
+        f = settings.COMPLETE_DIR / name
+        try:
+            current = f.read_text(encoding="utf-8")
+        except OSError:
+            current = ""
+        if current == old_text:
+            continue
+        prefix = next((k for k in _INPUT_VALIDATORS if name.startswith(k)), None)
+        lawful = False
+        if prefix:
+            try:
+                old_doc, new_doc = json.loads(old_text), json.loads(current)
+                validator = getattr(ddd, _INPUT_VALIDATORS[prefix])
+                lawful = _shape(old_doc) == _shape(new_doc) and validator(slug) is None
+            except (ValueError, TypeError, AttributeError):
+                lawful = False
+        if lawful:
+            amended.append(name)
+            continue
+        f.write_text(old_text, encoding="utf-8")
+        restored.append(name)
+    return restored, amended
+
+
+def synthesize_triples(batch):
+    """(R4 2026-11-25 machine-enforced draft economy) A BOARD-object draft that omits a
+    unit's stage-3 record is COMPLETE, not deficient: the refactor task is pure
+    boilerplate derived from the code side, exactly like the compact form's triad.
+    The engine issues the missing T3 records (id from the family, default intent,
+    stage-2's path); a family without both sides is left untouched (a lone record is a
+    real defect the joins must still name). Returns the number synthesized."""
+    sides = {}
+    for record in batch:
+        if isinstance(record, dict) and int(record.get("stage") or 0) in (1, 2, 3):
+            sides.setdefault(_unit_family(record), set()).add(int(record["stage"]))
+    added = 0
+    by_id = {str(r.get("id")): r for r in batch if isinstance(r, dict) and r.get("id")}
+    for family, stages in sorted(sides.items()):
+        if 3 in stages or not {1, 2} <= stages:
+            continue
+        t2 = next((r for r in batch if isinstance(r, dict)
+                   and int(r.get("stage") or 0) == 2 and _unit_family(r) == family), None)
+        if t2 is None:
+            continue
+        t3 = {"id": f"T3-{family}", "targetAgent": settings.STAGE_AGENTS[3], "stage": 3,
+              "dependsOn": [str(t2.get("id"))], "kind": settings.STAGE_KINDS[3][0],
+              "path": t2.get("path"), "export": t2.get("export"),
+              "layer": t2.get("layer"), "feature": t2.get("feature"),
+              "project": t2.get("project"),
+              "intent": (f"Refactor {t2.get('export')}: keep the tabled contract and the "
+                         "paired tests green; no behavior, status, meter or route change.")}
+        batch.append(t3)
+        by_id[t3["id"]] = t3
+        added += 1
+    return added
+
+
+def complete_board_draft(batch):
+    """Mechanical draft completion (R4): pair mirror then triple synthesis. Idempotent;
+    returns (mirrored, synthesized)."""
+    mirrored = mirror_pair_tables(batch)
+    synthesized = synthesize_triples(batch)
+    return mirrored, synthesized
+
+
+def _slice_coverage_errors(slug, stem, staged):
+    """PER-CONTEXT COVERAGE AT LINT (2026-11-25): the laws ONE file can be judged by,
+    against its own strategy and digest slice - duty claims (`spec_ref` AND
+    `capability` VERBATIM in some stage-2 intent), this context's floor step logs, and
+    this context's tabled rule literals - run BEFORE LINT-CLEAN prints. A clean lint
+    now means the context is COMPLETE, not merely well-formed; only the genuinely
+    cross-context laws (the literal join across files, provider closure over the whole
+    board, the security reach into a sibling's surface) stay batch laws. Silent when
+    the slice files are absent: a draft with no planning session behind it is not
+    judged against a slice that was never written."""
+    errors = []
+    slice_file = Path(f"/tmp/{ddd.PHASE2_SLICE_PREFIX}{slug}-{stem}.json")
+    strat_file = Path(f"/tmp/{ddd.STRATEGY_SLICE_PREFIX}{slug}-{stem}.json")
+    try:
+        digest = json.loads(slice_file.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return errors
+    stage2 = [t for t in staged if isinstance(t, dict)
+              and int(t.get("stage") or 0) == settings.TDD_STAGE]
+    intents = [str(t.get("intent") or "") for t in stage2]
+    for duty in digest.get("duties") or []:
+        if not isinstance(duty, dict):
+            continue
+        ref = str(duty.get("spec_ref") or "").strip()
+        cap = str(duty.get("capability") or "").strip()
+        if not ref or not cap:
+            continue
+        if not any(ref in text and cap in text for text in intents):
+            errors.append(
+                f"ERR [{ref}]: duty '{cap}' is not claimed inside any stage-2 unit of "
+                "this file - spell `spec_ref` AND `capability` VERBATIM beside the "
+                "mechanism copied from the duty's table_row (rule (y)); the batch would "
+                "refuse the same absence, and a billed repair is not the place to "
+                "discover it")
+    ctx = str(digest.get("context") or "")
+    try:
+        strat = json.loads(strat_file.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        strat = {}
+    floor = (strat.get("observability") or {}).get("step_logs")
+    owned = set()
+    for t in stage2:
+        for entry in ((t.get("observability") or {}).get("step_logs") or []):
+            owned.add(_claim_norm(entry))
+    if isinstance(floor, dict) and ctx in floor:
+        for entry in floor.get(ctx) or []:
+            if _claim_norm(entry) not in owned:
+                errors.append(
+                    f"ERR [{ctx}]: floor step '{entry}' is claimed by no stage-2 unit "
+                    "of this file - reference it in `claims_steps` VERBATIM (rule (j)); "
+                    "the engine hydrates the string, you only name it")
+    # (2026-11-25 speed pass) the rule-LITERAL numeric check was DELETED: an exact
+    # substring demand ("30-240" must appear verbatim) refused honest spellings ("min 30
+    # BPM, max 240") and every false refusal cost an edit round - the same year the plan
+    # was slow that the budget was spent on. Rule values stay enforced where the law is
+    # robust: the emit-side claim and RULE VALUES prose laws, and the `value` field the
+    # config coverage copies. The two checks that survived name VERBATIM tokens
+    # (spec_ref+capability pair, floor step strings) - a draft either carries the exact
+    # token or it does not, so they cannot false-refuse.
+    return errors
 
 
 def lint_draft(path):
@@ -1658,6 +2624,14 @@ def lint_draft(path):
     task = batch[0] if isinstance(loaded, dict) else None
     slug = str((task or {}).get("project") or source.name.split("-", 1)[0])
     world = draft_world(slug, exclude=source)
+    # references resolve exactly as claim will resolve them: the session sees the
+    # deterministic refusal at lint, before any of it is ever billed to a repair pass
+    hy_problems, _hy_notes = hydrate_batch(batch, slug, world)
+    errors.extend(hy_problems)
+    # mechanical completion at BOTH tiers (R4): a board file may omit T1.ast_hints
+    # and omit T3 records entirely - lint judges the COMPLETED draft, exactly as claim
+    # will persist it, so no session is refused for not typing boilerplate
+    complete_board_draft(batch)
     index = dict(world)
     staged = []
     reasons = {}
@@ -1701,11 +2675,24 @@ def lint_draft(path):
     errors.extend(_writable_channel_errors(staged))
     errors.extend(_stage0_family_errors(staged, world))
     errors.extend(_manifest_order_errors(staged, world))
+    stem = (source.name[len(slug) + 1:-len(".json")]
+            if source.name.startswith(slug + "-") else "")
+    if stem:
+        errors.extend(_slice_coverage_errors(slug, stem, staged))
+    # per-record joins that need no sibling file (2026-11-25 bleeding stop): the batch
+    # caught them too, but a batch refusal costs a premium repair session - the same
+    # verdict at lint costs one edit inside the drafting session's own budget
+    errors.extend(tasks.per_record_signal_problems(staged))
+    errors.extend(_z3_prose_problems(staged, _strategy_meter_floor(slug)))
+    errors.extend(_slice_isolation_problems(staged))
+    errors.extend(_perf_budget_closure_errors(slug, staged))
     if errors:
         return "\n".join([_format_error(e) for e in errors])
-    return ("LINT-CLEAN (batch laws DEFERRED to the engine's single --emit after the last "
-            "context: duty-claim coverage, step-log ownership, the shared-literal join, "
-            "provider closure).")
+    return ("LINT-CLEAN (this context's slice coverage ran: duties and floor steps "
+            "accounted for; the cross-context laws remain DEFERRED to "
+            "the engine's single --emit: the shared-literal join, provider closure "
+            "across contexts, whole-board step-log ownership, the security reach into "
+            "a sibling's surface).")
 
 
 def claim_draft(slug, context):
@@ -1734,6 +2721,22 @@ def claim_draft(slug, context):
     problems.extend(expand_errors)
     if expand_errors:
         return problems, {}
+    # 2026-11-25 hydration: references resolve in Python (see hydrate_batch); a refusal
+    # here is the same one the session already saw at lint - ids are never rewritten on
+    # a draft that will not claim, so the bytes stay as the session left them
+    hydrated = any(isinstance(t, dict) and any(k in t for k in SHORTHAND_KEYS)
+                   for t in batch)
+    hy_problems, hy_notes = hydrate_batch(batch, slug, world)
+    if hy_problems:
+        return hy_problems, {}
+    for note in hy_notes:
+        print(f"[wire  ] {slug}: {note}")
+    mirrored, synthesized = complete_board_draft(batch)
+    if synthesized:
+        print(f"[wire  ] {slug}: {synthesized} stage-3 record(s) issued by the engine "
+              "(R4 triple completion - the refactor task is derived, never typed)")
+    for note in wire_pin_edges(batch, world):
+        print(f"[wire  ] {slug}: {note}")
     counters = {}
     originals = []  # (task, old id) recorded BEFORE any rename - the reference pass needs both spaces
     for task in batch:
@@ -1755,7 +2758,7 @@ def claim_draft(slug, context):
             counters[stage] += 1
             renames[old] = new_id
             task["id"] = new_id
-    if renames or was_compact:
+    if renames or was_compact or hydrated or mirrored or synthesized:
         own_export = {old: str(task.get("export") or "") for task, old in originals
                       if old in renames}
         for task, _old in originals:
@@ -1781,6 +2784,9 @@ def claim_draft(slug, context):
             if ref not in world and ref not in ids_here:
                 problems.append(f"ERR [{task.get('id')}].dependsOn: dangling reference {ref} "
                                 "- not in the queue, the drafted contexts, or this file")
+    # (R2) stamp regardless of rewrites: the hashes are the contract of what this
+    # draft was validated against; a changed input flips freshness deterministically
+    stamp_draft_meta(slug, context)
     return problems, renames
 
 
@@ -1853,6 +2859,13 @@ def draft_symbol_table(slug, contexts, path):
                        if isinstance(r, dict) and r.get("duty") == "serves"],
             "config": [str(c.get("path")) for c in (hints.get("config") or [])
                        if isinstance(c, dict)],
+            # 2026-11-25 hydration facts the NEXT context must be able to reference:
+            # which floor strings this unit already claims, and whether a root gate
+            # exists (a later context pins it - never marks a second one)
+            "steps": [str(s) for s in
+                      ((task.get("observability") or {}).get("step_logs") or [])
+                      if isinstance(s, str)],
+            **({"root_gate": True} if task.get("root_gate") else {}),
         })
     stages = {}
     world = draft_world(slug)
@@ -1873,13 +2886,50 @@ def draft_symbol_table(slug, contexts, path):
     return path, []
 
 
+def _plan_input_paths(slug):
+    """The binding inputs of a planning draft. SKILL.md is the contract file;
+    DECISIONS.md and QUICKREF.md are deliberately NOT inputs (history and the
+    derivative map re-bill nothing)."""
+    return [ddd.strategy_path(slug),
+            *(settings.COMPLETE_DIR / f"{prefix}{slug}.json"
+              for prefix in ("security-spec-", "performance-spec-", "ai-spec-")),
+            Path(__file__).resolve().parents[1]
+            / ".opencode/skills/architect-practices/task-decomposition-dag/SKILL.md"]
+
+
+def _input_hashes(slug):
+    import hashlib
+    out = {}
+    for f in _plan_input_paths(slug):
+        try:
+            out[f.name] = hashlib.sha256(f.read_bytes()).hexdigest()[:16]
+        except OSError:
+            out[f.name] = "<absent>"
+    return out
+
+
+def draft_meta_path(slug, context):
+    return DRAFT_DIR / f"{slug}-{ddd.context_stem(context)}.draft-meta.json"
+
+
+def stamp_draft_meta(slug, context):
+    """claim writes the sidecar: the CONTENT hashes the draft was drafted under
+    (R2 2026-11-25) - freshness stops being a wall-clock property. mtimes made every
+    law edit and every repair-touched file re-bill whole generations of sessions,
+    and a killed run left drafts whose validity depended on what someone touched
+    next."""
+    try:
+        draft_meta_path(slug, context).write_text(
+            json.dumps({"input_hashes": _input_hashes(slug)}, indent=1), encoding="utf-8")
+    except OSError:
+        pass
+
+
 def draft_is_fresh(slug, context):
-    """Resume economics (2026-11-20 live): a draft that an aborted session left behind is
-    that session's RESULT - kept when it is newer than every input the plan was drafted
-    from (the strategy and the specs on disk). Re-spawning a session to re-produce a
-    clean, current draft would bill the whole cost again for bytes already on disk.
-    Fresh = parses as a non-empty array of task objects AND its mtime is not older than
-    any plan input."""
+    """Fresh = parses as a non-empty array of task objects AND the stamped input
+    hashes equal the inputs on disk now. No sidecar (or unreadable): NOT fresh - an
+    unclaimed, pre-hash or damaged artifact re-plans; a draft that predates a law
+    fix never silently survives into the batch."""
     path = draft_path(slug, context)
     if not path.is_file():
         return False
@@ -1889,92 +2939,26 @@ def draft_is_fresh(slug, context):
         return False
     if not (isinstance(batch, list) and batch and all(isinstance(t, dict) for t in batch)):
         return False
-    inputs = [ddd.strategy_path(slug)] + \
-        [settings.COMPLETE_DIR / f"{prefix}{slug}.json"
-         for prefix in ("security-spec-", "performance-spec-", "ai-spec-")]
-    # the CONTRACT file: a rewritten task-decomposition-dag SKILL.md (normative law)
-    # older-dates every draft written under the previous one - resume then re-plans, and
-    # a draft that predates a law fix never survives into the batch (2026-11-20: the
-    # killed session's draft was lint-clean AND stage-3-less under the OLD skill lie).
-    # The QUICKREF is deliberately NOT an input: it is the derivative MAP (the profile's
-    # own hierarchy), and mtime-gating a map rewrite would re-bill a provably compliant
-    # draft for wording edits - map drift is caught by the batch laws (lint/emit), the
-    # same guarantee that let the (a)-(z) wall leave the profiles: the gate is the law.
-    inputs.append(Path(__file__).resolve().parents[1]
-                  / ".opencode/skills/architect-practices/task-decomposition-dag/SKILL.md")
-    stamps = [f.stat().st_mtime for f in inputs if f.is_file()]
-    return bool(stamps) and path.stat().st_mtime >= max(stamps)
+    try:
+        meta = json.loads(draft_meta_path(slug, context).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    return meta.get("input_hashes") == _input_hashes(slug)
 
 
-def gaps_path(slug, context):
-    """The structured gap channel of ONE planning session: the brief names this exact
-    path; the session writes only what it may not schedule itself (a coordinate the ONE
-    build-manifest task lacks). The engine consumes it BEFORE the batch emit - prose in
-    a session transcript is not a hand-off, a validated file is (the board's own law)."""
-    return DRAFT_DIR / f"{slug}-{ddd.context_stem(context)}.gaps.json"
-
-
-def _read_gaps(slug, contexts):
-    """Coordinates reported by the drafted contexts, deduped in first-seen order."""
-    coordinates, problems = [], []
-    for context in contexts:
-        gp = gaps_path(slug, context)
-        if not gp.is_file():
-            continue
-        try:
-            payload = json.loads(gp.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError) as exc:
-            problems.append(f"ERR [{gp.name}]: unreadable gaps file: {exc}")
-            continue
-        entries = payload if isinstance(payload, list) else \
-            ((payload or {}).get("missing_coordinates") or [])
-        for entry in (entries if isinstance(entries, list) else []):
-            coordinate = str(entry).strip()
-            if coordinate and coordinate not in coordinates:
-                coordinates.append(coordinate)
-    return coordinates, problems
+# THE GAP CHANNEL IS GONE (2026-11-25 root restructure): `missing_coordinates` and
+# `config_paths` existed only because the build manifest and the config unit belonged to
+# "whichever context drafted first" - a later context could not edit A's file and needed
+# a side channel. PHASE 1.5 owns the singletons deterministically (engine-queued
+# manifest; ROOT-pass config unit and gate), so the channels had no reason to exist and
+# no engine code mutates another draft for them. `apply_coordinate_gaps` is kept as a
+# frozen no-op ONLY so an OLD board's lingering .gaps.json files stay readable: the
+# engine clears those drafts as stale anyway (their plan inputs moved).
 
 
 def apply_coordinate_gaps(slug, contexts):
-    """X11 (2026-11-20 operator catch): the split's 'report the gap' branch is only honest
-    if the report lands somewhere the machine reads. Context B may NOT duplicate or edit
-    context A's build-manifest task - so B writes its missing coordinates into its gaps
-    file, and THIS step appends them verbatim to the ONE task's intent, idempotently
-    (a coordinate the intent already carries is skipped), before the batch emit. A reported
-    gap with no build-manifest task to amend is a plan defect at claim grade: the bounded
-    repair session schedules the ONE task; the engine never authors planning intent."""
-    coordinates, problems = _read_gaps(slug, contexts)
-    notes = []
-    if not coordinates:
-        return problems, notes
-    for context in contexts:
-        path = draft_path(slug, context)
-        if not path.is_file():
-            continue
-        try:
-            batch = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            continue
-        for task in (batch if isinstance(batch, list) else [batch]):
-            if not isinstance(task, dict) or int(task.get("stage") or 0) != 0 \
-                    or str(task.get("export", "")).strip() != BUILD_MANIFEST_EXPORT:
-                continue
-            intent = str(task.get("intent") or "")
-            missing = [c for c in coordinates if c not in intent]
-            if missing:
-                task["intent"] = intent.rstrip() + "; also add " + ", ".join(missing)
-                path.write_text(json.dumps(batch, indent=1), encoding="utf-8")
-                notes.append(f"coordinate(s) {', '.join(missing)} appended to {task.get('id')} "
-                             f"({path.name}) - the ONE build-manifest task")
-            else:
-                notes.append(f"{task.get('id')} already carries every reported coordinate")
-            return problems, notes
-    problems.append(
-        f"ERR [gaps/{slug}]: {len(coordinates)} build coordinate(s) reported missing "
-        f"({', '.join(coordinates[:4])}) but the domain schedules NO build-manifest task - "
-        "the ONE lawful stage-0 manifest bootstrap task must be scheduled (repair pass: add "
-        "it to the drafting context's file with the reported coordinates; never one per context)")
-    return problems, notes
+    """Deprecated no-op (PHASE 1.5): reports nothing, mutates nothing, bills nothing."""
+    return [], []
 
 
 def emit_draft_batch(slug, contexts):

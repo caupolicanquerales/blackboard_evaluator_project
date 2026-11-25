@@ -90,10 +90,11 @@ from the reference file.
   three joins that duty's `covers` - a repeated triple is refused.
   The same capability and shape in TWO contexts is TWO duties, each naming its exact
   `owner_context` (omit only for a duty spanning contexts).
-- Every `authorization_matrix` row, every `invariant`, and every in-row principal's
-  `credential_capability` is discharged by at least one duty (`spec_ref`, `capability` or
-  `covers`): a row addressed to a credential no duty proves - or a required principal no
-  row addresses - is a guard on an unbuilt road.
+- Every `authorization_matrix` row, invariant, in-row principal
+  `credential_capability`, and PII `data_classification` row with masking
+  other than `none` is discharged by at least one duty (`spec_ref` or
+  `covers`). Prose agreement is not a claim; retention/deletion decide IN
+  their value, masking does not.
 - Every `spec_ref` and every `covers` id resolves to a declared entry.
 - `unit_kind` is a shape (port, adapter, predicate, validator, redaction, audit, credential handling, key custody, classification rule), never a technology.
 - Do not say whether a duty becomes code, configuration or schema: decomposition decides.
@@ -104,7 +105,7 @@ from the reference file.
 Refused on sight: a realization name, a non-deny `default`, an ownership-blind row, an
 undeclared principal, an in-row credential discharged by no duty, an
 `authentication: required` principal addressing no row, `restricted` data allowed
-on any surface, a rule discharging no duty,
+on any surface, a rule discharging no duty, an unclaimed PII masking class,
 a dangling `spec_ref` or `covers` id, a repeated (`capability`, `unit_kind`, `owner_context`)
 duty triple, a malformed capability token, a `unit_kind` outside its enumeration, a declared
 surface with no row, a `principals[].source` or `owner_context` no input declares, an unbacked risk.

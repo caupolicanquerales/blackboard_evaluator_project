@@ -1,0 +1,40 @@
+{
+  "id": "T1-021",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/pulsestream/telemetry/ingestion/infrastructure/InProcessEventPublisherTest.java",
+  "export": "InProcessEventPublisherTest",
+  "intent": "InProcessEventPublisherTest proves a published event reaches a downstream subscriber on the in-process bus in publish order, a publish with no subscriber completes without blocking, and publishing never blocks the caller thread.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.infrastructure",
+    "implements": [
+      "EventPublisher"
+    ],
+    "dependencies": [
+      {
+        "type": "IngestionEvent",
+        "task_id": "T2-008"
+      },
+      {
+        "type": "EventPublisher",
+        "task_id": "T2-010"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> publish(IngestionEvent event)",
+        "returns": "Mono<Void>"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

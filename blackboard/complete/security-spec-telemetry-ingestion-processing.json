@@ -3,7 +3,7 @@
   "report_type": "security-spec",
   "slug": "telemetry-ingestion-processing",
   "metadata": {
-    "generated_at": "2026-11-24T17:20:00-03:00",
+    "generated_at": "2026-11-25T14:20:00-03:00",
     "agent": "agent-security-architect",
     "inputs": [
       "blackboard/complete/execution-strategy-telemetry-ingestion-processing.json",
@@ -15,69 +15,75 @@
   "assumptions": [
     {
       "id": "AS-01",
-      "text": "Every device proves identity per packet; sender id is never trusted from payload.",
+      "text": "Every device proves identity per packet; no anonymous ingestion.",
       "source": "IoT edge device",
-      "excludes": "Anonymous ingestion; identity inferred from client-supplied device field."
+      "excludes": "Anonymous or shared-secret-free device ingestion."
     },
     {
       "id": "AS-02",
-      "text": "Internal event consumers run in-process and need no external credential.",
-      "source": "baseline rule",
-      "excludes": "Treating in-process event delivery as a public entry point."
+      "text": "Downstream consumers authenticate before subscribing to the windowed feed.",
+      "source": "Downstream streaming analytics consumers",
+      "excludes": "Public unauthenticated feed subscription."
     },
     {
       "id": "AS-03",
-      "text": "Streaming consumers read only windows of devices within their granted tenant.",
-      "source": "Streaming analytics consumers (downstream)",
-      "excludes": "Cross-tenant stream reads; role-widened ownership."
+      "text": "Telemetry is health-related personal data tied to a device identity.",
+      "source": "RawTelemetryRecord",
+      "excludes": "Treating raw telemetry as non-personal internal data."
     },
     {
       "id": "AS-04",
-      "text": "Athlete biometric telemetry is confidential personal data.",
+      "text": "Ingestion events travel in-process; sender trusted only through service credential.",
+      "source": "Ingestion events consumer",
+      "excludes": "Unauthenticated event injection into the distribution context."
+    },
+    {
+      "id": "AS-05",
+      "text": "Retention period unstated; baseline is operator-defined, no invented duration.",
       "source": "baseline rule",
-      "excludes": "Treating telemetry values as public or loggable verbatim."
+      "excludes": "A fixed retention number in this spec."
     }
   ],
   "trust_boundaries": [
     {
       "id": "TB-01",
-      "name": "Device to ingestion entry",
+      "name": "Edge device to ingestion entry point",
       "from": "P-01",
-      "to": "Sample Ingestion & Validation",
-      "untrusted_inputs": ["Ingress Packet", "device id", "t_device", "metric value"],
-      "controls": ["AZ-01", "SI-01", "SI-03"]
+      "to": "Telemetry Ingestion & Validation",
+      "untrusted_inputs": ["device_id", "metric", "t_device", "value", "payload"],
+      "controls": ["AZ-01", "SI-02", "SI-07"]
     },
     {
       "id": "TB-02",
-      "name": "Ingestion to reordering",
-      "from": "Sample Ingestion & Validation",
-      "to": "Backfill Reordering & Windowing",
-      "untrusted_inputs": ["VALIDATION_FAILED payload"],
-      "controls": ["AZ-02", "SI-02"]
+      "name": "Ingestion to raw record store",
+      "from": "Telemetry Ingestion & Validation",
+      "to": "RawTelemetryRecord store",
+      "untrusted_inputs": ["validated sample values"],
+      "controls": ["DC-01", "SI-01", "SI-11"]
     },
     {
       "id": "TB-03",
-      "name": "Contexts to event log",
-      "from": "Sample Ingestion & Validation",
-      "to": "Telemetry Event Log",
-      "untrusted_inputs": ["VALIDATION_FAILED payload", "backfilled frame"],
-      "controls": ["AZ-04", "AZ-05", "SI-04", "SI-05"]
+      "name": "Ingestion events to distribution",
+      "from": "Telemetry Ingestion & Validation",
+      "to": "Telemetry Stream Distribution",
+      "untrusted_inputs": ["event payload", "validation status"],
+      "controls": ["AZ-02", "SI-04"]
     },
     {
       "id": "TB-04",
-      "name": "Ordered stream to analytics consumers",
-      "from": "Backfill Reordering & Windowing",
+      "name": "Distribution to downstream consumers",
+      "from": "Telemetry Stream Distribution",
       "to": "P-04",
-      "untrusted_inputs": ["device filter", "metric filter"],
-      "controls": ["AZ-03", "SI-06", "DC-01"]
+      "untrusted_inputs": ["subscription request"],
+      "controls": ["AZ-03", "SI-08"]
     },
     {
       "id": "TB-05",
-      "name": "Telemetry to logs, metrics, errors",
-      "from": "Sample Ingestion & Validation",
-      "to": "logs and metrics sink",
-      "untrusted_inputs": ["payload text", "device id"],
-      "controls": ["SI-07", "SI-08", "SI-09"]
+      "name": "Application to logs and metrics",
+      "from": "Telemetry Ingestion & Validation",
+      "to": "log and metric sinks",
+      "untrusted_inputs": ["sample values", "device identifiers"],
+      "controls": ["SI-05", "SI-06", "SI-10"]
     }
   ],
   "principals": [
@@ -88,7 +94,7 @@
       "source": "IoT edge device",
       "authentication": "required",
       "credential_capability": "device-credential-proof",
-      "identity_claims": ["device_id", "tenant_id"]
+      "identity_claims": ["device_id", "scopes"]
     },
     {
       "id": "P-02",
@@ -97,7 +103,7 @@
       "source": "Bike computer",
       "authentication": "required",
       "credential_capability": "device-credential-proof",
-      "identity_claims": ["device_id", "tenant_id"]
+      "identity_claims": ["device_id", "scopes"]
     },
     {
       "id": "P-03",
@@ -106,270 +112,263 @@
       "source": "Smart wearable",
       "authentication": "required",
       "credential_capability": "device-credential-proof",
-      "identity_claims": ["device_id", "tenant_id"]
+      "identity_claims": ["device_id", "scopes"]
     },
     {
       "id": "P-04",
-      "name": "Streaming analytics consumers",
+      "name": "Downstream streaming analytics consumers",
       "kind": "service",
-      "source": "Streaming analytics consumers (downstream)",
+      "source": "Downstream streaming analytics consumers",
       "authentication": "required",
       "credential_capability": "service-credential-proof",
-      "identity_claims": ["tenant_id", "scopes"]
+      "identity_claims": ["consumer_id", "scopes"]
     },
     {
       "id": "P-05",
       "name": "Ingestion event publisher",
       "kind": "job",
-      "source": "Sample Ingestion & Validation",
-      "authentication": "not-applicable",
+      "source": "Downstream event streams",
+      "authentication": "required",
       "credential_capability": "service-credential-proof",
-      "identity_claims": ["context"]
-    },
-    {
-      "id": "P-06",
-      "name": "Reordering event publisher",
-      "kind": "job",
-      "source": "Backfill Reordering & Windowing",
-      "authentication": "not-applicable",
-      "credential_capability": "service-credential-proof",
-      "identity_claims": ["context"]
+      "identity_claims": ["service_id"]
     }
   ],
   "data_classification": [
     {
       "id": "DC-01",
-      "concept": "Raw Telemetry Record",
+      "concept": "RawTelemetryRecord",
       "class": "confidential",
       "pii": true,
       "secret": false,
-      "fields": ["device", "metric", "value", "t_device", "t_ingress", "VALIDATION_FAILED"],
+      "fields": ["device_id", "metric", "t_device", "t_ingress", "value", "validation_status", "payload"],
       "at_rest": "envelope-encryption",
       "in_transit": "tls",
       "masking": "partial",
-      "retention": "per operator policy, history retained",
-      "deletion": "none; append-only, erasure by operator procedure",
+      "retention": "operator-defined",
+      "deletion": "operator-defined erasure by archival policy",
       "log_visibility": "masked",
       "error_visibility": "forbidden",
       "export_visibility": "masked",
-      "reason": "Athlete biometric health data"
+      "reason": "health biometrics tied to device"
     },
     {
       "id": "DC-02",
-      "concept": "Event Revision",
+      "concept": "EventRevision",
       "class": "confidential",
       "pii": true,
       "secret": false,
-      "fields": ["record reference", "revision number", "value", "t_device"],
+      "fields": ["revision_number", "value", "validation_status", "reason", "t_ingress"],
       "at_rest": "envelope-encryption",
       "in_transit": "tls",
       "masking": "partial",
-      "retention": "per operator policy, history retained",
-      "deletion": "none; append-only, erasure by operator procedure",
+      "retention": "operator-defined",
+      "deletion": "operator-defined erasure by archival policy",
       "log_visibility": "masked",
       "error_visibility": "forbidden",
       "export_visibility": "masked",
-      "reason": "Corrected athlete biometric data"
+      "reason": "revises health biometrics"
     },
     {
       "id": "DC-03",
-      "concept": "Audit Trail Entry",
+      "concept": "SampleValidationStatus",
       "class": "internal",
       "pii": false,
       "secret": false,
-      "fields": ["actor", "action", "outcome", "timestamp", "correlation id"],
+      "fields": ["validation_status"],
       "at_rest": "none",
       "in_transit": "tls",
       "masking": "none",
-      "retention": "per operator policy",
-      "deletion": "none; append-only",
+      "retention": "same as owning record",
+      "deletion": "follows owning record",
+      "log_visibility": "allowed",
+      "error_visibility": "allowed",
+      "export_visibility": "allowed",
+      "reason": "status flag, no personal value"
+    },
+    {
+      "id": "DC-04",
+      "concept": "AuditEntry",
+      "class": "internal",
+      "pii": false,
+      "secret": false,
+      "fields": ["actor", "action", "outcome", "timestamp", "correlation_id"],
+      "at_rest": "none",
+      "in_transit": "tls",
+      "masking": "none",
+      "retention": "operator-defined",
+      "deletion": "append-only, archival only",
       "log_visibility": "allowed",
       "error_visibility": "forbidden",
-      "export_visibility": "allowed",
-      "reason": "Operational, no payload values"
+      "export_visibility": "masked",
+      "reason": "operational trail, no payload"
+    },
+    {
+      "id": "DC-05",
+      "concept": "Windowed Telemetry Stream",
+      "class": "confidential",
+      "pii": true,
+      "secret": false,
+      "fields": ["device_id", "metric", "t_device", "value"],
+      "at_rest": "none",
+      "in_transit": "tls",
+      "masking": "partial",
+      "retention": "bounded by window, transient",
+      "deletion": "evicted on window slide",
+      "log_visibility": "masked",
+      "error_visibility": "forbidden",
+      "export_visibility": "masked",
+      "reason": "derived copy of biometrics"
     }
   ],
   "authorization_matrix": [
     {
       "id": "AZ-01",
-      "surface": "ingress packet HTTP inbound",
+      "surface": "Ingress packet ingest HTTP inbound",
       "operation": "POST",
       "principal_ids": ["P-01", "P-02", "P-03"],
-      "roles": ["device"],
-      "scopes": ["telemetry-write"],
-      "ownership_rule": "owner-and-tenant",
-      "client_supplied_ids": ["device id", "packet sample device field"],
+      "roles": ["edge-device"],
+      "scopes": ["telemetry:write"],
+      "ownership_rule": "payload device_id equals authenticated device identity",
+      "client_supplied_ids": ["device_id"],
       "decision_point": {
         "layer": "interface",
-        "component": "Sample Ingestion & Validation"
-      },
-      "default": "deny",
-      "effect_on_deny": "unauthenticated",
-      "fields_read": [],
-      "fields_written": ["DC-01"],
-      "audit_event": "authentication-failure",
-      "test_duty": "Own device packet accepted; unauthenticated rejected; packet naming another device refused."
-    },
-    {
-      "id": "AZ-02",
-      "surface": "validated sample reordering consumer",
-      "operation": "internal-call",
-      "principal_ids": ["P-05"],
-      "roles": ["internal-publisher"],
-      "scopes": ["validated-event-consume"],
-      "ownership_rule": "none",
-      "client_supplied_ids": [],
-      "decision_point": {
-        "layer": "application",
-        "component": "Backfill Reordering & Windowing"
-      },
-      "default": "deny",
-      "effect_on_deny": "reject-drop",
-      "fields_read": ["DC-01"],
-      "fields_written": [],
-      "audit_event": "none",
-      "test_duty": "Ingestion event consumed; unknown publisher dropped; no cross-owner id exists."
-    },
-    {
-      "id": "AZ-03",
-      "surface": "ordered telemetry stream HTTP outbound",
-      "operation": "GET",
-      "principal_ids": ["P-04"],
-      "roles": ["analytics-consumer"],
-      "scopes": ["telemetry-stream-read"],
-      "ownership_rule": "tenant",
-      "client_supplied_ids": ["device filter", "metric filter"],
-      "decision_point": {
-        "layer": "interface",
-        "component": "Backfill Reordering & Windowing"
+        "component": "Telemetry Ingestion & Validation"
       },
       "default": "deny",
       "effect_on_deny": "forbidden-not-found",
       "fields_read": ["DC-01"],
-      "fields_written": [],
+      "fields_written": ["DC-01", "DC-02", "DC-03"],
       "audit_event": "authorization-denied",
-      "test_duty": "Own tenant window streamed; missing scope denied; other tenant device refused."
+      "test_duty": "own-device packet accepted; unauthenticated refused; other device's id refused"
     },
     {
-      "id": "AZ-04",
-      "surface": "validated sample event log consumer",
-      "operation": "internal-call",
+      "id": "AZ-02",
+      "surface": "Ingestion events consumer",
+      "operation": "consume",
       "principal_ids": ["P-05"],
-      "roles": ["internal-publisher"],
-      "scopes": ["validated-event-append"],
+      "roles": ["event-publisher"],
+      "scopes": ["telemetry:event-publish"],
       "ownership_rule": "none",
       "client_supplied_ids": [],
       "decision_point": {
-        "layer": "application",
-        "component": "Telemetry Event Log"
+        "layer": "interface",
+        "component": "Telemetry Stream Distribution"
       },
       "default": "deny",
       "effect_on_deny": "reject-drop",
-      "fields_read": [],
-      "fields_written": ["DC-01", "DC-03"],
-      "audit_event": "none",
-      "test_duty": "Ingestion event appended; unknown publisher dropped; no cross-owner id exists."
+      "fields_read": ["DC-03"],
+      "fields_written": ["DC-05"],
+      "audit_event": "service-credential-use",
+      "test_duty": "credentialed event consumed; uncredentialed event dropped; failed-status sample never windowed"
     },
     {
-      "id": "AZ-05",
-      "surface": "backfilled sample event log consumer",
-      "operation": "internal-call",
-      "principal_ids": ["P-06"],
-      "roles": ["internal-publisher"],
-      "scopes": ["backfill-event-append"],
+      "id": "AZ-03",
+      "surface": "Windowed telemetry stream HTTP outbound feed",
+      "operation": "GET",
+      "principal_ids": ["P-04"],
+      "roles": ["analytics-consumer"],
+      "scopes": ["telemetry:stream-read"],
       "ownership_rule": "none",
       "client_supplied_ids": [],
       "decision_point": {
-        "layer": "application",
-        "component": "Telemetry Event Log"
+        "layer": "interface",
+        "component": "Telemetry Stream Distribution"
       },
       "default": "deny",
-      "effect_on_deny": "reject-drop",
-      "fields_read": [],
-      "fields_written": ["DC-02", "DC-03"],
-      "audit_event": "none",
-      "test_duty": "Backfill revision appended; unknown publisher dropped; update or delete refused."
+      "effect_on_deny": "unauthenticated",
+      "fields_read": ["DC-05"],
+      "fields_written": [],
+      "audit_event": "service-credential-use",
+      "test_duty": "scoped consumer subscribes; unauthenticated refused; consumer lacking scope refused"
     }
   ],
   "invariants": [
     {
       "id": "SI-01",
-      "rule": "Every sample is validated at the boundary before downstream propagation.",
-      "capability": "boundary-validation",
-      "enforcement_layer": "edge",
-      "owner_context": "Sample Ingestion & Validation",
+      "rule": "Raw records and revisions are never updated or deleted.",
+      "capability": "append-only-history",
+      "enforcement_layer": "store",
+      "owner_context": "Telemetry Ingestion & Validation",
       "failure_mode": "closed"
     },
     {
       "id": "SI-02",
-      "rule": "Invalid samples are tagged and retained, never dropped or echoed in errors.",
+      "rule": "Untrusted packets are validated and typed at the entry boundary.",
       "capability": "boundary-validation",
       "enforcement_layer": "edge",
-      "owner_context": "Sample Ingestion & Validation",
+      "owner_context": "Telemetry Ingestion & Validation",
       "failure_mode": "closed"
     },
     {
       "id": "SI-03",
-      "rule": "Unauthenticated packets are rejected before any parsing or buffering.",
-      "capability": "device-credential-proof",
+      "rule": "Unavailable identity or binding decision denies the packet.",
+      "capability": "device-binding-check",
       "enforcement_layer": "edge",
-      "owner_context": "Sample Ingestion & Validation",
+      "owner_context": "Telemetry Ingestion & Validation",
       "failure_mode": "closed"
     },
     {
       "id": "SI-04",
-      "rule": "Raw records are never updated or deleted.",
-      "capability": "append-only-history",
-      "enforcement_layer": "store",
-      "owner_context": "Telemetry Event Log",
+      "rule": "Only samples with valid published status enter broadcast windows.",
+      "capability": "validated-only-propagation",
+      "enforcement_layer": "application",
+      "owner_context": "Telemetry Stream Distribution",
       "failure_mode": "closed"
     },
     {
       "id": "SI-05",
-      "rule": "Corrections and backfills append new revisions, never mutate history.",
-      "capability": "append-only-history",
-      "enforcement_layer": "store",
-      "owner_context": "Telemetry Event Log",
+      "rule": "Sample values and device identifiers never appear unmasked in logs.",
+      "capability": "log-redaction",
+      "enforcement_layer": "pipeline",
+      "owner_context": "Telemetry Ingestion & Validation",
       "failure_mode": "closed"
     },
     {
       "id": "SI-06",
-      "rule": "Stream reads return only windows within the caller tenant.",
-      "capability": "tenant-scoped-query",
-      "enforcement_layer": "application",
-      "owner_context": "Backfill Reordering & Windowing",
+      "rule": "Window contents and device identifiers never appear unmasked in logs.",
+      "capability": "log-redaction",
+      "enforcement_layer": "pipeline",
+      "owner_context": "Telemetry Stream Distribution",
       "failure_mode": "closed"
     },
     {
       "id": "SI-07",
-      "rule": "Logs never carry metric values or raw payloads.",
-      "capability": "log-redaction",
-      "enforcement_layer": "pipeline",
-      "owner_context": "Sample Ingestion & Validation",
+      "rule": "Ingestion errors expose code, message and correlation key only.",
+      "capability": "error-code-only",
+      "enforcement_layer": "edge",
+      "owner_context": "Telemetry Ingestion & Validation",
       "failure_mode": "closed"
     },
     {
       "id": "SI-08",
-      "rule": "Errors expose only code, safe message and correlation key.",
+      "rule": "Feed errors expose code, message and correlation key only.",
       "capability": "error-code-only",
       "enforcement_layer": "edge",
-      "owner_context": "Sample Ingestion & Validation",
+      "owner_context": "Telemetry Stream Distribution",
       "failure_mode": "closed"
     },
     {
       "id": "SI-09",
-      "rule": "Metric tags come from fixed sets, never identifiers or payload text.",
-      "capability": "metric-tag-bound",
-      "enforcement_layer": "pipeline",
-      "owner_context": "Sample Ingestion & Validation",
+      "rule": "Authentication failures, denials and service credential use emit audit events.",
+      "capability": "audit-event",
+      "enforcement_layer": "application",
+      "owner_context": "Telemetry Ingestion & Validation",
       "failure_mode": "closed"
     },
     {
       "id": "SI-10",
-      "rule": "Unavailable credential or tenant decision source denies the request.",
-      "capability": "scope-check",
-      "enforcement_layer": "application",
-      "owner_context": "Backfill Reordering & Windowing",
+      "rule": "Metric tags come from bounded sets, never device identifiers.",
+      "capability": "metric-tag-bound",
+      "enforcement_layer": "pipeline",
+      "owner_context": "Telemetry Ingestion & Validation",
+      "failure_mode": "closed"
+    },
+    {
+      "id": "SI-11",
+      "rule": "Encryption keys are held apart from the data they protect.",
+      "capability": "external-key-store",
+      "enforcement_layer": "store",
+      "owner_context": "Telemetry Ingestion & Validation",
       "failure_mode": "closed"
     }
   ],
@@ -378,30 +377,30 @@
     "inventory": [
       {
         "id": "SD-01",
-        "name": "event-log-data-key",
-        "owner": "Telemetry Event Log",
+        "name": "data-encryption-key",
+        "owner": "Telemetry Ingestion & Validation",
         "custody": "external-key-store",
-        "rotation": "periodic, key separate from data store access"
+        "rotation": "operator-scheduled rotation without data loss"
       },
       {
         "id": "SD-02",
-        "name": "device-credential",
-        "owner": "Sample Ingestion & Validation",
+        "name": "device-credential-verification-material",
+        "owner": "Telemetry Ingestion & Validation",
         "custody": "runtime-injection",
-        "rotation": "periodic, revocation fails closed"
+        "rotation": "operator-scheduled; revocation takes effect immediately"
       },
       {
         "id": "SD-03",
-        "name": "stream-consumer-credential",
-        "owner": "Backfill Reordering & Windowing",
+        "name": "service-credential-verification-material",
+        "owner": "Telemetry Stream Distribution",
         "custody": "runtime-injection",
-        "rotation": "periodic, revocation fails closed"
+        "rotation": "operator-scheduled; revocation takes effect immediately"
       }
     ],
     "handling_rules": [
-      "Credentials are injected at runtime, never stored in source or fixtures.",
-      "Data keys are held apart from the data they protect.",
-      "Revoked or expired credentials deny; clock-skew tolerance is bounded."
+      "Credential revocation fails closed.",
+      "Credential clock-skew tolerance is bounded and stated.",
+      "Secrets are injected at runtime, never stored with data."
     ]
   },
   "error_policy": {
@@ -415,142 +414,149 @@
   "duties": [
     {
       "spec_ref": "AZ-01",
-      "obligation": "Bind each packet's device id to the proven device identity.",
-      "capability": "device-binding-check",
-      "unit_kind": "ownership-predicate",
-      "owner_context": "Sample Ingestion & Validation"
-    },
-    {
-      "spec_ref": "AZ-02",
-      "obligation": "Accept only in-context published events at the reordering consumer.",
-      "capability": "service-credential-proof",
-      "unit_kind": "policy-port",
-      "owner_context": "Backfill Reordering & Windowing"
-    },
-    {
-      "spec_ref": "AZ-03",
-      "obligation": "Require stream-read scope before any window is streamed.",
-      "capability": "scope-check",
-      "unit_kind": "policy-port",
-      "owner_context": "Backfill Reordering & Windowing",
-      "covers": ["SI-10"]
-    },
-    {
-      "spec_ref": "AZ-04",
-      "obligation": "Accept only in-context published events at the log consumers.",
-      "capability": "service-credential-proof",
-      "unit_kind": "policy-port",
-      "owner_context": "Telemetry Event Log",
-      "covers": ["AZ-05"]
-    },
-    {
-      "spec_ref": "SI-01",
-      "obligation": "Validate every sample into typed values at the receiving boundary.",
-      "capability": "boundary-validation",
-      "unit_kind": "validator",
-      "owner_context": "Sample Ingestion & Validation",
-      "covers": ["SI-02"]
-    },
-    {
-      "spec_ref": "SI-03",
-      "obligation": "Verify device credential before reading packet content.",
+      "obligation": "Verify device credential before accepting any packet.",
       "capability": "device-credential-proof",
       "unit_kind": "credential-handling",
-      "owner_context": "Sample Ingestion & Validation",
-      "covers": ["TB-01"]
-    },
-    {
-      "spec_ref": "SI-04",
-      "obligation": "Refuse update and delete on the event log.",
-      "capability": "append-only-history",
-      "unit_kind": "policy-adapter",
-      "owner_context": "Telemetry Event Log",
-      "covers": ["SI-05", "DC-03"]
-    },
-    {
-      "spec_ref": "SI-06",
-      "obligation": "Filter every stream read by caller tenant.",
-      "capability": "tenant-scoped-query",
-      "unit_kind": "ownership-predicate",
-      "owner_context": "Backfill Reordering & Windowing"
-    },
-    {
-      "spec_ref": "SI-07",
-      "obligation": "Mask or omit telemetry values in every log line.",
-      "capability": "log-redaction",
-      "unit_kind": "redaction",
-      "owner_context": "Sample Ingestion & Validation",
-      "covers": ["DC-01", "DC-02"]
-    },
-    {
-      "spec_ref": "SI-08",
-      "obligation": "Return code, safe message and correlation key only.",
-      "capability": "error-code-only",
-      "unit_kind": "redaction",
-      "owner_context": "Sample Ingestion & Validation"
-    },
-    {
-      "spec_ref": "SI-09",
-      "obligation": "Restrict metric tags to fixed enumerations.",
-      "capability": "metric-tag-bound",
-      "unit_kind": "redaction",
-      "owner_context": "Sample Ingestion & Validation"
-    },
-    {
-      "spec_ref": "SD-01",
-      "obligation": "Hold the data key outside the data store.",
-      "capability": "external-key-store",
-      "unit_kind": "key-custody",
-      "owner_context": "Telemetry Event Log"
-    },
-    {
-      "spec_ref": "DC-01",
-      "obligation": "Encrypt raw records and revisions at rest.",
-      "capability": "envelope-encryption",
-      "unit_kind": "classification-rule",
-      "owner_context": "Telemetry Event Log",
-      "covers": ["DC-02"]
+      "owner_context": "Telemetry Ingestion & Validation"
     },
     {
       "spec_ref": "AZ-01",
-      "obligation": "Record authentication failures and denials with correlation key.",
+      "obligation": "Refuse samples whose device_id differs from the authenticated device.",
+      "capability": "device-binding-check",
+      "unit_kind": "ownership-predicate",
+      "owner_context": "Telemetry Ingestion & Validation",
+      "covers": ["SI-03"]
+    },
+    {
+      "spec_ref": "AZ-03",
+      "obligation": "Verify service credential and scope before consuming or subscribing.",
+      "capability": "service-credential-proof",
+      "unit_kind": "credential-handling",
+      "owner_context": "Telemetry Stream Distribution",
+      "covers": ["AZ-02"]
+    },
+    {
+      "spec_ref": "SI-01",
+      "obligation": "Reject any update or delete of raw records and revisions.",
+      "capability": "append-only-history",
+      "unit_kind": "policy-adapter",
+      "owner_context": "Telemetry Ingestion & Validation"
+    },
+    {
+      "spec_ref": "SI-02",
+      "obligation": "Validate and type packets at the entry boundary.",
+      "capability": "boundary-validation",
+      "unit_kind": "validator",
+      "owner_context": "Telemetry Ingestion & Validation"
+    },
+    {
+      "spec_ref": "SI-04",
+      "obligation": "Admit only valid-status samples into broadcast windows.",
+      "capability": "validated-only-propagation",
+      "unit_kind": "validator",
+      "owner_context": "Telemetry Stream Distribution"
+    },
+    {
+      "spec_ref": "SI-05",
+      "obligation": "Mask sample values and device identifiers in ingestion logs.",
+      "capability": "log-redaction",
+      "unit_kind": "redaction",
+      "owner_context": "Telemetry Ingestion & Validation",
+      "covers": ["DC-01", "DC-02"]
+    },
+    {
+      "spec_ref": "SI-06",
+      "obligation": "Mask window contents and device identifiers in distribution logs.",
+      "capability": "log-redaction",
+      "unit_kind": "redaction",
+      "owner_context": "Telemetry Stream Distribution",
+      "covers": ["DC-05"]
+    },
+    {
+      "spec_ref": "SI-07",
+      "obligation": "Return code, message and correlation key only on errors.",
+      "capability": "error-code-only",
+      "unit_kind": "redaction",
+      "covers": ["SI-08"]
+    },
+    {
+      "spec_ref": "SI-09",
+      "obligation": "Emit audit events for the security audit floor classes.",
       "capability": "audit-event",
       "unit_kind": "audit-event",
-      "covers": ["AZ-03"]
+      "owner_context": "Telemetry Ingestion & Validation",
+      "covers": ["DC-04"]
+    },
+    {
+      "spec_ref": "SI-10",
+      "obligation": "Restrict metric tags to bounded sets.",
+      "capability": "metric-tag-bound",
+      "unit_kind": "classification-rule"
+    },
+    {
+      "spec_ref": "DC-01",
+      "obligation": "Encrypt raw records and revisions at rest per envelope.",
+      "capability": "envelope-encryption",
+      "unit_kind": "classification-rule",
+      "owner_context": "Telemetry Ingestion & Validation",
+      "covers": ["DC-02", "DC-03"]
+    },
+    {
+      "spec_ref": "SI-11",
+      "obligation": "Keep encryption keys in a store separate from data.",
+      "capability": "external-key-store",
+      "unit_kind": "key-custody",
+      "owner_context": "Telemetry Ingestion & Validation"
     }
   ],
   "risks": [
     {
       "id": "R-01",
-      "risk": "Retry versus correction identity undefined; replayed packets may append duplicates.",
+      "risk": "Device credential theft lets an attacker inject samples as that device.",
       "likelihood": "medium",
-      "impact": "medium",
-      "mitigation": "accepted: SI-04 keeps history immutable; duplicates are visible, never destructive.",
-      "residual": "Duplicate records possible until identity rule is decided."
+      "impact": "high",
+      "mitigation": "AZ-01 credential proof and rotation duties",
+      "residual": "Samples within a stolen credential's lifetime remain accepted."
     },
     {
       "id": "R-02",
-      "risk": "Metrics lacking ranges pass validation unchecked.",
+      "risk": "Metrics without configured boundaries accept unvalidated values.",
       "likelihood": "high",
-      "impact": "low",
-      "mitigation": "SI-01 validates typed values; unbounded metrics stay type-checked only.",
-      "residual": "Out-of-range values for unranged metrics are accepted."
+      "impact": "medium",
+      "mitigation": "accepted: SI-02 validates only metrics with stated boundaries",
+      "residual": "Out-of-range ground contact, respiration, stroke values stored as valid."
     },
     {
       "id": "R-03",
-      "risk": "No read surface declared for Audit reviewers of the event log.",
-      "likelihood": "low",
+      "risk": "Retention period unstated; biometrics may be kept indefinitely.",
+      "likelihood": "medium",
       "impact": "medium",
-      "mitigation": "operator: history reachable only through store access outside this service.",
-      "residual": "Reviewer access control is unspecified here."
+      "mitigation": "operator: define retention and deletion for DC-01",
+      "residual": "Data kept until the operator sets a period."
     },
     {
       "id": "R-04",
-      "risk": "Burst or hostile device floods intake.",
+      "risk": "Event publisher principal is derived from an external system entry.",
+      "likelihood": "low",
+      "impact": "medium",
+      "mitigation": "AZ-02 service credential proof duty",
+      "residual": "In-process event source identity depends on credential custody."
+    },
+    {
+      "id": "R-05",
+      "risk": "Flood of authenticated packets exhausts ingestion capacity.",
       "likelihood": "medium",
       "impact": "medium",
-      "mitigation": "SI-03 rejects unauthenticated packets before parsing; bounded buffering applies.",
-      "residual": "Authenticated device can still saturate intake."
+      "mitigation": "SI-02 boundary validation bounds input before processing",
+      "residual": "Volume limits beyond backpressure are not specified."
+    },
+    {
+      "id": "R-06",
+      "risk": "Consumers share windowed biometrics without per-athlete ownership scoping.",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigation": "accepted: AZ-03 grants all-window read to scoped consumers",
+      "residual": "Any scoped consumer sees every device's masked window data."
     }
   ],
   "open_questions": []

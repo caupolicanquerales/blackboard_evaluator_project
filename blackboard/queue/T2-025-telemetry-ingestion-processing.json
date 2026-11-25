@@ -1,0 +1,95 @@
+{
+  "id": "T2-025",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-025",
+    "T0-001",
+    "T0-002",
+    "T0-003",
+    "T2-007",
+    "T2-013",
+    "T2-016",
+    "T2-022",
+    "T2-023",
+    "T2-024",
+    "T2-002",
+    "T2-029",
+    "T2-004"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/interfaces/TelemetryIngressController.java",
+  "export": "TelemetryIngressController",
+  "intent": "Unit IS the surface 'Ingress packet ingest HTTP inbound': SI-02 boundary-validation with jakarta.validation constraints on the DTO and @Valid on the handler parameter. Entry enforces AZ-01 device-credential-proof (pinned manager) and device-binding-check at the use case with the authenticated principal; a valid packet bearing another device's id is refused, forbidden-not-found.",
+  "layer": "interface",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.interfaces",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-007"
+      },
+      {
+        "type": "DeviceBindingPolicy",
+        "task_id": "T2-013"
+      },
+      {
+        "type": "IngestTelemetryUseCase",
+        "task_id": "T2-016"
+      },
+      {
+        "type": "DeviceCredentialAuthenticationManager",
+        "task_id": "T2-022"
+      },
+      {
+        "type": "IngressPacketRequest",
+        "task_id": "T2-023"
+      },
+      {
+        "type": "IngressAdmissionFilter",
+        "task_id": "T2-024"
+      },
+      {
+        "type": "ErrorCodeResponseHandler",
+        "task_id": "T2-002"
+      },
+      {
+        "type": "ServiceCredentialAuthenticationManager",
+        "task_id": "T2-029"
+      },
+      {
+        "type": "MetricTagBoundConfiguration",
+        "task_id": "T2-004"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<ResponseEntity<Void>> ingest(IngressPacketRequest request, Authentication authentication)",
+        "returns": "Mono<ResponseEntity<Void>>",
+        "semantics": "request must be valid and authentication non-null"
+      }
+    ],
+    "meters": [
+      {
+        "name": "telemetry.ingest.samples",
+        "duty": "uses"
+      }
+    ],
+    "routes": [
+      {
+        "method": "POST",
+        "path": "/telemetry/packets",
+        "duty": "serves"
+      }
+    ],
+    "config": []
+  },
+  "observability": {
+    "step_logs": [
+      "packet received"
+    ]
+  }
+}

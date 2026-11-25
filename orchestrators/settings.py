@@ -205,7 +205,7 @@ REQUIRED_KEYS = (
 # stages (see validate): package, implements, dependencies pinned to producer task ids,
 # and the boundary methods with their exact parameter/return spellings. Testers write
 # assertions ONLY against this table; boards recorded before it existed remain readable.
-OPTIONAL_KEYS = ("ast_hints", "observability")
+OPTIONAL_KEYS = ("ast_hints", "observability", "root_gate")
 AST_HINT_KEYS = ("package", "implements", "dependencies", "methods")
 # THE SHARED-LITERAL VOCABULARY (rule (z), 2026-11-19 - R1/R2 roots): meter names and
 # request-path routes are literals used by >= 2 units (owner, consumers, the frozen test

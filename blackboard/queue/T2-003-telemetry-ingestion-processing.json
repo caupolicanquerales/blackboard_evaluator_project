@@ -1,0 +1,59 @@
+{
+  "id": "T2-003",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-003",
+    "T0-001",
+    "T2-001",
+    "T2-002",
+    "T2-029",
+    "T2-004"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/pulsestream/telemetry/shared/RootAdmissionGate.java",
+  "export": "RootAdmissionGate",
+  "intent": "The ONE root admission gate: a SecurityWebFilterChain bean on ServerHttpSecurity with httpBasic, csrf disabled for the stateless API, deny-by-default anyExchange, exceptionHandling wired to the pinned ErrorCodeResponseHandler. Each addressed surface is tabled in its routes; authorization rules per surface come from the owning contexts.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.shared",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ErrorCodeResponseHandler",
+        "task_id": "T2-002"
+      },
+      {
+        "type": "ServiceCredentialAuthenticationManager",
+        "task_id": "T2-029"
+      },
+      {
+        "type": "MetricTagBoundConfiguration",
+        "task_id": "T2-004"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http)",
+        "returns": "SecurityWebFilterChain"
+      }
+    ],
+    "meters": [],
+    "routes": [
+      {
+        "method": "POST",
+        "path": "/telemetry/packets",
+        "duty": "uses"
+      },
+      {
+        "method": "GET",
+        "path": "/telemetry/stream/windows",
+        "duty": "uses"
+      }
+    ],
+    "config": []
+  },
+  "root_gate": true
+}

@@ -1,0 +1,34 @@
+{
+  "id": "T1-004",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/pulsestream/telemetry/shared/MetricTagBoundConfigurationTest.java",
+  "export": "MetricTagBoundConfigurationTest",
+  "intent": "With a SimpleMeterRegistry carrying the filter: a meter tagged metric, status, outcome or reason keeps its tag; a meter tagged deviceId or any other key outside the closed set is registered without that tag.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.shared",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "MeterFilter boundedTagFilter()",
+        "returns": "MeterFilter"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "management.metrics.tags",
+        "kind": "map"
+      }
+    ]
+  }
+}

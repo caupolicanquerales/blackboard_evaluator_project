@@ -71,7 +71,8 @@ def task(tid="T2-001", export="com.x.Box", deps=("T1-001",), stage=2, **extra):
 
 
 def demand_verdict(demands, missing=(), status="compile_error"):
-    return {"status": status, "exit_code": 1,
+    # verdict contract v2 (2026-11-25): fixtures write what the TOOL writes
+    return {"verdict_version": 2, "status": status, "exit_code": 1,
             "missing_symbols": list(missing),
             "member_demands": list(demands),
             "failures": [], "counts": {}, "excerpt": []}
@@ -109,9 +110,11 @@ check("A6 demand-attached symbol is conditional, not a hole (false-abort guard)"
 
 # problem_kinds drives cascade-vs-structural and the moving-port deferral WITHOUT
 # the engine reading a single message phrase (fields present, text would lie).
-KINDS = {"status": "compile_error", "exit_code": 1, "missing_symbols": [],
+KINDS = {"verdict_version": 2, "status": "compile_error", "exit_code": 1,
+         "missing_symbols": [],
          "member_demands": [], "failures": [], "counts": {},
          "excerpt": [f"{ROOT}/proj/src/main/java/x/Channel.java:[4,1] totally unrelated prose"],
+         "blamed_files": ["Channel.java"],
          "problem_kinds": [{"file": "Channel.java", "line": 4, "kind": "supertype",
                             "supertypes": ["Gateway"]}]}
 kind_task = task(tid="T2-601", export="Chan", path="src/main/java/x/Channel.java",
@@ -175,17 +178,18 @@ keep_task = task(tid="T2-070", export="com.x.SampleValidator")
 (ROOT / "blackboard" / "coder-changes" / "T2-070.json").write_text(
     json.dumps({"targetFile": "src/main/java/x/SampleValidator.java"}))
 (ROOT / "blackboard" / "weave-results" / "T2-070.json").write_text(json.dumps({"status": "ok"}))
-test_gate._write_memo(keep_task, "red", {"status": "assertion_failure", "exit_code": 1,
-                                         "failures": [], "counts": {}})
+test_gate._write_memo(keep_task, "red", {"verdict_version": 2, "status": "assertion_failure",
+                                         "exit_code": 1, "failures": [], "counts": {}})
 check("A15 assertion_failure + payload woven in a COMPLETED suite = proven harmless -> KEEP",
       tdd_engine._payload_proven_harmless(keep_task) is True)
-test_gate._write_memo(keep_task, "red", {"status": "compile_error", "exit_code": 1,
-                                         "missing_symbols": ["X"], "failures": [], "counts": {}})
+test_gate._write_memo(keep_task, "red", {"verdict_version": 2, "status": "compile_error",
+                                         "exit_code": 1, "missing_symbols": ["X"],
+                                         "failures": [], "counts": {}})
 check("A16 compile_error verdict -> classic revert (poison or unknown)",
       tdd_engine._payload_proven_harmless(keep_task) is False)
 (ROOT / "blackboard" / "weave-results" / "T2-070.json").unlink()
-test_gate._write_memo(keep_task, "red", {"status": "assertion_failure", "exit_code": 1,
-                                         "failures": [], "counts": {}})
+test_gate._write_memo(keep_task, "red", {"verdict_version": 2, "status": "assertion_failure",
+                                         "exit_code": 1, "failures": [], "counts": {}})
 check("A17 nothing spliced into the tree -> nothing to keep",
       tdd_engine._payload_proven_harmless(keep_task) is False)
 
@@ -207,13 +211,18 @@ check("A18b same demand, class NOT materialized -> defer stays (waiting can reso
 # for a call site it does not own (seed-002 rerun 14:03, T2-017).
 wiring = task(tid="T2-077", export="TelemetryWiringConfiguration")
 (ROOT / "blackboard" / "queue" / "T2-077-p.json").write_text(json.dumps(wiring))
-PEER_OWNED = {"status": "compile_error", "exit_code": 1,
+PEER_OWNED = {"verdict_version": 2, "status": "compile_error", "exit_code": 1,
               "missing_symbols": ["ReorderWindow(com.pulse.properties)"],
               "member_demands": [{"member": "ReorderWindow(properties)", "owner": "ReorderWindow",
                                   "kind": "constructor"}],
               "failures": [], "counts": {}, "excerpt": [],
-              "excerpt_all": [f"{ROOT}/proj/src/main/java/w/TelemetryWiringConfiguration.java:"
-                              "32,32 ] constructor ReorderWindow cannot be applied to given types"]}
+              # O1 (2026-11-25): the tool positions every compile error and TYPES the
+              # blame set; the excerpt prose that used to drive this decision is
+              # DISPLAY ONLY. Behavior pin unchanged: the peer-owned wiring file's
+              # owner defers while its call site is unadjudicated.
+              "blamed_files": ["TelemetryWiringConfiguration.java"],
+              "problem_kinds": [{"file": "TelemetryWiringConfiguration.java", "line": 32,
+                                 "kind": "other"}]}
 demanded = task(tid="T2-076", export="com.x.ReorderWindow", deps=("T1-076",))
 check("A19 every blamed MAIN file belongs to a queued peer -> demand owner DEFERS",
       tdd_engine._blocked_by_peers(PEER_OWNED, demanded) is True)
@@ -245,11 +254,12 @@ check("A22 the same sibling holds the wave once its payload is gone",
     path="src/main/java/com/pulsestream/telemetry/shared/config/TelemetryWiringConfiguration.java")))
 (ROOT / "blackboard" / "queue" / "T2-624-p.json").write_text(json.dumps(
     task(tid="T2-624", export="ReorderWindow")))
-CYCLE = {"status": "compile_error", "exit_code": 1, "missing_symbols": ["ReorderWindow"],
+CYCLE = {"verdict_version": 2, "status": "compile_error", "exit_code": 1,
+         "missing_symbols": ["ReorderWindow"],
          "member_demands": [], "failures": [], "counts": {},
-         "excerpt": [f"{ROOT}/proj/src/main/java/com/pulsestream/telemetry/shared/config/"
-                     "TelemetryWiringConfiguration.java:32,32 ] constructor ReorderWindow "
-                     "cannot be applied to given types"]}
+         "blamed_files": ["TelemetryWiringConfiguration.java"],
+         "problem_kinds": [{"file": "TelemetryWiringConfiguration.java", "line": 32,
+                            "kind": "other"}]}
 wiring_task = task(tid="T2-623", export="TelemetryWiringConfiguration",
                    path="src/main/java/com/pulsestream/telemetry/shared/config/TelemetryWiringConfiguration.java")
 check("A23 own-file STRUCTURAL blame charges even while a peer symbol is pending (cycle breaker)",
@@ -281,10 +291,10 @@ check("A24 weaver shape-rejection returns 'weave-reject:' (bounce class, attempt
 # wait forever and the drain can only stall. The owner goes back to the queue.
 (ROOT / "blackboard" / "complete" / "T2-660-p.json").write_text(json.dumps(
     task(tid="T2-660", export="OldThing", path="src/main/java/x/OldThing.java")))
-REGRESSION = {"status": "compile_error", "exit_code": 1, "missing_symbols": [],
-              "member_demands": [], "failures": [], "counts": {},
-              "excerpt": [f"{ROOT}/proj/src/main/java/x/OldThing.java:[9,20] non-static "
-                          "method contextKey() cannot be referenced from a static context"]}
+REGRESSION = {"verdict_version": 2, "status": "compile_error", "exit_code": 1,
+              "missing_symbols": [], "member_demands": [], "failures": [], "counts": {},
+              "blamed_files": ["OldThing.java"],
+              "problem_kinds": [{"file": "OldThing.java", "line": 9, "kind": "other"}]}
 live_661 = task(tid="T2-661", export="Consumer61")
 check("A25 completed-owner compile blame reopens it to queue (stall breaker)",
       tdd_engine._reopen_contract_regression(REGRESSION, live_661) is True
@@ -298,10 +308,12 @@ check("A26 same state reopens nothing once the owner is live (no churn)",
 (ROOT / "blackboard" / "queue" / "T1-050-p.json").write_text(
     json.dumps(task(tid="T1-050", export="BoxTest", deps=[], stage=1,
                    path="src/test/java/x/WidgetTest.java")))
-blamed = {"status": "compile_error", "exit_code": 1, "missing_symbols": [],
+blamed = {"verdict_version": 2, "status": "compile_error", "exit_code": 1,
+          "missing_symbols": [],
           "member_demands": [], "failures": [], "counts": {},
-          "excerpt": [f"{ROOT}/proj/src/test/java/x/WidgetTest.java:[10,3] error: incompatible types: A cannot be converted to B"],
-          }
+          "blamed_files": ["WidgetTest.java"],
+          "problem_kinds": [{"file": "WidgetTest.java", "line": 10, "kind": "other"}],
+          "excerpt": [f"{ROOT}/proj/src/test/java/x/WidgetTest.java:[10,3] error: incompatible types: A cannot be converted to B"]}
 mine = task(tid="T2-010", export="Widget", deps=("T1-050",))
 other = task(tid="T2-011", export="Widget", deps=("T1-999",))
 check("B1 the frozen test's own implementer is charged for its compile errors",
@@ -322,8 +334,8 @@ def scripted_tool(*results):
     return fake
 
 
-DECISIVE = {"status": "compile_error", "exit_code": 1, "classes": {},
-            "missing_symbols": ["Ghost"], "failures": [], "counts": {},
+DECISIVE = {"verdict_version": 2, "status": "compile_error", "exit_code": 1,
+            "classes": {}, "missing_symbols": ["Ghost"], "failures": [], "counts": {},
             "excerpt": ["cannot find symbol: class Ghost"]}
 test_gate._tool_result = scripted_tool(DECISIVE)
 reason_a, res_a = test_gate.wave_gate_verdict(task(tid="T2-501", project="pc1"), "./mvnw -Dtest=X test")
@@ -332,12 +344,18 @@ reason_b, res_b = test_gate.wave_gate_verdict(task(tid="T2-502", project="pc1"),
 check("C1 decisive module failure is shared: sibling costs ZERO builds",
       len(calls) == n and reason_b and "compile_error" in reason_b, str(calls))
 test_gate._tool_result = scripted_tool(
-    {"status": "error", "exit_code": 1, "classes": {}, "excerpt": ["boot crash"]})
+    {"verdict_version": 2, "status": "error", "exit_code": 1, "classes": {},
+     "excerpt": ["boot crash"]})
 reason_e, _ = test_gate.wave_gate_verdict(task(tid="T2-503", project="pc2"), "./mvnw -Dtest=Z test")
 check("C2 boot crash without class evidence is decisive too", reason_e and "status=error" in reason_e)
-test_gate._tool_result = scripted_tool({"status": "passed", "exit_code": 0, "classes": {}},
-                                       {"status": "passed", "exit_code": 0,
-                                        "classes": {"com.x.WTest": "passed"}, "counts": {"run": 2}})
+test_gate._tool_result = scripted_tool(
+    {"verdict_version": 2, "status": "passed", "exit_code": 0, "classes": {}},
+    {"verdict_version": 2, "status": "passed", "exit_code": 0,
+     "classes": {"com.x.WTest": "passed"}, "counts": {"run": 2},
+     # O2: the selector->class join is the TOOL's typed answer (unit_match), not an
+     # engine stem guess; the pin's behavior (per-class routing keeps a green selector
+     # from re-billing) is unchanged.
+     "unit_match": {"selector": "WTest", "class_key": "com.x.WTest", "candidates": 1}})
 reason_g, res_g = test_gate.wave_gate_verdict(task(tid="T2-504", project="pc3"), "./mvnw -Dtest=WTest test")
 check("C3 per-class evidence keeps routing (green selector)",
       reason_g is None and res_g.get("status") == "passed")
@@ -1186,12 +1204,17 @@ for _n, _stage, _dep in (("T1-820", 1, None), ("T1-821", 1, None)):
 test_gate._tool_result = lambda root, command, timeout: (
     {"status": "passed", "exit_code": 0, "classes": {}, "counts": {}}
     if "compile" in command else
-    {"status": "assertion_failure", "exit_code": 1, "counts": {"run": 4, "failures": 3},
+    {"verdict_version": 2, "status": "assertion_failure", "exit_code": 1,
+     "counts": {"run": 4, "failures": 3},
      "classes": {"ts.WidgetTest": "failed", "ts.SockTest": "failed",
                  "x.GhostTest": "failed", "ts.GearTest": "passed"},
      "excerpt": ["java.lang.IllegalArgumentException: deviceId must not be blank",
                  "at com.ts.Gear.<init>(Gear.java:9)"],
-     "failures": [{"test": "ts.WidgetTest.g", "message": "expected 0 but was 1"}]})
+     # O1: the tool types the RUNTIME frame's file; the engine joins Gear.java to its
+     # registry owner instead of scanning the frame line
+     "stack_files": ["Gear.java"],
+     "failures": [{"test": "ts.WidgetTest.g", "message": "expected 0 but was 1",
+                   "class": "ts.WidgetTest"}]})
 import contextlib as _cl
 import io as _io
 _buf = _io.StringIO()
@@ -2240,8 +2263,12 @@ _planner_docs = [(SEC_REPO / ".opencode/agents/agent-planner-architect.md").read
 check("S20 the PLANNER owns the mapping: the profile says the token-to-mechanism map is "
       "yours FROM the digest's row (a name the row does not carry is a defect to report, "
       "never a recall), and no planning brief hands out security stage-0 ids (none exist)",
-      all("You alone map a capability token" in doc for doc in _planner_docs)
-      and all("map it FROM its row" in doc for doc in _planner_docs)
+      # 2026-11-25 carrier compression: the mapping-authority sentence moved from the
+      # loop-only profiles into the per-context brief, where the session reads it with
+      # the claim law it governs
+      "YOU ALONE map a capability token" in " ".join(
+          prompts.ARCHITECT_PLANNER_PROMPT.split())
+      and "map it FROM its row" in " ".join(prompts.ARCHITECT_PLANNER_PROMPT.split())
       and "{security_ids}" not in sec_planner_msg and "security_ids" not in sec_planner_msg
       and "{security_ids}" not in prompts.ARCHITECT_PLANNER_REPAIR_PROMPT)
 check("S21 phase 1 is told the security step reads its surfaces and data model",
@@ -2573,6 +2600,169 @@ check("S26 each split agent's stated budget is the ENGINE's budget, sized for th
       f"{settings.call_budget(settings.ARCHITECT_STRATEGY_AGENT)}/"
       f"{settings.call_budget(settings.ARCHITECT_PLANNER_AGENT)}")
 
+# --- R1: two orchestrator robustness laws (2026-11-24 v4/v6 live stops).
+#     (1) the batch repair loop must not bill a round after a repair changed nothing -
+#         v6: an operator SIGTERM landed between the first refusal and the second, the
+#         engine re-emitted UNCHANGED drafts, refused identically, and launched the next
+#         session anyway; a refusal the repair cannot touch is an operator decision.
+#     (2) an agent child must never outlive the orchestrator - v4: the kill left an
+#         orphan session streaming an unread transcript and billing turns.
+import re as _r1_re
+_pipe = (Path(__file__).resolve().parents[1] / "orchestrators/pipeline.py").read_text()
+_r1_i = _pipe.find("reason = task_queue.emit_draft_batch(slug, drafted)")
+_r1_body = _pipe[_r1_i:_pipe.find("\n    if reason:", _r1_i)] if _r1_i >= 0 else ""
+_r1_claims = _pipe[:_r1_i]
+check("R1a the batch repair loop guards the NO-OP round: fingerprint the drafts before "
+      "and after each repair session and refuse to re-emit (or re-bill) identical bytes "
+      "(2026-11-24 v6 live)",
+      # (R3 2026-11-25) the fingerprint now runs over the ROUTED bucket's files:
+      # a per-bucket repair that changes nothing is still unbillable, domain or not
+      "_repair_fingerprint(slug, files) == before" in _r1_body
+      and "NOT billed" in _r1_body.replace("\n", " ")
+      and "_repair_fingerprint(slug, [context]) == before" in _r1_claims
+      and "def _repair_fingerprint(slug, contexts):" in _pipe,
+      _r1_body[:160])
+_ar = (Path(__file__).resolve().parents[1] / "orchestrators/agent_runners.py").read_text()
+_ar_cb = (Path(__file__).resolve().parents[1] / "orchestrators/copilot_backend.py").read_text()
+check("R1b every spawned child is ADOPTED and killed when the orchestrator dies: the "
+      "adoption shim + SIGTERM/SIGINT handler live in agent_runners, BOTH backends call "
+      "adopt_child, and both RELEASE on completion so the death handler only ever kills "
+      "live sessions (2026-11-24 v4 live: an orphan session billed turns after its parent "
+      "was killed)",
+      "signal.SIGTERM" in _ar and "signal.SIGINT" in _ar and "def adopt_child" in _ar
+      and "def release_child" in _ar
+      and "adopt_child(process)" in _ar and "release_child(process)" in _ar
+      and "adopt_child(process)" in _ar_cb and "release_child(process)" in _ar_cb)
+
+# R1d BEHAVIORAL: a SIGTERM'd orchestrator must leave NO agent process behind -
+# the whole point of the adoption shim (2026-11-24 v6: budget kills of the node
+# wrapper left the native copilot billed under init; a shim that only kills the
+# wrapper is a shim that does not work).
+import os as _r1d_os
+import signal as _r1d_signal
+import subprocess as _r1d_sub
+import time as _r1d_time
+
+_R1D_PARENT = (
+    "import sys, time, os\n"
+    "sys.path.insert(0, str(%r))\n"
+    "import agent_runners\n"
+    "p = agent_runners.subprocess.Popen([sys.executable, '-c', 'import time;"
+    "subprocess.Popen([\'sleep\', \'300\']) as _; print(_, flush=True); time.sleep(280)'],"
+    " stdout=-1, text=True, start_new_session=True)\n"
+    "agent_runners.adopt_child(p)\n"
+    "pid = int(p.stdout.readline())\n"
+    "print('CHILD', pid, 'RUNNER', os.getpid(), flush=True)\n"
+    "time.sleep(200)\n" % (str(Path(__file__).resolve().parents[1] / "orchestrators"),)
+)
+# the grandchild sleep is captured by the PARENT's group, not the child's own group;
+# kill_child(process) SIGKILLs the registered child's GROUP, so a wrapper+native tree
+# dies as one. The probe asserts the grandchild of a SIGTERM'd parent is gone.
+_R1D_GRAND = (
+    "import subprocess, time, sys\n"
+    "kid = subprocess.Popen(['sleep', '300'])\n"
+    "print(kid.pid, flush=True)\n"
+    "time.sleep(280)\n"
+)
+_R1D_RUNNER = (
+    "import sys, time, os\n"
+    "sys.path.insert(0, str(%r))\n"
+    "import agent_runners\n"
+    "p = agent_runners.subprocess.Popen([sys.executable, '-c', %r],\n"
+    "                                  stdout=-1, text=True, start_new_session=True)\n"
+    "agent_runners.adopt_child(p)\n"
+    "gp = int(p.stdout.readline())\n"
+    "print('GRAND', gp, 'RUNNER', os.getpid(), flush=True)\n"
+    "time.sleep(200)\n" % (str(Path(__file__).resolve().parents[1] / "orchestrators"),
+                           _R1D_GRAND)
+)
+_r1d_r = _r1d_sub.Popen([sys.executable, "-c", _R1D_RUNNER],
+                        stdout=_r1d_sub.PIPE, text=True,
+                        cwd=str(Path(__file__).resolve().parents[1]))
+try:
+    _r1d_line = _r1d_r.stdout.readline().split()
+    _r1d_grand = int(_r1d_line[1])
+    _r1d_runner = int(_r1d_line[3])
+    _r1d_time.sleep(0.5)
+    _r1d_os.kill(_r1d_runner, _r1d_signal.SIGTERM)
+    _r1d_time.sleep(1.5)
+except (ValueError, IndexError):
+    _r1d_grand, _r1d_runner = 0, 0
+    print("[probe] R1d could not read the runner's pid line")
+_r1d_alive = _r1d_grand > 0 and _r1d_os.path.exists(f"/proc/{_r1d_grand}")
+try:
+    _r1d_r.wait(timeout=10)
+except Exception:
+    pass
+if _r1d_alive:
+    _r1d_os.kill(_r1d_grand, _r1d_signal.SIGKILL)
+check("R1d a SIGTERM'd orchestrator leaves NO agent process behind (behavioral: a real "
+      "two-level spawn is TERM'd and the grandchild is reaped or the probe fails - the "
+      "group kill, not the wrapper kill, is what the adoption shim exists for)",
+      not _r1d_alive, f"grandchild {_r1d_grand} survived the parent's death")
+
+# --- R2: the (p)-slice / format-mixing exception is stated by every carrier the
+#     planning session reads, and the mixed draft the law demands is accepted by the
+#     real validator (2026-11-24 v6: a mixing ban with no stated exception met the (p)
+#     law and the session resolved the contradiction by DROPPING the requirement).
+_p_brief = (Path(__file__).resolve().parents[1] / "orchestrators/prompts.py").read_text()
+_p_prof0 = (Path(__file__).resolve().parents[1] / ".github/agents/agent-planner-architect.agent.md").read_text()
+_p_prof1 = (Path(__file__).resolve().parents[1] / ".opencode/agents/agent-planner-architect.md").read_text()
+_p_qr = (Path(__file__).resolve().parents[1] / ".opencode/skills/architect-practices/task-decomposition-dag/QUICKREF.md").read_text()
+_p_skill = (Path(__file__).resolve().parents[1] / ".opencode/skills"
+            / "architect-practices/task-decomposition-dag/SKILL.md").read_text()
+check("R2a the (p) slice's lone stage-1 is the ONE named exception to one-shape-per-file "
+      "in every LAW carrier a planning session reads (brief, quickref, contract) - the "
+      "loop-only profiles defer the shape to the map (2026-11-25 carrier compression)",
+      all("the (p) slice's lone stage-1" in " ".join(_txt.split())
+          for _txt in (_p_brief, _p_qr, _p_skill)))
+
+_mixed_batch = [{
+    "n": 7, "project": "mixing-smoke", "layer": "domain", "feature": None,
+    "dependsOn": ["T0-001"],
+    "test": {"path": "src/test/java/x/CounterTest.java", "export": "CounterTest",
+             "intent": "Counter counts up and resets at the cap: two increments assert 2, "
+                       "reset asserts 0."},
+    "code": {"path": "src/main/java/x/Counter.java", "export": "Counter",
+             "intent": "Counter increments and wraps at the configured cap.",
+             "ast_hints": {"package": "x", "implements": [], "dependencies": [],
+                           "methods": [{"signature": "int next()", "returns": "int"}]}}},
+    {"id": "T1-008", "targetAgent": "agent-tester", "stage": 1,
+     "dependsOn": ["T0-001"], "path": "src/test/java/x/IngressSliceTest.java",
+     "kind": "test", "layer": "interface", "feature": None, "export": "IngressSliceTest",
+     "project": "mixing-smoke",
+     "intent": "End-to-end slice drives the inbound request against the embedded store "
+               "and asserts the durable row."}]
+_mixed_exp, _mixed_errs = task_queue.expand_unit_draft(_mixed_batch)
+_mixed_scaffold = {"id": "T0-001", "targetAgent": settings.STAGE_AGENTS[0],
+                   "stage": 0, "dependsOn": [], "path": "pom.xml", "kind": "bootstrap",
+                   "layer": "root", "feature": None, "export": "project_scaffold",
+                   "project": "mixing-smoke", "intent": "scaffold",
+                   "ast_hints": {"package": "x", "implements": [], "dependencies": [],
+                                  "methods": []}}
+_ar_src = (Path(__file__).resolve().parents[1] / "orchestrators/agent_runners.py").read_text()
+_cb_src = (Path(__file__).resolve().parents[1] / "orchestrators/copilot_backend.py").read_text()
+_r1c_adopt = (_ar_src[:_ar_src.find("def _dying")].count("adopt_child(process)")
+              + _cb_src[:_cb_src.find("def run_discovery")].count("adopt_child(process)"))
+# the call sites, not the def: agent_runners adopts inside _run_agent (4-space call),
+# copilot_backend through the module reference; the helpers' own defs never match.
+_r1c = ("\n    adopt_child(process)\n" in _ar_src
+        and "agent_runners.adopt_child(process)" in _cb_src)
+check("R1c the adopt call sits on the SPAWN path of both backends (module import of "
+      "agent_runners included in copilot) and both spawn with start_new_session so "
+      "kill_child can hit the group",
+      "import agent_runners" in _cb_src and _r1c
+      and "start_new_session=True" in _ar_src
+      and "start_new_session=True" in _cb_src,
+      "start_new_session=True" in _cb_src[:_cb_src.find("def run_discovery")])
+check("R2b the MIXED draft the (p) law demands - a compact triad plus a lone stage-1 "
+      "object - expands and validates without error: the gate accepts what the carriers "
+      "teach (a law the validator contradicts is a format rule that eats requirements)",
+      _mixed_errs == [] and [x["id"] for x in _mixed_exp] == ["T1-007", "T2-007", "T3-007", "T1-008"]
+      and tasks_mod.validate(_mixed_exp[0], {**{x["id"]: x for x in _mixed_exp},
+                                             "T0-001": _mixed_scaffold}) is None,
+      str(_mixed_errs)[:160])
+
 # --- SA. the risk register stops being a write-only field (2026-11-18).
 #     `risks[]` was required to EXIST, its ids even resolved `spec_ref` citations, and then nothing read
 #     its contents - while rule (y) and the profiles offered "an added unit OR a reported risk" as the
@@ -2834,10 +3024,11 @@ check("SD5 the build-manifest duty has a lawful channel in EVERY carrier the sec
       "profiles teach it, the fatal states the remedy, the planning table names its channel, "
       "and the validator accepts the exact shape (layer root, empty dependsOn, kind bootstrap) "
       "while still refusing a staged manifest",
-      "build-manifest duty" in _tasks_brief and "dependsOn empty" in _tasks_brief
-      and all("build-manifest bootstrap" in b for b in _sd_profiles)
-      and "Remedy" in _closeout_src and "build-manifest duty" in _closeout_src
-      and "ONE lawful stage-0 task" in _sec_plan_skill
+      "queued by the ENGINE from the stack table" in " ".join(_tasks_brief.split())
+      and "You NEVER schedule a manifest" in " ".join(_tasks_brief.split())
+      and all("schedule none" in b for b in _sd_profiles)
+      and "Remedy" in _closeout_src and "build-manifest" in _closeout_src
+      and "PHASE 1.5" in _sec_plan_skill
       and tasks_mod.validate(_manifest_task, {}, planning=True) is None
       and bool(tasks_mod.validate(_bad_manifest, {}, planning=True)),
       str(tasks_mod.validate(_manifest_task, {}, planning=True))[:160])
@@ -2884,14 +3075,15 @@ _orig_ext = test_gate.external_type_index
 test_gate.external_type_index = lambda root: {"DatabaseClient": ["org.springframework.r2dbc.core.DatabaseClient"]}
 _hole_task = {"id": "T2-037", "project": "holeproj",
               "path": "src/test/java/x/SliceTestSupport.java"}
-_hallucinated = {"status": "compile_error", "missing_symbols": ["Parameters"], "member_demands": [],
-                 "excerpt": ["[ERROR] /x/R2dbcTelemetryRecordRepository.java:[13,38] cannot find symbol",
-                             "[ERROR]   symbol:   class Parameters",
-                             "[ERROR]   location: package org.springframework.r2dbc.core"]}
-_unknown_pkg = {"status": "compile_error", "missing_symbols": ["Ghost"], "member_demands": [],
-                "excerpt": ["[ERROR] /x/A.java:[3,29] cannot find symbol",
-                            "[ERROR]   symbol:   class Ghost",
-                            "[ERROR]   location: package com.nosuch.pkg"]}
+_hallucinated = {"verdict_version": 2, "status": "compile_error",
+                 "missing_symbols": ["Parameters"], "member_demands": [],
+                 "package_symbol_demands": [{"symbol": "Parameters",
+                                             "package": "org.springframework.r2dbc.core"}],
+                 "blamed_files": ["R2dbcTelemetryRecordRepository.java"]}
+_unknown_pkg = {"verdict_version": 2, "status": "compile_error",
+                "missing_symbols": ["Ghost"], "member_demands": [],
+                "package_symbol_demands": [{"symbol": "Ghost", "package": "com.nosuch.pkg"}],
+                "blamed_files": ["A.java"]}
 _holes_hallucinated = tdd_engine._unresolvable_missing(_hallucinated, _hole_task)
 _holes_unknown = tdd_engine._unresolvable_missing(_unknown_pkg, _hole_task)
 test_gate.external_type_index = _orig_ext
@@ -2935,19 +3127,22 @@ _sd12_peer = {"id": "T2-780", "stage": 2, "project": "multk", "targetAgent": "ag
 (settings.QUEUE_DIR / "T2-019-multk.json").write_text(json.dumps(_sd12_task))
 _ext11 = test_gate.external_type_index
 test_gate.external_type_index = lambda root: {"DatabaseClient": ["org.springframework.r2dbc.core.DatabaseClient"]}
-_sd12_result = {"status": "compile_error", "exit_code": 1,
-                "missing_symbols": ["Parameters", "LATE"], "bean_demands": [], "problem_kinds": [],
+_sd12_result = {"verdict_version": 2, "status": "compile_error", "exit_code": 1,
+                "missing_symbols": ["Parameters", "LATE"], "bean_demands": [],
+                "problem_kinds": [{"file": "R2dbcTelemetryRecordRepository.java", "line": 13,
+                                   "kind": "missing-symbol"},
+                                  {"file": "IngestPacketUseCase.java", "line": 84,
+                                   "kind": "missing-symbol"}],
+                "blamed_files": ["R2dbcTelemetryRecordRepository.java",
+                                 "IngestPacketUseCase.java"],
+                "package_symbol_demands": [{"symbol": "Parameters",
+                                            "package": "org.springframework.r2dbc.core"}],
                 "member_demands": [{"member": "LATE", "owner": "ValidationStatus",
                                     "kind": "variable"}],
-                "excerpt": ["[ERROR] /x/R2dbcTelemetryRecordRepository.java:[13,38] cannot find symbol",
-                            "[ERROR]   symbol:   class Parameters",
-                            "[ERROR]   location: package org.springframework.r2dbc.core",
-                            "[ERROR] /x/IngestPacketUseCase.java:[84,85] cannot find symbol",
-                            "[ERROR]   symbol:   variable LATE",
-                            "[ERROR]   location: class com.x.ValidationStatus"]}
+                "excerpt": ["[ERROR] /x/R2dbcTelemetryRecordRepository.java:[13,38] cannot find symbol"]}
 _sd12_charged = tdd_engine._blocked_by_peers(_sd12_result, _sd12_task)
 _sd12_control = json.loads(json.dumps(_sd12_result))
-_sd12_control["excerpt"][2] = "[ERROR]   location: package com.nosuch.library"
+_sd12_control["package_symbol_demands"][0]["package"] = "com.nosuch.library"
 _sd12_control["missing_symbols"] = ["Ghost"]
 _sd12_deferred = tdd_engine._blocked_by_peers(_sd12_control, _sd12_task)
 test_gate.external_type_index = _ext11
@@ -2969,16 +3164,37 @@ _sd13_dump.write_text("# Created at 2026-11-18T17:11:39.227\nTruncated class fil
 _sd13_detected = test_gate._fork_boot_corruption(_sd13_root)
 _sd13_dump.unlink()
 _sd13_clean = test_gate._fork_boot_corruption(_sd13_root)
-_sd13_reports.rmdir()
-(_sd13_root / "target").rmdir()
-_sd13_root.rmdir()
+# (2026-11-25 review fix) the SAME wound in the other stacks: a Gradle fork crash
+# reports under build/test-results, and a killed tsc build leaves a TRUNCATED
+# .tsbuildinfo that poisons every later run before any test exists
+(_sd13_root / "build" / "test-results").mkdir(parents=True)
+_sd13_gradle = _sd13_root / "build" / "test-results" / "attach-jvmRun1.dumpstream"
+_sd13_gradle.write_text("Error while running fork\n")
+_sd13_gradle_detected = test_gate._fork_boot_corruption(_sd13_root)
+_sd13_gradle.unlink()
+_sd13_tsinfo = _sd13_root / "tsconfig.tsbuildinfo"
+_sd13_tsinfo.write_text("{\"program\": {\"half-wri")
+_sd13_tsc_detected = test_gate._fork_boot_corruption(_sd13_root)
+_sd13_healed = test_gate.heal_interrupted_build(_sd13_root)
+_sd13_after_heal = test_gate._fork_boot_corruption(_sd13_root)
+# heal_interrupted_build already removed target/ and build/ wholesale - exactly
+# what a killed build leaves the next build to inhale; only the fixture root survives
+import shutil as _sd13_sh
+_sd13_sh.rmtree(_sd13_root, ignore_errors=True)
 check("SD13 the engine recognizes a FORK BOOT death on corrupted build output as a tooling "
       "wound, not a verdict (2026-11-18 live: an operator SIGTERM during an mvn build left a "
       "truncated .class; every forked JVM then died before running a single test - status=error, "
       "tests=0 - and the wave/memo/ledger machinery laundered that empty verdict into a tree-wide "
       "fact, charging units and closing 'informed' replays on a failure nobody's code caused): "
-      "the detector reads the surefire dumpstreams and distinguishes wound from clean",
-      _sd13_detected and not _sd13_clean)
+      "the detector reads the surefire dumpstreams and distinguishes wound from clean; "
+      "the SAME wound via Gradle's build/test-results dumps or a truncated TypeScript "
+      "incremental cache is recognized too, and heal_interrupted_build deletes every "
+      "regenerable output that exists (2026-11-25 review fix - the recovery was "
+      "Maven-only, a SIGTERM inside a gradle/tsc build became a phantom board-wide "
+      "defect)",
+      _sd13_detected and not _sd13_clean
+      and _sd13_gradle_detected and _sd13_tsc_detected
+      and "tsconfig.tsbuildinfo" in _sd13_healed and not _sd13_after_heal)
 _gate_src_sd13 = inspect.getsource(test_gate.green_test_result)
 _wave_src_sd13 = inspect.getsource(test_gate.wave_gate_verdict)
 _term_src_sd13 = inspect.getsource(tdd_engine.terminal_suite_gate)
@@ -2989,7 +3205,10 @@ check("SD13b the corruption repair path exists at every door: the scoped gate wi
       and _gate_src_sd13.index("_fork_boot_corruption")
       < _gate_src_sd13.index('if result.get("status") == "passed":')
       and "_fork_boot_corruption" in _wave_src_sd13
-      and "rmtree" in _term_src_sd13 and "_fork_boot_corruption" in _term_src_sd13)
+      # (2026-11-25 review fix) the wipe moved from a Maven-literal rmtree(root/"target")
+      # at every door to ONE heal boundary knowing every regenerable output directory
+      and "heal_interrupted_build" in _term_src_sd13
+      and "_fork_boot_corruption" in _term_src_sd13)
 _sd14_err = settings.ERROR_DIR / "T2-791-multipoison.json"
 _sd14_err.write_text(json.dumps({"id": "T2-791", "error": "test gate: ... [WOVEN-CLEAN: payload "
                                  "compiles and the suite completes with it in the tree]"}))
@@ -3032,12 +3251,12 @@ _sd9_self = {"id": "T2-778", "targetAgent": "agent-coder", "stage": 2, "dependsO
              "feature": None, "export": "com.x.Color", "intent": "the enum itself",
              "project": "mult9"}
 (settings.QUEUE_DIR / "T2-777-mult9.json").write_text(json.dumps(_sd9_peer))
-_sd9_result = {"status": "compile_error", "exit_code": 1, "missing_symbols": ["LATE"],
+_sd9_result = {"verdict_version": 2, "status": "compile_error", "exit_code": 1,
+               "missing_symbols": ["LATE"],
                "member_demands": [{"owner": "com.x.Color", "kind": "variable", "member": "LATE"}],
                "problem_kinds": [], "bean_demands": [],
-               "excerpt": ["[ERROR] /x/Caller.java:[7,99] cannot find symbol",
-                           "[ERROR]   symbol:   variable LATE",
-                           "[ERROR]   location: class com.x.Color"]}
+               "blamed_files": ["Caller.java"],
+               "excerpt": ["[ERROR] /x/Caller.java:[7,99] cannot find symbol"]}
 _sd9_method = json.loads(json.dumps(_sd9_result))
 _sd9_method["member_demands"][0]["kind"] = "method"
 _sd9_blocked_const = tdd_engine._blocked_by_peers(_sd9_result, _sd9_self)
@@ -3228,10 +3447,16 @@ for record in twin_bad:
                                           "duty": "uses"}]
 voc_reset()
 rc_sf = emit(twin_bad)
-check("SF8 the test/code twins of one unit carrying DIFFERENT tables is REFUSED (z4) - the "
-      "prompt said IDENTICAL since the table existed; nothing enforced it, and the seed-002 "
-      "regen proved what a divergent twin freezes",
-      bool(rc_sf) and "DIFFERENT ast_hints" in str(rc_sf), str(rc_sf)[:220])
+_sf8_twin = json.loads((settings.QUEUE_DIR / "T1-642-voc.json").read_text())
+check("SF8 the test/code twins of one unit carrying DIFFERENT tables is HEALED, not "
+      "refused (2026-11-25 wire tier): the CODE side owns the interface and the engine "
+      "mirrors its table onto the test twin before the joins read it - the carriers "
+      "promised 'z4 by construction' since the compact form shipped, a BOARD-object "
+      "draft kept two typed copies, and the v5 run paid a full repair round for a drift "
+      "it manufactured itself; the emitted T1 now carries the code-side table byte-"
+      "identical, the pair freeze class cannot recur at any tier (seed-002 regen)",
+      rc_sf is None and _sf8_twin["ast_hints"] == twin_bad[4]["ast_hints"],
+      str(rc_sf)[:220])
 
 board_twin = voc_pair(641, VOC_FACADE_OK, VOC_CONS_OK)
 for record in board_twin:
@@ -3395,10 +3620,18 @@ check("SF14 the citation pair ACCEPTS across relaxed-binding spellings (the writ
 cfg_reset()
 rc_sf = emit(cfg_units(632, {"package": "com.cfg", "implements": [], "dependencies": [],
                              "methods": []}))
-check("SF15 once the domain tables property paths, the config-artifact unit MUST table what its "
-      "document seeds - an untabled writer is a key a later reader may reshape unseen (z5)",
-      bool(rc_sf) and "carries none" in str(rc_sf), str(rc_sf)[:260])
-cfg_reset()
+_sf15_written = json.loads((settings.QUEUE_DIR / "T2-633-cfg.json").read_text())
+check("SF15 coverage is a WIRE, not a refusal and not a typing job (2026-11-25 PHASE "
+      "1.5): a configuration-artifact unit that carries no table while the board tables "
+      "paths receives EVERY binder entry VERBATIM at the batch - kind and element fields "
+      "included - so the shape stays owned by the record that binds it and the document "
+      "unit still answers for the full surface (the old empty-table refusal taught "
+      "sessions to copy; the wire makes the copy deterministic and frees the lint to "
+      "judge completeness)",
+      rc_sf is None
+      and [str(e.get("path")) for e in _sf15_written["ast_hints"]["config"]] == ["demo.creds"]
+      and _sf15_written["ast_hints"]["config"][0].get("kind") == "list", str(rc_sf)[:260])
+
 
 CHN_SLUG = "chn"
 
@@ -3453,12 +3686,22 @@ def chn_reset():
 chn_reset()
 rc_sf = emit(chn_batch([{"type": "GuardCfg", "task_id": "T2-676"}],
                        CHAIN_METHODS, CHAIN_DEPS))
-check("SF16 the R3 shape is REFUSED at emit: the surface pins its guard but not the guard's "
-      "own concrete product (the manager its bean method builds from) - the slice importing "
-      "the chain died NoSuchBeanDefinition 3/3 while its twin, which pinned the manager, "
-      "loaded (rule (z6))",
-      bool(rc_sf) and "managerbean" in str(rc_sf).lower() and "T2-676" in str(rc_sf)
-      and "T2-677" in str(rc_sf), str(rc_sf)[:300])
+_sf16 = json.loads((settings.QUEUE_DIR / f"T2-677-{CHN_SLUG}.json").read_text())
+check("SF16 the R3 shape is CLOSED BY THE ENGINE at the batch (2026-11-25 bottleneck pass: "
+      "z6's transitive pin closure is graph arithmetic - sessions drifted it and paid a "
+      "repair family for it; the manifest wire SP10 proved the pattern): the surface that "
+      "pins its guard but not the guard's own concrete product gets the missing "
+      "{type, task_id} collaborator AND the dependsOn edge written into the EMITTED record "
+      "- the batch no longer refuses what Python can complete, and _shared_literal_errors "
+      "keeps the join as the assertion behind the wire (rule (z6) as wiring, not typing)",
+      rc_sf is None
+      and {"type": "ManagerBean", "task_id": "T2-675"}
+          in _sf16["ast_hints"]["dependencies"]
+      and "T2-675" in _sf16["dependsOn"]
+      and {"type": "ManagerBean", "task_id": "T2-675"} in json.loads(
+          (settings.QUEUE_DIR / f"T1-677-{CHN_SLUG}.json").read_text()
+      )["ast_hints"]["dependencies"],
+      str(rc_sf)[:300])
 chn_reset()
 rc_sf = emit(chn_batch([{"type": "GuardCfg", "task_id": "T2-676"},
                         {"type": "ManagerBean", "task_id": "T2-675"}],
@@ -4029,7 +4272,20 @@ try:
           "full digest (the repair pass's input); attribution and the first-slice home still "
           "hold, and BOTH slice prefixes prune superseded context names",
           _sl_problems == [] and _sl.get("context") == _dg_first
-          and len(_sl["duties"]) == len(_dg_duties)
+          and len(_sl["duties"]) == len([d for d in _dg_duties
+                                         if ddd._duty_context(d, _dg["rules"],
+                                                              _dg["surfaces"]) == _dg_first])
+          and _dg_duties
+          and len(json.loads(
+              ddd.write_phase2_digest_slice(SEC_SLUG, ddd.ROOT_CONTEXT)[0]
+              .read_text(encoding="utf-8"))["duties"]) == len([d for d in _dg_duties
+                                                               if ddd._duty_context(
+                                                                   d, _dg["rules"],
+                                                                   _dg["surfaces"]) is None])
+          and all(ddd._duty_context(d, _dg["rules"], _dg["surfaces"]) is None
+                  for d in json.loads(
+                      ddd.write_phase2_digest_slice(SEC_SLUG, ddd.ROOT_CONTEXT)[0]
+                      .read_text(encoding="utf-8"))["duties"])
           and all(set(d.keys()) <= set(ddd.SLICE_DUTY_KEYS) for d in _sl["duties"])
           and all(("surface" in d and "test_duty" in d) for d in _sl["duties"]
                   if d.get("spec") == "security"
@@ -4037,6 +4293,10 @@ try:
           and all(not (d.get("table_row") or {}).get("header") for d in _sl["duties"])
           and all("rows" not in m for m in _sl.get("mechanisms", {}).values())
           and not any(k in _sl for k in ("rules", "surfaces", "data_model", "observability"))
+          # the ROOT slice is the DOCUMENTED exemption: it owns the whole-domain keys
+          and all(k in json.loads(ddd.write_phase2_digest_slice(
+              SEC_SLUG, ddd.ROOT_CONTEXT)[0].read_text(encoding="utf-8"))
+              for k in ("rules", "surfaces"))
           and not (Path("/tmp") / f"phase2-slice-{SEC_SLUG}-ghost-context.json").exists()
           and not (Path("/tmp") / f"strategy-slice-{SEC_SLUG}-ghost-context.json").exists()
           and (_dg.get("draft_order")[-1] == _dg_first
@@ -4411,134 +4671,149 @@ try:
       and "spring-boot-starter-security" in _sp_syms2["build_manifest"][0]["intent"]
       and {u["stage"] for u in _sp_syms2["units"]} == {2})
 
-    # SP7 (X11, 2026-11-20 operator catch): the split's "report the gap" branch must LAND
-    # somewhere the machine reads. Context A schedules the ONE build-manifest with the
-    # coordinates A knows; context B may neither duplicate the task nor edit A's file - B
-    # writes its gap to the structured file, and apply_coordinate_gaps appends it, verbatim
-    # and idempotently, to the ONE task BEFORE the batch emit. A report with no manifest to
-    # amend is a repair-grade problem, never a silent pass.
+    # SP7 (PHASE 1.5, 2026-11-25 root restructure): the ONE stage-0 build manifest is
+    # ENGINE data. plan_build_manifest reads the digest's build_coordinates rows (the
+    # stack table's machine rows), filters conditional SCOPE cells against the PLANNED
+    # capability set, and queues the single task before any session runs - the first-
+    # drafter bootstrap, the missing_coordinates channel and the asymmetric first-
+    # context load are all deleted. Conditional rows test the safe direction: a planned
+    # capability schedules its row, an unplanned one does not, and the unconditional
+    # plus test-scope rows always land (an under-included coordinate kills the first
+    # red compile; an over-included one costs one inert dependency).
     _SP7_SLUG = "sply"
     task_queue.clear_drafts(_SP7_SLUG)
 
-    def _sp7_manifest(mid, coord):
-        return {"id": mid, "targetAgent": "agent-container", "stage": 0, "dependsOn": [],
-                "path": "pom.xml", "kind": "bootstrap", "layer": "root", "feature": None,
-                "export": "build-manifest", "project": _SP7_SLUG,
-                "intent": f"Add {coord} to the build file; the parent owns versions."}
+    def _sp7_digest_file(slug, rows, caps):
+        Path(f"/tmp/phase2-digest-{slug}.json").write_text(json.dumps({
+            "slug": slug,
+            "duties": [{"spec": "security", "spec_ref": f"AZ-{i:02d}", "capability": c}
+                       for i, c in enumerate(caps, 1)],
+            "build_coordinates": {"security": {"table": "t.md", "rows": rows}},
+        }), encoding="utf-8")
 
-    def _sp7_task(tid, export):
-        return {"id": tid, "targetAgent": settings.STAGE_AGENTS[2], "stage": 2,
-                "dependsOn": [_sp7_m],
-                "path": f"src/main/java/m/{export}.java",
-                "kind": "code", "layer": "domain", "feature": None, "export": export,
-                "project": _SP7_SLUG,
-                "intent": f"{export} owns its state through the tabled methods.",
-                "ast_hints": {"package": "com.m.sply", "implements": [], "dependencies": [],
-                              "methods": [{"signature": "go()", "returns": "void"}],
-                              "meters": [], "routes": [], "config": []}}
+    _sp7_rows = [["org.example:starter-security", "compile"],
+                 ["org.example:starter-bearer",
+                  "compile, ONLY when `bearer-jwt-proof` is planned"],
+                 ["org.example:starter-validation", "compile, with `boundary-validation`"],
+                 ["org.example:test-lib", "**test**"]]
+    (settings.QUEUE_DIR / f"T0-730-{_SP7_SLUG}.json").write_text(json.dumps(
+        {"id": "T0-730", "targetAgent": settings.STAGE_AGENTS[0], "stage": 0,
+         "dependsOn": [], "path": "pom.xml", "kind": settings.STAGE_KINDS[0][0],
+         "layer": "root", "feature": None, "export": "project_scaffold",
+         "project": _SP7_SLUG, "intent": "Generate the project root"}))
+    _sp7_real = ddd.write_phase2_digest
+    try:
+        ddd.write_phase2_digest = lambda slug: (
+            Path(f"/tmp/phase2-digest-{slug}.json"), [])
+        _sp7_digest_file(_SP7_SLUG, _sp7_rows,
+                         ["device-credential-proof", "bearer-jwt-proof"])
+        _sp7_id, _sp7_notes, _sp7_probs = ddd.plan_build_manifest(_SP7_SLUG)
+        _sp7_rec = json.loads((settings.QUEUE_DIR
+                               / f"{_sp7_id}-{_SP7_SLUG}.json").read_text())
+        _sp7_again_id, _sp7_again_notes, _ = ddd.plan_build_manifest(_SP7_SLUG)
+        _sp7_bytes2 = (settings.QUEUE_DIR
+                       / f"{_sp7_id}-{_SP7_SLUG}.json").read_text()
+        _sp7_digest_file("splm", [], [])
+        _sp7_none_id, _sp7_none_notes, _sp7_none_probs = ddd.plan_build_manifest("splm")
+        _sp7_digest_file("spqz", [["org.example:starter-security", "compile"]],
+                         ["device-credential-proof"])
+        _sp7_scaffoldless_id, _, _sp7_scaffoldless_probs = ddd.plan_build_manifest("spqz")
+        check("SP7 the ONE stage-0 build manifest is PHASE 1.5 ENGINE data: the "
+              "unconditional row and the test-scope row are always scheduled, a "
+              "conditional row lands exactly when its capability is planned and stays "
+              "out when it is not, the queued record is the stage-0 bootstrap shape at "
+              "the scaffold's own build-file path, a second call keeps the already-"
+              "queued record byte-exact and names it (resume idempotence), an empty "
+              "row set schedules NOTHING with a disclosed note, and rows with no "
+              "scaffold on the board STOP naming phase 1 - no session ever schedules "
+              "or patches the manifest again (2026-11-25: before this move 'whichever "
+              "context drafts first' owned it and siblings patched through gaps files)",
+          _sp7_probs == [] and _sp7_id is not None
+          and _sp7_rec["export"] == "build-manifest" and _sp7_rec["path"] == "pom.xml"
+          and _sp7_rec["stage"] == 0
+          and _sp7_rec["targetAgent"] == settings.STAGE_AGENTS[0]
+          and "org.example:starter-security" in _sp7_rec["intent"]
+          and "org.example:starter-bearer" in _sp7_rec["intent"]
+          and "org.example:test-lib" in _sp7_rec["intent"]
+          and "starter-validation" not in _sp7_rec["intent"]
+          and _sp7_again_id == _sp7_id
+          and any("already" in n for n in _sp7_again_notes)
+          and _sp7_bytes2 == (settings.QUEUE_DIR
+                              / f"{_sp7_id}-{_SP7_SLUG}.json").read_text()
+          and _sp7_none_id is None and _sp7_none_probs == []
+          and any("NO manifest" in n for n in _sp7_none_notes)
+          and _sp7_scaffoldless_id is None and _sp7_scaffoldless_probs
+          and "phase 1" in _sp7_scaffoldless_probs[0],
+          f"{_sp7_probs} {_sp7_none_notes} {_sp7_scaffoldless_probs} "
+          + json.dumps(_sp7_rec)[:200])
+    finally:
+        ddd.write_phase2_digest = _sp7_real
+    _sp7_legacy = task_queue.apply_coordinate_gaps(_SP7_SLUG, ["Ghost"])
+    check("SP7b the deleted gap channel stays callable as an honest no-op: "
+          "apply_coordinate_gaps returns ([], []) for any input, so a resume that "
+          "still holds an old .gaps.json can neither ghost-patch nor ghost-refuse",
+      _sp7_legacy == ([], []))
 
-    _sp7_m = task_queue.next_task_id(0)
-    _sp7_t1 = task_queue.next_task_id(2)
-    _sp7_t2 = f"T2-{int(_sp7_t1.split('-')[1]) + 1:03d}"
-    _sp7_alpha = task_queue.draft_path(_SP7_SLUG, "Alpha")
-    _sp7_beta = task_queue.draft_path(_SP7_SLUG, "Beta")
-    _sp7_alpha.write_text(json.dumps([
-        _sp7_manifest(_sp7_m, "org.example:starter-a"), _sp7_task(_sp7_t1, "AlphaOne")]),
-        encoding="utf-8")
-    _sp7_beta.write_text(json.dumps([_sp7_task(_sp7_t2, "BetaOne")]), encoding="utf-8")
-    task_queue.gaps_path(_SP7_SLUG, "Beta").write_text(json.dumps(
-        {"missing_coordinates": ["org.example:starter-a", "org.example:starter-b"]}),
-        encoding="utf-8")
-    _sp7_problems, _sp7_notes = task_queue.apply_coordinate_gaps(_SP7_SLUG, ["Alpha", "Beta"])
-    _sp7_intent = json.loads(_sp7_alpha.read_text(encoding="utf-8"))[0]["intent"]
-    _sp7_again_problems, _sp7_again_notes = task_queue.apply_coordinate_gaps(
-        _SP7_SLUG, ["Alpha", "Beta"])
-    _sp7_emit = task_queue.emit_draft_batch(_SP7_SLUG, ["Alpha", "Beta"])
-    # and the lonely-report shape: a gap with no manifest task anywhere is a problem line,
-    # not a silent success (bare-list gaps shape is accepted too)
-    _SP8_SLUG = "splz"
-    _sp8_gap = task_queue.gaps_path(_SP8_SLUG, "Solo")
-    _sp8_gap.parent.mkdir(parents=True, exist_ok=True)
-    _sp8_gap.write_text(json.dumps(["org.example:orphan"]), encoding="utf-8")
-    _sp8_problems, _ = task_queue.apply_coordinate_gaps(_SP8_SLUG, ["Solo"])
-    check("SP7 the gap report is machine-consumed before the batch emit: B's coordinate is "
-          "appended VERBATIM to the ONE build-manifest task in A's file (B never touched "
-          "it, the ENGINE did), the coordinate B re-reported as already carried is not "
-          "doubled, a second apply is a no-op (idempotent), the emitted batch then carries "
-          "the amended intent, and a report with NO manifest to amend is a repair-grade "
-          "problem line naming the coordinates (2026-11-20: the profile's 'report the gap' "
-          "otherwise died in the transcript, and the missing coordinate surfaced only as "
-          "the first red compile - the D4 class reborn through the split)",
-      _sp7_problems == []
-      and "org.example:starter-b" in _sp7_intent
-      and _sp7_intent.count("org.example:starter-a") == 1
-      and any("starter-b" in n and _sp7_m in n for n in _sp7_notes)
-      and _sp7_again_problems == []
-      and not any("appended" in n for n in _sp7_again_notes)
-      and _sp7_emit is None
-      and _sp8_problems and "NO build-manifest task" in _sp8_problems[0]
-      and "org.example:orphan" in _sp8_problems[0])
-
-    # SP8 (2026-11-20 resume economics, measured live): the budget-killed planner's draft
-    # was LINT-CLEAN - the run's RESULT - yet the next launch wiped every draft
-    # unconditionally and would re-bill the whole context for it. Freshness is now the
-    # keep/drop rule: a draft newer than every plan input is claimed without a session;
-    # an input rewrite older-dates it and only that context re-plans.
+    # SP8 (2026-11-20 resume economics; RE-HOMED 2026-11-25 to CONTENT HASHES - R2):
+    # the budget-killed planner's draft was LINT-CLEAN - the run's RESULT - yet the
+    # next launch wiped every draft unconditionally and would re-bill the whole
+    # context for it. Freshness is now a hash contract, not a wall-clock race: the
+    # sidecar claim stamps carries the exact bytes of every binding input the draft
+    # was validated against; a rewrite of a binding input flips it, an edit of the
+    # derivative map does not, and touch-only churn re-bills NOTHING (the mtime
+    # design re-billed provably compliant drafts whenever a doc was resaved).
     import os as _os
     _SP8b_SLUG = "splw"
     task_queue.clear_drafts(_SP8b_SLUG)
     _sp8_strategy = settings.COMPLETE_DIR / f"execution-strategy-{_SP8b_SLUG}.json"
     _sp8_strategy.write_text(json.dumps({"slug": _SP8b_SLUG}), encoding="utf-8")
     _sp8_draft = task_queue.draft_path(_SP8b_SLUG, "Alpha")
-    _sp8_draft.write_text(json.dumps([{"id": "T2-950", "project": _SP8b_SLUG}]),
-                          encoding="utf-8")
-    _now = _sp8_draft.stat().st_mtime
-    _os.utime(_sp8_strategy, (_now - 100, _now - 100))
+    _sp8_bytes = json.dumps([{"id": "T2-950", "project": _SP8b_SLUG}])
+    _sp8_draft.write_text(_sp8_bytes, encoding="utf-8")
+    task_queue.stamp_draft_meta(_SP8b_SLUG, "Alpha")
     _sp8_kept = task_queue.draft_is_fresh(_SP8b_SLUG, "Alpha")
-    _os.utime(_sp8_strategy, (_now + 100, _now + 100))
+    _sp8_strategy.write_text(json.dumps({"slug": _SP8b_SLUG, "rewritten": True}),
+                             encoding="utf-8")
     _sp8_stale = task_queue.draft_is_fresh(_SP8b_SLUG, "Alpha")
+    _sp8_strategy.write_text(json.dumps({"slug": _SP8b_SLUG}), encoding="utf-8")
+    _sp8_rehashed_back = task_queue.draft_is_fresh(_SP8b_SLUG, "Alpha")
     _sp8_draft.unlink()
     _sp8_missing = task_queue.draft_is_fresh(_SP8b_SLUG, "Alpha")
-    # the map/contract hierarchy (§14 consistency check): the QUICKREF is the derivative
-    # MAP the session reads by default - its rewording must NOT re-bill a compliant draft
-    # (map drift dies at lint/emit, the gate is the law); the normative SKILL.md rewrite
-    # MUST older-date it - the resume cost falls exactly where the binding text changed
+    # the map/contract hierarchy: QUICKREF is the derivative MAP (not a hashed input -
+    # a wording fix must never re-bill a compliant draft); SKILL.md IS a hashed input -
+    # a content change older-dates every draft, a touch-without-change does not.
     _sp8_dag = SEC_REPO / ".opencode/skills/architect-practices/task-decomposition-dag"
     _sp8_qr = _sp8_dag / "QUICKREF.md"
     _sp8_sk = _sp8_dag / "SKILL.md"
-    _base = _sp8_qr.stat().st_mtime
-    # TIME BOMB FIX (2026-11-24): the probe offset was _base+100000 - anchored to the FILE's
-    # own mtime, the +27.7h shift fell into the PAST once the skill aged past a day, and the
-    # contract-edit staleness could never flip (the suite silently failed on any repo whose
-    # skills were older than ~28h - pre-existing, exposed by the seed-002 rerun). Anchor the
-    # future stamp to NOW instead: the probe asserts freshness semantics, not file ages.
-    import time as _sp8_time
-    _future = _sp8_time.time() + 100000
-    _os.utime(_sp8_strategy, (_base - 500, _base - 500))  # undo the +100 staleness probe
-    _sp8_draft.write_text(json.dumps([{"id": "T2-950", "project": _SP8b_SLUG}]),
-                          encoding="utf-8")
-    _sk_orig = _sp8_sk.stat().st_mtime
+    _sp8_qr_orig, _sp8_sk_orig = _sp8_qr.read_bytes(), _sp8_sk.read_bytes()
+    _sp8_draft.write_text(_sp8_bytes, encoding="utf-8")
+    task_queue.stamp_draft_meta(_SP8b_SLUG, "Alpha")
     try:
-        _os.utime(_sp8_qr, (_future, _future))
+        _sp8_qr.write_bytes(_sp8_qr_orig + b"\n")
         _sp8_map_edit = task_queue.draft_is_fresh(_SP8b_SLUG, "Alpha")
-        _os.utime(_sp8_qr, (_base, _base))
-        _os.utime(_sp8_sk, (_future, _future))
+        _sp8_qr.write_bytes(_sp8_qr_orig)
+        _sp8_sk.write_bytes(_sp8_sk_orig + b"\n")
         _sp8_contract_edit = task_queue.draft_is_fresh(_SP8b_SLUG, "Alpha")
     finally:
-        _os.utime(_sp8_sk, (_sk_orig, _sk_orig))
+        _sp8_qr.write_bytes(_sp8_qr_orig)
+        _sp8_sk.write_bytes(_sp8_sk_orig)
     _sp8_restored = task_queue.draft_is_fresh(_SP8b_SLUG, "Alpha")
+    _sp8_touch = None
     _sp8_src = (SEC_REPO / "orchestrators/pipeline.py").read_text()
-    check("SP8 draft_is_fresh is the resume gate: a valid draft newer than the strategy and "
-          "the specs is kept, an input rewrite makes it stale ONLY when the rewritten input "
-          "is binding - the normative SKILL.md re-plans, the derivative QUICKREF map does "
-          "NOT (mtime-gating a map edit would re-bill a provably compliant draft for "
-          "wording; map drift is caught by lint/emit: the gate is the law), an absent or "
-          "malformed draft is never trusted, and the loop clears ONLY stale bytes and "
-          "claims kept drafts without spawning a session",
-      _sp8_kept and not _sp8_stale and not _sp8_missing
+    check("SP8 draft_is_fresh is the resume gate on CONTENT HASHES: a claimed draft "
+          "whose hashes match every binding input is kept, a rewritten strategy flips "
+          "it and re-writing the old bytes back re-heals it (hashes, not clocks), a "
+          "normative SKILL.md CONTENT edit makes it stale while a QUICKREF map edit "
+          "does not (map drift is caught by lint/emit: the gate is the law), an "
+          "absent/sidecarless/malformed draft is never trusted, and the loop clears "
+          "ONLY stale bytes and claims kept drafts without spawning a session",
+      _sp8_kept and not _sp8_stale and _sp8_rehashed_back and not _sp8_missing
       and _sp8_map_edit and not _sp8_contract_edit and _sp8_restored
       and "[resume]" in _sp8_src and "draft_is_fresh" in _sp8_src
-      and "clear_drafts(slug)" not in _sp8_src)
+      and "clear_drafts(slug)" not in _sp8_src,
+      f"kept={_sp8_kept} stale={_sp8_stale} back={_sp8_rehashed_back} "
+      f"map={_sp8_map_edit} contract={_sp8_contract_edit} rest={_sp8_restored}")
+    _sp8_strategy.unlink(missing_ok=True)
 
     # SP9 the symbol-table fold (2026-11-20 context audit: 46K of symbols for one
     # provider context = 57 entries carrying 23 tables three times each; the T1/T2 pair
@@ -4657,12 +4932,649 @@ try:
       _sp10_rej is None and _sp10_wired
       and _sp10_lint.startswith("ERR") and "build-manifest" in _sp10_lint
       and _sp10_ok is None)
+    # SP11 (2026-11-25, PHASE 1.5 coverage wire): the ONE configuration-artifact unit
+    # is scheduled by the ROOT pass and its table is COMPLETED by the engine: every
+    # path any stage-2 unit of the project tables is copied VERBATIM from the binder
+    # into the config unit's ast_hints.config at the batch emit (values included), so
+    # no session ever seeds another context's keys and no gaps file exists to patch
+    # them. The refusals that remain are the ones Python cannot invent data for: NO
+    # config unit at all, and one path with two different values.
+    _SP11_SLUG = "spm"
+    task_queue.clear_drafts(_SP11_SLUG)
+
+    def _sp11_task(tid, export, cfg=()):
+        return {"id": tid, "targetAgent": settings.STAGE_AGENTS[2], "stage": 2,
+                "dependsOn": [],
+                "path": ("src/main/resources/application.yml" if export == "AppConfig"
+                         else f"src/main/java/m/{export}.java"),
+                "kind": settings.STAGE_KINDS[2][0], "layer": "domain", "feature": None,
+                "export": export, "project": _SP11_SLUG,
+                "intent": (f"{export} seeds the externalized configuration surface."
+                           if export == "AppConfig" else
+                           f"{export} binds and reads its own tabled property paths."),
+                "ast_hints": {"package": "com.m.spm", "implements": [], "dependencies": [],
+                              "methods": [{"signature": "go()", "returns": "void"}],
+                              "meters": [], "routes": [],
+                              "config": [dict(c) for c in cfg]}}
+
+    _sp11_alpha = task_queue.draft_path(_SP11_SLUG, "Alpha")
+    _sp11_beta = task_queue.draft_path(_SP11_SLUG, "Beta")
+    _sp11_alpha.write_text(json.dumps([
+        _sp11_task("T2-756", "AppConfig"),
+        _sp11_task("T2-757", "AlphaOne",
+                   cfg=[{"path": "telemetry.alpha.rate", "kind": "value",
+                         "value": "25"}])]), encoding="utf-8")
+    _sp11_beta.write_text(json.dumps([
+        _sp11_task("T2-758", "BetaOne",
+                   cfg=[{"path": "telemetry.beta.window-seconds", "kind": "value",
+                         "value": "60"}])]), encoding="utf-8")
+    _sp11_emit = task_queue.emit_draft_batch(_SP11_SLUG, ["Alpha", "Beta"])
+    _sp11_host = json.loads((settings.QUEUE_DIR / f"T2-756-{_SP11_SLUG}.json").read_text())
+    _sp11_paths = sorted(str(e.get("path")) for e in _sp11_host["ast_hints"]["config"])
+    # the refusal shapes: no host at all, and two values for one path
+    _SP11b_SLUG = "spn"
+    task_queue.clear_drafts(_SP11b_SLUG)
+    _sp11n_alpha = task_queue.draft_path(_SP11b_SLUG, "Alpha")
+    _sp11n_alpha.write_text(json.dumps([
+        _sp11_task("T2-751", "OrphanBinder",
+                   cfg=[{"path": "telemetry.orphan.key", "kind": "value"}])]),
+        encoding="utf-8")
+    __sp11n_alpha_batch = json.loads(_sp11n_alpha.read_text())
+    for _t in __sp11n_alpha_batch:
+        _t["project"] = _SP11b_SLUG
+    _sp11n_alpha.write_text(json.dumps(__sp11n_alpha_batch), encoding="utf-8")
+    _sp11n_refused = task_queue.emit_draft_batch(_SP11b_SLUG, ["Alpha"]) or ""
+    _SP11c_SLUG = "spr"
+    task_queue.clear_drafts(_SP11c_SLUG)
+    _sp11c_alpha = task_queue.draft_path(_SP11c_SLUG, "Alpha")
+    _sp11c_alpha.write_text(json.dumps([
+        _sp11_task("T2-761", "AppConfig"),
+        _sp11_task("T2-762", "BinderOne",
+                   cfg=[{"path": "telemetry.shared.cap", "kind": "value",
+                         "value": "10000"}]),
+        _sp11_task("T2-763", "BinderTwo",
+                   cfg=[{"path": "telemetry.shared.cap", "kind": "value",
+                         "value": "5000"}])]), encoding="utf-8")
+    __sp11c_alpha_batch = json.loads(_sp11c_alpha.read_text())
+    for _t in __sp11c_alpha_batch:
+        _t["project"] = _SP11c_SLUG
+    _sp11c_alpha.write_text(json.dumps(__sp11c_alpha_batch), encoding="utf-8")
+    _sp11c_refused = task_queue.emit_draft_batch(_SP11c_SLUG, ["Alpha"]) or ""
+    check("SP11 config coverage is a WIRE, not a typing job and not a channel: the "
+          "batch copies every binder's {path, kind, value} VERBATIM into the ONE "
+          "configuration-artifact unit before the joins read it (no session seeds "
+          "another context's key, no gaps file patches anything), the batch then "
+          "passes with both paths on the emitted config record; a board with bound "
+          "paths and NO config unit is refused naming the path and the ROOT pass, "
+          "and one path tabled with two different values is refused naming the "
+          "conflicting VALUES (rule (l)'s impossible pair made machine-visible by "
+          "(z5)'s value field)",
+      _sp11_emit is None
+      and _sp11_paths == ["telemetry.alpha.rate", "telemetry.beta.window-seconds"]
+      and any(str(e.get("path")) == "telemetry.beta.window-seconds"
+              and str(e.get("value")) == "60" for e in _sp11_host["ast_hints"]["config"])
+      and "telemetry.orphan.key" in _sp11n_refused
+      and "configuration-artifact unit" in _sp11n_refused
+      and "telemetry.shared.cap" in _sp11c_refused and "VALUES" in _sp11c_refused,
+      f"emit={str(_sp11_emit)[:200]} paths={_sp11_paths} "
+      f"orphan={_sp11n_refused[:160]} vals={_sp11c_refused[:200]}")
+
+    # SP12 (2026-11-25 bleeding stop, v6 live): the batch is ONE unit of truth - a
+    # record in the FIRST file of the batch may pin an id the LAST file defines. Staging
+    # used to validate file-by-file as it loaded, so the forward sibling read
+    # "dependsOn T2-038 not resolvable", the rejected record skipped `staged`, the z4
+    # mirror and coverage wires skipped IT, its twin then refused as a phantom
+    # "delivered" drift, and the repair session answered the ordering artifact by
+    # hand-inventing pins into other drafts. Batch-first indexing makes file order
+    # incapable of manufacturing refusals.
+    _SP12_SLUG = "spf"
+    task_queue.clear_drafts(_SP12_SLUG)
+
+    def _sp12_task(tid, export, deps):
+        return {"id": tid, "targetAgent": settings.STAGE_AGENTS[2], "stage": 2,
+                "dependsOn": list(deps),
+                "path": f"src/main/java/m/{export}.java",
+                "kind": settings.STAGE_KINDS[2][0], "layer": "domain",
+                "feature": None, "export": export, "project": _SP12_SLUG,
+                "intent": f"{export} owns its tabled behavior and pins its producer.",
+                "ast_hints": {"package": "com.m.spf", "implements": [],
+                              "dependencies": [],
+                              "methods": [{"signature": "go()", "returns": "void"}],
+                              "meters": [], "routes": [], "config": []}}
+
+    _sp12_scaffold = {"id": "T0-840", "targetAgent": settings.STAGE_AGENTS[0], "stage": 0,
+                      "dependsOn": [], "path": "pom.xml",
+                      "kind": settings.STAGE_KINDS[0][0], "layer": "root",
+                      "feature": None, "export": "project_scaffold",
+                      "project": _SP12_SLUG, "intent": "Generate the project root"}
+    _sp12_gate = _sp12_task("T2-841", "Gate", ["T0-840", "T2-842"])
+    _sp12_gate["ast_hints"]["dependencies"] = [{"type": "Controller", "task_id": "T2-842"}]
+    _sp12_a = task_queue.draft_path(_SP12_SLUG, "Alpha")
+    _sp12_b = task_queue.draft_path(_SP12_SLUG, "Beta")
+    _sp12_a.write_text(json.dumps([_sp12_scaffold, _sp12_gate]), encoding="utf-8")
+    _sp12_b.write_text(json.dumps([_sp12_task("T2-842", "Controller", ["T0-840"])]),
+                       encoding="utf-8")
+    _sp12_emit = task_queue.emit_draft_batch(_SP12_SLUG, ["Alpha", "Beta"])
+    check("SP12 batch-first indexing: a draft that pins an id its SIBLING file (staged "
+          "later in the same batch) defines resolves - file order cannot manufacture "
+          "'not resolvable' refusals, the rejected-record cascade (skipped mirror, "
+          "phantom twin-drift, hand-invented repair pins) is structurally dead, and the "
+          "batch emits clean",
+      _sp12_emit is None
+      and (settings.QUEUE_DIR / f"T2-841-{_SP12_SLUG}.json").is_file()
+      and (settings.QUEUE_DIR / f"T2-842-{_SP12_SLUG}.json").is_file(),
+      str(_sp12_emit)[:260])
+
+    # SP13/SH8 (2026-11-25 task audit): the classes the batch structurally could not
+    # see - a pin without its dependsOn edge, a request-path slice naming no isolation
+    # choice - are now a wire and a lint refusal, and the map + brief carry the law
+    # sentence. SP13 pins the wire; SH8 pins the refusal; the carrier sentences are
+    # pinned in the skills suite.
+    _SP13_SLUG = "spg"
+    task_queue.clear_drafts(_SP13_SLUG)
+    _sp13_alpha = task_queue.draft_path(_SP13_SLUG, "Alpha")
+    _sp13_beta = task_queue.draft_path(_SP13_SLUG, "Beta")
+
+    def _sp13_rec(tid, export, deps=(), pins=()):
+        return {"id": tid, "targetAgent": settings.STAGE_AGENTS[2], "stage": 2,
+                "dependsOn": list(deps),
+                "path": f"src/main/java/m/{export}.java",
+                "kind": settings.STAGE_KINDS[2][0], "layer": "domain",
+                "feature": None, "export": export, "project": _SP13_SLUG,
+                "intent": f"{export} owns its tabled behavior.",
+                "ast_hints": {"package": "com.m.spg", "implements": [],
+                              "dependencies": [{"type": t, "task_id": p} for t, p in pins],
+                              "methods": [{"signature": "go()", "returns": "void"}],
+                              "meters": [], "routes": [], "config": []}}
+
+    # Beta drafted FIRST in its file, pinning a producer that only Alpha's later file
+    # defines AND omitting the edge - the exact v7 T2-005 shape
+    _sp13_beta.write_text(json.dumps([_sp13_rec("T2-851", "Consumer",
+                                                pins=[("Facade", "T2-850")])]),
+                          encoding="utf-8")
+    _sp13_alpha.write_text(json.dumps([_sp13_rec("T2-850", "Facade")]), encoding="utf-8")
+    _sp13_reason = task_queue.emit_draft_batch(_SP13_SLUG, ["Alpha", "Beta"])
+    _sp13_written = json.loads((settings.QUEUE_DIR / f"T2-851-{_SP13_SLUG}.json").read_text())
+    check("SP13 pin-edge closure is a WIRE: a stage-2 that pins a producer without the "
+          "dependsOn edge gets the edge appended mechanically at the batch (and at claim), "
+          "disclosed like every other mechanical join - the payload contract's 'the "
+          "producer must also be in dependsOn' survived three carriers and no gate, and "
+          "the v7 audit found the missed edge shipping (2026-11-25)",
+      _sp13_reason is None and "T2-850" in [str(d) for d in _sp13_written["dependsOn"]],
+      str(_sp13_reason)[:200])
+    for _q in list(settings.QUEUE_DIR.glob(f"*-{_SP13_SLUG}.json")):
+        _q.unlink()
+    task_queue.clear_drafts(_SP13_SLUG)
+
+    _SH8_SLUG = "shy8"
+    task_queue.clear_drafts(_SH8_SLUG)
+    _sh8_draft = task_queue.draft_path(_SH8_SLUG, "Solo")
+
+    def _sh8_slice(intent):
+        return [{"id": "T1-860", "targetAgent": settings.STAGE_AGENTS[1], "stage": 1,
+                 "dependsOn": [], "path": "src/test/java/m/SliceTest.java",
+                 "kind": settings.STAGE_KINDS[1][0], "layer": "interface",
+                 "feature": None, "export": "SliceTest", "project": _SH8_SLUG,
+                 "intent": intent,
+                 "ast_hints": {"package": "com.m.shy8", "implements": [],
+                               "dependencies": [],
+                               "methods": [{"signature": "go()", "returns": "void"}],
+                               "meters": [],
+                               "routes": [{"method": "POST", "path": "/sh",
+                                          "duty": "serves"}],
+                               "config": []}},
+                {"id": "T2-860", "targetAgent": settings.STAGE_AGENTS[2], "stage": 2,
+                 "dependsOn": ["T1-860"], "path": "src/main/java/m/Controller.java",
+                 "kind": settings.STAGE_KINDS[2][0], "layer": "interface",
+                 "feature": None, "export": "Controller", "project": _SH8_SLUG,
+                 "intent": "Controller answers POST /sh and appends the durable row.",
+                 "ast_hints": {"package": "com.m.shy8", "implements": [],
+                               "dependencies": [],
+                               "methods": [{"signature": "go()", "returns": "void"}],
+                               "meters": [],
+                               "routes": [{"method": "POST", "path": "/sh",
+                                          "duty": "serves"}],
+                               "config": []}}]
+
+    _sh8_draft.write_text(json.dumps(_sh8_slice(
+        "End-to-end request-path slice drives POST /sh and asserts the appended row "
+        "and the counted meter.")), encoding="utf-8")
+    _sh8_lint = task_queue.lint_draft(str(_sh8_draft))
+    _sh8_draft.write_text(json.dumps(_sh8_slice(
+        "End-to-end request-path slice drives POST /sh; each case seeds a UNIQUE "
+        "device id and asserts only its own appended row.")), encoding="utf-8")
+    _sh8_lint_ok = task_queue.lint_draft(str(_sh8_draft))
+    _sh8_noname = task_queue.lint_draft(str(task_queue.draft_path(_SH8_SLUG, "Ghost")))
+    task_queue.clear_drafts(_SH8_SLUG)
+    check("SH8 the slice isolation law has its machine leg at LINT: a stage-1 that "
+          "spells a slice marker without naming UNIQUE identity / RELATIVE delta / "
+          "CLEANUP is refused with the exact choice sentence (naming one passes); a "
+          "draft with no slice is untouched by the check; and a missing file stays a "
+          "clean refusal",
+      _sh8_lint.startswith("ERR") and "isolation choice" in _sh8_lint
+      and "UNIQUE" in _sh8_lint and _sh8_lint_ok.startswith("LINT-CLEAN")
+      and _sh8_noname.startswith("ERR"), f"{_sh8_lint[:200]} | {_sh8_lint_ok[:120]}")
+
+    # SP14 (2026-11-25 bleeding stop): the engine injects the domain's REAL slug into
+    # the worked example. The static exemplar's fake `"project": "telemetry"` was
+    # copied faithfully by live sessions, each then burning sed/edit rounds (and a
+    # whole repair session) rewriting the field - a placeholder a session cannot know
+    # belongs to the engine, printed exactly like every other concrete.
+    _sp14_real = prompts._resolved_stack_skills
+    _sp14_root = settings.ROOT
+    prompts._resolved_stack_skills = lambda slug: (
+        [".opencode/skills/tech-stack/java-springboot3/SKILL.md"], None, None)
+    settings.ROOT = SEC_REPO  # the example is read from the REAL skill tree
+    try:
+        _sp14_out = prompts.worked_draft_example("spexample")
+    finally:
+        settings.ROOT = _sp14_root
+        prompts._resolved_stack_skills = _sp14_real
+    check("SP14 worked_draft_example prints the domain's slug: every record's `project` "
+          "is the real slug at brief-build time, the fake exemplar slug never reaches a "
+          "session, and the example still parses as the two-unit owner+consumer pair",
+      '"project": "spexample"' in _sp14_out and '"project": "telemetry"' not in _sp14_out
+      and _sp14_out.count('"n": 21') == 1 and _sp14_out.count('"n": 22') == 1,
+      _sp14_out[:160])
+
+
+    # SP15 (2026-11-25 robustness primitives R1/R2/R3/R4): the four behaviors that
+    # make a fresh launch unable to die from LAST launch's damage, from clock luck,
+    # from whole-domain repair churn, or from hand-typed boilerplate.
+    _SP15_SLUG = "spq"
+    _sp15_dir = settings.COMPLETE_DIR
+    _sp15_strategy = _sp15_dir / f"execution-strategy-{_SP15_SLUG}.json"
+    _sp15_good = json.dumps({"slug": _SP15_SLUG, "bounded_contexts": ["Alpha"],
+                             "surfaces": [{"name": "in", "kind": "http",
+                                            "context": "Alpha", "method": "POST",
+                                            "path": "/q", "operations": ["accept"]}],
+                             "observability": {"correlation_key": "c",
+                                               "step_logs": ["s"], "audit_trail": ["a"],
+                                               "metrics": [], "export": "file"},
+                             "rules": [], "contexts_without_inbound": []})
+    _sp15_strategy.write_text(_sp15_good, encoding="utf-8")
+    task_queue.snapshot_plan_inputs(_SP15_SLUG)
+    _bad = json.loads(_sp15_good)
+    _bad["surfaces"][0]["invented_key"] = "session restructured phase 1"
+    _sp15_strategy.write_text(json.dumps(_bad), encoding="utf-8")
+    _sp15_restored, _ = task_queue.verify_plan_inputs(_SP15_SLUG)
+    _sp15_is_good = json.loads(_sp15_strategy.read_text()) == json.loads(_sp15_good)
+    _lawful = json.loads(_sp15_good)
+    _lawful["surfaces"][0]["operations"] = ["accept, consumed out-of-process by analytics"]
+    _sp15_strategy.write_text(json.dumps(_lawful), encoding="utf-8")
+    _, _sp15_amended = task_queue.verify_plan_inputs(_SP15_SLUG)
+    _sp15_text_kept = "out-of-process" in _sp15_strategy.read_text()
+    _sp15_strategy.write_text(_sp15_good, encoding="utf-8")
+
+    # R3 routing
+    _sp15_a = task_queue.draft_path(_SP15_SLUG, "Alpha")
+    _sp15_b = task_queue.draft_path(_SP15_SLUG, "Beta")
+    _sp15_a.write_text(json.dumps([{"id": "T2-901", "project": _SP15_SLUG, "stage": 2}]),
+                       encoding="utf-8")
+    _sp15_b.write_text(json.dumps([{"id": "T2-902", "project": _SP15_SLUG, "stage": 2}]),
+                       encoding="utf-8")
+    _sp15_routed = task_queue.route_refusals(
+        "\n".join(["ERR [T2-901]: bad thing one", "   detail belongs to Alpha",
+                    "ERR [T2-902]: bad thing two",
+                    "ERR [spq]: domain-wide step log 'z' claimed by NO stage-2 unit",
+                    "ERR [T2-999]: unknown id is nobody's draft blame"]),
+        _SP15_SLUG, ["Alpha", "Beta"])
+
+    # R4 completion at claim: T1 without a table, no T3 at all
+    _sp15c = task_queue.draft_path(_SP15_SLUG, "Alpha")
+    _sp15c.write_text(json.dumps([
+        {"id": "T1-903", "project": _SP15_SLUG, "stage": 1,
+         "targetAgent": settings.STAGE_AGENTS[1], "dependsOn": [],
+         "path": "src/test/java/m/DoneTest.java", "kind": "test", "layer": "domain",
+         "feature": None, "export": "DoneTest", "intent": "tests the tabled contract"},
+        {"id": "T2-903", "project": _SP15_SLUG, "stage": 2,
+         "targetAgent": settings.STAGE_AGENTS[2], "dependsOn": ["T1-903"],
+         "path": "src/main/java/m/Done.java", "kind": "code", "layer": "domain",
+         "feature": None, "export": "Done",
+         "intent": "Done owns its tabled behavior and nothing else.",
+         "ast_hints": {"package": "m", "implements": [], "dependencies": [],
+                       "methods": [{"signature": "go()", "returns": "void"}],
+                       "meters": [], "routes": [], "config": []}}]), encoding="utf-8")
+    _sp15_cp, _ = task_queue.claim_draft(_SP15_SLUG, "Alpha")
+    _sp15_claimed = json.loads(_sp15c.read_text())
+    _sp15_fams = {t["id"]: t for t in _sp15_claimed}
+    check("SP15 the four robustness primitives hold at the unit tier: an UNLAWFUL "
+          "input mutation is restored to the snapshot (and the file is phase-1 bytes "
+          "again), a LAWFUL text amendment survives verify and is reported as amended; "
+          "refusals route to the owning draft file, unknown ids and domain-wide lines "
+          "go to the domain bucket; claim COMPLETES a board draft - T1's table mirrored "
+          "from T2, the missing T3 issued with the code path - and STAMPS the hash "
+          "sidecar that makes freshness a content property, not a clock race",
+      _sp15_restored == [f"execution-strategy-{_SP15_SLUG}.json"] and _sp15_is_good
+      and _sp15_amended and _sp15_text_kept
+      and _sp15_routed.get("Alpha") and _sp15_routed.get("Beta")
+      and len(_sp15_routed.get("domain", [])) == 2
+      and _sp15_cp == []
+      and "T3-903" in _sp15_fams
+      and _sp15_fams["T1-903"].get("ast_hints") == _sp15_fams["T2-903"]["ast_hints"]
+      and _sp15_fams["T3-903"]["kind"] == "refactor"
+      and task_queue.draft_meta_path(_SP15_SLUG, "Alpha").is_file()
+      and task_queue.draft_is_fresh(_SP15_SLUG, "Alpha"),
+      f"restored={_sp15_restored} good={_sp15_is_good} amended={_sp15_amended} "
+      f"routed={_sp15_routed} claim={_sp15_cp} ids={sorted(_sp15_fams)}")
+    _sp15_strategy.unlink(missing_ok=True)
+    task_queue.clear_drafts(_SP15_SLUG)
+    (settings.BLACKBOARD / "snapshots" / f"{_SP15_SLUG}-plan-inputs.json").unlink(missing_ok=True)
+    # SP16 (2026-11-25 verdict-contract redesign O1-O5): the orchestrator stopped
+    # being a semantic recovery layer. The law: every decision that can bill a token
+    # binds ONLY to typed verdict fields, registry lookups, or filesystem facts.
+    # Prose survives for display (_blame_lines, coder feedback digest) - never blame.
+    _sp16_tdd = (SEC_REPO / "orchestrators/tdd_engine.py").read_text()
+    _sp16_gate = (SEC_REPO / "orchestrators/test_gate.py").read_text()
+    _sp16_ver = (SEC_REPO / "orchestrators/verification.py").read_text()
+    _sp16_tool = (SEC_REPO / ".opencode/skills/tester-framework/run-test-tool.py").read_text()
+
+    # O1: the tool stamps the schema; the engine's phrase tables are DEAD TEXT.
+    # Behavior doors (fixtures A19/A23/A25/C1-C3 already prove the typed read):
+    # a pre-schema memo and a pre-schema wave are refused, never re-decided.
+    _sp16_task = task(tid="T2-960", export="Door", project="sp16")
+    test_gate._write_memo(_sp16_task, "red", {"status": "compile_error", "exit_code": 1,
+                                              "failures": [], "counts": {}})
+    _sp16_unversioned_dropped = test_gate._read_memo(_sp16_task) is None
+    test_gate._write_memo(_sp16_task, "red", {"verdict_version": 2, "status": "compile_error",
+                                              "exit_code": 1, "failures": [], "counts": {}})
+    _sp16_versioned_kept = test_gate._read_memo(_sp16_task) is not None
+
+    # O2: an ambiguous selector->class join (unit_match without a class_key) falls to
+    # the scoped build - the engine may NOT fuzzy-match a stem to force an answer.
+    _sp16_calls = []
+    _sp16_real = test_gate._tool_result
+    def _sp16_fake(root, command, timeout):
+        _sp16_calls.append(command)
+        return {"verdict_version": 2, "status": "compile_error", "exit_code": 1,
+                "classes": {"a.AmbTest": "failed", "b.AmbTest2": "failed"},
+                "unit_match": {"selector": "Amb", "class_key": None, "candidates": 2},
+                "missing_symbols": [], "failures": [], "counts": {}, "excerpt": []}
+    test_gate._tool_result = _sp16_fake
+    try:
+        _sp16_ambiguous = test_gate.wave_gate_verdict(
+            task(tid="T2-961", project="sp16b"), "./mvnw -Dtest=Amb test")
+    finally:
+        test_gate._tool_result = _sp16_real
+
+    check("SP16 the verdict-contract redesign holds at the law tier: the engine's "
+          "phrase tables (SUPERTYPE_CONFLICT_PHRASES, CASCADE_PHRASES, is_cascade, "
+          "error_locations, _SYMBOL_SHAPE_RE, _excerpt_package_locations, "
+          "_declared_supertypes_of_source, _norm_stem/_matches_class/_selector_of) are "
+          "DELETED from engine sources while the tool owns every grammar; pre-schema "
+          "memos are refused and v2 memos replay; an ambiguous typed selector falls to "
+          "the scoped build instead of a stem guess; verification routes the build "
+          "output through the tool's own parser; the canonicalization boundary is the "
+          "single place the engine admits to touching the tree, and every fingerprint "
+          "site takes it first",
+          not any(name in _sp16_tdd for name in ("SUPERTYPE_CONFLICT_PHRASES",
+                                                 "_SYMBOL_SHAPE_RE", "_LOCATION_PACKAGE_RE",
+                                                 "_excerpt_package_locations",
+                                                 "_declared_supertypes_of_source"))
+          and "CASCADE_PHRASES" not in _sp16_gate and "def is_cascade" not in _sp16_gate
+          and "def error_locations" not in _sp16_gate and "_norm_stem" not in _sp16_gate
+          and "_matches_class" not in _sp16_gate and "_selector_of" not in _sp16_gate
+          and "VERDICT_VERSION" in _sp16_tool and "verdict_version" in _sp16_tool
+          and "blamed_files" in _sp16_tool and "stack_files" in _sp16_tool
+          and "package_symbol_demands" in _sp16_tool and "unit_match" in _sp16_tool
+          and _sp16_unversioned_dropped and _sp16_versioned_kept
+          and _sp16_ambiguous is None
+          and "parse_verdict_text" in _sp16_ver and "verify_verdict" in _sp16_ver
+          and "def canonicalize_tree" in _sp16_gate
+          and "canonicalize_tree" in _sp16_ver and "canonicalize_tree" in _sp16_tdd
+          and "repair_test_imports(workspace" not in _sp16_tdd
+          # O2 terminal tier: the delivered-suite class->owner join keys on the
+          # declared export first, and the mock-victim join reads the typed class
+          and "declared EXPORT is the join key" in _sp16_tdd
+          and 'str(fl.get("class") or "")' in _sp16_tdd,
+          f"unversioned={_sp16_unversioned_dropped} versioned={_sp16_versioned_kept} "
+          f"ambiguous={_sp16_ambiguous} calls={len(_sp16_calls)}")
+
+    # SP17 (2026-11-25 cold6 audit, DC closure): the security gate must PROVE that a
+    # PII data class whose masking posture promises work is discharged by a duty.
+    # The live board was lawful but UNCHECKED - duties closed every DC row through
+    # `covers` by convention; one spec regeneration that drops a covers list loses
+    # a redaction obligation silently. Convention is not a contract.
+    _sp17_orig = SEC_FILE.read_text(encoding="utf-8")
+    try:
+        _sp17_spec = json.loads(_sp17_orig)
+        _sp17_spec["data_classification"] = list(_sp17_spec.get("data_classification") or [])
+        _sp17_spec["data_classification"].append({
+            "id": "DC-90", "concept": "Device Credential", "pii": True, "class": "confidential",
+            "fields": ["credential"], "at_rest": "encrypted", "in_transit": "TLS",
+            "retention": "operator-defined", "deletion": "operator-defined",
+            "masking": "partial", "log_visibility": "masked", "export_visibility": "masked",
+            "error_visibility": "code-only", "reason": "pin"})
+        SEC_FILE.write_text(json.dumps(_sp17_spec), encoding="utf-8")
+        _sp17_unclaimed = str(ddd.validate_security_spec(SEC_SLUG) or "")
+        # claim it the lawful way: an existing duty adds the class to its `covers`
+        for d in _sp17_spec["duties"]:
+            if str(d.get("spec_ref")) == "AZ-01":
+                d["covers"] = list(d.get("covers") or []) + ["DC-90"]
+                break
+        SEC_FILE.write_text(json.dumps(_sp17_spec), encoding="utf-8")
+        _sp17_after = str(ddd.validate_security_spec(SEC_SLUG) or "")
+        # masking 'none' is a SELF-DECIDED posture - no duty needed
+        for d in _sp17_spec["duties"]:
+            if "DC-90" in (d.get("covers") or []):
+                d["covers"] = [c for c in d["covers"] if c != "DC-90"]
+        _sp17_spec["data_classification"][-1]["masking"] = "none"
+        SEC_FILE.write_text(json.dumps(_sp17_spec), encoding="utf-8")
+        _sp17_none = str(ddd.validate_security_spec(SEC_SLUG) or "")
+    finally:
+        SEC_FILE.write_text(_sp17_orig, encoding="utf-8")
+    _sp17_clean = ddd.validate_security_spec(SEC_SLUG)
+    check("SP17 the PII-masking duty-closure is a MACHINE edge, not convention: a "
+          "data_classification row with pii=True and masking 'partial' claimed by no "
+          "duty is REFUSED naming the row and the remedy, the identical row claimed "
+          "through a duty's `covers` passes, masking 'none' is a self-decided posture "
+          "needing no duty, and the fixture is restored pristine afterward",
+      "DC-90" in _sp17_unclaimed and "discharged by no duty" in _sp17_unclaimed.lower()
+      and "DC-90" not in _sp17_after and _sp17_after != _sp17_unclaimed
+      and "DC-90" not in _sp17_none and _sp17_clean is None,
+      f"unclaimed={'DC-90' in _sp17_unclaimed} claimed={'DC-90' not in _sp17_after} "
+      f"none={'DC-90' not in _sp17_none} restored={_sp17_clean}")
+    # SP19 (2026-11-25 cold6 audit, z7 budget-assertion closure): the performance
+    # spec's measurement blocks are machine-readable promises - kind + assertion
+    # text per budget. Enforcement was joined to stage-2 units; the ASSERTION tier
+    # had no law, and the cold6 board proved two limits (PB-05 append batch,
+    # PB-06 page size) asserted by no frozen test at all. The join now refuses that
+    # at both tiers: inside the drafting session (lint, named by the enforcing unit)
+    # and at the batch.
+    _sp19_slug = "spn"
+    (settings.COMPLETE_DIR / f"performance-spec-{_sp19_slug}.json").write_text(json.dumps({
+        "report_type": "performance-spec", "slug": _sp19_slug, "schema_version": 1,
+        "workload": [{"surface": "ingress inbound", "expected": "1k/s"}],
+        "budgets": [{"id": "PB-01", "target": "batch size", "limit": "at most 100",
+                     "capability": "batch-load",
+                     "measurement": {"kind": "deterministic-count",
+                                     "assertion": "records per write never exceed limit"}}],
+        "risks": [], "open_questions": [], "assumptions": [], "invariants": [],
+        "duties": [], "metadata": {}}), encoding="utf-8")
+    _sp19_unasserted = [
+        {"id": "T2-940", "stage": 2, "project": _sp19_slug, "kind": "code", "layer": "domain",
+         "export": "BatchWriter", "path": "src/main/java/x/BatchWriter.java",
+         "intent": "PB-01 batch writer: writes at most 100 records per call.",
+         "dependsOn": ["T1-940"]},
+        {"id": "T1-940", "stage": 1, "project": _sp19_slug, "kind": "test", "layer": "domain",
+         "export": "BatchWriterTest", "path": "src/test/java/x/BatchWriterTest.java",
+         "intent": "writes rows and reads them back", "dependsOn": []}]
+    _sp19_err = task_queue._perf_budget_closure_errors(_sp19_slug, _sp19_unasserted, {})
+    _sp19_asserted = [dict(r) for r in _sp19_unasserted]
+    _sp19_asserted[1]["intent"] = ("BatchWriterTest proves the bound PB-01: records per write "
+                                   "never exceed 100 (deterministic count)")
+    _sp19_ok = task_queue._perf_budget_closure_errors(_sp19_slug, _sp19_asserted, {})
+    check("SP19 z7 budget-assertion closure bites at both tiers: a spec-tabled "
+          "measurement enforced by a stage-2 unit but cited by no stage-1 is refused "
+          "naming the enforcing id, the measurement kind and assertion, and the twin "
+          "test citing the PB id passes; the whole-board (emit) pool extends to every "
+          "drafted record, so a budget asserted in ANY context's tests is closed",
+      len(_sp19_err) == 1 and "T2-940" in _sp19_err[0] and "PB-01" in _sp19_err[0]
+      and "deterministic-count" in _sp19_err[0] and _sp19_ok == [],
+      f"err={_sp19_err[:1]} ok={_sp19_ok}")
+    (settings.COMPLETE_DIR / f"performance-spec-{_sp19_slug}.json").unlink()
+
+
+    # SH (2026-11-25 bottleneck pass): the HYDRATE tier - sessions REFERENCE shared
+    # facts (uses_meters / uses_routes / uses_config / claims_steps / root_gate) and the
+    # engine tables the canonical entries at claim; an unresolvable reference dies at
+    # lint naming the closest tabled spelling, never in a billed repair guess.
+    _SH_SLUG = "shy"
+    task_queue.clear_drafts(_SH_SLUG)
+    _sh_strategy = settings.COMPLETE_DIR / f"execution-strategy-{_SH_SLUG}.json"
+    _sh_strategy.write_text(json.dumps({
+        "slug": _SH_SLUG,
+        "surfaces": [
+            {"name": "ingress inbound", "context": "Alpha", "kind": "http",
+             "method": "POST", "path": "/ing"},
+            {"name": "stream inbound", "context": "Beta", "kind": "http",
+             "method": "GET", "path": "/stream"}],
+        "observability": {"correlation_key": "cid",
+                          "step_logs": ["packet received"],
+                          "audit_trail": ["actor/outcome"],
+                          "metrics": [{"name": "shy.received"}],
+                          "export": "file"}}), encoding="utf-8")
+    settings.QUEUE_DIR.joinpath("T0-734-shy.json").write_text(json.dumps(
+        {"id": "T0-734", "targetAgent": settings.STAGE_AGENTS[0], "stage": 0,
+         "dependsOn": [], "path": "pom.xml",
+         "kind": settings.STAGE_KINDS[0][0], "layer": "root", "feature": None,
+         "export": "scaffold", "project": _SH_SLUG,
+         "intent": "Generate the project root"}))
+
+    def _sh_unit(n, export, layer, t_intent, c_intent, hints, refs=None):
+        code = {"path": f"src/main/java/m/{export}.java", "export": export,
+                "intent": c_intent, "ast_hints": hints}
+        code.update(refs or {})
+        return {"n": n, "project": _SH_SLUG, "layer": layer, "feature": None,
+                "dependsOn": {"test": ["T0-734"], "code": ["T0-734"]},
+                "test": {"path": f"src/test/java/m/{export}Test.java",
+                         "export": f"{export}Test", "intent": t_intent},
+                "code": code}
+
+    def _sh_hints(deps=None, meters=None, routes=None):
+        return {"package": "com.m.shy", "implements": [],
+                "dependencies": deps or [],
+                "methods": [{"signature": "go()", "returns": "void"}],
+                "meters": meters or [], "routes": routes or [], "config": []}
+
+    _sh_alpha = task_queue.draft_path(_SH_SLUG, "Alpha")
+    _sh_alpha.write_text(json.dumps([
+        _sh_unit(735, "Facade", "infrastructure",
+                 "FacadeTest proves the tabled contract both ways",
+                 "Facade owns its tabled behavior and nothing else.",
+                 _sh_hints(meters=[{"name": "shy.received", "duty": "owns"}])),
+        _sh_unit(736, "Admission", "infrastructure",
+                 "AdmissionTest proves the tabled contract both ways",
+                 "Admission owns its tabled behavior and nothing else.",
+                 _sh_hints(deps=[{"type": "Facade", "task_id": "T2-735"}]),
+                 refs={"uses_meters": ["shy.received"],
+                       "uses_routes": ["GET /stream"],
+                       "claims_steps": ["packet received"],
+                       "root_gate": True})]), encoding="utf-8")
+    _sh_beta = task_queue.draft_path(_SH_SLUG, "Beta")
+    _sh_beta.write_text(json.dumps([
+        _sh_unit(737, "Stream", "interface",
+                 "End-to-end request-path slice drives GET /stream and asserts the "
+                 "durable effect",
+                 "Stream owns its tabled behavior and nothing else.",
+                 _sh_hints(deps=[{"type": "Admission", "task_id": "T2-736"}],
+                           routes=[{"method": "GET", "path": "/stream",
+                                    "duty": "serves"}]))]), encoding="utf-8")
+    _sh_alpha2 = json.loads(_sh_alpha.read_text())
+    _sh_alpha2.append(_sh_unit(738, "Ingress", "interface",
+                               "IngressTest proves the tabled contract both ways",
+                               "Ingress owns its tabled behavior and nothing else.",
+                               _sh_hints(routes=[{"method": "POST", "path": "/ing",
+                                                  "duty": "serves"}])))
+    _sh_alpha.write_text(json.dumps(_sh_alpha2), encoding="utf-8")
+    _sh_lint = task_queue.lint_draft(str(_sh_alpha))
+    _sh_claims = task_queue.claim_draft(_SH_SLUG, "Alpha")
+    _sh_beta_claim = task_queue.claim_draft(_SH_SLUG, "Beta")
+    _sh_after = json.loads(_sh_alpha.read_text())
+    _sh_guard = [t for t in _sh_after if t["id"] == "T2-736"][0]
+    _sh_twin = [t for t in _sh_after if t["id"] == "T1-736"][0]
+    _sh_emit = task_queue.emit_draft_batch(_SH_SLUG, ["Alpha", "Beta"])
+
+    _SH2_SLUG = "shz"
+    task_queue.clear_drafts(_SH2_SLUG)
+    (settings.COMPLETE_DIR / f"execution-strategy-{_SH2_SLUG}.json").write_text(
+        json.dumps({"slug": _SH2_SLUG, "surfaces": [],
+                    "observability": {"correlation_key": "cid",
+                                      "step_logs": ["packet received"],
+                                      "audit_trail": ["a"],
+                                      "metrics": [{"name": "shy.received"}],
+                                      "export": "file"}}), encoding="utf-8")
+    _sh2_draft = task_queue.draft_path(_SH2_SLUG, "Solo")
+    _sh2_draft.write_text(json.dumps([_sh_unit(
+        738, "Drifter", "infrastructure",
+        "DrifterTest proves the drift refusal",
+        "Drifter references two facts nobody owns.",
+        {"package": "com.m.shz", "implements": [], "dependencies": [],
+         "methods": [{"signature": "go()", "returns": "void"}],
+         "meters": [], "routes": [], "config": []},
+        refs={"uses_meters": ["shy.rejected"],
+              "claims_steps": ["packet recived"]})]), encoding="utf-8")
+    _sh2_lint = task_queue.lint_draft(str(_sh2_draft))
+
+    _sh3_path = task_queue.draft_path(_SH_SLUG, "Gamma")
+    _sh3_path.write_text(json.dumps([_sh_unit(
+        739, "Gate", "infrastructure",
+        "GateTest proves the second gate refuses",
+        "A second gate collides with the ONE gate law.",
+        _sh_hints(), refs={"root_gate": True})]), encoding="utf-8")
+    _sh3_problems, _ = task_queue.claim_draft(_SH_SLUG, "Gamma")
+
+    check("SH1 the hydrate tier works end-to-end: references pass LINT-CLEAN; claim "
+          "hydrates the canonical entries - the meter from the owner's spelling, the "
+          "sibling context's route from the strategy surface table, the step log "
+          "VERBATIM from the floor, BOTH root addresses from the composition-root "
+          "table - the shorthand keys are gone from the claimed bytes, the T1 twin "
+          "carries the identical table (z4 by construction), root_gate STAYS as the "
+          "machine marker, and the batch emit of both contexts passes every literal "
+          "join",
+      _sh_lint.startswith("LINT-CLEAN")
+      and _sh_claims[0] == [] and _sh_beta_claim[0] == []
+      and all(k not in _sh_guard for k in ("uses_meters", "uses_routes",
+                                           "claims_steps"))
+      and {"name": "shy.received", "duty": "uses"} in _sh_guard["ast_hints"]["meters"]
+      and {"method": "GET", "path": "/stream", "duty": "uses"}
+          in _sh_guard["ast_hints"]["routes"]
+      and {"method": "POST", "path": "/ing", "duty": "uses"}
+          in _sh_guard["ast_hints"]["routes"]
+      and _sh_guard["observability"]["step_logs"] == ["packet received"]
+      and _sh_guard.get("root_gate") is True
+      and _sh_twin["ast_hints"] == _sh_guard["ast_hints"]
+      and _sh_emit is None,
+      f"lint={_sh_lint[:160]} claims={_sh_claims} beta={_sh_beta_claim} "
+      f"emit={str(_sh_emit)[:220]}")
+    check("SH2 an unresolvable reference is a deterministic lint refusal naming the "
+          "closest tabled spelling - the drift the repair rounds used to pay for is "
+          "refused BEFORE any claim",
+      _sh2_lint.startswith("ERR") and "shy.rejected" in _sh2_lint
+      and "closest" in _sh2_lint.lower() and "packet" in _sh2_lint,
+      _sh2_lint[:300])
+    check("SH3 ONE GATE PER ROOT is machine-checked by the marker: a second root_gate "
+          "unit is refused naming the first, so no session can install two root-wide "
+          "admissions (the v4 fatal, closed by the data path rather than by prose)",
+      any("root gate" in str(p) and "T2-736" in str(p) for p in _sh3_problems),
+      str(_sh3_problems)[:300])
+
     for _sp_p in (_sp_alpha, _sp_beta, _sp_fwd, _sp_ok, _sp_symbols_path,
                   _sp_eps, _sp_zeta, _sp_twin, _sp_syms2_path,
-                  _sp7_alpha, _sp7_beta, task_queue.gaps_path(_SP7_SLUG, "Beta"),
-                  _sp8_gap, _sp8_strategy, _sp8_draft,
-                  task_queue.draft_path(_SP9_SLUG, "Fold"), _sp9_sym):
+                  _sp8_strategy, _sp8_draft,
+                  task_queue.draft_path(_SP9_SLUG, "Fold"), _sp9_sym,
+                  _sh_alpha, _sh_beta, _sh_strategy, _sh2_draft,
+                  _sh3_path, settings.QUEUE_DIR / "T0-734-shy.json",
+                  settings.COMPLETE_DIR / "execution-strategy-shz.json",
+                  Path("/tmp/phase2-digest-sply.json"), Path("/tmp/phase2-digest-splm.json"),
+                  Path("/tmp/phase2-digest-spqz.json"),
+                  settings.QUEUE_DIR / "T0-730-sply.json"):
         _sp_p.unlink(missing_ok=True)
+    for _sp_s in ("sply", "splm", "spqz", _SP11_SLUG, _SP11b_SLUG, _SP11c_SLUG, _SP12_SLUG):
+        task_queue.clear_drafts(_sp_s)
+        for _sp_q in list(settings.QUEUE_DIR.glob(f"*-{_sp_s}.json")) + \
+                      list(settings.COMPLETE_DIR.glob(f"*-{_sp_s}.json")):
+            _sp_q.unlink(missing_ok=True)
     for _q in list(settings.QUEUE_DIR.glob("*-splx.json")) + \
               list(settings.COMPLETE_DIR.glob("*-splx.json")):
         _q.unlink()

@@ -1,0 +1,36 @@
+{
+  "id": "T2-007",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-007",
+    "T0-001",
+    "T2-005"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/domain/TelemetrySample.java",
+  "export": "TelemetrySample",
+  "intent": "TelemetrySample is the immutable 1Hz data point: device_id, metric, t_device (the chronological ordering key), t_ingress (never used for ordering), value and the raw payload. withStatus returns a copy tagged with a validation status; the payload is always retained.",
+  "layer": "domain",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.domain",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ValidationStatus",
+        "task_id": "T2-005"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "TelemetrySample withStatus(ValidationStatus status)",
+        "returns": "TelemetrySample"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

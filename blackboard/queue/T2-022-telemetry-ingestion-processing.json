@@ -1,0 +1,42 @@
+{
+  "id": "T2-022",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-022",
+    "T0-001"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/infrastructure/DeviceCredentialAuthenticationManager.java",
+  "export": "DeviceCredentialAuthenticationManager",
+  "intent": "AZ-01 device-credential-proof: httpBasic with a per-device ReactiveAuthenticationManager verifying the secret hash from the credential list (id, secret-hash, scope); no single in-memory dev user. Boot posture: fail-fast when unseeded; the test profile seeds entries.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.infrastructure",
+    "implements": [
+      "ReactiveAuthenticationManager"
+    ],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "Mono<Authentication> authenticate(Authentication authentication)",
+        "returns": "Mono<Authentication>"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "telemetry.ingestion.device-credentials",
+        "kind": "list",
+        "fields": [
+          "id",
+          "secret-hash",
+          "scope"
+        ]
+      }
+    ]
+  }
+}

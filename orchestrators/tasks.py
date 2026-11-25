@@ -416,7 +416,7 @@ def validate_ast_hints(hints):
             return "ast_hints.config must be a list of {path, kind[, fields]} objects (rule (z5))"
         for entry in hints["config"]:
             if not (isinstance(entry, dict)
-                    and {"path", "kind"} <= set(entry) <= {"path", "kind", "fields"}
+                    and {"path", "kind"} <= set(entry) <= {"path", "kind", "fields", "value"}
                     and isinstance(entry["path"], str) and entry["path"].strip()
                     and "/" not in entry["path"]
                     and entry["kind"] in settings.CONFIG_KINDS
@@ -426,9 +426,11 @@ def validate_ast_hints(hints):
                                      for f in entry["fields"])))):
                 return ("each ast_hints.config entry must be {path, kind} (a dotted property "
                         f"path, kind in {list(settings.CONFIG_KINDS)}) plus optional non-empty "
-                        "`fields` (the element keys of a structured path) - the binding unit "
-                        "tables the shape its record declares and the config unit cites it "
-                        "VERBATIM (rule (z5))")
+                        "`fields` (the element keys of a structured path) plus optional `value` "
+                        "(the DEFAULT the document seeds, spelled from the strategy rules - "
+                        "the coverage wire copies the binder's entry to the ONE config unit) "
+                        "- the binding unit tables the shape its record declares and the "
+                        "config unit cites it VERBATIM (rule (z5))")
     return None
 
 
@@ -628,6 +630,28 @@ def _signature_parameters(hints):
             yield signature[signature.index("("):]
 
 
+def per_record_signal_problems(records):
+    """(m)/(d) signal semantics - a PER-RECORD join: a tabled boolean/status return that
+    spells no encoding is a defect the record itself already admits. Extracted 2026-11-25
+    so LINT can say it inside the session's own budget; plan_consistency keeps calling it,
+    so the batch still refuses what a session talked past (one body, two tiers)."""
+    errors = []
+    for task in records:
+        if not isinstance(task, dict) or task.get("stage") not in (1, 2):
+            continue
+        for member in (task.get("ast_hints") or {}).get("methods") or []:
+            if (isinstance(member, dict) and _returns_signal(member.get("returns"))
+                    and not str(member.get("semantics") or "").strip()):
+                errors.append(
+                    f"{task['id']}: tabled method '{member.get('signature')}' returns a "
+                    "SIGNAL but carries no `semantics` - spell what TRUE and what FALSE "
+                    "mean to the caller (accepted/rejected, inserted/duplicate, "
+                    "written/dropped): a false the plan never describes is a false the "
+                    "coder discards, and the caller answers success anyway (2026-11-16: "
+                    "publish()->false silently dropped samples under burst, API lied 202)")
+    return errors
+
+
 def plan_consistency(staged, index):
     """Cross-unit emit checks (FINAL-EVALUATION-seed002 §6 items 1a/1b/1c).
 
@@ -806,19 +830,7 @@ def plan_consistency(staged, index):
     for record in list(index.values()) + list(staged):
         if isinstance(record, dict) and record.get("id"):
             universe.setdefault(str(record.get("project", "")), []).append(record)
-    for task in staged:
-        if task.get("stage") not in (1, 2):
-            continue
-        for member in (task.get("ast_hints") or {}).get("methods") or []:
-            if (isinstance(member, dict) and _returns_signal(member.get("returns"))
-                    and not str(member.get("semantics") or "").strip()):
-                errors.append(
-                    f"{task['id']}: tabled method '{member.get('signature')}' returns a "
-                    "SIGNAL but carries no `semantics` - spell what TRUE and what FALSE "
-                    "mean to the caller (accepted/rejected, inserted/duplicate, "
-                    "written/dropped): a false the plan never describes is a false the "
-                    "coder discards, and the caller answers success anyway (2026-11-16: "
-                    "publish()->false silently dropped samples under burst, API lied 202)")
+    errors.extend(per_record_signal_problems(staged))
     for project, units in sorted(universe.items()):
         live = [u for u in units if isinstance(u, dict)]
         by_product = {}
@@ -896,9 +908,13 @@ def plan_consistency(staged, index):
                 "was a registered island; the seed's core rule never ran). Wrapping the "
                 "stream in an envelope (Mono<ResponseEntity<Flux<...>>>) is the same "
                 "publisher (2026-11-24: an SSE surface hid behind one to pass this check) "
-                "- the honest answers are: name its "
-                "consumer unit in the DAG, route it in the wiring unit's duty list, or "
-                "declare the out-of-process boundary in the strategy")
+                "- the honest answers, in order of cheapness: name its "
+                "consumer unit in the DAG; route it in the wiring unit's duty list; "
+                "spell `out-of-process` / `external subscribers` / `downstream "
+                "subscribers` in THIS unit's OWN intent (the gate reads it per source); "
+                "or write a boundary sentence naming this source into an EXISTING "
+                "strategy text field (operations, traced_from, an assumption - the "
+                "gate reads TEXT, never a new key; the strategy schema is phase 1's)")
         for ret, producers in sorted(factory_claims.items()):
             owner = by_product.get(ret)
             if owner is None or owner.get("stage") not in (1, 2):

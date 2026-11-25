@@ -31,8 +31,12 @@ and `httpx` (the test artifact + test client); the test lane runs against the AS
 re-pin fallback keeps requirements equal to it.
 
 # Worked draft example
-ONE honest unit record for THIS stack - the planner brief lifts it verbatim; the shape
-is law everywhere, these spellings are Python/FastAPI's only. Unit 21 expands to
+TWO honest unit records for THIS stack - the planner brief lifts them
+verbatim; the shape is law everywhere, these spellings are Python/FastAPI's only.
+Unit 21 is the OWNER (inbound surface, its own serves/owns literals, its claimed
+step). Unit 22 is the CONSUMER: `uses_meters`/`uses_routes`/`claims_steps` reference
+21's literals - never a re-spelling; the engine hydrates the canonical entries at
+claim. Unit 21 expands to
 T1-021/T2-021/T3-021 with the IDENTICAL ast_hints pair (the engine mirrors it):
 ```json
 [
@@ -40,16 +44,33 @@ T1-021/T2-021/T3-021 with the IDENTICAL ast_hints pair (the engine mirrors it):
   "dependsOn": {"test": ["T0-001", "T1-020"], "code": ["T0-001", "T2-020"]},
   "test": {"path": "tests/intake/test_ingress_router.py",
            "export": "test_ingress_router",
-           "intent": "Slice drives POST /ingress/packets AT the lookup: owner's packet appended (AZ-02 permitted); a VALID packet bearing a foreign tenant's id REFUSED 403 (cross-owner); duplicate key a no-op; assert the appended row, the refused status, the counted meter."},
+           "intent": "End-to-end request-path slice drives POST /ingress/packets AT the lookup: owner's packet appended (AZ-02 permitted); a VALID packet bearing a foreign tenant's id REFUSED 403 (cross-owner); duplicate key a no-op; assert the appended row, the refused status, the counted meter."},
   "code": {"path": "app/intake/ingress_router.py",
            "export": "ingress_router",
            "intent": "Unit IS the surface 'packet ingest HTTP inbound': AZ-02 tenant-scoped-query enforced at the lookup - get_for_tenant on the injected SampleStore dependency, a foreign tenant's packet never fetched, 403 on refusal; counts telemetry.ingest.accepted per append; duplicate key a no-op.",
+           "claims_steps": ["packet received"],
            "ast_hints": {"package": "app.intake", "implements": [],
              "dependencies": [{"type": "SampleStore", "task_id": "T2-020"}],
              "methods": [{"signature": "ingest(request: IngressRequest) -> None", "returns": "None"}],
              "meters": [{"name": "telemetry.ingest.accepted", "duty": "owns"}],
              "routes": [{"method": "POST", "path": "/ingress/packets", "duty": "serves"}],
-             "config": []}}}]
+             "config": []}}},
+ {"n": 22, "project": "telemetry", "layer": "application", "feature": null,
+  "dependsOn": {"test": ["T0-001"], "code": ["T0-001", "T2-021"]},
+  "test": {"path": "tests/intake/test_window_reader.py",
+           "export": "test_window_reader",
+           "intent": "test_window_reader proves the reader forwards accepted frames and counts the SHARED meter on both branches, against the tables the engine hydrated from unit 21's ownership - no literal unit 22 does not own appears in the test."},
+  "code": {"path": "app/intake/window_reader.py",
+           "export": "window_reader",
+           "intent": "window_reader subscribes the accepted-sample feed and counts the shared meter per forwarded frame; it owns no literal - every fact it reads belongs to unit 21's table.",
+           "ast_hints": {"package": "app.intake", "implements": [],
+             "dependencies": [{"type": "ingress_router", "task_id": "T2-021"}],
+             "methods": [{"signature": "drain(frame: SampleFrame) -> None", "returns": "None"}],
+             "meters": [], "routes": [], "config": []},
+           "uses_meters": ["telemetry.ingest.accepted"],
+           "uses_routes": ["POST /ingress/packets"],
+           "claims_steps": ["packet received"]}}
+]
 ```
 
 # Prohibitions in tasks

@@ -1,0 +1,34 @@
+{
+  "id": "T1-023",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/pulsestream/telemetry/ingestion/interfaces/IngressPacketRequestTest.java",
+  "export": "IngressPacketRequestTest",
+  "intent": "IngressPacketRequestTest validates with a jakarta Validator: a well-formed packet has no violations; blank device_id, empty samples, missing metric or missing t_device each yield a violation; toSamples maps every entry to a TelemetrySample keeping the payload.",
+  "layer": "interface",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.interfaces",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-007"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "List<TelemetrySample> toSamples(Instant tIngress)",
+        "returns": "List<TelemetrySample>"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "id": "T2-015",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-015",
+    "T0-001"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/application/AppendRetryPolicy.java",
+  "export": "AppendRetryPolicy",
+  "intent": "PB-08 bounded-attempts: Reactor retryWhen(Retry.backoff(N, Duration)) with N bound to 3, retrying revision conflicts only behind the dedup identity. PB-09 timeout-budget: Mono.timeout(Duration) applied to each storage call, configured by the timeout key.",
+  "layer": "application",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.application",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "<T> Mono<T> apply(Mono<T> storageCall)",
+        "returns": "Mono<T>"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "telemetry.ingestion.append.retry.max-attempts",
+        "kind": "value",
+        "value": "3"
+      },
+      {
+        "path": "telemetry.ingestion.append.retry.backoff",
+        "kind": "value"
+      },
+      {
+        "path": "telemetry.ingestion.append.timeout",
+        "kind": "value"
+      }
+    ]
+  }
+}

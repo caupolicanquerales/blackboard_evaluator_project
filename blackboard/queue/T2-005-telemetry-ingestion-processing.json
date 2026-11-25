@@ -1,0 +1,36 @@
+{
+  "id": "T2-005",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-005",
+    "T0-001"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/domain/ValidationStatus.java",
+  "export": "ValidationStatus",
+  "intent": "ValidationStatus is the domain enum of the validation outcome carried on each raw record and revision: VALID, or VALIDATION_FAILED for a sample violating a Sensor Metric Boundary (payload kept). Set once at append, never changed.",
+  "layer": "domain",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.domain",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "static ValidationStatus valueOf(String name)",
+        "returns": "ValidationStatus",
+        "semantics": "round-trips VALID and VALIDATION_FAILED spelled exactly; an unknown token throws IllegalArgumentException"
+      },
+      {
+        "signature": "static ValidationStatus[] values()",
+        "returns": "ValidationStatus[]",
+        "semantics": "exactly the constants VALID and VALIDATION_FAILED"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

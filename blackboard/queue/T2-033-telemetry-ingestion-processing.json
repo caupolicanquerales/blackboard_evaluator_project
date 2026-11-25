@@ -1,0 +1,77 @@
+{
+  "id": "T2-033",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-033",
+    "T0-001",
+    "T2-003",
+    "T2-026",
+    "T2-028",
+    "T2-029",
+    "T2-030",
+    "T2-031",
+    "T2-002",
+    "T2-004"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/pulsestream/telemetry/distribution/interfaces/WindowedTelemetryStreamController.java",
+  "export": "WindowedTelemetryStreamController",
+  "intent": "Unit IS the surface 'Windowed telemetry stream HTTP outbound feed': GET streams WindowedTelemetryBroadcast as backpressure-aware server-sent events to external downstream subscribers; AZ-03 service-credential-proof enforced by the pinned ServiceCredentialAuthenticationManager; beyond-cap 503 by the pinned guard.",
+  "layer": "interface",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.distribution.interfaces",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "RootAdmissionGate",
+        "task_id": "T2-003"
+      },
+      {
+        "type": "WindowedTelemetryBroadcast",
+        "task_id": "T2-026"
+      },
+      {
+        "type": "WindowBroadcastService",
+        "task_id": "T2-028"
+      },
+      {
+        "type": "ServiceCredentialAuthenticationManager",
+        "task_id": "T2-029"
+      },
+      {
+        "type": "StreamSubscriberLimitGuard",
+        "task_id": "T2-030"
+      },
+      {
+        "type": "SubscriberBackpressureAdapter",
+        "task_id": "T2-031"
+      },
+      {
+        "type": "ErrorCodeResponseHandler",
+        "task_id": "T2-002"
+      },
+      {
+        "type": "MetricTagBoundConfiguration",
+        "task_id": "T2-004"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Flux<ServerSentEvent<WindowedTelemetryBroadcast>> subscribe(Authentication authentication)",
+        "returns": "Flux<ServerSentEvent<WindowedTelemetryBroadcast>>"
+      }
+    ],
+    "meters": [],
+    "routes": [
+      {
+        "method": "GET",
+        "path": "/telemetry/stream/windows",
+        "duty": "serves"
+      }
+    ],
+    "config": []
+  }
+}

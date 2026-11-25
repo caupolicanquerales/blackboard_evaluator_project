@@ -1,0 +1,35 @@
+{
+  "id": "T1-005",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/pulsestream/telemetry/ingestion/domain/ValidationStatusTest.java",
+  "export": "ValidationStatusTest",
+  "intent": "ValidationStatusTest proves the enum carries exactly the tokens VALID and VALIDATION_FAILED, that valueOf round-trips each token spelled exactly, and that an unknown token is refused with an IllegalArgumentException.",
+  "layer": "domain",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.domain",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "static ValidationStatus valueOf(String name)",
+        "returns": "ValidationStatus",
+        "semantics": "round-trips VALID and VALIDATION_FAILED spelled exactly; an unknown token throws IllegalArgumentException"
+      },
+      {
+        "signature": "static ValidationStatus[] values()",
+        "returns": "ValidationStatus[]",
+        "semantics": "exactly the constants VALID and VALIDATION_FAILED"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

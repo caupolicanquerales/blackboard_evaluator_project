@@ -73,8 +73,13 @@ board's structural slots; this section is the mapping - a task record that spell
 value outside these forms is off-plan for this stack.
 
 # Worked draft example
-ONE honest unit record for THIS stack - the planner brief lifts it verbatim; the shape
-is law everywhere, these spellings are Java/Spring's only. Unit 21 expands to
+TWO honest unit records for THIS stack - the planner brief lifts them
+verbatim; the shape is law everywhere, these spellings are Java/Spring's only.
+Unit 21 is the OWNER: the inbound surface typing its own serves/owns literals and
+claiming its step. Unit 22 is the CONSUMER: `uses_meters`/`uses_routes`/`claims_steps`
+reference 21's literals and re-spell NOTHING - the engine hydrates the canonical
+entries at claim, and hand-copying an owner's literal is the drift the batch join
+refuses (z). Unit 21 expands to
 T1-021/T2-021/T3-021 with the IDENTICAL ast_hints pair (the engine mirrors it):
 ```json
 [
@@ -82,14 +87,31 @@ T1-021/T2-021/T3-021 with the IDENTICAL ast_hints pair (the engine mirrors it):
   "dependsOn": {"test": ["T0-001", "T1-020"], "code": ["T0-001", "T2-020"]},
   "test": {"path": "src/test/java/com/acme/intake/IngressControllerTest.java",
            "export": "IngressControllerTest",
-           "intent": "Slice drives POST /ingress/packets AT the lookup: owner's packet appended (AZ-02 permitted); a VALID packet bearing a foreign tenant's id REFUSED 403 (cross-owner); duplicate key a no-op; assert the appended row, the refused status, the counted meter."},
+           "intent": "End-to-end request-path slice drives POST /ingress/packets AT the lookup: owner's packet appended (AZ-02 permitted); a VALID packet bearing a foreign tenant's id REFUSED 403 (cross-owner); duplicate key a no-op; assert the appended row, the refused status, the counted meter."},
   "code": {"path": "src/main/java/com/acme/intake/IngressController.java",
            "export": "IngressController",
            "intent": "Unit IS the surface 'packet ingest HTTP inbound': AZ-02 tenant-scoped-query enforced at the lookup - byIdAndTenant on the pinned SampleStore, a foreign tenant's packet never fetched, 403 on refusal; counts telemetry.ingest.accepted per append; duplicate key a no-op.",
+           "claims_steps": ["packet received"],
            "ast_hints": {"package": "com.acme.intake", "implements": [],
              "dependencies": [{"type": "SampleStore", "task_id": "T2-020"}],
              "methods": [{"signature": "ResponseEntity<Void> ingest(IngressRequest request)", "returns": "ResponseEntity<Void>"}],
              "meters": [{"name": "telemetry.ingest.accepted", "duty": "owns"}],
              "routes": [{"method": "POST", "path": "/ingress/packets", "duty": "serves"}],
-             "config": []}}}]
+             "config": []}}},
+ {"n": 22, "project": "telemetry", "layer": "application", "feature": null,
+  "dependsOn": {"test": ["T0-001"], "code": ["T0-001", "T2-021"]},
+  "test": {"path": "src/test/java/com/acme/intake/WindowReaderTest.java",
+           "export": "WindowReaderTest",
+           "intent": "WindowReaderTest proves the reader forwards accepted frames and counts the SHARED meter on both branches, against the tables the engine hydrated from unit 21's ownership - the test names no literal unit 22 does not own."},
+  "code": {"path": "src/main/java/com/acme/intake/WindowReader.java",
+           "export": "WindowReader",
+           "intent": "WindowReader subscribes the accepted-sample feed and counts the shared meter per forwarded frame; it owns no literal - every fact it reads belongs to unit 21's table.",
+           "ast_hints": {"package": "com.acme.intake", "implements": [],
+             "dependencies": [{"type": "IngressController", "task_id": "T2-021"}],
+             "methods": [{"signature": "drain(SampleFrame frame)", "returns": "void"}],
+             "meters": [], "routes": [], "config": []},
+           "uses_meters": ["telemetry.ingest.accepted"],
+           "uses_routes": ["POST /ingress/packets"],
+           "claims_steps": ["packet received"]}}
+]
 ```

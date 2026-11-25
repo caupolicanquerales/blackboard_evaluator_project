@@ -1,0 +1,117 @@
+{
+  "id": "T2-016",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-016",
+    "T0-001",
+    "T2-006",
+    "T2-007",
+    "T2-008",
+    "T2-009",
+    "T2-010",
+    "T2-011",
+    "T2-013",
+    "T2-014",
+    "T2-015"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/application/IngestTelemetryUseCase.java",
+  "export": "IngestTelemetryUseCase",
+  "intent": "Ingestion use case: refuses samples failing the pinned DeviceBindingPolicy (audited), validates via SensorMetricBoundary, orders by t_device within the reorder window (never t_ingress), appends in batches through the guarded retried store. Dedup identity is (device_id, metric, t_device): identical value is a no-op, a different value appends a revision; then publishes the event and audits. PB-05 batch-load: Reactor bufferTimeout(n, Duration) bounds records per write by the batch-size key.",
+  "layer": "application",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "SensorMetricBoundary",
+        "task_id": "T2-006"
+      },
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-007"
+      },
+      {
+        "type": "IngestionEvent",
+        "task_id": "T2-008"
+      },
+      {
+        "type": "TelemetryRecordStore",
+        "task_id": "T2-009"
+      },
+      {
+        "type": "EventPublisher",
+        "task_id": "T2-010"
+      },
+      {
+        "type": "AuditPort",
+        "task_id": "T2-011"
+      },
+      {
+        "type": "DeviceBindingPolicy",
+        "task_id": "T2-013"
+      },
+      {
+        "type": "AppendConcurrencyGuard",
+        "task_id": "T2-014"
+      },
+      {
+        "type": "AppendRetryPolicy",
+        "task_id": "T2-015"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Flux<TelemetrySample> ingest(String authenticatedDeviceId, List<TelemetrySample> samples)",
+        "returns": "Flux<TelemetrySample>",
+        "semantics": "samples must not be empty"
+      }
+    ],
+    "meters": [
+      {
+        "name": "telemetry.ingest.samples",
+        "duty": "owns"
+      },
+      {
+        "name": "telemetry.ingest.validation_failed",
+        "duty": "owns"
+      },
+      {
+        "name": "telemetry.ingest.duplicates",
+        "duty": "owns"
+      },
+      {
+        "name": "telemetry.ingest.revisions",
+        "duty": "owns"
+      },
+      {
+        "name": "telemetry.ingest.append.latency",
+        "duty": "owns"
+      }
+    ],
+    "routes": [],
+    "config": [
+      {
+        "path": "telemetry.ingestion.reorder.window",
+        "kind": "value",
+        "value": "60s"
+      },
+      {
+        "path": "telemetry.ingestion.batch.size",
+        "kind": "value"
+      }
+    ]
+  },
+  "observability": {
+    "step_logs": [
+      "sample validated",
+      "sample tagged VALIDATION_FAILED",
+      "duplicate retry ignored",
+      "event revision appended",
+      "sample appended"
+    ]
+  }
+}

@@ -36,7 +36,12 @@ def load_env(path=REPO_ENV):
             continue
         key, value = line.split("=", 1)
         key = key.strip()
-        value = value.strip().strip('"').strip("'")
+        value = value.strip()
+        # strip ONLY a balanced enclosing quote pair: `.strip('"')` ate trailing
+        # and mismatched quotes inside tokens/header values (2026-11-25 review:
+        # fragile .env parsing; python-dotenv is not a guaranteed dependency)
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
+            value = value[1:-1]
         if key and key not in os.environ:
             os.environ[key] = value
 

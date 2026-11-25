@@ -1,0 +1,43 @@
+{
+  "id": "T1-015",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/pulsestream/telemetry/ingestion/application/AppendRetryPolicyTest.java",
+  "export": "AppendRetryPolicyTest",
+  "intent": "AppendRetryPolicyTest covers PB-08 bounded-attempts: a revision-conflict append is attempted at most 3 times then fails; a success on attempt 2 completes. PB-09 timeout-budget: a hanging storage call is cut at the configured deadline. Uses virtual time.",
+  "layer": "application",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.application",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "<T> Mono<T> apply(Mono<T> storageCall)",
+        "returns": "Mono<T>"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "telemetry.ingestion.append.retry.max-attempts",
+        "kind": "value",
+        "value": "3"
+      },
+      {
+        "path": "telemetry.ingestion.append.retry.backoff",
+        "kind": "value"
+      },
+      {
+        "path": "telemetry.ingestion.append.timeout",
+        "kind": "value"
+      }
+    ]
+  }
+}

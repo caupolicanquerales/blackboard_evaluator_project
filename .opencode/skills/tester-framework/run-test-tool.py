@@ -38,6 +38,11 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 MAX_EXCERPT_LINES = 40
+# (O1 2026-11-25 verdict contract) The schema this tool's output speaks. The engine
+# binds EVERY decision to typed fields; a verdict without this stamp is a contract
+# violation: caches refuse to replay it and fresh runs carry it. Bump on any field
+# change, so a paid gate never re-decides from a schema it cannot read.
+VERDICT_VERSION = 2
 MAX_LIST = 50
 
 # These tokens need a real shell; with argv-only execution they would silently
@@ -64,6 +69,10 @@ RE_POSITIONED_FILE = re.compile(
     r"(\S+\.(?:java|kt|kts|scala|groovy|ts|tsx|js|jsx|mjs|cjs|go|py|rs|rb|php|c|h|cc|cpp|hpp|cs|swift))"
     r":?[\[(](\d+)")
 RE_JAVAC_LOCATION = re.compile(r"^\s*location:\s*(?:class|interface|record|enum)\s+(\S+)")
+# `location: package com.x.y` proves the PACKAGE resolves on the classpath and merely
+# lacks the class - a payload defect of the importing file, never a scheduling hole.
+# Normalized to `package_symbol_demands` so the engine never re-scans javac pairing.
+RE_JAVAC_LOCATION_PACKAGE = re.compile(r"^\s*location:\s*package\s+([\w.]+)")
 # `location: variable NAME of type com.x.Receiver<...>`: javac's phrasing when the receiver
 # object resolves but the member on its TYPE does not. A `symbol: class Nested` under a
 # `location: class Outer` names a NESTED type of the owner (Outer.Nested), never a gap in
@@ -152,6 +161,73 @@ RE_PASS_EVIDENCE = re.compile(
 )
 
 
+def unit_match(cmd, classes):
+    """Which suite-reported class a scoped command's selector names (O2 2026-11-25).
+
+    The selector is toolchain grammar (-Dtest=, -run, jest pattern, pytest path), so the
+    join from selector to the suite's `classes` keys lives HERE, at the parser, not in
+    the engine's fuzzy stem normalization. Deterministic tiers only: exact key, simple-
+    name equality, case-insensitive simple name. NO unique hit -> class_key None, and
+    the engine falls to the unit's own scoped build instead of guessing - an ambiguous
+    match is answered by a build, never by a heuristic.
+    """
+    try:
+        toks = shlex.split(cmd or "")
+    except ValueError:
+        toks = (cmd or "").split()
+    selector = None
+    for t in toks:
+        if t.startswith("-Dtest="):
+            selector = t[len("-Dtest="):].split("#")[0].split(",")[0]
+    if selector is None and "-run" in toks and toks.index("-run") + 1 < len(toks):
+        selector = toks[toks.index("-run") + 1]
+    if selector is None and "npx" in toks:
+        i = toks.index("npx")
+        selector = next((t for t in toks[i + 2:] if not t.startswith("-")), None)
+    if selector is None and any("pytest" in t for t in toks):
+        # ONLY a pytest invocation makes a .py argv token a selector; a bare
+        # `python3 script.py` command has no unit to select (smoke-caught 2026-11-25)
+        selector = next((t for t in toks if t.endswith(".py") or ".py::" in t), None)
+        if selector:
+            selector = selector.split("::")[0]
+    if not selector:
+        return None
+    def tail(k):
+        return k.split("$")[0].split("/")[-1].split(".")[-1]
+    want = re.sub(r"\.py$", "", selector.split("/")[-1])
+    keys = list(classes or {})
+    hits = [k for k in keys if k == selector
+            or tail(k) == want
+            or tail(k).lower() == want.lower()]
+    if len(hits) != 1:
+        return {"selector": selector, "class_key": None, "candidates": len(hits)}
+    return {"selector": selector, "class_key": hits[0], "candidates": 1}
+
+
+RE_JAVA_FRAME = re.compile(
+    r"^\s*at\s+[\w.$<>()\[\], -]+?\(([\w$]+\.(?:java|kt|kts|scala|groovy)):(\d+)(?::\d+)?\)")
+RE_PY_FRAME = re.compile(r"\s*File \"[^\"]*[\\/]([\w$]+\.py)\", line (\d+)")
+RE_JS_FRAME = re.compile(
+    r"^\s*at\s+[^()]+\(([\w$./\\-]+\.(?:ts|tsx|js|jsx|mjs|cjs)):(\d+)(?::\d+)?\)")
+
+
+def stack_frame_files(lines):
+    """(O1 2026-11-25) Basenames named by RUNTIME stack frames - the toolchain shapes
+    belong here, not in the engine's terminal-suite attribution. A red delivered test
+    whose failure trace points at a production file blames that file's owner; the
+    engine joins the basename to the task registry, it never reads a frame line."""
+    out = []
+    for line in lines:
+        for rx in (RE_JAVA_FRAME, RE_PY_FRAME, RE_JS_FRAME):
+            m = rx.search(line)
+            if m:
+                base = m.group(1).replace("\\", "/").split("/")[-1]
+                if base not in out:
+                    out.append(base)
+                break
+    return out[:MAX_LIST]
+
+
 def shell_guard(cmd):
     """Reject commands whose unquoted text needs a shell.
 
@@ -211,6 +287,17 @@ def unique(items):
     return out[:MAX_LIST]
 
 
+def unique_pkg_demands(items):
+    """Order-preserving dedupe of {symbol, package} dicts (json-key identity)."""
+    seen, out = set(), []
+    for d in items:
+        key = json.dumps(d, sort_keys=True)
+        if key not in seen:
+            seen.add(key)
+            out.append(d)
+    return out[:MAX_LIST]
+
+
 def unique_demands(items):
     """`unique` for dict entries: identity is (member, owner, kind), kept hashable."""
     seen, out = set(), []
@@ -265,6 +352,23 @@ def _follow_message(lines, i):
     return " | ".join(collected)[:320]
 
 
+def _class_of(test_name):
+    """The FAILING CLASS a surefire test name names: `com.x.BoxTest.shouldSave` ->
+    `com.x.BoxTest`; `shouldSave(BoxTest)` -> `BoxTest` (paren form). '' when no class
+    can be typed (go/jest names) - consumers fall back to the test string, never to a
+    stem guess (O2: the engine joins red classes to owners by this field)."""
+    import os as _os
+    name = str(test_name or "").strip()
+    m = re.search(r"\(([\w.$]+)\)\s*$", name)
+    if m:
+        return m.group(1)
+    name = re.sub(r"\(.*\)$", "", name).split(" ")[0]
+    parts = [q for q in name.split(".") if q]
+    if len(parts) >= 2 and parts[-1][:1].islower():
+        return ".".join(parts[:-1])
+    return ""
+
+
 def parse(output, root=None):
     # Maven's logger wraps some plugin/javac detail lines in `[ERROR] ` and leaves others
     # raw; anchored symbol/location parsing must see both alike. Positions are preserved
@@ -280,6 +384,13 @@ def parse(output, root=None):
     beans = []
     # Mockability gaps (sealed/final type a frozen test stubs), simple type names (index 8).
     mocks = []
+    # (O1 2026-11-25 verdict contract) Every compile-error position, as a file BASENAME:
+    # the engine attributes blame against the task registry from THIS field and never
+    # scans excerpt text for `file:line:` shapes again.
+    blamed = []
+    # Symbols missing from a package that RESOLVES (see RE_JAVAC_LOCATION_PACKAGE):
+    # [{symbol, package}] - a payload defect of the importing file, not a hole.
+    pkg_demands = []
 
     def owner_of(type_name):
         head = type_name.split("<", 1)[0].rstrip(";,)")
@@ -328,6 +439,17 @@ def parse(output, root=None):
             return None
         return None
 
+    def javac_location_package(idx):
+        # The same 3-line window javac_location_owner scans, for the package spelling.
+        for follow in lines[idx + 1:idx + 4]:
+            m = RE_JAVAC_LOCATION_PACKAGE.match(follow)
+            if m:
+                return m.group(1)
+            if RE_JAVAC_LOCATION.match(follow) or RE_JAVAC_LOCATION_VARIABLE.match(follow) \
+                    or RE_COMPILE_HEAD.search(follow):
+                return None
+        return None
+
     def javac_location_owner(idx):
         # symbol:/location: pairs may interleave a `kind:` line; stop at the next block.
         # Two location shapes: `location: class com.x.Box<T>` (reference inside/through
@@ -346,6 +468,7 @@ def parse(output, root=None):
             compile_hit = True
             head = RE_POSITIONED_FILE.search(line)
             if head:
+                blamed.append(head.group(1).rsplit("/", 1)[-1].lstrip("."))
                 kind = next((k for k, pattern in PROBLEM_KIND_PATTERNS
                              if pattern.search(line)), "other")
                 entry = {"file": head.group(1).rsplit("/", 1)[-1].lstrip("."),
@@ -371,6 +494,10 @@ def parse(output, root=None):
                     if (owner and member.group(1) == "variable" and head and
                             owner == head.group(1).rsplit("/", 1)[-1].rsplit(".", 1)[0]):
                         owner = None
+                    if owner is None and member.group(1) == "class":
+                        pkg = javac_location_package(i + offset + 1)
+                        if pkg:
+                            pkg_demands.append({"symbol": member.group(2), "package": pkg})
                     if owner:
                         entry = {"member": member.group(2), "owner": owner,
                                  "kind": member.group(1)}
@@ -412,12 +539,14 @@ def parse(output, root=None):
         matched_failure = False
         m = RE_JUNIT_SUMMARY.match(line)
         if m:
-            failures.append({"test": m.group(1).strip(), "message": m.group(2).strip()[:300]})
+            failures.append({"test": m.group(1).strip(), "message": m.group(2).strip()[:300],
+                             "class": _class_of(m.group(1))})
             matched_failure = True
         else:
             m = RE_JUNIT_FAIL.match(line)
             if m:
-                failures.append({"test": m.group(1).strip(), "message": _follow_message(lines, i)})
+                failures.append({"test": m.group(1).strip(), "message": _follow_message(lines, i),
+                                 "class": _class_of(m.group(1))})
                 matched_failure = True
             else:
                 m = RE_GO_FAIL.match(line)
@@ -438,7 +567,7 @@ def parse(output, root=None):
     return (compile_hit, unique(missing), unique(missing_packages),
             tag_mock_gaps(failures)[:MAX_LIST],
             parse_counts(output), unique_demands(demands), unique_problems(problems),
-            unique(beans), unique(mocks))
+            unique(beans), unique(mocks), unique_pkg_demands(pkg_demands), unique(blamed))
 
 
 def parse_counts(output):
@@ -602,18 +731,19 @@ def main():
 
     blocked = shell_guard(args.cmd)
     if blocked:
-        print(json.dumps({"status": "not_run", "reason": blocked}, indent=2))
+        print(json.dumps({"verdict_version": VERDICT_VERSION,
+                         "status": "not_run", "reason": blocked}, indent=2))
         return 1
 
     started = time.time()
     exit_code, output = run(args.cmd, args.cwd, args.timeout)
     if exit_code is None:
-        result = {"status": "not_run", "reason": output}
+        result = {"verdict_version": VERDICT_VERSION, "status": "not_run", "reason": output}
         print(json.dumps(result, indent=2))
         return 1
 
     (compile_hit, missing, missing_packages, failures, counts, demands, problems,
-     beans, mocks) = parse(output, args.cwd)
+     beans, mocks, pkg_demands, blamed_files) = parse(output, args.cwd)
     status = classify(exit_code, compile_hit, missing, failures, counts, output)
     xml_evidence = None
     if status == "not_run" and exit_code == 0:
@@ -628,6 +758,7 @@ def main():
     else:
         classes = parse_classes(output)
     result = {
+        "verdict_version": VERDICT_VERSION,
         "status": status,
         "exit_code": exit_code,
         "missing_symbols": missing,
@@ -635,7 +766,16 @@ def main():
         "failures": failures,
         "counts": counts,
         "classes": classes,
+        "blamed_files": blamed_files,
     }
+    if pkg_demands:
+        result["package_symbol_demands"] = pkg_demands
+    match = unit_match(args.cmd, classes)
+    if match:
+        result["unit_match"] = match
+    frames = stack_frame_files(output.splitlines())
+    if frames:
+        result["stack_files"] = frames
     if xml_evidence:
         result["evidence"] = "surefire-xml"
     if demands:

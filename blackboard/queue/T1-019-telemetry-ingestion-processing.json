@@ -1,0 +1,41 @@
+{
+  "id": "T1-019",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T0-003"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/pulsestream/telemetry/ingestion/infrastructure/AuditTrailAdapterTest.java",
+  "export": "AuditTrailAdapterTest",
+  "intent": "AuditTrailAdapterTest covers SI-09 audit-event on the REAL migrated substrate, each case with a unique correlation id: record appends one audit_trail row with actor, action, outcome, correlation id; masked values only; no update or delete is exposed.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.infrastructure",
+    "implements": [
+      "AuditPort"
+    ],
+    "dependencies": [
+      {
+        "type": "AuditPort",
+        "task_id": "T2-011"
+      },
+      {
+        "type": "RedactionPort",
+        "task_id": "T2-012"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> record(String actor, String action, String outcome, String correlationId)",
+        "returns": "Mono<Void>"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

@@ -124,7 +124,7 @@ def run_verification(project_root, mode, scope, task, timeout):
         return False, reason
 
 
-_VERIFY_MEMO = {}   # (root, mode) -> (tree-fingerprint, ok, reason)
+_VERIFY_MEMO = {}   # (root, mode) -> (tree-fingerprint, ok, reason, typed-verdict)
 
 
 def verify_project(project_root, mode, timeout):
@@ -140,6 +140,9 @@ def verify_project(project_root, mode, timeout):
     if command is None:
         return True, ""
     import test_gate
+    # O4: hash the CANONICAL tree (after the engine's own deterministic normalizers)
+    # so a repair pass is never mistaken for an agent's change to the tree
+    test_gate.canonicalize_tree(project_root)
     fingerprint = test_gate._tree_fingerprint(project_root)
     memo = _VERIFY_MEMO.get((str(project_root), mode))
     if memo and memo[0] == fingerprint:
@@ -148,12 +151,30 @@ def verify_project(project_root, mode, timeout):
         code, output = _run_verification(command, project_root, timeout)
         if code is None:
             telemetry.mark_error(current, output)
-            _VERIFY_MEMO[(str(project_root), mode)] = (fingerprint, False, output)
+            _VERIFY_MEMO[(str(project_root), mode)] = (
+                fingerprint, False, output,
+                {"verdict_version": test_gate._runner_module().VERDICT_VERSION,
+                 "status": "not_run", "reason": output})
             return False, output
         if code == 0:
-            _VERIFY_MEMO[(str(project_root), mode)] = (fingerprint, True, "")
+            _VERIFY_MEMO[(str(project_root), mode)] = (
+                fingerprint, True, "",
+                {"verdict_version": test_gate._runner_module().VERDICT_VERSION,
+                 "status": "passed", "exit_code": 0})
             return True, ""
         reason = f"verification failed: {agent_runners.verify_tail(output)}"
         telemetry.mark_error(current, reason)
-        _VERIFY_MEMO[(str(project_root), mode)] = (fingerprint, False, reason)
+        # O1 (2026-11-25): the build's raw text is normalized through the TEST TOOL'S
+        # parser - one dialect owner for every verdict source, not only test runs.
+        # Deferral decisions downstream read THIS field set, never the reason string.
+        _VERIFY_MEMO[(str(project_root), mode)] = (
+            fingerprint, False, reason,
+            test_gate.parse_verdict_text(output, project_root))
         return False, reason
+
+
+def verify_verdict(project_root, mode):
+    """The typed verdict behind the last (root, mode) memo, or None when uncached.
+    (O1) The evaluator-gate deferral reads missing_symbols/problem_kinds from here."""
+    memo = _VERIFY_MEMO.get((str(project_root), mode))
+    return memo[3] if memo and len(memo) > 3 else None

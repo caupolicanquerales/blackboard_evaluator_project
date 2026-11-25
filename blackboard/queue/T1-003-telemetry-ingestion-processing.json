@@ -1,0 +1,55 @@
+{
+  "id": "T1-003",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-001",
+    "T1-002"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/pulsestream/telemetry/shared/RootAdmissionGateTest.java",
+  "export": "RootAdmissionGateTest",
+  "intent": "WebTestClient integration slice (request-path) over the chain, each case on a UNIQUE path with a fresh client, no shared state: unauthenticated request to every addressed surface refused 401 with a code-only body; an unlisted path denied by default; the actuator health stays reachable.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.shared",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ErrorCodeResponseHandler",
+        "task_id": "T2-002"
+      },
+      {
+        "type": "ServiceCredentialAuthenticationManager",
+        "task_id": "T2-029"
+      },
+      {
+        "type": "MetricTagBoundConfiguration",
+        "task_id": "T2-004"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http)",
+        "returns": "SecurityWebFilterChain"
+      }
+    ],
+    "meters": [],
+    "routes": [
+      {
+        "method": "POST",
+        "path": "/telemetry/packets",
+        "duty": "uses"
+      },
+      {
+        "method": "GET",
+        "path": "/telemetry/stream/windows",
+        "duty": "uses"
+      }
+    ],
+    "config": []
+  }
+}

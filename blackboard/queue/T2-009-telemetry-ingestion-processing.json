@@ -1,0 +1,49 @@
+{
+  "id": "T2-009",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-009",
+    "T0-001",
+    "T2-007"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/pulsestream/telemetry/ingestion/application/TelemetryRecordStore.java",
+  "export": "TelemetryRecordStore",
+  "intent": "TelemetryRecordStore is the outbound port over raw records and event revisions: insert-only operations, no update or delete member. Latest-revision lookup by identity classifies retry versus correction; readPage is a keyset read by t_device with a bounded limit.",
+  "layer": "application",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "TelemetrySample",
+        "task_id": "T2-007"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> appendRecord(TelemetrySample sample)",
+        "returns": "Mono<Void>"
+      },
+      {
+        "signature": "Mono<Void> appendRevision(TelemetrySample sample, int revisionNumber, String reason)",
+        "returns": "Mono<Void>"
+      },
+      {
+        "signature": "Mono<Integer> findLatestRevisionNumber(String deviceId, String metric, Instant tDevice)",
+        "returns": "Mono<Integer>"
+      },
+      {
+        "signature": "Flux<TelemetrySample> readPage(String deviceId, String metric, Instant afterTDevice, int limit)",
+        "returns": "Flux<TelemetrySample>",
+        "semantics": "limit is positive and at most the configured maximum page size"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

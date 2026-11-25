@@ -8,6 +8,7 @@ context (digest slice + symbol table), then the engine itself runs the single ba
 `--emit` and, on refusal, bounded repair sessions carrying only the error text.
 """
 import argparse
+from pathlib import Path
 import builtins
 import json
 import sys
@@ -206,8 +207,23 @@ def _plan_domain_tasks(args, backend, slug):
         return False, ("the phase-2 digest refused - a duty or covers id resolves to no "
                        "rule row; relaunch with --replan " + slug)
     print(f"[digst] {slug}: {digest.name} carries duties, joined rules, matched table rows")
-    contexts = ddd.context_draft_order(slug)
-    if not contexts:
+    # R1: snapshot the binding inputs BEFORE any session can touch them
+    task_queue.snapshot_plan_inputs(slug)
+    # PHASE 1.5 (2026-11-25 root restructure): the ONE stage-0 build-manifest is ENGINE
+    # data - the stack table's Build coordinates rows filtered against the PLANNED
+    # capability set - queued deterministically before any session. The first-drafter
+    # bootstrap and the missing_coordinates channel are deleted; every context sees the
+    # same scheduled manifest in the stage-0 summary and reaches it mechanically.
+    manifest_id, manifest_notes, manifest_problems = ddd.plan_build_manifest(slug)
+    for line in manifest_notes:
+        print(f"[wire  ] {slug}: {line}")
+    for line in manifest_problems:
+        print(f"[fatal] manifest prepass {slug}: {line}")
+    if manifest_problems:
+        return False, ("the engine could not queue the ONE build manifest: "
+                       + "; ".join(manifest_problems[:3]))
+    contexts = [ddd.ROOT_CONTEXT] + ddd.context_draft_order(slug)
+    if len(contexts) == 1:
         return False, f"{slug}: the strategy declares no bounded contexts to plan"
     # selective clear (2026-11-20 resume economics): drafts newer than every plan input
     # are the previous (crashed or budget-killed) run's RESULT and are claimed without a
@@ -218,9 +234,12 @@ def _plan_domain_tasks(args, backend, slug):
         if path.is_file() and not task_queue.draft_is_fresh(slug, context):
             path.unlink()
             removed.append(path.name)
-        gaps = task_queue.gaps_path(slug, context)
-        if gaps.is_file() and not path.is_file():
-            removed.append(gaps.unlink() or gaps.name)
+            task_queue.draft_meta_path(slug, context).unlink(missing_ok=True)
+        # (PHASE 1.5) the .gaps.json channel is deleted; a lingering file from an old
+        # board is stale noise and goes with its draft
+        legacy = str(path)[:-len(".json")] + ".gaps.json"
+        if Path(legacy).is_file():
+            Path(legacy).unlink()
     if removed:
         print(f"[draft ] {slug}: cleared stale drafts {', '.join(removed)}")
     drafted = []
@@ -244,8 +263,7 @@ def _plan_domain_tasks(args, backend, slug):
                 workspace.get_project_root(), getattr(backend, "RUNNER_SCRIPT", ""),
                 slug, context, task_queue.draft_path(slug, context), slice_path,
                 symbols_path, _next_free_for(slug),
-                [c for c in contexts if c not in drafted and c != context],
-                task_queue.gaps_path(slug, context))
+                [c for c in contexts if c not in drafted and c != context])
             ok, reason = backend.run_planner(args, slug, context, message)
             if not ok:
                 return False, f"{slug}/{context}: {reason}"
@@ -257,10 +275,18 @@ def _plan_domain_tasks(args, backend, slug):
             round_left -= 1
             print(f"[repair] {slug}/{context}: {len(claim_problems)} draft problem(s), "
                   f"{round_left} repair session(s) left")
+            for line in claim_problems[:8]:
+                # a supervisor that cannot see the refusal text cannot root-cause a stop
+                print(f"[repair]   {line[:240]}")
+            before = _repair_fingerprint(slug, [context])
             backend.run_planner_repair(
                 args, slug, prompts.build_planner_repair_prompt(
                     getattr(backend, "RUNNER_SCRIPT", ""), slug, "\n".join(claim_problems[:40]),
                     [task_queue.draft_path(slug, context)], digest))
+            if _repair_fingerprint(slug, [context]) == before:
+                return False, (f"{slug}/{context}: the repair session changed no draft "
+                               "byte - refusing identically would burn the next round; "
+                               "operator decision or --replan " + slug)
             claim_problems, more = task_queue.claim_draft(slug, context)
             renames.update(more)
         if claim_problems:
@@ -268,51 +294,107 @@ def _plan_domain_tasks(args, backend, slug):
                            f"{PLANNER_REPAIR_ROUNDS} repair session(s): "
                            + "\n".join(claim_problems[:5]))
         drafted.append(context)
-    # X11 close (2026-11-20 operator catch): consume the structured gap reports BEFORE the
-    # batch emit - a coordinate reported by context B lands on the ONE build-manifest task
-    # by Python append; only a gap with no manifest to amend reaches a repair session.
-    gap_problems, gap_notes = task_queue.apply_coordinate_gaps(slug, drafted)
-    for note in gap_notes:
-        print(f"[gap   ] {slug}: {note}")
-    round_left = PLANNER_REPAIR_ROUNDS
-    while gap_problems and round_left:
-        round_left -= 1
-        print(f"[gap   ] {slug}: {len(gap_problems)} unapplied coordinate problem(s), "
-              f"{round_left} repair session(s) left")
-        backend.run_planner_repair(
-            args, slug, prompts.build_planner_repair_prompt(
-                getattr(backend, "RUNNER_SCRIPT", ""), slug, "\n".join(gap_problems[:40]),
-                [task_queue.draft_path(slug, c) for c in drafted]
-                + [task_queue.gaps_path(slug, c) for c in drafted
-                   if task_queue.gaps_path(slug, c).is_file()], digest))
-        gap_problems, more_notes = task_queue.apply_coordinate_gaps(slug, drafted)
-        for note in more_notes:
-            print(f"[gap   ] {slug}: {note}")
-    if gap_problems:
-        return False, ("build coordinates were reported with no lawful place to land: "
-                       + "\n".join(gap_problems[:3]))
+    # (PHASE 1.5 2026-11-25) the X11 gap consumption lived here; the channels are
+    # gone - the manifest is engine-queued and config coverage is wired at the emit.
+    # (R3 2026-11-25) refusals are ROUTED: an `ERR [id]` pointer knows its owner, and
+    # the owner is exactly one context file. A one-unit defect dragged every draft file
+    # and the whole digest into each billed whole-domain repair round - the shape the
+    # plan bled on. Each bucket now gets its lines, its files, and its own rounds;
+    # genuinely cross-context lines ("domain" bucket) keep the whole-batch treatment.
     reason = task_queue.emit_draft_batch(slug, drafted)
-    round_left = PLANNER_REPAIR_ROUNDS
-    while reason and round_left:
-        round_left -= 1
+    total_rounds, max_rounds = 0, PLANNER_REPAIR_ROUNDS * 2
+    bucket_rounds = {}
+    stuck = {}
+    while reason and total_rounds < max_rounds:
+        buckets = task_queue.route_refusals(reason, slug, drafted)
         errors = len([line for line in reason.splitlines() if line.startswith("ERR")])
-        print(f"[emit  ] {slug}: the batch refused ({errors} error line(s)); "
-              f"{round_left} repair session(s) left")
-        backend.run_planner_repair(
-            args, slug, prompts.build_planner_repair_prompt(
-                getattr(backend, "RUNNER_SCRIPT", ""), slug, reason,
-                [task_queue.draft_path(slug, c) for c in drafted], digest))
+        blame = ", ".join(f"{k} [{len(v)} line(s)]" for k, v in sorted(buckets.items()))
+        print(f"[emit  ] {slug}: the batch refused ({errors} error line(s)); blame: "
+              f"{blame or 'no routed lines'}")
+        for line in [l for l in reason.splitlines() if l.startswith("ERR")][:8]:
+            print(f"[emit  ]   {line[:240]}")
+        progress = False
+        for bucket, lines in sorted(buckets.items()):
+            files = drafted if bucket == "domain" else [bucket]
+            if bucket_rounds.get(bucket, 0) >= PLANNER_REPAIR_ROUNDS:
+                continue  # this bucket had its rounds; the domain verdict stands
+            bucket_rounds[bucket] = bucket_rounds.get(bucket, 0) + 1
+            total_rounds += 1
+            before = _repair_fingerprint(slug, files)
+            backend.run_planner_repair(
+                args, slug, prompts.build_planner_repair_prompt(
+                    getattr(backend, "RUNNER_SCRIPT", ""), slug, "\n".join(lines),
+                    [task_queue.draft_path(slug, c) for c in files],
+                    digest if bucket == "domain" else
+                    # a routed repair reads its OWN context's slice of the digest -
+                    # the duties it is accountable for, not the whole domain's
+                    ddd.phase2_slice_path(slug, bucket)))
+            # R1: a repair may amend strategy TEXT lawfully; restructuring is
+            # rolled back at the boundary, never carried to the next launch
+            restored, amended = task_queue.verify_plan_inputs(slug)
+            for name in restored:
+                print(f"[heal  ] {slug}: {name} restored to the phase-1 snapshot - a "
+                      "session mutated it outside its amendment rights")
+            for name in amended:
+                print(f"[warn  ] {slug}: {name} carries a lawful rule (t)/(k) text "
+                      "amendment; phase-1 bytes stay snapshotted")
+            if _repair_fingerprint(slug, files) == before:
+                # (2026-11-25 cold5 starvation fix) A no-op is the guilty BUCKET's
+                # verdict, not the domain's: exhaust that bucket so its next round is
+                # NOT billed, and let the other buckets take their turns. The old
+                # code returned False HERE - one unroutable line in the validation
+                # bucket fatals the batch and starves a perfectly fixable
+                # distribution error behind it (the very whole-domain blindness R3
+                # exists to end, re-entering through the guard).
+                bucket_rounds[bucket] = PLANNER_REPAIR_ROUNDS
+                stuck[bucket] = lines
+                print(f"[emit  ] {slug}: {bucket} changed no draft byte - the bucket "
+                      "is exhausted and its lines ride to the final verdict; other "
+                      "buckets keep their rounds (2026-11-24 live guard, per bucket)")
+                continue
+            progress = True
+        if not progress:
+            break
         reason = task_queue.emit_draft_batch(slug, drafted)
     if reason:
         first = [line for line in reason.splitlines() if line.startswith("ERR")][:5]
+        starved = "; exhausted without progress: " + ", ".join(sorted(stuck)) if stuck else ""
         return False, ("the batch still refuses after "
-                       f"{PLANNER_REPAIR_ROUNDS} repair session(s); relaunch with --replan "
+                       f"{total_rounds} repair round(s){starved}; relaunch with --replan "
                        f"{slug} - " + " | ".join(first))
     if not any((match := settings.ID_PATTERN.match(task_id)) and int(match.group(1)) >= 1
                for task_id in task_queue.load_index()):
         return False, f"{slug}: the planner queued no application tasks"
+    # post-amendment shape gate (2026-11-25): sessions hold ONE strategy-amendment
+    # authority (rule (t)); a desperate repair abused it and added an out-of-process KEY
+    # no gate reads, and the next launch died at the pre-session shape gate after a
+    # full paid plan. Re-validating here fails the SAME launch that made the damage,
+    # zero extra sessions, pointing at the phase that owns the schema.
+    reason = ddd.validate_strategy(slug)
+    if reason:
+        return False, (f"strategy {slug} no longer satisfies its shape after the planning "
+                       f"pass - {reason}; an amendment may only reword sentences of "
+                       f"existing fields; relaunch with --replan {slug} if the schema "
+                       "itself must change")
     print(f"[plan  ] {slug}: {len(drafted)} bounded-context session(s), one batch emit")
     return True, ""
+
+
+def _repair_fingerprint(slug, contexts):
+    """Digest of every draft + gap file a repair session could lawfully change (2026-11-24
+    operator incident: the first repair round died mid-start, the engine re-ran the batch
+    against UNCHANGED bytes, refused identically, and billed the second round anyway).
+    A repair that changes nothing cannot change the next emit's verdict - stop and hand
+    the operator the refusal instead of another session."""
+    import hashlib
+    h = hashlib.sha256()
+    for context in contexts:
+        for path in (task_queue.draft_path(slug, context),):
+            try:
+                h.update(path.read_bytes())
+            except OSError:
+                h.update(b"<absent>")
+    return h.hexdigest()
 
 
 def _next_free_for(slug):
@@ -567,6 +649,17 @@ def run(args, backend):
     if reason:
         print(f"[fatal] AI directive: {reason}")
         return 1
+    # R1 (2026-11-25 cross-launch damage stop): a previous killed run's session may
+    # have mutated the inputs; verify and restore from the snapshot BEFORE any gate
+    # reads them, so an unlawful amendment heals this launch instead of killing it
+    for slug in ddd.database_slugs():
+        restored, amended = task_queue.verify_plan_inputs(slug)
+        for name in restored:
+            print(f"[heal  ] {slug}: {name} restored to the phase-1 snapshot - "
+                  "unlawful session mutation rolled back, the plan continues")
+        for name in amended:
+            print(f"[warn  ] {slug}: {name} carries a lawful text amendment from a "
+                  "previous plan pass")
     for slug in ddd.database_slugs():
         # SHAPE GATE FIRST (2026-11-24 seed-002 v4 live stop): the strategy's own
         # validate_strategy ran only inside the security loop, AFTER the database phase

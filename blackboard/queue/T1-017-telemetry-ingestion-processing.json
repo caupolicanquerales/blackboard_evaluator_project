@@ -1,0 +1,40 @@
+{
+  "id": "T1-017",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/pulsestream/telemetry/ingestion/infrastructure/AesGcmPayloadCipherTest.java",
+  "export": "AesGcmPayloadCipherTest",
+  "intent": "AesGcmPayloadCipherTest covers DC-01 envelope-encryption: ciphertext differs from the plaintext, decrypt round-trips the payload, a tampered ciphertext is refused, and the key comes from the named bundle with no key literal in source or fixtures.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.infrastructure",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "byte[] encrypt(byte[] plaintext)",
+        "returns": "byte[]",
+        "semantics": "plaintext must not be null"
+      },
+      {
+        "signature": "byte[] decrypt(byte[] ciphertext)",
+        "returns": "byte[]",
+        "semantics": "ciphertext must not be null; tampering is refused"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "spring.ssl.bundle.pem.telemetry-payload.keystore.private-key",
+        "kind": "value"
+      }
+    ]
+  }
+}

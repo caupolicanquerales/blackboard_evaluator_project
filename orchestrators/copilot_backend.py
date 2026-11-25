@@ -4,6 +4,7 @@ Custom agent profiles in ``.github/agents`` are resolved by name, the CLI is
 launched with JSON event output, and only a ``result`` event with exit code 0
 counts as a successful run.
 """
+import agent_runners
 import json
 import re
 import subprocess
@@ -141,6 +142,17 @@ def _agent_name(command):
         return "copilot"
 
 
+def _heartbeat(result, what):
+    """Liveness line for a session mid-run (2026-11-25 supervision fix: a planner's
+    DRAFTING turn generates a 60KB write inside ONE turn for minutes - between the
+    session-start line and the [tokens] line the log was silent, and a healthy long
+    turn was indistinguishable from a stall. The engine already watched every call
+    to arm the hard kill; showing what it watches costs zero and ends the guesswork."""
+    elapsed = time.time() - (result.get("_t0") or time.time())
+    label = result.get("_label") or "session"
+    print(f"[live  ] {label}: {what} at {int(elapsed // 60)}m{int(elapsed % 60):02d}s")
+
+
 def _handle_copilot_event(line, result):
     stripped = line.strip()
     if not stripped:
@@ -158,8 +170,18 @@ def _handle_copilot_event(line, result):
         content = data.get("content")
         if content:
             print(f"    | {content}")
+    elif event_type == "assistant.turn_start":
+        result["turns"] = result.get("turns", 0) + 1
+        _heartbeat(result, f"turn {result['turns']} open")
+    elif event_type == "assistant.turn_end":
+        _heartbeat(result, f"turn {result.get('turns', 0)} closed, "
+                           f"{result.get('calls', 0)} call(s) so far")
     elif event_type and str(event_type).startswith("tool.execution_start"):
         result["calls"] = result.get("calls", 0) + 1
+        tool = ""
+        if isinstance(data, dict):
+            tool = str(data.get("toolName") or "")
+        _heartbeat(result, f"call {result['calls']}" + (f" ({tool})" if tool else ""))
     elif event_type == "result":
         result["seen"] = True
         try:
@@ -191,20 +213,24 @@ def _run_agent(command, timeout, cwd, hard_calls=None):
             text=True,
             bufsize=1,
             cwd=str(cwd),
+            start_new_session=True,
         )
     except OSError as exc:
         return False, f"cannot launch {command[0]}: {exc}", 0
+    agent_runners.adopt_child(process)
     timed_out = {"flag": False}
     budget_killed = {"flag": False}
 
     def kill_on_timeout():
         timed_out["flag"] = True
-        process.kill()
+        agent_runners.kill_child(process)
 
     watchdog = threading.Timer(timeout, kill_on_timeout)
     watchdog.start()
     stderr_lines = []
-    result = {"seen": False, "exitCode": None, "calls": 0}
+    result = {"seen": False, "exitCode": None, "calls": 0,
+              # liveness bookkeeping (see _heartbeat)
+              "_t0": time.time(), "_label": _agent_name(command)[:48]}
 
     def read_stderr():
         for line in process.stderr:
@@ -219,11 +245,12 @@ def _run_agent(command, timeout, cwd, hard_calls=None):
             if (hard_calls and not budget_killed["flag"] and not result.get("seen")
                     and result.get("calls", 0) > hard_calls):
                 budget_killed["flag"] = True
-                process.kill()
+                agent_runners.kill_child(process)
                 break
         process.wait()
     finally:
         watchdog.cancel()
+        agent_runners.release_child(process)
         stderr_thread.join(timeout=5)
     if result.get("calls"):
         print(f"    [calls] {result['calls']} tool call(s) in this session")

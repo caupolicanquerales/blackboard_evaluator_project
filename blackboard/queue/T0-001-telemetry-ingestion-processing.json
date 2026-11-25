@@ -3,11 +3,11 @@
   "targetAgent": "agent-container",
   "stage": 0,
   "dependsOn": [],
+  "path": "pom.xml",
   "kind": "bootstrap",
   "layer": "root",
   "feature": null,
-  "export": "project_scaffold",
+  "export": "build-manifest",
   "project": "telemetry-ingestion-processing",
-  "path": "pom.xml",
-  "intent": "Generate the telemetry-ingestion-processing project root and build scaffold using the matching mcp-server-springboot skill, with language version Java 21, framework version Spring Boot 3 (WebFlux; bootVersion and javaVersion sent from these pins, never the generator defaults), and build dependencies webflux, data-r2dbc, flyway, actuator, validation, test, reactor-test. Base package com.pulsestream.telemetry with a SINGLE composition root (@SpringBootApplication placed at the base package, no second boot class). Test-run timeout guardrail: surefire forkedProcessTimeoutInSeconds via the scaffold script flag --surefire-timeout. Persistence owns SQL: wire the Flyway schema migration runner into the build (scripts packaged on the classpath under db/migration) and add an embedded in-process H2 test-scoped substitute (plus r2dbc-h2) so the boot test passes without external services."
+  "intent": "Add generator-native dependencies to the scaffold build file; the parent owns versions: org.springframework.boot:spring-boot-starter-security (compile); org.springframework.boot:spring-boot-starter-validation (compile, with boundary-validation); org.springframework.security:spring-security-test (test An unlisted test coordinate kills the first red compile: schedule the manifest duty before any tester runs.). Engine-queued from the stack table's Build coordinates (PHASE 1.5) - never a second manifest."
 }

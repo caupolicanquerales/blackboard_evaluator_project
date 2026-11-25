@@ -5,11 +5,11 @@
   "dependsOn": [
     "T0-001"
   ],
-  "path": "services/telemetry-ingestion-processing/src/main/resources/db/migration/V2__create_telemetry_history_index.sql",
+  "path": "src/main/resources/db/migration/V2__create_audit_trail.sql",
   "kind": "bootstrap",
   "layer": "root",
   "feature": null,
-  "export": "V2__create_telemetry_history_index.sql",
-  "intent": "Schema migration for Telemetry Event Log: PostgreSQL (Flyway) keyset history index on (device_id, metric, t_device, id) in the versioned Flyway script at this path.",
+  "export": "V2__create_audit_trail.sql",
+  "intent": "Schema migration for PostgreSQL (Flyway, expand-only): script V2 creates the append-only audit_trail table (actor, action, outcome, occurred_at, correlation_id) for context Telemetry Ingestion & Validation.",
   "project": "telemetry-ingestion-processing"
 }

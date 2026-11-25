@@ -1,0 +1,34 @@
+{
+  "id": "T1-007",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/pulsestream/telemetry/ingestion/domain/TelemetrySampleTest.java",
+  "export": "TelemetrySampleTest",
+  "intent": "TelemetrySampleTest proves the immutable sample keeps device_id, metric, t_device, t_ingress, value and the raw payload unchanged, and withStatus returns a new sample carrying the tagged status without altering or dropping the payload.",
+  "layer": "domain",
+  "feature": null,
+  "project": "telemetry-ingestion-processing",
+  "ast_hints": {
+    "package": "com.pulsestream.telemetry.ingestion.domain",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ValidationStatus",
+        "task_id": "T2-005"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "TelemetrySample withStatus(ValidationStatus status)",
+        "returns": "TelemetrySample"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

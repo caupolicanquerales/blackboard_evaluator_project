@@ -9,6 +9,7 @@ The same workflow can run with either **OpenCode** or **GitHub Copilot CLI**.
 Contents:
 
 - [What the project does](#what-the-project-does)
+- [How the orchestrator is designed](#how-the-orchestrator-is-designed) — the seven principles, the blackboard, the golden rule, where the money goes
 - [How it works](#how-it-works) — pipeline, stages, agents
 - [Core mechanisms](#core-mechanisms) — planning, resilience (R1–R6), verdict contract (O1–O5), red phase, weaving, test gate, assembly, attempts, cost, observability
 - [Gauntlet](#gauntlet-engine-regression-suite) — pre-flight for the engine itself
@@ -42,6 +43,241 @@ Contents:
 - Boots the generated application through a stage-4 assembly gate backed by the scaffold's own smoke test — with structural probes that refuse a vacuous green (composition-root visibility, request-path evidence, base-document substitution discipline with its test-witnessed exemption, config documents in their kind's native form) and a terminal tree verdict at every exit.
 - Ships a **gauntlet** — a 551-case regression suite (372 engine decisions + 179 skill scripts) that pins every incident class observed during live drains — and a read-only board status tool with token rollups.
 - Supports optional compilation/build checks and OpenTelemetry tracing.
+
+## How the orchestrator is designed
+
+The whole system follows from one sentence: **a deterministic program runs the
+factory, language models are hired for one task each and paid per task, and they
+never talk to each other — they leave validated files on a blackboard.** The rest
+of this section unpacks that sentence; each principle exists because its absence
+once cost a real run.
+
+### Principle 1 — the engine decides, the model drafts
+
+The orchestrator is plain Python: loops, JSON schemas, hashes, graph joins,
+subprocesses. It never asks a model a question it can answer itself. A model is
+invoked only where generation is genuinely needed — an intent paragraph, a test, a
+method body — and every such invocation is a **session**: bounded inputs, a fixed
+tool budget, a known set of output files. The roster is small and every seat has
+one job: domain discovery, context mapping, strategy, the security/performance/AI
+specs, database planning, per-context planning, container building, and in the
+drain — testers, coders, evaluators, the assembler. Between sessions, the machine
+runs at zero tokens.
+
+The reason is cost asymmetry. A model that is also the referee turns every mistake
+into a re-billed run; a model that only drafts turns every mistake into one refused
+file, caught before anyone pays for it again.
+
+### Principle 2 — the blackboard is the only telephone
+
+```text
+   operator input: seed/*.md (the only ground truth)
+              |
+              v
+   +==============================+
+   |     ORCHESTRATOR (python)    |   deterministic loop: hire, gate, judge -
+   |  no LLM inside this box      |   no model referees its own work or anyone's
+   +--------------+---------------+
+       hires      |      reads back
+      (billed)    v      (validated bytes, never claims)
+   +==============================+
+   |  agent = ONE LLM session     |   fresh context window, one bounded job,
+   |  discovery · mapping · plan  |   then it dies: the session is re-read ONLY
+   |  tester · coder · assembly   |   as the file it delivered, never as a
+   +--------------+---------------+   transcript
+                  | its ONE output file
+                  v
+   +=====================================================+
+   |                     blackboard/                     |
+   |  domain/ · context-map/ · complete/ · queue/        |
+   |  ast-context/ · red-phase/ · coder-changes/         |
+   |  weave-results/ · evaluate-results/ · attempts/     |
+   |  snapshots/   (+ archive/ when a domain replans)    |
+   +=====================================================+
+      the ONLY shared memory: every handoff is a file with a schema,
+      a producer, a consumer - and a gate that re-validates the BYTES
+```
+
+No agent ever calls another agent, sees another agent's transcript, or edits the
+artifact it will itself be judged by. Agents start with a fresh context window, do
+one bounded job, and die. Everything durable lives on the board. Three properties
+fall out of this for free:
+
+No agent ever calls another agent, sees another agent's transcript, or edits a
+file another agent owns mid-task. Agents start with a fresh context window, do one
+bounded job, and die. Everything durable lives on the board. Three properties fall
+out of this for free:
+
+- **Inspectable** — any question "what did the pipeline decide and why?" has an
+  answer in a file, not in a scrollback.
+- **Resumable** — the process can be killed at any millisecond; a relaunch re-reads
+  the board and continues where it stopped (see R2/R5 below). Nothing is trapped in
+  a model's memory.
+- **Auditable** — a plan audit (like the 2026-11-26 one) can re-check every promise
+  made by every artifact against every unit, mechanically, after the fact.
+
+### Principle 3 — a claim is never a completion criterion
+
+Every agent output is treated as a *promise about bytes*, and the engine checks the
+bytes. The sequence for one unit through the drain:
+
+```text
+  tester session ----> test file + red record   -----> ENGINE re-runs the test,
+                                                        re-validates the record
+  planner session ---> task draft JSON          -----> ENGINE lints, claims ids,
+                                                        joins it to every other draft
+  coder session -----> PAYLOAD (never source)    -----> WEAVER splices it in, the
+                                                        engine owns the source tree
+  assembly session --> "the app boots"           -----> ENGINE boots it again with
+                                                        its own smoke-test gate
+  every exit --------> "done"                     -----> ENGINE re-runs the WHOLE
+                                                        delivered suite
+```
+
+The party judged by a test can never edit it, and the party that claims success is
+never the one that records it. "Trust, but verify" is too weak here: **verify, and
+keep the receipt.**
+
+### Principle 4 — the golden rule: agents agnostic, skills generic, orchestrator generic
+
+The machine must build a Java service, a Python service or a TypeScript service
+with the same code. So stack knowledge is allowed in exactly two places, and the
+rule is enforced by gates, not by good intentions:
+
+```text
+   WHO SPEAKS IT            WHAT THEY MAY SAY                   WHERE STACK WORDS LIVE
+   ----------------------   -------------------------------     ------------------------
+   security/perf/AI specs   capability tokens only               no framework names EVER
+                            ("bearer-jwt-proof", not Spring)     (a spec gate refuses leaks)
+        |
+        v   mapping = an architect decision, per stack
+   tech-stack architect     mechanism IDENTIFIERS + config keys  spring-*.md tables,
+   skills                   (this token = that class/property)   chosen by strategy pin
+        |
+        v   composition = a coder decision, from a table
+   coder/tester skills      the actual DSL / idioms              tech-stack/spring-security
+        |
+        v
+   orchestrator modules     NO stack words at all - only typed  stacks.py is the ONE
+                            verdict fields, registry lookups,    toolchain registry; engine
+                            filesystem facts, declared paths     modules read nothing else
+```
+
+Every violation of this rule has the same shape: a framework fact leaked one level
+too high, and every later incident added a special-case branch to whichever private
+copy of it the fixer happened to touch. The 2026-11-26 consolidation found five
+drifted copies of the build-toolchain facts in the engine — after `stacks.py`, all
+five consumers read one registry, and a merge golden-verified every decision
+byte-identical. The gauntlet bans dead stack vocabulary in orchestrator sources
+(SP16) and realization vocabulary in the specs, so the leak class cannot silently
+return.
+
+### Principle 5 — every law lives in three homes
+
+A rule that lives only in prompt prose is a wish. A gate with no regression case
+dies in the next refactor. So each law gets three homes, and an incident is only
+closed when all three exist:
+
+```text
+   incident observed live  (supervised run STOPS on it - no silent workaround)
+        |
+        v
+   root cause attributed to exactly ONE layer
+   discovery | mapping | strategy | specs | planning | drain | engine | carriers
+        |
+        v
+   fix written at that layer, for the whole CLASS of problem:
+     1. PROSE   - the skill/profile states the law, in stack-neutral words
+     2. GATE    - the engine refuses bytes that break it, at zero billed sessions
+     3. PIN     - a gauntlet case proves the refusal still fires tomorrow
+        |
+        v
+   551 pinned cases; "no merge without a case"
+```
+
+This is what breaks the classic loop of "keep fixing the orchestrator": the fix for
+an incident is never a new special case around that incident — it is a generic law
+(the class it belongs to), a generic gate, and a pin that keeps all three honest.
+
+### Principle 6 — the plan phase is where mistakes are cheap
+
+```text
+   cost of one defect, same seed, found at:
+
+   emit gate ......... 1 refused draft line + 1 bounded repair session (~free)
+   red phase ......... 1 tester batch re-rolled, contract still open
+   green phase ....... up to 3 billed coder attempts + quarantine bookkeeping
+   mid-drain ......... a whole run: the 2026-11-18 board froze 11 units behind
+                       contradictory contracts - three billed sessions each
+```
+
+Hence the wall: 26 letters of plan-validity rules (a)–(z) fire at lint AND at the
+single `--emit` batch, before any test freezes — impossible pairs, unowned literals,
+unclaimed duties, unschedulable registrations all die there. And hence the
+direction of repair: when reality does break a promise mid-drain, blame is attributed
+to the OWNING unit (typed verdict fields, never prose-scraping), and the reopening
+moves the contract, not the victim.
+
+### Principle 7 — arithmetic is never billed
+
+The economics principle that reshaped the code: anything a machine can compute must
+be moved OUT of sessions, and anything that can resume must not re-bill.
+
+```text
+   FREE (engine, deterministic)                 BILLED (one bounded session each)
+   -------------------------------------------  --------------------------------
+   task ids, renumbering, collision healing     drafting prose the machine cannot
+   symbol tables, digest slicing, joins         write: intents, tests, bodies
+   stage-3 synthesis, T1 table mirroring        ...one per bounded context, one
+   build-manifest queueing (phase 1.5)          batch per up-to-4 units
+   re-running tests, parsing verdicts           ...budgeted: 6-22 calls measured
+   routing refusals to the owning draft         against live sessions, killed past 2x
+   FACT/LAW/VERDICT resume (R2/R5): a killed
+   run's compliant drafts resume at zero cost
+```
+
+When a measured behavior resisted moving off the bill, the answer was structural,
+not exhortative: the planner's wall clock was dominated by the model *decoding* one
+huge draft per turn, so contexts now draft **concurrently** against `{type, context}`
+anchors the engine binds afterwards — a 222-task plan phase landed in 3m26s on three
+billed sessions (2026-11-26) — after a week in which the same phase cost days
+of relaunches, every one of them an invalidation storm or a cap-killed draft re-billed
+whole.
+
+### The shape of the code
+
+```text
+   orchestrators/
+   ├── orchestrator_opencode.py / orchestrator_github.py   entry scripts (same pipeline)
+   ├── settings.py stacks.py prompts.py family_paths.py    SHARED KERNEL: budgets, the
+   │                                                       one stack registry, the briefs,
+   │                                                       the folder bootstrap
+   ├── orchestration/    pipeline.py + cli_args, run_phases, plan_gates,
+   │                     plan_flow, drain_flow             WHEN things run, in order
+   ├── task_creation/    task_queue.py + plan_drafts, plan_board,
+   │                     plan_wiring, plan_laws            how a PLAN comes to be
+   ├── task_contract/    tasks.py + task_identity, task_signals,
+   │                     task_rules                        what a TASK record IS
+   ├── backends/         opencode_backend, copilot_backend how a SESSION talks to a tool
+   └── kernel modules    ddd, tdd_engine, test_gate, assembly, closure, agent_runners,
+                         verification, attempt_ledger, status, telemetry, ...
+```
+
+Each family keeps its root module as the public facade (callers import `pipeline`,
+`tasks`, `task_queue` exactly as before) and a README that is a **failure-home map**:
+symptom → the module that owns it. The splits were proven zero-behavior by goldens
+that compare record digests and byte-identical outputs, never by "looks the same".
+
+### What this design deliberately is not
+
+- **Not an agent chat room.** There is no orchestrator LLM making plan-time calls in
+  a loop; the intelligence is hired per task, bounded, and file-mediated.
+- **Not prompt engineering with retries.** Every refusal is an `ERR [id.field]`
+  pointer demanding an EDIT of the named object — regenerate is the expensive
+  fallback, edit is the designed path.
+- **Not a framework demo.** Nothing in `orchestrators/` may know Spring, Maven or
+  pytest; those names live in skills and in the generated project, where a swap of
+  stack changes one table, not the engine.
 
 ## How it works
 

@@ -1,0 +1,196 @@
+{
+  "schema_version": "1.0",
+  "report_type": "domain-slice",
+  "metadata": {
+    "generated_at": "2026-11-26T10:43:56-03:00",
+    "agent": "domain-boundary-discovery",
+    "source_description": "/home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/seed/003_description.md"
+  },
+  "subdomain": {
+    "name": "Conversational Agent",
+    "type": "core",
+    "capability": "Interactive chat assistant that reasons over a user's message, calls backend tools, and streams its answer in real time while remembering the conversation.",
+    "why_distinct": "Single capability named by the description (the AI chat assistant); turn handling, memory and history are cooperating contexts serving the same outcome, not separate expertise areas."
+  },
+  "ubiquitous_language": [
+    {
+      "term": "Chat Session",
+      "context": "Chat Session & Turn Orchestration",
+      "definition": "A continuous conversation thread owned by one user (and tenant)."
+    },
+    {
+      "term": "Turn",
+      "context": "Chat Session & Turn Orchestration",
+      "definition": "One round-trip where the user sends a message and the agent replies."
+    },
+    {
+      "term": "Tool Call",
+      "context": "Chat Session & Turn Orchestration",
+      "definition": "A backend function the AI invokes during a turn to fetch data or perform an action."
+    },
+    {
+      "term": "Token Stream",
+      "context": "Chat Session & Turn Orchestration",
+      "definition": "The live SSE feed sending text chunks and status updates back to the client."
+    },
+    {
+      "term": "Context Window",
+      "context": "Conversation Memory",
+      "definition": "The recent messages (last 12 in full detail) plus a rolling summary sent to the model on each turn, within the 16,000-token limit."
+    },
+    {
+      "term": "Chat History",
+      "context": "Chat History Log",
+      "definition": "Append-only log of every user message, tool call and assistant reply, with token counts."
+    }
+  ],
+  "bounded_contexts": [
+    {
+      "name": "Chat Session & Turn Orchestration",
+      "responsibility": "Admit chat traffic per session, run each turn's agent loop with tool calls, and stream the Token Stream over SSE without blocking Netty event-loop threads.",
+      "in_scope": [
+        "Session ownership by user and tenant",
+        "Turn execution and tool-call loop",
+        "Cap of 5 tool calls and 30-second timeout per message, stopping cleanly and telling the user",
+        "Status updates when a tool runs",
+        "SSE streaming of tokens"
+      ],
+      "out_of_scope": [
+        "Summarizing older messages (Conversation Memory)",
+        "Persisting history (Chat History Log)"
+      ],
+      "ubiquitous_language": [
+        "Chat Session",
+        "Turn",
+        "Tool Call",
+        "Token Stream"
+      ],
+      "invariants": [
+        "Every chat session belongs to a specific user and tenant; nobody can read or send messages into someone else's conversation (403 Forbidden)",
+        "A turn makes at most 5 tool calls and lasts at most 30 seconds; on hitting either limit it stops cleanly and informs the user",
+        "Streaming and LLM waits never block Netty event-loop threads"
+      ],
+      "source_of_truth": [
+        "Chat Session ownership",
+        "Turn state"
+      ],
+      "publishes": [
+        "TurnCompleted",
+        "ToolCalled",
+        "TurnLimitReached"
+      ],
+      "consumes": [],
+      "reads": [
+        "Conversation Memory (current Context Window)",
+        "Chat History Log (reload of past chats)",
+        "Backend tools",
+        "AI model"
+      ],
+      "actors": [
+        "User"
+      ],
+      "external_systems": [
+        "LLM provider",
+        "Backend tools (Spring AI)"
+      ],
+      "confidence": "high"
+    },
+    {
+      "name": "Conversation Memory",
+      "responsibility": "Maintain the Context Window: last 12 messages in full plus a running summary of older ones, within the 16,000-token context limit.",
+      "in_scope": [
+        "Keeping last 12 messages in full detail",
+        "Rolling summary of older messages",
+        "Token budget of 16,000"
+      ],
+      "out_of_scope": [
+        "Session access enforced by Chat Session & Turn Orchestration",
+        "Durable history (Chat History Log)"
+      ],
+      "ubiquitous_language": [
+        "Context Window"
+      ],
+      "invariants": [
+        "The Context Window holds the last 12 messages in full detail and older messages only as a running summary, never exceeding the 16,000-token limit"
+      ],
+      "source_of_truth": [
+        "Rolling summary",
+        "Context Window"
+      ],
+      "publishes": [
+        "SummaryUpdated"
+      ],
+      "consumes": [
+        "TurnCompleted"
+      ],
+      "reads": [
+        "LLM provider (summarization)"
+      ],
+      "actors": [
+        "System"
+      ],
+      "external_systems": [
+        "LLM provider"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "name": "Chat History Log",
+      "responsibility": "Persist every user message, tool call and assistant reply as an append-only log with token counts, for reload and usage tracking.",
+      "in_scope": [
+        "Append-only recording",
+        "Token counts",
+        "Reloading past chats"
+      ],
+      "out_of_scope": [
+        "Session access enforced by Chat Session & Turn Orchestration",
+        "Summaries"
+      ],
+      "ubiquitous_language": [
+        "Chat History"
+      ],
+      "invariants": [
+        "History entries are append-only and each carries token counts"
+      ],
+      "source_of_truth": [
+        "Chat History entries",
+        "Token usage records"
+      ],
+      "publishes": [],
+      "consumes": [
+        "TurnCompleted",
+        "ToolCalled"
+      ],
+      "actors": [
+        "User",
+        "Operator tracking usage"
+      ],
+      "confidence": "medium"
+    }
+  ],
+  "assumptions": [
+    {
+      "item": "Single subdomain: memory and history are contexts of the same chat workflow.",
+      "type": "Assumption",
+      "impact_on_boundaries": "Avoids splitting on cadence.",
+      "confidence": "high"
+    },
+    {
+      "item": "Event delivery and client message retries: description names no at-most-once/at-least-once posture nor a dedup identity (client key vs natural identity) for the append-only history; a retried message could be logged twice. If natural identity is used, is the mutable message payload part of it?",
+      "type": "Ambiguity",
+      "impact_on_boundaries": "Affects Chat History Log idempotency.",
+      "confidence": "low"
+    },
+    {
+      "item": "Unbounded quantities: tenant/role model, message size, summary length and retention of history are unspecified; left unbounded.",
+      "type": "Assumption",
+      "impact_on_boundaries": "None on boundaries; operator to answer.",
+      "confidence": "medium"
+    }
+  ],
+  "ai_directive": {
+    "required": true,
+    "quote": "Users send messages in a conversation, the agent thinks through the request, calls backend tools when it needs real data or actions, and streams its answer back word by word in real time so the UI feels fast and responsive.",
+    "source": "description"
+  }
+}

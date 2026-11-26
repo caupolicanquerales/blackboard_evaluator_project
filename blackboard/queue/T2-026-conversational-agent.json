@@ -1,0 +1,55 @@
+{
+  "id": "T2-026",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-026",
+    "T0-001",
+    "T2-019",
+    "T2-020",
+    "T2-018"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/infrastructure/SpringAiModelAdapter.java",
+  "export": "SpringAiModelAdapter",
+  "intent": "Anticorruption adapter binding ChatPort and SummarizerPort to Spring AI ChatClient; prompts built only through PromptContract; blocking calls wrapped on boundedElastic; inactive under the test profile where the offline stub is primary.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.infrastructure",
+    "implements": [
+      "ChatPort",
+      "SummarizerPort"
+    ],
+    "dependencies": [
+      {
+        "type": "ChatPort",
+        "task_id": "T2-019"
+      },
+      {
+        "type": "SummarizerPort",
+        "task_id": "T2-020"
+      },
+      {
+        "type": "PromptContract",
+        "task_id": "T2-018"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Flux<ProgressEvent> generate(PromptContract contract, Map<String, String> values)",
+        "returns": "Flux<ProgressEvent>",
+        "semantics": "no argument may be null"
+      },
+      {
+        "signature": "Mono<String> summarize(String previousSummary, List<String> olderMessages)",
+        "returns": "Mono<String>",
+        "semantics": "olderMessages must not be null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

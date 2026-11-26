@@ -1,0 +1,31 @@
+{
+  "id": "T2-037",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-037",
+    "T0-001"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/application/HistoryEntryView.java",
+  "export": "HistoryEntryView",
+  "intent": "HistoryEntryView is the framework-free read model the History query port returns to Orchestration: turn id, entry sequence, kind, content, token count; never a domain object of another context.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.application",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "HistoryEntryView(String turnId, int entrySequence, String kind, String content, int tokenCount)",
+        "returns": "",
+        "semantics": "rejects null turnId, kind and content"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

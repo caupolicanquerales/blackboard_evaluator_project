@@ -1,0 +1,50 @@
+{
+  "id": "T2-025",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-025",
+    "T0-001",
+    "T0-003",
+    "T2-001",
+    "T2-020",
+    "T2-022"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/memory/infrastructure/MemoryBoundaryAdapter.java",
+  "export": "MemoryBoundaryAdapter",
+  "intent": "AC-07 memory-boundary: ChatMemory with MessageWindowChatMemory as sliding window over the window key; rolling-summary has no framework mechanism, so the plan's compaction step condenses older turns via SummarizerPort and upserts one row per session, idempotent by session id and turn id, in rolling_summaries.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.memory.infrastructure",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "SummarizerPort",
+        "task_id": "T2-020"
+      },
+      {
+        "type": "ContextEntry",
+        "task_id": "T2-022"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> applyTurn(String sessionId, String turnId, List<ContextEntry> messages)",
+        "returns": "Mono<Void>",
+        "semantics": "no argument may be null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.context.max-messages",
+        "kind": "value",
+        "value": "12"
+      }
+    ]
+  }
+}

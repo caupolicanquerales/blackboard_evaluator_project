@@ -1,0 +1,31 @@
+{
+  "id": "T2-051",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-051",
+    "T0-001"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/memory/domain/SummaryUpdatedEvent.java",
+  "export": "SummaryUpdatedEvent",
+  "intent": "SummaryUpdatedEvent is the pure-Java fact published after a rolling summary refresh: session id, last applied turn id and new summary version. Null identifiers are rejected.",
+  "layer": "domain",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.memory.domain",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "SummaryUpdatedEvent(String sessionId, String turnId, long version)",
+        "returns": "",
+        "semantics": "sessionId and turnId must be non-null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

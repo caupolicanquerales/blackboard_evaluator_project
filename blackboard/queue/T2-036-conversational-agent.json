@@ -1,0 +1,57 @@
+{
+  "id": "T2-036",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-036",
+    "T0-001",
+    "T2-006",
+    "T2-007",
+    "T2-030",
+    "T2-031",
+    "T2-032"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/application/CreateSessionService.java",
+  "export": "CreateSessionService",
+  "intent": "CreateSessionService creates a ChatSession owned by the caller's user and tenant, persists it through the pinned SessionRepository and records a 'session created' audit entry via AuditPort; the owner is never taken from any other input.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "SessionRepository",
+        "task_id": "T2-031"
+      },
+      {
+        "type": "AuditPort",
+        "task_id": "T2-007"
+      },
+      {
+        "type": "AuditEntry",
+        "task_id": "T2-006"
+      },
+      {
+        "type": "CallerIdentity",
+        "task_id": "T2-032"
+      },
+      {
+        "type": "ChatSession",
+        "task_id": "T2-030"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<ChatSession> create(CallerIdentity caller)",
+        "returns": "Mono<ChatSession>",
+        "semantics": "rejects null caller"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "id": "T2-049",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-049",
+    "T0-001"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/memory/domain/RollingSummary.java",
+  "export": "RollingSummary",
+  "intent": "RollingSummary is the pure-Java value of the one rolling summary per session: summary text, last applied turn id, token count and optimistic version. Null session id or turn id and a negative token count are rejected.",
+  "layer": "domain",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.memory.domain",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "RollingSummary(String sessionId, String summaryText, String lastAppliedTurnId, int tokenCount, long version)",
+        "returns": "",
+        "semantics": "sessionId and lastAppliedTurnId must be non-null; tokenCount must be >= 0"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "id": "T1-029",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-011",
+    "T1-018",
+    "T1-027"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/shared/GoldenSetHarnessTest.java",
+  "export": "GoldenSetHarnessTest",
+  "intent": "GoldenSetHarnessTest proves AC-09 eval-golden-set: every versioned golden example runs against the offline stub and satisfies its expected chunk count, tool-call count or refusal property; a deliberately failing example is reported.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.shared",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "OfflineModelStub",
+        "task_id": "T2-027"
+      },
+      {
+        "type": "PromptContract",
+        "task_id": "T2-018"
+      },
+      {
+        "type": "ProgressEvent",
+        "task_id": "T2-011"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Boolean> runAll()",
+        "returns": "Mono<Boolean>",
+        "semantics": "true: every golden example satisfied its expected property; false: at least one example failed"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

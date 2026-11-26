@@ -1,0 +1,36 @@
+{
+  "id": "T1-054",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/memory/application/SummarizerConcurrencyGuardTest.java",
+  "export": "SummarizerConcurrencyGuardTest",
+  "intent": "SummarizerConcurrencyGuardTest proves PB-09 with StepVerifier and virtual time: with 8 permits, 8 concurrent calls run and the ninth waits in the bounded buffer, never running until a permit is released; the permit is released on error.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.memory.application",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "Mono<String> guarded(Mono<String> summarizerCall)",
+        "returns": "Mono<String>",
+        "semantics": "summarizerCall must be non-null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.memory.summarizer.max-concurrent",
+        "kind": "value",
+        "value": "8"
+      }
+    ]
+  }
+}

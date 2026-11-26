@@ -1,0 +1,31 @@
+{
+  "id": "T2-032",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-032",
+    "T0-001"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/application/CallerIdentity.java",
+  "export": "CallerIdentity",
+  "intent": "CallerIdentity is the framework-free record of the authenticated caller: user id and tenant id derived from credential claims, never from a request body.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.application",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "CallerIdentity(String userId, String tenantId)",
+        "returns": "",
+        "semantics": "rejects null or blank userId and tenantId"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

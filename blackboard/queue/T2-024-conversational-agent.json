@@ -1,0 +1,38 @@
+{
+  "id": "T2-024",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-024",
+    "T0-001",
+    "T2-001"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/application/TurnTokenBudget.java",
+  "export": "TurnTokenBudget",
+  "intent": "AC-08 token-cost-cap: per-turn token total on a budget class read from the flow-budget key; charge returns false once exceeded, the declared over-budget behavior being a clean stop with a user notice; negative charge refused.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.application",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "boolean charge(int tokens)",
+        "returns": "boolean",
+        "semantics": "tokens must not be negative"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.turn.token-budget",
+        "kind": "value",
+        "value": "16000"
+      }
+    ]
+  }
+}

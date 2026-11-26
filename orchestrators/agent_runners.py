@@ -31,11 +31,18 @@ def agent_name(command):
 import signal as _signal
 
 _LIVE_CHILDREN = set()
+_SHUTTING_DOWN = {"flag": False}
 _shim_installed = {"done": False}
 
 
 def adopt_child(process):
-    """Register a live child; install the death shim once (main thread only)."""
+    """Register a live child. (2026-11-26, race fix) if the death shim has already
+    fired, this child was spawned inside the Popen->adopt window that the signal
+    swept before it existed: kill it here instead of orphaning a billing session.
+    """
+    if _SHUTTING_DOWN["flag"]:
+        kill_child(process)
+        return
     _LIVE_CHILDREN.add(process)
     _install_death_shim()
 
@@ -66,21 +73,33 @@ def kill_live_children():
 
 
 def _install_death_shim():
+    # (2026-11-26, flag fix) the done flag used to be raised BEFORE the first
+    # signal.signal attempt: a worker thread reaching here first (--parallel drains
+    # adopt from workers) marked the shim "done" while NOTHING was installed, and a
+    # later main-thread adopt never retried - a killed orchestrator then orphaned
+    # every live session. The flag flips only on a successful registration, and the
+    # module-level call below installs at import time (always the main thread).
     if _shim_installed["done"]:
         return
-    _shim_installed["done"] = True
     for sig in (_signal.SIGTERM, _signal.SIGINT):
         try:
             _signal.signal(sig, _dying)
+            _shim_installed["done"] = True
         except (ValueError, OSError):
-            return  # not the main thread: the child set still covers explicit kills
+            return  # not the main thread: a later main-thread adopt retries
 
 
 def _dying(signum, frame):
+    _SHUTTING_DOWN["flag"] = True
     kill_live_children()
     _signal.signal(signum, _signal.SIG_DFL)
     import os as _os
     _os.kill(_os.getpid(), signum)
+
+
+# import time = main thread: the handlers exist before the first Popen, so neither
+# the --parallel worker-thread path nor a spawn racing a signal can miss them.
+_install_death_shim()
 
 
 def run_agent(command, timeout, cwd):

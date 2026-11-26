@@ -1,0 +1,48 @@
+{
+  "id": "T1-013",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-001",
+    "T1-011"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/orchestration/interfaces/SseProgressEncoderTest.java",
+  "export": "SseProgressEncoderTest",
+  "intent": "SseProgressEncoderTest proves AC-01 incremental-progress-stream: a stub emitting N chunks yields N chunk events then exactly one completion event, with a stub counter showing chunks arrive before completion; an idle stream ends after chat.stream.idle-timeout.",
+  "layer": "interface",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.interfaces",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ProgressEvent",
+        "task_id": "T2-011"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Flux<ServerSentEvent<ProgressEvent>> encode(Flux<ProgressEvent> events)",
+        "returns": "Flux<ServerSentEvent<ProgressEvent>>",
+        "semantics": "events must not be null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.stream.buffer-capacity",
+        "kind": "value",
+        "value": "256"
+      },
+      {
+        "path": "chat.stream.idle-timeout",
+        "kind": "value",
+        "value": "PT30S"
+      }
+    ]
+  }
+}

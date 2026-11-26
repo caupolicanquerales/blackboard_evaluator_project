@@ -1,0 +1,49 @@
+{
+  "id": "T1-025",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T0-003",
+    "T1-001",
+    "T1-020",
+    "T1-022"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/memory/infrastructure/MemoryBoundaryAdapterTest.java",
+  "export": "MemoryBoundaryAdapterTest",
+  "intent": "MemoryBoundaryAdapterTest runs the real V2 DDL on embedded H2 and proves AC-07 memory-boundary: replaying the same session and turn twice calls the summarizer stub once and leaves one summary row; two sessions never share a summary.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.memory.infrastructure",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "SummarizerPort",
+        "task_id": "T2-020"
+      },
+      {
+        "type": "ContextEntry",
+        "task_id": "T2-022"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> applyTurn(String sessionId, String turnId, List<ContextEntry> messages)",
+        "returns": "Mono<Void>",
+        "semantics": "no argument may be null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.context.max-messages",
+        "kind": "value",
+        "value": "12"
+      }
+    ]
+  }
+}

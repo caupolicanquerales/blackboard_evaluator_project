@@ -1,0 +1,64 @@
+{
+  "id": "T2-027",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-027",
+    "T0-001",
+    "T2-011",
+    "T2-018",
+    "T2-019",
+    "T2-020"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/infrastructure/OfflineModelStub.java",
+  "export": "OfflineModelStub",
+  "intent": "AM-01 offline-model-port: stand-in for the AR-01 and AR-02 ports, a @Primary bean under @Profile(\"test\") so it wins over the production adapter; scripted chunks, a failure switch and call counters for stub-call-count proofs; provider keys absent in the test document.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.infrastructure",
+    "implements": [
+      "ChatPort",
+      "SummarizerPort"
+    ],
+    "dependencies": [
+      {
+        "type": "ProgressEvent",
+        "task_id": "T2-011"
+      },
+      {
+        "type": "PromptContract",
+        "task_id": "T2-018"
+      },
+      {
+        "type": "ChatPort",
+        "task_id": "T2-019"
+      },
+      {
+        "type": "SummarizerPort",
+        "task_id": "T2-020"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Flux<ProgressEvent> generate(PromptContract contract, Map<String, String> values)",
+        "returns": "Flux<ProgressEvent>",
+        "semantics": "no argument may be null"
+      },
+      {
+        "signature": "Mono<String> summarize(String previousSummary, List<String> olderMessages)",
+        "returns": "Mono<String>",
+        "semantics": "olderMessages must not be null"
+      },
+      {
+        "signature": "int callCount()",
+        "returns": "int"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "id": "T2-019",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-019",
+    "T0-001",
+    "T2-011",
+    "T2-018"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/application/ChatPort.java",
+  "export": "ChatPort",
+  "intent": "AR-01 generation port: the only way the application reaches the chat model; returns Flux<ProgressEvent>; no provider type leaks.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ProgressEvent",
+        "task_id": "T2-011"
+      },
+      {
+        "type": "PromptContract",
+        "task_id": "T2-018"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Flux<ProgressEvent> generate(PromptContract contract, Map<String, String> values)",
+        "returns": "Flux<ProgressEvent>",
+        "semantics": "no argument may be null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

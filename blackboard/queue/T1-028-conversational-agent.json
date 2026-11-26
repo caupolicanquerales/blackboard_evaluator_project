@@ -1,0 +1,41 @@
+{
+  "id": "T1-028",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/orchestration/application/LoopGovernorTest.java",
+  "export": "LoopGovernorTest",
+  "intent": "LoopGovernorTest proves AM-02 loop-budget-cap by stub call count: a stub requesting tools forever is invoked exactly the configured maximum of 5 times, then the clean-stop outcome is returned and the sixth call never runs.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.application",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "boolean tryNextCycle()",
+        "returns": "boolean",
+        "semantics": "true: another tool cycle is permitted and counted; false: the configured maximum is reached, the caller stops cleanly and informs the user"
+      },
+      {
+        "signature": "int cyclesUsed()",
+        "returns": "int"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.turn.max-tool-calls",
+        "kind": "value",
+        "value": "5"
+      }
+    ]
+  }
+}

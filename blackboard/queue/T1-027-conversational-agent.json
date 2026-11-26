@@ -1,0 +1,63 @@
+{
+  "id": "T1-027",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-011",
+    "T1-018",
+    "T1-019",
+    "T1-020"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/orchestration/infrastructure/OfflineModelStubTest.java",
+  "export": "OfflineModelStubTest",
+  "intent": "OfflineModelStubTest proves AM-01 offline-model-port: a test-profile application context resolves ChatPort and SummarizerPort to the OfflineModelStub, which emits scripted chunks then completion, counts calls and reaches no live endpoint.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.infrastructure",
+    "implements": [
+      "ChatPort",
+      "SummarizerPort"
+    ],
+    "dependencies": [
+      {
+        "type": "ProgressEvent",
+        "task_id": "T2-011"
+      },
+      {
+        "type": "PromptContract",
+        "task_id": "T2-018"
+      },
+      {
+        "type": "ChatPort",
+        "task_id": "T2-019"
+      },
+      {
+        "type": "SummarizerPort",
+        "task_id": "T2-020"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Flux<ProgressEvent> generate(PromptContract contract, Map<String, String> values)",
+        "returns": "Flux<ProgressEvent>",
+        "semantics": "no argument may be null"
+      },
+      {
+        "signature": "Mono<String> summarize(String previousSummary, List<String> olderMessages)",
+        "returns": "Mono<String>",
+        "semantics": "olderMessages must not be null"
+      },
+      {
+        "signature": "int callCount()",
+        "returns": "int"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

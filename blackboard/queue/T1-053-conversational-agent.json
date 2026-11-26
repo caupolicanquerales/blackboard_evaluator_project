@@ -1,0 +1,36 @@
+{
+  "id": "T1-053",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-051"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/memory/application/SummaryUpdatedPublisherContractTest.java",
+  "export": "SummaryUpdatedPublisherContractTest",
+  "intent": "SummaryUpdatedPublisherContractTest proves, against a recording fake, that publish completes empty and hands the event unchanged to the fake.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.memory.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "SummaryUpdatedEvent",
+        "task_id": "T2-051"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> publish(SummaryUpdatedEvent event)",
+        "returns": "Mono<Void>",
+        "semantics": "event must be non-null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

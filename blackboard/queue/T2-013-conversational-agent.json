@@ -1,0 +1,49 @@
+{
+  "id": "T2-013",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-013",
+    "T0-001",
+    "T2-001",
+    "T2-011"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/interfaces/SseProgressEncoder.java",
+  "export": "SseProgressEncoder",
+  "intent": "AC-01 incremental-progress-stream: maps the port's Flux<ProgressEvent> (chunks THEN terminal) to Flux<ServerSentEvent<ProgressEvent>> for text/event-stream, bounded by onBackpressureBuffer with the configured capacity (overflow ends the stream) and the idle timeout; transport only.",
+  "layer": "interface",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.interfaces",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ProgressEvent",
+        "task_id": "T2-011"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Flux<ServerSentEvent<ProgressEvent>> encode(Flux<ProgressEvent> events)",
+        "returns": "Flux<ServerSentEvent<ProgressEvent>>",
+        "semantics": "events must not be null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.stream.buffer-capacity",
+        "kind": "value",
+        "value": "256"
+      },
+      {
+        "path": "chat.stream.idle-timeout",
+        "kind": "value",
+        "value": "PT30S"
+      }
+    ]
+  }
+}

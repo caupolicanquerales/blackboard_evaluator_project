@@ -1,0 +1,44 @@
+{
+  "id": "T1-011",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/orchestration/domain/ProgressEventTest.java",
+  "export": "ProgressEventTest",
+  "intent": "ProgressEventTest proves the factories build chunk, tool-status and terminal events with the right kind, and that a null payload is refused.",
+  "layer": "domain",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.domain",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "static ProgressEvent chunk(String text)",
+        "returns": "ProgressEvent",
+        "semantics": "text must not be null"
+      },
+      {
+        "signature": "static ProgressEvent toolStatus(String text)",
+        "returns": "ProgressEvent",
+        "semantics": "text must not be null"
+      },
+      {
+        "signature": "static ProgressEvent notice(String text)",
+        "returns": "ProgressEvent",
+        "semantics": "text must not be null"
+      },
+      {
+        "signature": "static ProgressEvent completion()",
+        "returns": "ProgressEvent"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

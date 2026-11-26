@@ -1,0 +1,119 @@
+{
+  "id": "T1-010",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-009"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/shared/RootSecurityGateTest.java",
+  "export": "RootSecurityGateTest",
+  "intent": "RootSecurityGateTest drives the SecurityWebFilterChain with WebTestClient and spring-security-test: an unauthenticated request to any addressed route is refused 401 with the code-only body; an authenticated principal is admitted; an unaddressed path is closed by default.",
+  "layer": "root",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.shared",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "SecurityErrorHandlers",
+        "task_id": "T2-009"
+      },
+      {
+        "type": "JwtCallerAdapter",
+        "task_id": "T2-034"
+      },
+      {
+        "type": "ServiceCredentialAuthenticator",
+        "task_id": "T2-058"
+      },
+      {
+        "type": "ServiceCredentialVerifier",
+        "task_id": "T2-068"
+      },
+      {
+        "type": "ContentRedactionAdapter",
+        "task_id": "T2-005"
+      },
+      {
+        "type": "AuditTrailAdapter",
+        "task_id": "T2-008"
+      },
+      {
+        "type": "ObservabilityConfiguration",
+        "task_id": "T2-002"
+      },
+      {
+        "type": "SseProgressEncoder",
+        "task_id": "T2-013"
+      },
+      {
+        "type": "ToolCallGuard",
+        "task_id": "T2-016"
+      },
+      {
+        "type": "FallbackModelRoute",
+        "task_id": "T2-017"
+      },
+      {
+        "type": "PromptContract",
+        "task_id": "T2-018"
+      },
+      {
+        "type": "StructuredOutputGuard",
+        "task_id": "T2-021"
+      },
+      {
+        "type": "ContextWindowAssembler",
+        "task_id": "T2-023"
+      },
+      {
+        "type": "MemoryBoundaryAdapter",
+        "task_id": "T2-025"
+      },
+      {
+        "type": "TurnTokenBudget",
+        "task_id": "T2-024"
+      },
+      {
+        "type": "GoldenSetHarness",
+        "task_id": "T2-029"
+      },
+      {
+        "type": "OfflineModelStub",
+        "task_id": "T2-027"
+      },
+      {
+        "type": "LoopGovernor",
+        "task_id": "T2-028"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http)",
+        "returns": "SecurityWebFilterChain"
+      }
+    ],
+    "meters": [],
+    "routes": [
+      {
+        "method": "POST",
+        "path": "/chat/sessions",
+        "duty": "uses"
+      },
+      {
+        "method": "POST",
+        "path": "/chat/sessions/{sessionId}/messages",
+        "duty": "uses"
+      },
+      {
+        "method": "GET",
+        "path": "/chat/sessions/{sessionId}/history",
+        "duty": "uses"
+      }
+    ],
+    "config": []
+  }
+}

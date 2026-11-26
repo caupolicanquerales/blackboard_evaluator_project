@@ -1,0 +1,42 @@
+{
+  "id": "T1-058",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/memory/infrastructure/ServiceCredentialAuthenticatorTest.java",
+  "export": "ServiceCredentialAuthenticatorTest",
+  "intent": "ServiceCredentialAuthenticatorTest proves AZ-04 with a configured credential list: a known service id with matching secret authenticates with its scope; an unknown id or wrong secret yields an empty Mono (denied); a null authentication is rejected.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.memory.infrastructure",
+    "implements": [
+      "ReactiveAuthenticationManager"
+    ],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "Mono<Authentication> authenticate(Authentication authentication)",
+        "returns": "Mono<Authentication>",
+        "semantics": "authentication must be non-null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.service-credentials",
+        "kind": "list",
+        "fields": [
+          "id",
+          "secret-hash",
+          "scope"
+        ]
+      }
+    ]
+  }
+}

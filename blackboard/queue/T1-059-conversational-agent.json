@@ -1,0 +1,42 @@
+{
+  "id": "T1-059",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-022"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/memory/application/WindowQueryTimeoutTest.java",
+  "export": "WindowQueryTimeoutTest",
+  "intent": "WindowQueryTimeoutTest proves PB-11 with virtual time: a window query completing inside the chat.turn.timeout budget passes through; a never-completing query errors with a timeout exactly at that budget, with no other duration value.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.memory.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ContextEntry",
+        "task_id": "T2-022"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Flux<ContextEntry> bound(Flux<ContextEntry> query)",
+        "returns": "Flux<ContextEntry>",
+        "semantics": "query must be non-null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.turn.timeout",
+        "kind": "value",
+        "value": "PT30S"
+      }
+    ]
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "id": "T2-003",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-003",
+    "T0-001"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/shared/CorrelationWebFilter.java",
+  "export": "CorrelationWebFilter",
+  "intent": "The ONE correlation unit: a WebFilter generating or adopting the requestId header and writing it with contextWrite under key requestId, so audit records and ECS log lines carry the correlation key. Blank or oversized supplied value is replaced by a generated one.",
+  "layer": "interface",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.shared",
+    "implements": [
+      "WebFilter"
+    ],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain)",
+        "returns": "Mono<Void>"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

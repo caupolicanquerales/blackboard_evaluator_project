@@ -1,0 +1,76 @@
+{
+  "id": "T1-056",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-020",
+    "T1-049",
+    "T1-050",
+    "T1-052",
+    "T1-053",
+    "T1-054",
+    "T1-055"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/memory/application/SummaryRefreshServiceTest.java",
+  "export": "SummaryRefreshServiceTest",
+  "intent": "SummaryRefreshServiceTest proves with fakes: a new turn refreshes the summary and publishes SummaryUpdated once; the same session id + turn id delivered twice is a no-op (idempotent); a summarizer failing 3 times counts outcome failed and publishes nothing; a success counts outcome refreshed.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.memory.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "MemoryStore",
+        "task_id": "T2-052"
+      },
+      {
+        "type": "SummarizerPort",
+        "task_id": "T2-020"
+      },
+      {
+        "type": "SummarizerConcurrencyGuard",
+        "task_id": "T2-054"
+      },
+      {
+        "type": "SummaryRetryPolicy",
+        "task_id": "T2-055"
+      },
+      {
+        "type": "SummaryUpdatedPublisher",
+        "task_id": "T2-053"
+      },
+      {
+        "type": "TurnCompletedEvent",
+        "task_id": "T2-050"
+      },
+      {
+        "type": "RollingSummary",
+        "task_id": "T2-049"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> refresh(TurnCompletedEvent event)",
+        "returns": "Mono<Void>",
+        "semantics": "event must be non-null"
+      }
+    ],
+    "meters": [
+      {
+        "name": "chat.memory.summary.refreshed",
+        "duty": "owns"
+      }
+    ],
+    "routes": [],
+    "config": []
+  },
+  "observability": {
+    "step_logs": [
+      "summary refreshed"
+    ]
+  }
+}

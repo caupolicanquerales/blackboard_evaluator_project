@@ -1,0 +1,39 @@
+{
+  "id": "T1-042",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/orchestration/application/TurnConcurrencyGuardTest.java",
+  "export": "TurnConcurrencyGuardTest",
+  "intent": "TurnConcurrencyGuardTest proves PB-03: with permits exhausted tryAcquire returns false immediately with no waiter queued; release frees a permit; releasing more than acquired never exceeds the cap.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.application",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "boolean tryAcquire()",
+        "returns": "boolean",
+        "semantics": "true when a permit was taken; false when none is free, the caller answers 429"
+      },
+      {
+        "signature": "void release()",
+        "returns": ""
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.turn.max-concurrent-turns",
+        "kind": "value"
+      }
+    ]
+  }
+}

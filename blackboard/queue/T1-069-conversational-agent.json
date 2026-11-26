@@ -1,0 +1,62 @@
+{
+  "id": "T1-069",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-064",
+    "T1-067"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/history/interfaces/HistoryEventBufferTest.java",
+  "export": "HistoryEventBufferTest",
+  "intent": "HistoryEventBufferTest proves offered batches drain to the HistoryAppender in order; with the drain stalled, depth never exceeds the configured capacity of 1,024 and the overflowing offer is rejected and counted by chat.history.dropped (PB-15 bounded-buffer, queue-depth 1,024); a terminated subscriber does not kill later offers.",
+  "layer": "interface",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.history.interfaces",
+    "implements": [
+      "SmartLifecycle"
+    ],
+    "dependencies": [
+      {
+        "type": "HistoryAppender",
+        "task_id": "T2-067"
+      },
+      {
+        "type": "HistoryBatch",
+        "task_id": "T2-064"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "boolean offer(HistoryBatch batch)",
+        "returns": "boolean",
+        "semantics": "false when the buffer is full; rejects null batch"
+      },
+      {
+        "signature": "void start()",
+        "returns": ""
+      },
+      {
+        "signature": "void stop()",
+        "returns": ""
+      },
+      {
+        "signature": "boolean isRunning()",
+        "returns": "boolean",
+        "semantics": "true while the drain subscription is active; false before start and after stop"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.history.buffer.capacity",
+        "kind": "value",
+        "value": 1024
+      }
+    ]
+  }
+}

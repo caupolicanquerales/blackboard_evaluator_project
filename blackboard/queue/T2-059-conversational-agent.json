@@ -1,0 +1,43 @@
+{
+  "id": "T2-059",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-059",
+    "T0-001",
+    "T2-022"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/memory/application/WindowQueryTimeout.java",
+  "export": "WindowQueryTimeout",
+  "intent": "PB-11 timeout-budget: bounds the window query wait with Mono.timeout(Duration) derived from the turn timeout key chat.turn.timeout; it owns no separate value. In-time results pass through, an overrun errors with a timeout.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.memory.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ContextEntry",
+        "task_id": "T2-022"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Flux<ContextEntry> bound(Flux<ContextEntry> query)",
+        "returns": "Flux<ContextEntry>",
+        "semantics": "query must be non-null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.turn.timeout",
+        "kind": "value",
+        "value": "PT30S"
+      }
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "id": "T3-064",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-064"
+  ],
+  "kind": "refactor",
+  "path": "src/main/java/com/blackboard/conversationalagent/history/domain/HistoryBatch.java",
+  "export": "HistoryBatch",
+  "intent": "Refactor HistoryBatch: keep the tabled contract and the paired tests green; no behavior, status, meter or route change.",
+  "layer": "domain",
+  "feature": null,
+  "project": "conversational-agent"
+}

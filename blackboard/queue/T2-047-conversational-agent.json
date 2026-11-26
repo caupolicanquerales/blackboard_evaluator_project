@@ -1,0 +1,175 @@
+{
+  "id": "T2-047",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-047",
+    "T0-001",
+    "T0-004",
+    "T2-006",
+    "T2-007",
+    "T2-010",
+    "T2-013",
+    "T2-034",
+    "T2-035",
+    "T2-041",
+    "T2-042",
+    "T2-043",
+    "T2-044",
+    "T2-045",
+    "T2-009",
+    "T2-058",
+    "T2-068",
+    "T2-005",
+    "T2-008",
+    "T2-002",
+    "T2-016",
+    "T2-017",
+    "T2-018",
+    "T2-021",
+    "T2-023",
+    "T2-025",
+    "T2-024",
+    "T2-029",
+    "T2-027",
+    "T2-028"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/interfaces/SendMessageController.java",
+  "export": "SendMessageController",
+  "intent": "Unit IS the surface 'send message SSE HTTP inbound': SI-01 owner-scoped-query enforced via SessionOwnershipService (403 on refusal); SI-04 boundary-validation with @Valid on SendMessageRequest and SI-10 typed-deserialization typed DTO parameter; guards UserRateLimiter, TurnConcurrencyGuard (429), ChatPayloadPolicy (413); audits 'message sent'; streams through SseProgressEncoder and releases the permit when the stream ends. The published Flux<ServerSentEvent<ProgressEvent>> is consumed by external subscribers (out-of-process HTTP SSE clients).",
+  "layer": "interface",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.interfaces",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "JwtCallerAdapter",
+        "task_id": "T2-034"
+      },
+      {
+        "type": "SessionOwnershipService",
+        "task_id": "T2-035"
+      },
+      {
+        "type": "TurnOrchestrator",
+        "task_id": "T2-041"
+      },
+      {
+        "type": "TurnConcurrencyGuard",
+        "task_id": "T2-042"
+      },
+      {
+        "type": "UserRateLimiter",
+        "task_id": "T2-043"
+      },
+      {
+        "type": "ChatPayloadPolicy",
+        "task_id": "T2-044"
+      },
+      {
+        "type": "SendMessageRequest",
+        "task_id": "T2-045"
+      },
+      {
+        "type": "SseProgressEncoder",
+        "task_id": "T2-013"
+      },
+      {
+        "type": "AuditPort",
+        "task_id": "T2-007"
+      },
+      {
+        "type": "AuditEntry",
+        "task_id": "T2-006"
+      },
+      {
+        "type": "SecurityErrorHandlers",
+        "task_id": "T2-009"
+      },
+      {
+        "type": "ServiceCredentialAuthenticator",
+        "task_id": "T2-058"
+      },
+      {
+        "type": "ServiceCredentialVerifier",
+        "task_id": "T2-068"
+      },
+      {
+        "type": "ContentRedactionAdapter",
+        "task_id": "T2-005"
+      },
+      {
+        "type": "AuditTrailAdapter",
+        "task_id": "T2-008"
+      },
+      {
+        "type": "ObservabilityConfiguration",
+        "task_id": "T2-002"
+      },
+      {
+        "type": "ToolCallGuard",
+        "task_id": "T2-016"
+      },
+      {
+        "type": "FallbackModelRoute",
+        "task_id": "T2-017"
+      },
+      {
+        "type": "PromptContract",
+        "task_id": "T2-018"
+      },
+      {
+        "type": "StructuredOutputGuard",
+        "task_id": "T2-021"
+      },
+      {
+        "type": "ContextWindowAssembler",
+        "task_id": "T2-023"
+      },
+      {
+        "type": "MemoryBoundaryAdapter",
+        "task_id": "T2-025"
+      },
+      {
+        "type": "TurnTokenBudget",
+        "task_id": "T2-024"
+      },
+      {
+        "type": "GoldenSetHarness",
+        "task_id": "T2-029"
+      },
+      {
+        "type": "OfflineModelStub",
+        "task_id": "T2-027"
+      },
+      {
+        "type": "LoopGovernor",
+        "task_id": "T2-028"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Flux<ServerSentEvent<ProgressEvent>> send(String sessionId, SendMessageRequest request, Jwt jwt)",
+        "returns": "Flux<ServerSentEvent<ProgressEvent>>",
+        "semantics": "rejects null sessionId, request or jwt"
+      }
+    ],
+    "meters": [],
+    "routes": [
+      {
+        "method": "POST",
+        "path": "/chat/sessions/{sessionId}/messages",
+        "duty": "serves"
+      }
+    ],
+    "config": []
+  },
+  "observability": {
+    "step_logs": [
+      "token stream closed"
+    ]
+  }
+}

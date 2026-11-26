@@ -1,0 +1,15 @@
+{
+  "id": "T3-011",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-011"
+  ],
+  "kind": "refactor",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/domain/ProgressEvent.java",
+  "export": "ProgressEvent",
+  "intent": "Refactor ProgressEvent: keep the tabled contract and the paired tests green; no behavior, status, meter or route change.",
+  "layer": "domain",
+  "feature": null,
+  "project": "conversational-agent"
+}

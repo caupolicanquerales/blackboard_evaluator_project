@@ -1,0 +1,38 @@
+{
+  "id": "T1-005",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-004"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/shared/ContentRedactionAdapterTest.java",
+  "export": "ContentRedactionAdapterTest",
+  "intent": "ContentRedactionAdapterTest proves SI-08 log-redaction: message text and user or tenant identifiers never survive redact(); a field-free technical string passes through; redaction happens before the write, asserted on a captured ListAppender event.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.shared",
+    "implements": [
+      "RedactionPort"
+    ],
+    "dependencies": [
+      {
+        "type": "RedactionPort",
+        "task_id": "T2-004"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "String redact(String value)",
+        "returns": "String",
+        "semantics": "value must not be null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

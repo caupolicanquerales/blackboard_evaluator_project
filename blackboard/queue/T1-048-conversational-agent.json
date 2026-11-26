@@ -1,0 +1,133 @@
+{
+  "id": "T1-048",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T0-004",
+    "T1-034",
+    "T1-035",
+    "T1-038"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/orchestration/interfaces/ReloadHistoryControllerTest.java",
+  "export": "ReloadHistoryControllerTest",
+  "intent": "End-to-end request-path slice with WebTestClient and a fake HistoryQuery, each case seeding a UNIQUE session: owner's GET returns the entries in order and a 'history reloaded' audit is recorded (permitted); a VALID session id of another user or tenant answers 403 and HistoryQuery is never called (cross-owner).",
+  "layer": "interface",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.interfaces",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "JwtCallerAdapter",
+        "task_id": "T2-034"
+      },
+      {
+        "type": "SessionOwnershipService",
+        "task_id": "T2-035"
+      },
+      {
+        "type": "HistoryQuery",
+        "task_id": "T2-038"
+      },
+      {
+        "type": "HistoryEntryView",
+        "task_id": "T2-037"
+      },
+      {
+        "type": "AuditPort",
+        "task_id": "T2-007"
+      },
+      {
+        "type": "AuditEntry",
+        "task_id": "T2-006"
+      },
+      {
+        "type": "SecurityErrorHandlers",
+        "task_id": "T2-009"
+      },
+      {
+        "type": "ServiceCredentialAuthenticator",
+        "task_id": "T2-058"
+      },
+      {
+        "type": "ServiceCredentialVerifier",
+        "task_id": "T2-068"
+      },
+      {
+        "type": "ContentRedactionAdapter",
+        "task_id": "T2-005"
+      },
+      {
+        "type": "AuditTrailAdapter",
+        "task_id": "T2-008"
+      },
+      {
+        "type": "ObservabilityConfiguration",
+        "task_id": "T2-002"
+      },
+      {
+        "type": "SseProgressEncoder",
+        "task_id": "T2-013"
+      },
+      {
+        "type": "ToolCallGuard",
+        "task_id": "T2-016"
+      },
+      {
+        "type": "FallbackModelRoute",
+        "task_id": "T2-017"
+      },
+      {
+        "type": "PromptContract",
+        "task_id": "T2-018"
+      },
+      {
+        "type": "StructuredOutputGuard",
+        "task_id": "T2-021"
+      },
+      {
+        "type": "ContextWindowAssembler",
+        "task_id": "T2-023"
+      },
+      {
+        "type": "MemoryBoundaryAdapter",
+        "task_id": "T2-025"
+      },
+      {
+        "type": "TurnTokenBudget",
+        "task_id": "T2-024"
+      },
+      {
+        "type": "GoldenSetHarness",
+        "task_id": "T2-029"
+      },
+      {
+        "type": "OfflineModelStub",
+        "task_id": "T2-027"
+      },
+      {
+        "type": "LoopGovernor",
+        "task_id": "T2-028"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Flux<HistoryEntryView> reload(String sessionId, String afterTurnId, int afterSequence, int pageSize, Jwt jwt)",
+        "returns": "Flux<HistoryEntryView>",
+        "semantics": "rejects null sessionId or jwt; pageSize must be positive"
+      }
+    ],
+    "meters": [],
+    "routes": [
+      {
+        "method": "GET",
+        "path": "/chat/sessions/{sessionId}/history",
+        "duty": "serves"
+      }
+    ],
+    "config": []
+  }
+}

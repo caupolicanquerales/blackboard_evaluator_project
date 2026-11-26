@@ -1,0 +1,36 @@
+{
+  "id": "T1-012",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-011"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/orchestration/application/TokenStreamPortTest.java",
+  "export": "TokenStreamPortTest",
+  "intent": "TokenStreamPortTest drives the port through the pinned SSE encoder with a stub emitting N chunks and asserts N chunk events then exactly one completion.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ProgressEvent",
+        "task_id": "T2-011"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Flux<ProgressEvent> stream(String sessionId, String message)",
+        "returns": "Flux<ProgressEvent>",
+        "semantics": "neither argument may be null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "id": "T1-040",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-006",
+    "T1-007",
+    "T1-011",
+    "T1-028"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/orchestration/application/TurnBudgetPolicyTest.java",
+  "export": "TurnBudgetPolicyTest",
+  "intent": "TurnBudgetPolicyTest with StepVerifier and virtual time: PB-01 five tool status events pass; the sixth tool call is refused, the stream ends with a notice event, chat.turn.limit.reached counted with limit tag and a 'turn limit reached' audit recorded; a stream silent past the configured timeout ends cleanly with a notice (PB-02 turn timeout read from chat.turn.timeout equals 30 seconds).",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "LoopGovernor",
+        "task_id": "T2-028"
+      },
+      {
+        "type": "ProgressEvent",
+        "task_id": "T2-011"
+      },
+      {
+        "type": "AuditPort",
+        "task_id": "T2-007"
+      },
+      {
+        "type": "AuditEntry",
+        "task_id": "T2-006"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Flux<ProgressEvent> bound(Flux<ProgressEvent> events)",
+        "returns": "Flux<ProgressEvent>",
+        "semantics": "rejects null events"
+      }
+    ],
+    "meters": [
+      {
+        "name": "chat.turn.limit.reached",
+        "duty": "owns"
+      }
+    ],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.turn.max-tool-calls",
+        "kind": "value",
+        "value": "5"
+      },
+      {
+        "path": "chat.turn.timeout",
+        "kind": "value",
+        "value": "PT30S"
+      }
+    ]
+  },
+  "observability": {
+    "step_logs": [
+      "turn limit reached"
+    ]
+  }
+}

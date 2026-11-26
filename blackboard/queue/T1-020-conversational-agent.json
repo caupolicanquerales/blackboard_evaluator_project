@@ -1,0 +1,30 @@
+{
+  "id": "T1-020",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/memory/application/SummarizerPortTest.java",
+  "export": "SummarizerPortTest",
+  "intent": "SummarizerPortTest drives the port through the pinned offline stub: older messages condense to a summary, null arguments are refused.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.memory.application",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "Mono<String> summarize(String previousSummary, List<String> olderMessages)",
+        "returns": "Mono<String>",
+        "semantics": "olderMessages must not be null; previousSummary may be empty"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

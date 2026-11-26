@@ -1,0 +1,59 @@
+{
+  "id": "T1-009",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-001",
+    "T1-003"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/shared/SecurityErrorHandlersTest.java",
+  "export": "SecurityErrorHandlersTest",
+  "intent": "SecurityErrorHandlersTest proves SI-09 error-code-only: unauthenticated and forbidden exchanges answer 401 and 403 with a JSON body holding only opaque code, safe message and the requestId correlation key; no stack, exception text or session identifier appears.",
+  "layer": "interface",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.shared",
+    "implements": [
+      "ServerAuthenticationEntryPoint",
+      "ServerAccessDeniedHandler"
+    ],
+    "dependencies": [
+      {
+        "type": "CorrelationWebFilter",
+        "task_id": "T2-003"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> commence(ServerWebExchange exchange, AuthenticationException ex)",
+        "returns": "Mono<Void>"
+      },
+      {
+        "signature": "Mono<Void> handle(ServerWebExchange exchange, AccessDeniedException denied)",
+        "returns": "Mono<Void>"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "server.error.include-message",
+        "kind": "value",
+        "value": "never"
+      },
+      {
+        "path": "server.error.include-stacktrace",
+        "kind": "value",
+        "value": "never"
+      },
+      {
+        "path": "server.error.include-binding-errors",
+        "kind": "value",
+        "value": "never"
+      }
+    ]
+  }
+}

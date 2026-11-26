@@ -1,0 +1,54 @@
+{
+  "id": "T1-026",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-019",
+    "T1-020",
+    "T1-018"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/orchestration/infrastructure/SpringAiModelAdapterTest.java",
+  "export": "SpringAiModelAdapterTest",
+  "intent": "SpringAiModelAdapterTest proves the adapter maps a stubbed ChatClient stream to ProgressEvents and a stubbed summary call to text, with provider exceptions translated and no provider type escaping; no live endpoint is reached.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.infrastructure",
+    "implements": [
+      "ChatPort",
+      "SummarizerPort"
+    ],
+    "dependencies": [
+      {
+        "type": "ChatPort",
+        "task_id": "T2-019"
+      },
+      {
+        "type": "SummarizerPort",
+        "task_id": "T2-020"
+      },
+      {
+        "type": "PromptContract",
+        "task_id": "T2-018"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Flux<ProgressEvent> generate(PromptContract contract, Map<String, String> values)",
+        "returns": "Flux<ProgressEvent>",
+        "semantics": "no argument may be null"
+      },
+      {
+        "signature": "Mono<String> summarize(String previousSummary, List<String> olderMessages)",
+        "returns": "Mono<String>",
+        "semantics": "olderMessages must not be null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

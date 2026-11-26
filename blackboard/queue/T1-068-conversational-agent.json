@@ -1,0 +1,46 @@
+{
+  "id": "T1-068",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/history/infrastructure/ServiceCredentialVerifierTest.java",
+  "export": "ServiceCredentialVerifierTest",
+  "intent": "ServiceCredentialVerifierTest proves a configured service id with the matching secret authenticates (AZ-06 permitted); a wrong secret, unknown id or missing credential is denied; an empty configured credential list fails startup fast; a valid credential whose scope is not history-append is denied (cross-owner).",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.history.infrastructure",
+    "implements": [
+      "ReactiveAuthenticationManager"
+    ],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "Mono<Authentication> authenticate(Authentication authentication)",
+        "returns": "Mono<Authentication>"
+      },
+      {
+        "signature": "Mono<Boolean> verify(String serviceId, String secret)",
+        "returns": "Mono<Boolean>",
+        "semantics": "false for null or blank serviceId or secret"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.history.service-credentials",
+        "kind": "list",
+        "fields": [
+          "id",
+          "secret-hash",
+          "scope"
+        ]
+      }
+    ]
+  }
+}

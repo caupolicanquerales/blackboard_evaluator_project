@@ -1,0 +1,40 @@
+{
+  "id": "T2-043",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-043",
+    "T0-001"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/interfaces/UserRateLimiter.java",
+  "export": "UserRateLimiter",
+  "intent": "UserRateLimiter discharges PB-05 rate-limit rate-limit-policy: a plan-added token-bucket permit guard per user id, rate and burst from chat.rate-limit.rate and chat.rate-limit.burst; false means the caller answers 429. Bucket map bounded and non-blocking.",
+  "layer": "interface",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.interfaces",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "boolean tryAcquire(String userId)",
+        "returns": "boolean",
+        "semantics": "rejects null userId"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.rate-limit.rate",
+        "kind": "value"
+      },
+      {
+        "path": "chat.rate-limit.burst",
+        "kind": "value"
+      }
+    ]
+  }
+}

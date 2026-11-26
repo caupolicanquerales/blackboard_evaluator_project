@@ -1,0 +1,30 @@
+{
+  "id": "T1-063",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/history/domain/HistoryEntryTest.java",
+  "export": "HistoryEntryTest",
+  "intent": "HistoryEntryTest proves construction keeps session id, turn id, entry sequence, kind, content, token count and recorded timestamp; blank identifiers, a null kind, null content or a negative token count are rejected with IllegalArgumentException; the record exposes no mutator, so entries stay append-only.",
+  "layer": "domain",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.history.domain",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "HistoryEntry(String sessionId, String turnId, int entrySequence, String kind, String content, int tokenCount, Instant recordedAt)",
+        "returns": "",
+        "semantics": "rejects blank sessionId/turnId, null kind/content/recordedAt, negative entrySequence or tokenCount"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

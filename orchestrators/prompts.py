@@ -9,6 +9,7 @@ from pathlib import Path
 
 import ddd
 import settings
+import stacks
 import task_queue
 import workspace
 
@@ -93,10 +94,12 @@ def build_stack_skills_line(slug):
     stack_docs, counterpart, tables = _resolved_stack_skills(slug)
     parts = []
     if stack_docs:
-        parts.append("tech-stack skill (the technology names and spelling source): "
-                     + ", ".join(stack_docs))
+        parts.append("tech-stack skill (the technology names and spelling source; ALREADY "
+                     "CONCATENATED into the brief as its STACK SKILL sections - the paths "
+                     "are recovery references only): " + ", ".join(stack_docs))
     if counterpart:
-        parts.append("its architect counterpart (read once with it): " + ", ".join(counterpart))
+        parts.append("its architect counterpart (also a brief section - do not open it "
+                     "again): " + ", ".join(counterpart))
     if tables:
         parts.append("mapping tables (open ONLY when the digest lists unmapped_duties, "
                      "and then only the table that lists the duty): " + ", ".join(tables))
@@ -121,10 +124,16 @@ def write_planner_context(slug, context, strategy_slice_path, slice_path, symbol
     quickref = root / ".opencode/skills/architect-practices/task-decomposition-dag/QUICKREF.md"
     stem = ddd.context_stem(context)
     path = _P(f"/tmp/planner-context-{slug}-{stem}.md")
+    # (2026-11-26 call-budget root fix) the two ALWAYS-read stack skills ride the same
+    # file: the engine resolves their paths deterministically, so making the session
+    # open them separately only multiplies windowed reads of bytes already chosen.
+    stack_docs, counterpart, _tables = _resolved_stack_skills(slug)
     sections = [("STRATEGY SLICE", _P(strategy_slice_path)),
                 ("DIGEST SLICE", _P(slice_path)),
                 ("SYMBOL TABLE", _P(symbols_path) if symbols_path else None),
                 ("CONTRACT QUICKREF", quickref)]
+    sections += [(f"STACK SKILL: {_P(rel).parts[-2]}", root / rel)
+                 for rel in [*stack_docs, *counterpart]]
     parts = [f"# Planner session context - {slug} / {context}\n"]
     for label, p in sections:
         parts.append(f"\n===== SECTION: {label} =====\n")
@@ -183,7 +192,7 @@ def worked_draft_example(slug):
 
 def build_planner_prompt(project_root, runner, slug, context, draft, slice_path,
                          symbols_path, next_free, undrafted, gaps_path=None,
-                         strategy_slice_path=None):
+                         strategy_slice_path=None, siblings=None):
     """Phase 2 brief for ONE bounded context (2026-11-20 architect split) or, since the
     2026-11-25 root restructure, for the reserved ROOT pass that owns the domain-wide
     singletons. Every path the session reads or writes is computed by the engine and
@@ -210,8 +219,8 @@ def build_planner_prompt(project_root, runner, slug, context, draft, slice_path,
         "shows their ids; schedule none of them.")
     if strategy_slice_path is None:
         strategy_slice_path = ddd.strategy_slice_path(slug, context)
-    drafted_line = (f"{symbols_path} - the symbol table of the contexts already drafted "
-                    "for this domain: their task ids, exports, signatures, owned meters, "
+    drafted_line = ("the symbol table of the contexts already drafted "
+                    "for this domain (inside the brief): their task ids, exports, signatures, owned meters, "
                     "served routes, config paths, the next-free numbers, and the stage-0 "
                     "families already scheduled (`build_manifest` with each task's verbatim "
                     "intent - a coordinate it carries is NOT yours to re-schedule)"
@@ -222,13 +231,29 @@ def build_planner_prompt(project_root, runner, slug, context, draft, slice_path,
                       if undrafted else
                       "You draft the LAST context of this domain: every other context is "
                       "already in the symbol table.")
+    if siblings:
+        # (2026-11-26 parallel plan) the sibling wave: ids cannot be known (claim mints
+        # them), but (type, owning context) IS a fact this session holds - so the pin is
+        # an ANCHOR and the engine binds it to the real id before the batch emit.
+        undrafted_line = (
+            "PARALLEL SIBLINGS (drafting NOW, their ids exist in no transcript): "
+            + ", ".join(f'"{s}"' for s in siblings) + ". You NEVER type a sibling task id - "
+            "claim renumbers ids and theirs are not minted yet. To consume a sibling unit, "
+            "add the anchor entry {\"type\": <the sibling's exported name>, \"context\": "
+            "\"<exact sibling context name>\"} to ast_hints.dependencies with NO task_id: "
+            "the engine binds the concrete id and the mirrored test-side edge at the batch. "
+            "dependsOn still cites ONLY symbol-table ids, queued/complete ids, and ids "
+            "inside this file; a sibling id typed anyway is a refusal, not a hope.")
     context_path = write_planner_context(slug, context, str(strategy_slice_path),
                                          str(slice_path), str(symbols_path) if symbols_path else None)
     return (
         ARCHITECT_PLANNER_PROMPT.replace("{project_root}", str(project_root))
         .replace("{context_path}",
                  str(context_path) if context_path
-                 else "(context file unavailable - read the three section files listed below)")
+                 else "(THE SINGLE BRIEF FILE COULD NOT BE WRITTEN - read the sections "
+                      "individually instead: {strategy_slice}, {slice}"
+                      + (f", {symbols_path}" if symbols_path else "")
+                      + ", and the QUICKREF plus STACK SKILL files named below)")
         .replace("{slug}", slug)
         .replace("{stack_skills}", build_stack_skills_line(slug))
         .replace("{context}", str(context))
@@ -522,7 +547,7 @@ def _unit_brief(task, t1_id):
     test_path = root / str(t1.get("path", ""))
     try:
         text = test_path.read_text(encoding="utf-8", errors="ignore")
-        own_pkg = ".".join(re.search(r"package ([\w.]+);", text).group(1).split(".")[:4])
+        own_pkg = ".".join(re.search(stacks.PACKAGE_REGEX, text).group(1).split(".")[:4])
         imps = sorted({m.split(".")[-1] for m in re.findall(
             r"import (?:static )?([" + re.escape(own_pkg) + r"\w.]*\.[A-Z][\w]*[\w.]*);", text)})
         if imps:
@@ -611,11 +636,13 @@ If - and ONLY if - the description itself states that this domain needs no secur
 record `security_directive` in that slice with the sentence copied VERBATIM: you do not
 decide it, you transcribe it, and the engine checks the quotation against this file.
 No directive means security IS required.
-If - and ONLY if - the description itself states that this domain carries an AI capability
-(generation, embedding, retrieval-augmented answers, agentic or tool-calling flows), record
-`ai_directive` {required:true, quote, source:"description"} in that slice with the sentence
-copied VERBATIM: you do not decide it, you transcribe it, and the engine checks the quotation
-against this file. No ai_directive means NO AI capability - the phase never runs; never infer
+If - and ONLY if - the description itself states that a SUBDOMAIN you recorded carries an AI
+capability (generation, summarization, embedding, retrieval-augmented answers, agentic or
+tool-calling flows), record `ai_directive` {required:true, quote, source:"description"} in THAT
+slice - and only in that slice - with the sentence describing that subdomain's own capability
+copied VERBATIM: you do not decide it, you transcribe it, the engine checks the quotation against
+this file, and the attribution (which slice the sentence belongs to) is yours to get right. Never
+paste the same sentence into a slice that merely feeds or assists the capable one. No ai_directive means NO AI capability - the phase never runs; never infer
 one and never record required:false (the absent default says it).
 Do not write application code.
 Finish by confirming the report path.
@@ -696,7 +723,12 @@ Once per domain:
    the description is the source of truth, and downstream stages pin the build from it.
 
 2. Emit exactly one separate project scaffold task for THIS domain. Each domain is its own project,
-   rooted at {project_root}/services/<slug>/. Fields:
+   rooted at {project_root}/services/<slug>/. Stage-0 identity is the EXPORT MARKER, never the
+   shape: your task carries export "project_scaffold"; a dependency-free task on the build
+   marker file whose export is the build manifest is NOT the scaffold and never replaces it
+   - if no project_scaffold marker
+   is on the board, the scaffold is missing: claim the next free T0 id in your draft file and emit
+   (an "id already exists" refusal means renumber the draft, never abandon the emit). Fields:
    id (the next free T0 id), targetAgent "{scaffold_agent}" (the board's stage-0 role),
    stage 0, dependsOn [], kind "bootstrap", layer "root", feature null,
    export "project_scaffold", project "<slug>", path "<build marker>" relative to the
@@ -736,10 +768,14 @@ Domain: {slug} - project root {project_root}/services/{slug}/; every task `path`
 Context: {context} - draft file: {draft}.
 {ownership_line}
 
-READ EXACTLY THESE, once each - they are the whole input; nothing else is:
-0. {context_path} - the engine PRE-CONCATENATED the inputs below plus the contract
-   QUICKREF into this ONE file. Read IT once; do not re-read the section files it contains.
-1. {strategy_slice} SECTION STRATEGY SLICE - phase 1's plan FILTERED to this context by Python: your surfaces
+INPUT - ONE FILE, ONE FULL READ: {context_path} - the engine PRE-CONCATENATED every input
+of this session (STRATEGY SLICE, DIGEST SLICE, SYMBOL TABLE, CONTRACT QUICKREF, and the
+resolved STACK SKILLS) into this ONE file, with `===== SECTION: <name> =====` banners.
+Read it ONCE and IN FULL: the file outgrows a windowed `view` page, and a windowed crawl
+pays five calls where one complete read pays one - the whole-file-`cat` ban in your scope
+covers SOURCE files of the project, NEVER your input brief. Nothing else is input; the
+numbered items below describe the SECTIONS of that file - they are not files to open:
+1. SECTION STRATEGY SLICE - phase 1's plan FILTERED to this context by Python: your surfaces
    (the `surfaces[].name` join keys), your persistence, your step logs, the module layout.
    Two fields are WHOLE-ROOT and must be read as such: `composition_root_surfaces` - every
    inbound surface the domain hosts, any context, each with its `method`+`path` where the
@@ -759,7 +795,13 @@ READ EXACTLY THESE, once each - they are the whole input; nothing else is:
    marker words per source there too (a made-up strategy key is refused by the shape
    gate and re-plans the whole domain; live 2026-11-25 an SSE feed's repair invented
    exactly that).
-2. {slice} SECTION DIGEST SLICE - this context's duty digest, and every duty arrives COMPLETE: `surface`,
+2. SECTION DIGEST SLICE - this context's duty digest, and every duty arrives COMPLETE: `surface`,
+   The slice also carries `commitments` - behavior the strategy committed beyond the rule
+   values (an ordering, a fallback, a serialization the context map adjudicated). Each one
+   must land in the enforcing unit's intent HERE, or be reported as a phase-1 gap: a
+   commitment no unit carries ships as documentation, and a map decision nobody implements
+   is a map decision that was never made. ("accepted:" risk lines are NOT commitments -
+   those exposures stay unplanned by choice.)
    `test_duty`, `measurement`, `surface_kind` (+ `surface_method`/`surface_path` for
    addressed surfaces) are joined ONTO the duty; `covers` is expanded, and the matched
    mapping-table row rides as the duty's `table_row` (the identifier the intent must
@@ -864,7 +906,7 @@ DUTY CLAIMS, machine-enforced at emit: YOU ALONE map a capability token to a rea
 mechanism, and you map it FROM its row - the digest already carries each duty's matched
 `table_row`; a name no row carries is a defect to report, never a recall. Every duty of
 the slice is discharged INSIDE the enforcing STAGE-2 unit by spelling its `spec_ref`
-AND `capability` VERBATIM beside the mechanism copied from that duty's `table_row`. Security duties add the reach geometry:
+AND `capability` VERBATIM beside the mechanism copied from that duty's `table_row`. Security duties add row coverage (rule (y1-row)): every id in the duty's `covers` is spelled at the unit that IS that covered row's surface entry, with the duty's capability and the row's inherited test_duty case in the pair test; a covered row spoken nowhere is refused at emit as an unclaimed authorization. Security duties add the reach geometry:
 the unit that IS a surface (its intent names the strategy's `surfaces[].name`) pins the
 enforcing unit in `ast_hints.dependencies` + `dependsOn`, and that entry unit's stage-1
 pair carries the row id and its `test_duty` CROSS-OWNER case. Performance (PB-/PI-, WB-
@@ -904,7 +946,11 @@ The FULL contract (a)-(z) is `task-decomposition-dag` SKILL.md - the linter and 
 batch emit quote the violated rule by letter; the history behind each rule is
 DECISIONS.md and is not your read.
 
-FINISH with the lint, then stop:
+FINISH with the lint, then stop - AT MOST THREE LINT RUNS: the loop is draft -> lint (1)
+-> fix EVERY ERR line in ONE batched edit turn -> lint (2) -> if one defect shape remains,
+reread that rule and rewrite the WHOLE file in ONE create call -> lint (3) -> stop. A fourth
+lint means the loop is eating your calls: stop, end your report with the remaining ERR lines
+verbatim - the ENGINE's claim gate and its bounded repair rounds carry them from there.
     python3 {runner} --lint {draft}
 Lint pointers name the EXPANDED objects: T1-007 is your unit 7 test side, T2-007 its
 code side; fix the unit record that produced them. EDIT every ERR [id]: line into

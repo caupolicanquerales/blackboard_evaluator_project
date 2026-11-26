@@ -1,0 +1,121 @@
+{
+  "id": "T1-046",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T0-004",
+    "T1-034",
+    "T1-036",
+    "T1-043"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/orchestration/interfaces/CreateSessionControllerTest.java",
+  "export": "CreateSessionControllerTest",
+  "intent": "End-to-end request-path slice with WebTestClient on embedded H2, each case seeding a UNIQUE user: valid bearer user POST /chat/sessions creates a session row owned by the token's user and tenant (AZ-01 permitted); no credential answers 401 (denied); a body naming another owner is ignored, the row keeps the token owner (cross-owner).",
+  "layer": "interface",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.interfaces",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "JwtCallerAdapter",
+        "task_id": "T2-034"
+      },
+      {
+        "type": "CreateSessionService",
+        "task_id": "T2-036"
+      },
+      {
+        "type": "UserRateLimiter",
+        "task_id": "T2-043"
+      },
+      {
+        "type": "SecurityErrorHandlers",
+        "task_id": "T2-009"
+      },
+      {
+        "type": "ServiceCredentialAuthenticator",
+        "task_id": "T2-058"
+      },
+      {
+        "type": "ServiceCredentialVerifier",
+        "task_id": "T2-068"
+      },
+      {
+        "type": "ContentRedactionAdapter",
+        "task_id": "T2-005"
+      },
+      {
+        "type": "AuditTrailAdapter",
+        "task_id": "T2-008"
+      },
+      {
+        "type": "ObservabilityConfiguration",
+        "task_id": "T2-002"
+      },
+      {
+        "type": "SseProgressEncoder",
+        "task_id": "T2-013"
+      },
+      {
+        "type": "ToolCallGuard",
+        "task_id": "T2-016"
+      },
+      {
+        "type": "FallbackModelRoute",
+        "task_id": "T2-017"
+      },
+      {
+        "type": "PromptContract",
+        "task_id": "T2-018"
+      },
+      {
+        "type": "StructuredOutputGuard",
+        "task_id": "T2-021"
+      },
+      {
+        "type": "ContextWindowAssembler",
+        "task_id": "T2-023"
+      },
+      {
+        "type": "MemoryBoundaryAdapter",
+        "task_id": "T2-025"
+      },
+      {
+        "type": "TurnTokenBudget",
+        "task_id": "T2-024"
+      },
+      {
+        "type": "GoldenSetHarness",
+        "task_id": "T2-029"
+      },
+      {
+        "type": "OfflineModelStub",
+        "task_id": "T2-027"
+      },
+      {
+        "type": "LoopGovernor",
+        "task_id": "T2-028"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<ResponseEntity<Map<String, String>>> create(Jwt jwt)",
+        "returns": "Mono<ResponseEntity<Map<String, String>>>",
+        "semantics": "rejects null jwt"
+      }
+    ],
+    "meters": [],
+    "routes": [
+      {
+        "method": "POST",
+        "path": "/chat/sessions",
+        "duty": "serves"
+      }
+    ],
+    "config": []
+  }
+}

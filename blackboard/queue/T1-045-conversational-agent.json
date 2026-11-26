@@ -1,0 +1,29 @@
+{
+  "id": "T1-045",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/orchestration/interfaces/SendMessageRequestTest.java",
+  "export": "SendMessageRequestTest",
+  "intent": "SendMessageRequestTest validates with a Validator: blank or null message yields a violation (SI-04), a text message none; the type is a closed record with a single message field (SI-10).",
+  "layer": "interface",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.interfaces",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "SendMessageRequest(String message)",
+        "returns": ""
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

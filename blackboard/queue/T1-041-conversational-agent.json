@@ -1,0 +1,94 @@
+{
+  "id": "T1-041",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-011",
+    "T1-012",
+    "T1-017",
+    "T1-018",
+    "T1-019",
+    "T1-022",
+    "T1-039",
+    "T1-040"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/orchestration/application/TurnOrchestratorTest.java",
+  "export": "TurnOrchestratorTest",
+  "intent": "TurnOrchestratorTest with fake ports and SimpleMeterRegistry: the stream reads the context window at turn start, relays chunks and tool status events, ends with completion and counts chat.turn.completed and chat.turn.duration; each tool event counts chat.tool.calls; a model error ends cleanly with the fallback notice.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.application",
+    "implements": [
+      "TokenStreamPort"
+    ],
+    "dependencies": [
+      {
+        "type": "TokenStreamPort",
+        "task_id": "T2-012"
+      },
+      {
+        "type": "ChatPort",
+        "task_id": "T2-019"
+      },
+      {
+        "type": "PromptContract",
+        "task_id": "T2-018"
+      },
+      {
+        "type": "FallbackModelRoute",
+        "task_id": "T2-017"
+      },
+      {
+        "type": "TurnBudgetPolicy",
+        "task_id": "T2-040"
+      },
+      {
+        "type": "ContextWindowQuery",
+        "task_id": "T2-039"
+      },
+      {
+        "type": "ProgressEvent",
+        "task_id": "T2-011"
+      },
+      {
+        "type": "ContextEntry",
+        "task_id": "T2-022"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Flux<ProgressEvent> stream(String sessionId, String message)",
+        "returns": "Flux<ProgressEvent>",
+        "semantics": "rejects null sessionId or message"
+      }
+    ],
+    "meters": [
+      {
+        "name": "chat.turn.completed",
+        "duty": "owns"
+      },
+      {
+        "name": "chat.turn.duration",
+        "duty": "owns"
+      },
+      {
+        "name": "chat.tool.calls",
+        "duty": "owns"
+      }
+    ],
+    "routes": [],
+    "config": []
+  },
+  "observability": {
+    "step_logs": [
+      "turn started",
+      "tool call started",
+      "tool call finished",
+      "turn completed"
+    ]
+  }
+}

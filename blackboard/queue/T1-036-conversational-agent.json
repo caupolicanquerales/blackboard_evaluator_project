@@ -1,0 +1,56 @@
+{
+  "id": "T1-036",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-006",
+    "T1-007",
+    "T1-030",
+    "T1-031",
+    "T1-032"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/orchestration/application/CreateSessionServiceTest.java",
+  "export": "CreateSessionServiceTest",
+  "intent": "CreateSessionServiceTest with fakes: the created session carries the caller's user and tenant, a fresh id and version 0, is saved once, and a 'session created' audit entry is recorded with the Reactor Context requestId.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "SessionRepository",
+        "task_id": "T2-031"
+      },
+      {
+        "type": "AuditPort",
+        "task_id": "T2-007"
+      },
+      {
+        "type": "AuditEntry",
+        "task_id": "T2-006"
+      },
+      {
+        "type": "CallerIdentity",
+        "task_id": "T2-032"
+      },
+      {
+        "type": "ChatSession",
+        "task_id": "T2-030"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<ChatSession> create(CallerIdentity caller)",
+        "returns": "Mono<ChatSession>",
+        "semantics": "rejects null caller"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

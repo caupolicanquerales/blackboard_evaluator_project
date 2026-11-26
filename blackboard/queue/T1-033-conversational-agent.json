@@ -1,0 +1,64 @@
+{
+  "id": "T1-033",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T0-004",
+    "T1-014",
+    "T1-030",
+    "T1-031"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/orchestration/infrastructure/R2dbcSessionStoreTest.java",
+  "export": "R2dbcSessionStoreTest",
+  "intent": "R2dbcSessionStoreTest executes the REAL migrated V3 DDL on embedded H2 and asserts rows back: saved session loads for its owner and tenant (SI-01 permitted); a VALID session id with a foreign user or tenant is not found and permits is false (cross-owner); each case seeds a UNIQUE session id; PB-07 pool maximum read from spring.r2dbc.pool.max-size equals 10.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.infrastructure",
+    "implements": [
+      "SessionRepository",
+      "SessionAccessCheck"
+    ],
+    "dependencies": [
+      {
+        "type": "SessionRepository",
+        "task_id": "T2-031"
+      },
+      {
+        "type": "SessionAccessCheck",
+        "task_id": "T2-014"
+      },
+      {
+        "type": "ChatSession",
+        "task_id": "T2-030"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<ChatSession> save(ChatSession session)",
+        "returns": "Mono<ChatSession>"
+      },
+      {
+        "signature": "Mono<ChatSession> byIdAndTenant(String sessionId, String ownerUserId, String tenantId)",
+        "returns": "Mono<ChatSession>"
+      },
+      {
+        "signature": "Mono<Boolean> permits(String sessionId, String userId, String tenantId)",
+        "returns": "Mono<Boolean>",
+        "semantics": "true when the session exists for that user and tenant; false when absent or owned by another"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "spring.r2dbc.pool.max-size",
+        "kind": "value",
+        "value": "10"
+      }
+    ]
+  }
+}

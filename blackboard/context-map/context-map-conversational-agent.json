@@ -1,0 +1,133 @@
+{
+  "schema_version": "1.0",
+  "report_type": "context-map",
+  "metadata": {
+    "generated_at": "2026-11-26T10:50:00-03:00",
+    "agent": "domain-context-mapping",
+    "source_report": "blackboard/domain"
+  },
+  "context_map": [
+    {
+      "upstream": "Chat Session & Turn Orchestration",
+      "downstream": "Conversation Memory",
+      "relationship": "Customer-supplier",
+      "direction": "upstream->downstream",
+      "exchanged_information": "Async event TurnCompleted (session id, user message, assistant reply) so memory can maintain the rolling summary; Memory's needs (what it must receive to summarize) are negotiated with Orchestration.",
+      "boundary_protection": "Only the TurnCompleted event crosses; session ownership checks and turn state stay internal to Orchestration."
+    },
+    {
+      "upstream": "Conversation Memory",
+      "downstream": "Chat Session & Turn Orchestration",
+      "relationship": "Customer-supplier",
+      "direction": "upstream->downstream",
+      "exchanged_information": "Synchronous query: current Context Window (last 12 messages + rolling summary, <=16,000 tokens), called by Orchestration at the start of each turn. Memory supplies, Orchestration initiates.",
+      "boundary_protection": "Orchestration receives a read-only Context Window view; summarization internals and token accounting stay in Memory."
+    },
+    {
+      "upstream": "Chat Session & Turn Orchestration",
+      "downstream": "Chat History Log",
+      "relationship": "Conformist",
+      "direction": "upstream->downstream",
+      "exchanged_information": "Async events TurnCompleted and ToolCalled (user message, tool call, assistant reply, token counts) appended to the log.",
+      "boundary_protection": "History adopts Orchestration's event model as-is and only appends; it never mutates or reaches into turn state."
+    },
+    {
+      "upstream": "Chat History Log",
+      "downstream": "Chat Session & Turn Orchestration",
+      "relationship": "Customer-supplier",
+      "direction": "upstream->downstream",
+      "exchanged_information": "Synchronous query: reload of past chats, called by Orchestration after it has verified session ownership (403 otherwise).",
+      "boundary_protection": "Read-only history entries; access control is enforced by Orchestration, History never decides ownership."
+    },
+    {
+      "upstream": "external",
+      "downstream": "Chat Session & Turn Orchestration",
+      "relationship": "Anticorruption layer",
+      "direction": "upstream->downstream",
+      "exchanged_information": "LLM provider completions/token streams and Spring AI backend tool results, requested by Orchestration during a turn (command/query initiated by Orchestration; supplier stays upstream).",
+      "boundary_protection": "Orchestration translates provider and tool models into Turn/Tool Call/Token Stream on its side; 5-call cap and 30s timeout applied here; no provider types leak."
+    },
+    {
+      "upstream": "external",
+      "downstream": "Conversation Memory",
+      "relationship": "Anticorruption layer",
+      "direction": "upstream->downstream",
+      "exchanged_information": "LLM provider summarization answer, requested by Memory when folding older messages into the rolling summary.",
+      "boundary_protection": "Memory translates the provider response into its Rolling summary; provider model never leaks."
+    }
+  ],
+  "cross_boundary_flows": [
+    {
+      "business_process": "Turn completion fans out to memory update",
+      "contexts_involved": [
+        "Chat Session & Turn Orchestration",
+        "Conversation Memory"
+      ],
+      "consistency_expectation": "eventual",
+      "notes": "Mechanism: async event TurnCompleted. WIRED: Memory's consumes list names TurnCompleted and its invariant 'last 12 messages in full detail and older messages only as a running summary'. Failure posture: at-least-once delivery with idempotent summary update keyed by session+turn; retry on LLM failure."
+    },
+    {
+      "business_process": "Turn start reads Context Window",
+      "contexts_involved": [
+        "Chat Session & Turn Orchestration",
+        "Conversation Memory"
+      ],
+      "consistency_expectation": "immediate",
+      "notes": "Mechanism: query (Orchestration 'reads' Conversation Memory). Read-after-event: Memory refreshes asynchronously from TurnCompleted, so a quick next message can see a stale window. Staleness posture: serialize - Orchestration does not start the next turn of the same session until Memory has applied the previous TurnCompleted (the last 12 messages are always fresh; only summary freshness is at stake). Memory failure to refresh must not block beyond the 30s turn timeout."
+    },
+    {
+      "business_process": "Append turn and tool activity to history",
+      "contexts_involved": [
+        "Chat Session & Turn Orchestration",
+        "Chat History Log"
+      ],
+      "consistency_expectation": "eventual",
+      "notes": "Mechanism: async events TurnCompleted and ToolCalled. WIRED: History consumes both and 'History entries are append-only and each carries token counts'; Orchestration's out_of_scope states 'Persisting history (Chat History Log)'. Ambiguity carried from discovery: delivery posture and dedup identity are unspecified, so a retried message could be logged twice - planning-blocking decision for the history writer: client-supplied idempotency key vs natural identity (turn id + entry sequence; payload excluded since mutable)."
+    },
+    {
+      "business_process": "Reload past chats",
+      "contexts_involved": [
+        "Chat Session & Turn Orchestration",
+        "Chat History Log"
+      ],
+      "consistency_expectation": "immediate",
+      "notes": "Mechanism: query (Orchestration 'reads' Chat History Log). Initiated by Orchestration after ownership check. Slight lag after recent append is acceptable (bounded lag: a just-finished turn may be missing for a moment; cost is a briefly incomplete reload)."
+    },
+    {
+      "business_process": "Agent reasoning and tool calls",
+      "contexts_involved": [
+        "Chat Session & Turn Orchestration",
+        "external"
+      ],
+      "consistency_expectation": "immediate",
+      "notes": "Mechanism: synchronous queries to LLM provider and backend tools, non-blocking (no Netty event-loop blocking); results streamed to the user as Token Stream (SSE). Limits: 5 tool calls, 30s."
+    },
+    {
+      "business_process": "Summarization via LLM",
+      "contexts_involved": [
+        "Conversation Memory",
+        "external"
+      ],
+      "consistency_expectation": "immediate",
+      "notes": "Mechanism: query (Memory 'reads' LLM provider summarization), executed inside the TurnCompleted handler."
+    },
+    {
+      "business_process": "Turn limit reached notification (TurnLimitReached)",
+      "contexts_involved": [
+        "Chat Session & Turn Orchestration",
+        "Chat History Log"
+      ],
+      "consistency_expectation": "eventual",
+      "notes": "ADJUDICATED OPEN - PLANNING-BLOCKING. No slice consumes TurnLimitReached. Quoted phrase 'stops cleanly and informs the user' decides the user-facing delivery (inside the Token Stream, no consumer needed), but not whether it is recorded. Candidate A: Chat History Log subscribes to TurnLimitReached (event, eventual) and appends it - requires adding it to History's consumes and the append-only invariant covering system notices. Candidate B: no subscriber; the user-visible notice is carried by the final assistant reply in TurnCompleted and the event is internal/observability only (drop from published contract). Choice commits History's schema and event contract."
+    },
+    {
+      "business_process": "Summary refresh signal (SummaryUpdated)",
+      "contexts_involved": [
+        "Conversation Memory",
+        "Chat Session & Turn Orchestration"
+      ],
+      "consistency_expectation": "eventual",
+      "notes": "ADJUDICATED OPEN - PLANNING-BLOCKING. No slice consumes SummaryUpdated, and Orchestration only 'reads' the Context Window by query. Candidate A: Orchestration subscribes (async event) and uses it to release the serialized next-turn read of the same session - commits an inbound event and a per-session wait in Orchestration. Candidate B: no subscriber; serialization is internal to Memory (the query blocks until the pending TurnCompleted is applied) and the event is dropped or kept observability-only - commits Memory's read model to own the ordering. Coupling cycle named: Orchestration -> Memory (TurnCompleted) and Memory -> Orchestration (Context Window query) is a deliberate event/query loop, not a shared model."
+    }
+  ]
+}

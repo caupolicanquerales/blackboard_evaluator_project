@@ -7,6 +7,12 @@ this module as a namespace (``settings.ROOT``) so tests can patch values at runt
 import re
 from pathlib import Path
 
+import family_paths  # noqa: F401  - puts the family folders (orchestration,
+                      # task_contract, task_creation) on sys.path BEFORE any
+                      # module in this tree imports a family by flat name.
+                      # Every module imports settings first (verified at split
+                      # time), so this single hook covers the whole engine.
+
 ROOT = Path(__file__).resolve().parents[1]
 BLACKBOARD = ROOT / "blackboard"
 QUEUE_DIR = BLACKBOARD / "queue"
@@ -50,6 +56,14 @@ STAGE_AGENTS = {
     3: "agent-evaluator",
     4: "agent-assembly",
 }
+# Sessions billed while NOTHING else can proceed are the plan phase's wall-clock:
+# decode-bound and, until 2026-11-26, serialized by a pin law that only existed because
+# ids are minted at claim. With {type, context} sibling anchors (plan_wiring resolves
+# them before the batch), bounded-context sessions are independent work. This is the
+# concurrency of that wave: 1 restores the exact serial order; the root pass stays
+# serial in every mode (the symbol table is the siblings' only shared input).
+PLAN_PARALLEL = 3
+
 STAGE_KINDS = {
     0: ("bootstrap",),
     1: ("test",),
@@ -72,22 +86,26 @@ AGENT_CALL_BUDGETS = {
     STAGE_AGENTS[2]: 6,
     STAGE_AGENTS[3]: 12,
     STAGE_AGENTS[4]: 12,
-    ARCHITECT_STRATEGY_AGENT: 12,  # phase 1: read 2 reports, write 1 strategy, emit 1 scaffold
+    ARCHITECT_STRATEGY_AGENT: 14,  # phase 1: read 2 reports, write 1 strategy, emit 1 scaffold
+                                   # (2026-11-26 measured: three sessions took 14-15 calls even
+                                   # when the strategy already existed - the report reads plus
+                                   # the skill loads of a resuming run are not cheaper)
                                    # task; the three strategy skills load once. The old 15 was
                                    # sized for BOTH phases (2026-11-19); the split moves phase 2
                                    # bytes out of this context entirely.
-    ARCHITECT_PLANNER_AGENT: 16,   # per BOUNDED CONTEXT session: strategy + digest + symbol
-                                   # table reads, one draft write, one lint/emit. The mapping
-                                   # tables load ONLY when the digest lists unmapped_duties -
-                                   # the matched rows ride the digest itself (2026-11-20).
-                                   # 12 -> 16 (2026-11-24 seed-002, measured twice): a LAW-ABIDING
-                                   # session costs 7 reads + bulk create + rewrite + ~3 lints +
-                                   # a per-object fix pass for a 68-object draft = 25 calls; the
-                                   # compliant draft hit the 24-cap (twice: run 1's second context,
-                                   # run 2's single context) and the kill landed AFTER the work
-                                   # was done. The budget was calibrated for ~10 units; this
-                                   # seed's context carries every duty in one file. 16 keeps the
-                                   # watchdog's teeth (cap 32) with room for two lint rounds.
+    ARCHITECT_PLANNER_AGENT: 22,   # per BOUNDED CONTEXT session (2026-11-26 recalibrated
+                                   # on two measured sessions): reads 1-2 (the brief now
+                                   # carries EVERY section - strategy slice, digest, symbols,
+                                   # quickref, stack skills - in ONE file, read once in full;
+                                   # windowed `view` crawling cost a root session 10 reads),
+                                   # draft 1 create, lint <=3 (the brief caps the loop), fix
+                                   # passes ~8-12 EDIT CALLS - copilot counts parallel edits
+                                   # in one turn as separate calls, and a 9-unit draft with one
+                                   # repeated defect shape fixes in ~10. 16 + cap 32 killed a
+                                   # COMPLIANT session one lint round from done (measured: 33
+                                   # calls, draft complete, 7 ERRs of a single shape left).
+                                   # 22 + cap 44 leaves an honest loop room without arming a
+                                   # runaway: the [budget] line still logs every overshoot.
     DATABASE_AGENT: 12,    # 14 was needed ONLY because the profile had no exact skill
                            # paths and the agent globbed tech-stack/** (A4, 2026-11-18);
                            # with paths given, 12 is the honest ceiling and it is pinned

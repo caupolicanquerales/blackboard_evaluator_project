@@ -1,0 +1,15 @@
+{
+  "id": "T3-023",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-023"
+  ],
+  "kind": "refactor",
+  "path": "src/main/java/com/blackboard/conversationalagent/memory/application/ContextWindowAssembler.java",
+  "export": "ContextWindowAssembler",
+  "intent": "Refactor ContextWindowAssembler: keep the tabled contract and the paired tests green; no behavior, status, meter or route change.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent"
+}

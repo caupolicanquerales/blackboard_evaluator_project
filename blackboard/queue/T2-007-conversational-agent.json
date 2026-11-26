@@ -1,0 +1,37 @@
+{
+  "id": "T2-007",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-007",
+    "T0-001",
+    "T2-006"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/shared/AuditPort.java",
+  "export": "AuditPort",
+  "intent": "Outbound application port every context uses to record denials, failures and business actions; sole audit channel, no second ad-hoc logger.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.shared",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "AuditEntry",
+        "task_id": "T2-006"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> record(AuditEntry entry)",
+        "returns": "Mono<Void>",
+        "semantics": "entry must not be null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

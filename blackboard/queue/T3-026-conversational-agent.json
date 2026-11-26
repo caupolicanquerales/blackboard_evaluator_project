@@ -1,0 +1,15 @@
+{
+  "id": "T3-026",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-026"
+  ],
+  "kind": "refactor",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/infrastructure/SpringAiModelAdapter.java",
+  "export": "SpringAiModelAdapter",
+  "intent": "Refactor SpringAiModelAdapter: keep the tabled contract and the paired tests green; no behavior, status, meter or route change.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent"
+}

@@ -1,0 +1,15 @@
+{
+  "id": "T3-033",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-033"
+  ],
+  "kind": "refactor",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/infrastructure/R2dbcSessionStore.java",
+  "export": "R2dbcSessionStore",
+  "intent": "Refactor R2dbcSessionStore: keep the tabled contract and the paired tests green; no behavior, status, meter or route change.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent"
+}

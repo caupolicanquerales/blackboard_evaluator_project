@@ -1,0 +1,138 @@
+{
+  "id": "T2-010",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-010",
+    "T0-001",
+    "T2-009",
+    "T2-034",
+    "T2-058",
+    "T2-068",
+    "T2-005",
+    "T2-008",
+    "T2-002",
+    "T2-013",
+    "T2-016",
+    "T2-017",
+    "T2-018",
+    "T2-021",
+    "T2-023",
+    "T2-025",
+    "T2-024",
+    "T2-029",
+    "T2-027",
+    "T2-028"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/shared/RootSecurityGate.java",
+  "export": "RootSecurityGate",
+  "intent": "The ONE root admission gate: a SecurityWebFilterChain with default-deny, authenticated admission of the composition root's addressed surfaces, and exceptionHandling bound to the pinned SecurityErrorHandlers; per-surface authorization is the contexts' own rule.",
+  "layer": "root",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.shared",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "SecurityErrorHandlers",
+        "task_id": "T2-009"
+      },
+      {
+        "type": "JwtCallerAdapter",
+        "task_id": "T2-034"
+      },
+      {
+        "type": "ServiceCredentialAuthenticator",
+        "task_id": "T2-058"
+      },
+      {
+        "type": "ServiceCredentialVerifier",
+        "task_id": "T2-068"
+      },
+      {
+        "type": "ContentRedactionAdapter",
+        "task_id": "T2-005"
+      },
+      {
+        "type": "AuditTrailAdapter",
+        "task_id": "T2-008"
+      },
+      {
+        "type": "ObservabilityConfiguration",
+        "task_id": "T2-002"
+      },
+      {
+        "type": "SseProgressEncoder",
+        "task_id": "T2-013"
+      },
+      {
+        "type": "ToolCallGuard",
+        "task_id": "T2-016"
+      },
+      {
+        "type": "FallbackModelRoute",
+        "task_id": "T2-017"
+      },
+      {
+        "type": "PromptContract",
+        "task_id": "T2-018"
+      },
+      {
+        "type": "StructuredOutputGuard",
+        "task_id": "T2-021"
+      },
+      {
+        "type": "ContextWindowAssembler",
+        "task_id": "T2-023"
+      },
+      {
+        "type": "MemoryBoundaryAdapter",
+        "task_id": "T2-025"
+      },
+      {
+        "type": "TurnTokenBudget",
+        "task_id": "T2-024"
+      },
+      {
+        "type": "GoldenSetHarness",
+        "task_id": "T2-029"
+      },
+      {
+        "type": "OfflineModelStub",
+        "task_id": "T2-027"
+      },
+      {
+        "type": "LoopGovernor",
+        "task_id": "T2-028"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http)",
+        "returns": "SecurityWebFilterChain"
+      }
+    ],
+    "meters": [],
+    "routes": [
+      {
+        "method": "POST",
+        "path": "/chat/sessions",
+        "duty": "uses"
+      },
+      {
+        "method": "POST",
+        "path": "/chat/sessions/{sessionId}/messages",
+        "duty": "uses"
+      },
+      {
+        "method": "GET",
+        "path": "/chat/sessions/{sessionId}/history",
+        "duty": "uses"
+      }
+    ],
+    "config": []
+  },
+  "root_gate": true
+}

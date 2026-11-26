@@ -623,8 +623,8 @@ check("Q14 the split moved the refusal restatement OUT of both profiles and INTO
       and all(tag in DAG_TEXT for tag in ("(y)", "(z)", "(b)"))
       and "(z)" in (REPO / ".opencode/skills/architect-practices/task-decomposition-dag/QUICKREF.md").read_text()
       and DAG_MARKERS == list(string.ascii_lowercase[:26])
-      and "ERR [" in (REPO / "orchestrators/task_queue.py").read_text()
-      and "by EDITING the named task objects" in (REPO / "orchestrators/task_queue.py").read_text())
+      and "ERR [" in (REPO / "orchestrators/task_creation/task_queue.py").read_text()
+      and "by EDITING the named task objects" in (REPO / "orchestrators/task_creation/task_queue.py").read_text())
 
 check("Q15 the architect is NOT granted the security rulebook: its interface to that phase is "
       "the artifact, so loading the authoring skill would duplicate a contract and pull another "
@@ -659,9 +659,10 @@ check("Q17 the profile's single shell grant is the reader, named as an exact com
       and '"*": deny' in frontmatters[0] and "orchestrator_" not in frontmatters[0],
       f"quoted grants={frontmatters[0].count(chr(34) + ': allow')}")
 _ddd = (REPO / "orchestrators/ddd.py").read_text()
-_backends = [(REPO / "orchestrators/opencode_backend.py").read_text(),
-             (REPO / "orchestrators/copilot_backend.py").read_text()]
-_pipeline = (REPO / "orchestrators/pipeline.py").read_text()
+_backends = [(REPO / "orchestrators/backends/opencode_backend.py").read_text(),
+             (REPO / "orchestrators/backends/copilot_backend.py").read_text()]
+_pipeline = (REPO / "orchestrators/orchestration/run_phases.py").read_text()
+_pflow = (REPO / "orchestrators/orchestration/plan_flow.py").read_text()
 check("Q18 the witness stays outside the judged session: no document offers the agent a "
       "self-validation command, ddd.py exposes NO CLI for one, and both backends plus the "
       "pipeline call the gate themselves - 'run python3 orchestrators/ddd.py --validate' "
@@ -816,8 +817,8 @@ check("AG4 the strategy shape gate bills NOTHING before it fires (2026-11-24 v4 
       " would bill against the invalid plan before any loop reached the shape gate; the"
       " pipeline now runs validate_strategy between phase 1 and the database loop - the"
       " source order is the law",
-      (REPO / "orchestrators/pipeline.py").read_text().find("SHAPE GATE FIRST")
-      < (REPO / "orchestrators/pipeline.py").read_text().find("backend.run_database"))
+      _pipeline.find("SHAPE GATE FIRST")
+      < _pipeline.find("backend.run_database"))
 check("AG3 TWO honest draft shapes, no conversion war (2026-11-24 v4 live stop: the "
       "compact-only law with a literal exemplar was VERIFIED present in the planner "
       "session prompt - the model still typed 81 expanded objects, spent 30 calls, and "
@@ -1377,7 +1378,7 @@ check("Q31 the emission shape is ONE planning session per BOUNDED CONTEXT writin
       "ONE bounded context" in _pf and "Lint with the exact command" in _pf
       and "never run `--emit` yourself" in _pf
       and "hundreds of tokens; a rewrite 10-30k" in _pf
-      and "READ EXACTLY THESE" in _pb and "40-80 words (180 refused at emit)" in _pb
+      and "INPUT - ONE FILE, ONE FULL READ" in _pb and "40-80 words (180 refused at emit)" in _pb
       and "LINT-CLEAN" in _pb and "the ENGINE emits the batch" in _pb
       and "generator script" in _pb
       and "ONE JSON array **per bounded context**" in dag_skill
@@ -1388,8 +1389,8 @@ check("Q31 the emission shape is ONE planning session per BOUNDED CONTEXT writin
       and "read it together with its context map" in prompts.ARCHITECT_STRATEGY_PROMPT
       and "hard ceiling 180" in dag_skill
       and "**edit**" in dag_skill
-      and "emit_draft_batch" in (REPO / "orchestrators/pipeline.py").read_text()
-      and "run_planner" in (REPO / "orchestrators/pipeline.py").read_text())
+      and "emit_draft_batch" in _pflow
+      and "run_planner" in _pflow)
 
 # --- SE. rule (z) is taught in EVERY carrier and nothing sends the architect to a tool
 #     it does not have (2026-11-19, the R1/R2 fix). The fields without the law in the
@@ -1959,10 +1960,13 @@ check("SF1 the phase-2 duty digest is held by EVERY carrier the split planner re
       and "def write_strategy_slice(" in _ddd_src
       and "def write_phase2_digest_slice(" in _ddd_src
       and "write_strategy_slice(slug, context)" in _ddd_src
-      and "{strategy_slice}" in prompts.ARCHITECT_PLANNER_PROMPT
-      and "write_phase2_digest_slice" in (REPO / "orchestrators/pipeline.py").read_text()
-      and "{slice}" in prompts.ARCHITECT_PLANNER_PROMPT
+      # (2026-11-26 single-file brief) the session is routed to ONE pre-concatenated
+      # context file whose SECTION banners are the input list - the three section names
+      # are the law's carriers now, not three paths the agent might open twice.
+      and "SECTION STRATEGY SLICE" in prompts.ARCHITECT_PLANNER_PROMPT
+      and "SECTION DIGEST SLICE" in prompts.ARCHITECT_PLANNER_PROMPT
       and "{symbols_line}" in prompts.ARCHITECT_PLANNER_PROMPT
+      and "write_phase2_digest_slice" in _pflow
       and all("unmapped_duties" in body for body in planner_bodies)
       and all("`table_row`" in body for body in planner_bodies)
       and '"table_row"' in _ddd_src)
@@ -1973,10 +1977,13 @@ check("SF1 the phase-2 duty digest is held by EVERY carrier the split planner re
 #     every context's draft; a 26-letter invariant wall the linter already enforced) is
 #     pinned to a carrier here, so no later edit can quietly re-fuse the agents or
 #     re-prose the gate.
-_oc_src = (REPO / "orchestrators/opencode_backend.py").read_text()
-_cp_src = (REPO / "orchestrators/copilot_backend.py").read_text()
-_tq_src = (REPO / "orchestrators/task_queue.py").read_text()
-_pl_src = (REPO / "orchestrators/pipeline.py").read_text()
+_oc_src = (REPO / "orchestrators/backends/opencode_backend.py").read_text()
+_cp_src = (REPO / "orchestrators/backends/copilot_backend.py").read_text()
+_tq_src = (REPO / "orchestrators/task_creation/task_queue.py").read_text()
+_pl_src = (REPO / "orchestrators/orchestration/plan_flow.py").read_text()
+_prp = (REPO / "orchestrators/orchestration/run_phases.py").read_text()
+_pbd = (REPO / "orchestrators/task_creation/plan_board.py").read_text()
+_pdr = (REPO / "orchestrators/task_creation/plan_drafts.py").read_text()
 check("AS1 the split is structural, not cosmetic: settings names the two agents; BOTH "
       "backends expose run_strategy/run_planner/run_planner_repair and no longer expose the "
       "monolith's run_architect; the pipeline's phase-2 block is the per-context loop",
@@ -1986,24 +1993,24 @@ check("AS1 the split is structural, not cosmetic: settings names the two agents;
               and "def run_planner_repair" in s and "def run_architect" not in s
               for s in (_oc_src, _cp_src))
       and "_plan_domain_tasks" in _pl_src and "run_architect" not in _pl_src
-      and settings.call_budget(settings.ARCHITECT_STRATEGY_AGENT) == 12
-      and settings.call_budget(settings.ARCHITECT_PLANNER_AGENT) == 16)
+      and settings.call_budget(settings.ARCHITECT_STRATEGY_AGENT) == 14
+      and settings.call_budget(settings.ARCHITECT_PLANNER_AGENT) == 22)
 check("AS2 stated budget == engine budget for BOTH split agents (S26's law re-homed: the "
       "phase that broke it pays for every unstayed extra call), in all four mirror profiles",
-      all("Budget <=12" in body for body in strategy_bodies)
-      and all("Budget <=16" in body for body in planner_bodies)
-      and "Budget <=12" in (REPO / ".github/agents/agent-strategy-architect.agent.md").read_text()
-      and "Budget <=16" in (REPO / ".github/agents/agent-planner-architect.agent.md").read_text())
+      all("TOOL BUDGET line the brief prints" in body for body in strategy_bodies)
+      and all("TOOL BUDGET line the brief prints" in body for body in planner_bodies)
+      and "TOOL BUDGET line the brief prints" in (REPO / ".github/agents/agent-strategy-architect.agent.md").read_text()
+      and "TOOL BUDGET line the brief prints" in (REPO / ".github/agents/agent-planner-architect.agent.md").read_text())
 check("AS3 the deterministic linter ships as the contract's enforcement tier: --lint is a "
       "CLI verb that runs the SINGLE-FILE law (schema, forward-pin refusal) and names the "
       "batch laws DEFERRED to the engine's emit; every refusal is an `ERR [pointer]` line; "
       "claim_draft renumbers colliding ids and remaps the file's own references IN PYTHON - "
       "arithmetic is never billed to a session or a repair turn",
-      '"--lint"' in _pl_src and "lint_draft" in _pl_src
+      '"--lint"' in (REPO / "orchestrators/orchestration/cli_args.py").read_text() and "lint_draft" in (REPO / "orchestrators/orchestration/run_phases.py").read_text()
       and "def lint_draft" in _tq_src and "DEFERRED" in _tq_src
       and "def _format_error" in _tq_src and "ERR [" in _tq_src
       and "def claim_draft" in _tq_src and "renumber" in _tq_src
-      and "def draft_symbol_table" in _tq_src and "def emit_draft_batch" in _tq_src)
+      and "def draft_symbol_table" in _pbd and "def emit_draft_batch" in _tq_src)
 # 2026-11-24 agnosticism fix: the planner profile taught a Java example - the ONLY
 # concrete exemplar in a stack-agnostic carrier - and models copy exemplars, not
 # disclaimers. The worked example MOVED to the tech-stack tier (each supported stack
@@ -2140,13 +2147,13 @@ check("AS4f the build-manifest ONE-task law is taught where it is used: both pla
       "machine half - lint/emit refusing a second manifest - is pinned by SP5; carriers "
       "and gate must say the same law or the session obeys whichever it read last)",
       "def plan_build_manifest" in (REPO / "orchestrators/ddd.py").read_text()
-      and "ddd.plan_build_manifest(slug)" in (REPO / "orchestrators/pipeline.py").read_text()
-      and "def apply_coordinate_gaps" in _tq_src
-      and "return [], []" in _tq_src
+      and "ddd.plan_build_manifest(slug)" in _pflow
+      and "def apply_coordinate_gaps" in (REPO / "orchestrators/task_creation/plan_drafts.py").read_text()
+      and "return [], []" in (REPO / "orchestrators/task_creation/plan_drafts.py").read_text()
       and "You NEVER schedule a manifest" in " ".join(
           prompts.ARCHITECT_PLANNER_PROMPT.split())
-      and "_stage0_family_errors" in (REPO / "orchestrators/task_queue.py").read_text()
-      and "apply_coordinate_gaps" not in (REPO / "orchestrators/pipeline.py").read_text())
+      and "_stage0_family_errors" in (REPO / "orchestrators/task_creation/task_queue.py").read_text()
+      and "apply_coordinate_gaps" not in _pflow)
 for mirror_index, doc in enumerate(planner_bodies):
     check(f"AS4c.{mirror_index + 1} planner profile {mirror_index} carries NO fenced json "
           "example - the worked pair is STACK-SOURCED and reaches the session through the "
@@ -2181,9 +2188,9 @@ check("AS14 the repair brief carries the pattern law the planning sessions learn
       "ONE grep" in " ".join(prompts.ARCHITECT_PLANNER_REPAIR_PROMPT.split())
       and "a repeating shape is ONE" in " ".join(prompts.ARCHITECT_PLANNER_REPAIR_PROMPT.split())
       and "never re-lint a file you did not" in " ".join(prompts.ARCHITECT_PLANNER_REPAIR_PROMPT.split())
-      and '"--plan-only"' in _pl_src
-      and _pl_src.index("task phases finished") < _pl_src.index("if args.plan_only:")
-      and "[plan  ] --plan-only" in _pl_src)
+      and '"--plan-only"' in (REPO / "orchestrators/orchestration/cli_args.py").read_text()
+      and _prp.index("task phases finished") < _prp.index("if args.plan_only:")
+      and "[plan  ] --plan-only" in _prp)
 import session_audit  # noqa: E402
 check("AS5 the cost audit sees the split: strategy, planner and repair sessions classify to "
       "distinct roles (the repair phrase is the longer prefix, tested FIRST), the historic "
@@ -2201,11 +2208,11 @@ check("AS6 the draft-order law: providers draft before consumers from the contex
       "relationship edges (so the only pin a session can need is one the symbol table "
       "already carries), the unattributed duties get ONE deterministic home (the first "
       "slice), and stale draft bytes never join a fresh plan - a resumed launch keeps "
-      "only drafts NEWER than every plan input (draft_is_fresh) and unlinks the rest, "
+      "only drafts whose FACT hashes still match (draft_state) and unlinks the rest, "
       "so two plan generations can never share one batch",
       "def context_draft_order" in _ddd_src
       and '"draft_order"' in _ddd_src
-      and "def draft_is_fresh" in _tq_src and "draft_is_fresh" in _pl_src
+      and "def draft_is_fresh" in _pdr and "draft_state" in _pl_src
       and "cleared stale drafts" in _pl_src
       and "if owner is None:" in _ddd_src and "ROOT_CONTEXT" in _ddd_src
       and "unattributed duties ride the ROOT slice ONLY" in _ddd_src
@@ -2219,8 +2226,8 @@ check("AS9 the carrier preflight is real: agent_profiles_problems parses both pr
       "a carrier the CLI cannot register must cost zero sessions and stop the launch)",
       settings.agent_profiles_problems() == []
       and "def agent_profiles_problems" in (REPO / "orchestrators/settings.py").read_text()
-      and "agent_profiles_problems" in _pl_src
-      and _pl_src.index("agent_profiles_problems") < _pl_src.index("resolve_seed"))
+      and "agent_profiles_problems" in _prp
+      and _prp.index("agent_profiles_problems") < _prp.index("resolve_seed"))
 import tempfile as _as_tmp
 _as_root = Path(_as_tmp.mkdtemp())
 (_as_root / ".github" / "agents").mkdir(parents=True)

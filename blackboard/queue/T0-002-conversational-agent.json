@@ -1,0 +1,15 @@
+{
+  "id": "T0-002",
+  "targetAgent": "agent-container",
+  "stage": 0,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/main/resources/db/migration/V1__create_chat_history_tables.sql",
+  "kind": "bootstrap",
+  "layer": "root",
+  "feature": null,
+  "export": "V1__create_chat_history_tables.sql",
+  "intent": "Store: PostgreSQL relational primary (embedded H2 for boot/test only), Flyway expand-only migration V1 (create_chat_history_tables) creating history_entries (unique natural identity PK session_id+turn_id+entry_sequence, append-only, token_count NOT NULL) and token_usage_records for context Chat History Log; classpath:db/migration; forward-fix rollback.",
+  "project": "conversational-agent"
+}

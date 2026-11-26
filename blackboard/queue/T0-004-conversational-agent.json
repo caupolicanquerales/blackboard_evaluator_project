@@ -1,0 +1,15 @@
+{
+  "id": "T0-004",
+  "targetAgent": "agent-container",
+  "stage": 0,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "path": "src/main/resources/db/migration/V3__create_chat_orchestration_tables.sql",
+  "kind": "bootstrap",
+  "layer": "root",
+  "feature": null,
+  "export": "V3__create_chat_orchestration_tables.sql",
+  "intent": "Store: PostgreSQL relational primary (embedded H2 for boot/test only), Flyway expand-only migration V3 (create_chat_orchestration_tables) creating chat_sessions (owner_user_id, tenant_id, version) and turns (tool_call_count CHECK 0..5, version) for context Chat Session & Turn Orchestration.",
+  "project": "conversational-agent"
+}

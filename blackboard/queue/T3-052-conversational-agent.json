@@ -1,0 +1,15 @@
+{
+  "id": "T3-052",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-052"
+  ],
+  "kind": "refactor",
+  "path": "src/main/java/com/blackboard/conversationalagent/memory/application/MemoryStore.java",
+  "export": "MemoryStore",
+  "intent": "Refactor MemoryStore: keep the tabled contract and the paired tests green; no behavior, status, meter or route change.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent"
+}

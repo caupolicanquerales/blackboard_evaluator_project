@@ -1,0 +1,52 @@
+{
+  "id": "T1-016",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-001",
+    "T1-014",
+    "T1-015"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/orchestration/infrastructure/ToolCallGuardTest.java",
+  "export": "ToolCallGuardTest",
+  "intent": "ToolCallGuardTest proves AC-02 tool-call-guard by stub call count: an enumerated tool for the owner delegates once; a non-enumerated tool or a foreign session yields zero invocations and a refusal; the sixth call in a turn yields zero extra invocations.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.infrastructure",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "SessionAccessCheck",
+        "task_id": "T2-014"
+      },
+      {
+        "type": "ToolRequest",
+        "task_id": "T2-015"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Boolean> admit(String sessionId, String userId, String tenantId, ToolRequest request, int callsSoFar)",
+        "returns": "Mono<Boolean>",
+        "semantics": "no argument may be null; callsSoFar is not negative"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.tools.allowed",
+        "kind": "list"
+      },
+      {
+        "path": "chat.turn.max-tool-calls",
+        "kind": "value",
+        "value": "5"
+      }
+    ]
+  }
+}

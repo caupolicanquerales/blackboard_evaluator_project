@@ -1,0 +1,59 @@
+{
+  "id": "T1-052",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-049",
+    "T1-022"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/memory/application/MemoryStoreContractTest.java",
+  "export": "MemoryStoreContractTest",
+  "intent": "MemoryStoreContractTest proves, against an in-memory fake, that every read and write is keyed by session AND tenant: a foreign tenant gets an empty summary, no messages and turnApplied false; overflowMessages returns only messages older than the newest keep.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.memory.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "RollingSummary",
+        "task_id": "T2-049"
+      },
+      {
+        "type": "ContextEntry",
+        "task_id": "T2-022"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<RollingSummary> summaryByIdAndTenant(String sessionId, String tenantId)",
+        "returns": "Mono<RollingSummary>"
+      },
+      {
+        "signature": "Mono<RollingSummary> saveSummary(RollingSummary summary, String tenantId)",
+        "returns": "Mono<RollingSummary>"
+      },
+      {
+        "signature": "Flux<ContextEntry> recentMessages(String sessionId, String tenantId, int limit)",
+        "returns": "Flux<ContextEntry>",
+        "semantics": "limit must be > 0; at most limit newest messages"
+      },
+      {
+        "signature": "Flux<ContextEntry> overflowMessages(String sessionId, String tenantId, int keep)",
+        "returns": "Flux<ContextEntry>",
+        "semantics": "keep must be > 0; messages older than the newest keep"
+      },
+      {
+        "signature": "Mono<Boolean> turnApplied(String sessionId, String turnId, String tenantId)",
+        "returns": "Mono<Boolean>",
+        "semantics": "true when the turn was already applied for this session and tenant (duplicate, caller skips); false when not yet applied (caller proceeds)"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "id": "T3-041",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-041"
+  ],
+  "kind": "refactor",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/application/TurnOrchestrator.java",
+  "export": "TurnOrchestrator",
+  "intent": "Refactor TurnOrchestrator: keep the tabled contract and the paired tests green; no behavior, status, meter or route change.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent"
+}

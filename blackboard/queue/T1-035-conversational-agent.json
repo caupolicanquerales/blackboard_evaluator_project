@@ -1,0 +1,66 @@
+{
+  "id": "T1-035",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-006",
+    "T1-007",
+    "T1-014",
+    "T1-030",
+    "T1-032"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/orchestration/application/SessionOwnershipServiceTest.java",
+  "export": "SessionOwnershipServiceTest",
+  "intent": "SessionOwnershipServiceTest with fakes: owner's session returned (permitted); a VALID session id of another user or tenant fails with a forbidden error, counts chat.access.denied once and records a 'session access denied' audit entry (cross-owner); unknown id also refused.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "SessionRepository",
+        "task_id": "T2-031"
+      },
+      {
+        "type": "AuditPort",
+        "task_id": "T2-007"
+      },
+      {
+        "type": "AuditEntry",
+        "task_id": "T2-006"
+      },
+      {
+        "type": "CallerIdentity",
+        "task_id": "T2-032"
+      },
+      {
+        "type": "ChatSession",
+        "task_id": "T2-030"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<ChatSession> verify(String sessionId, CallerIdentity caller)",
+        "returns": "Mono<ChatSession>",
+        "semantics": "rejects null sessionId or caller"
+      }
+    ],
+    "meters": [
+      {
+        "name": "chat.access.denied",
+        "duty": "owns"
+      }
+    ],
+    "routes": [],
+    "config": []
+  },
+  "observability": {
+    "step_logs": [
+      "session ownership verified"
+    ]
+  }
+}

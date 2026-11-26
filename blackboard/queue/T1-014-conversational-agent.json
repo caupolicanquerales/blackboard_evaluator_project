@@ -1,0 +1,30 @@
+{
+  "id": "T1-014",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/orchestration/application/SessionAccessCheckTest.java",
+  "export": "SessionAccessCheckTest",
+  "intent": "SessionAccessCheckTest proves a stub implementation honours the contract: owner and tenant match yields true, a foreign owner or tenant yields false, null arguments are refused.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.application",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "Mono<Boolean> permits(String sessionId, String userId, String tenantId)",
+        "returns": "Mono<Boolean>",
+        "semantics": "no argument may be null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

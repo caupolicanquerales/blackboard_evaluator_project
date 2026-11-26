@@ -1,0 +1,31 @@
+{
+  "id": "T2-004",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-004",
+    "T0-001"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/shared/RedactionPort.java",
+  "export": "RedactionPort",
+  "intent": "Outbound application port masking conversation content and personal fields before any audit or step-log write; the adapter is the single implementation.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.shared",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "String redact(String value)",
+        "returns": "String",
+        "semantics": "value must not be null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

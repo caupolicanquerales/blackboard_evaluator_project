@@ -1,0 +1,37 @@
+{
+  "id": "T2-050",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-050",
+    "T0-001",
+    "T2-022"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/memory/domain/TurnCompletedEvent.java",
+  "export": "TurnCompletedEvent",
+  "intent": "TurnCompletedEvent is the memory-side typed view of the TurnCompleted event: session id, turn id, tenant id and the turn's messages. Identifiers must be non-null; the message list is copied immutably.",
+  "layer": "domain",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.memory.domain",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ContextEntry",
+        "task_id": "T2-022"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "TurnCompletedEvent(String sessionId, String turnId, String tenantId, List<ContextEntry> messages)",
+        "returns": "",
+        "semantics": "sessionId, turnId and tenantId must be non-null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

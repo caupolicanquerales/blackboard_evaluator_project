@@ -1,0 +1,30 @@
+{
+  "id": "T2-045",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-045",
+    "T0-001"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/interfaces/SendMessageRequest.java",
+  "export": "SendMessageRequest",
+  "intent": "SendMessageRequest is the typed closed request record of the send-message surface: one message field constrained with jakarta.validation @NotBlank; no Map or Object body.",
+  "layer": "interface",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.interfaces",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "SendMessageRequest(String message)",
+        "returns": ""
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "id": "T2-035",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-035",
+    "T0-001",
+    "T2-006",
+    "T2-007",
+    "T2-014",
+    "T2-030",
+    "T2-031",
+    "T2-032"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/application/SessionOwnershipService.java",
+  "export": "SessionOwnershipService",
+  "intent": "SessionOwnershipService verifies the caller owns the session via the pinned SessionRepository byIdAndTenant; on refusal it fails with a forbidden error, counts chat.access.denied and records a 'session access denied' audit entry via AuditPort with the requestId from the Reactor Context as correlationId.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "SessionRepository",
+        "task_id": "T2-031"
+      },
+      {
+        "type": "AuditPort",
+        "task_id": "T2-007"
+      },
+      {
+        "type": "AuditEntry",
+        "task_id": "T2-006"
+      },
+      {
+        "type": "CallerIdentity",
+        "task_id": "T2-032"
+      },
+      {
+        "type": "ChatSession",
+        "task_id": "T2-030"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<ChatSession> verify(String sessionId, CallerIdentity caller)",
+        "returns": "Mono<ChatSession>",
+        "semantics": "rejects null sessionId or caller"
+      }
+    ],
+    "meters": [
+      {
+        "name": "chat.access.denied",
+        "duty": "owns"
+      }
+    ],
+    "routes": [],
+    "config": []
+  },
+  "observability": {
+    "step_logs": [
+      "session ownership verified"
+    ]
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "id": "T2-070",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-070",
+    "T0-001",
+    "T2-063",
+    "T2-064",
+    "T2-068",
+    "T2-069",
+    "T2-014",
+    "T2-006",
+    "T2-007"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/history/interfaces/TurnCompletedHistoryConsumer.java",
+  "export": "TurnCompletedHistoryConsumer",
+  "intent": "Unit IS the surface 'turn completed history consumer': AZ-06 service-credential-proof enforced by the pinned ServiceCredentialVerifier before anything is appended; SessionAccessCheck confirms the session tenant. Permitted events map to a user message and an assistant reply entry, each with its token count, offered to HistoryEventBuffer. Unauthenticated or tenant-mismatched events are dropped and audited through AuditPort as session access denied.",
+  "layer": "interface",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.history.interfaces",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ServiceCredentialVerifier",
+        "task_id": "T2-068"
+      },
+      {
+        "type": "HistoryEventBuffer",
+        "task_id": "T2-069"
+      },
+      {
+        "type": "SessionAccessCheck",
+        "task_id": "T2-014"
+      },
+      {
+        "type": "AuditPort",
+        "task_id": "T2-007"
+      },
+      {
+        "type": "AuditEntry",
+        "task_id": "T2-006"
+      },
+      {
+        "type": "HistoryEntry",
+        "task_id": "T2-063"
+      },
+      {
+        "type": "HistoryBatch",
+        "task_id": "T2-064"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> consume(String serviceId, String secret, String sessionId, String turnId, String userId, String tenantId, int userSequence, String userMessage, int userTokens, int replySequence, String assistantReply, int replyTokens)",
+        "returns": "Mono<Void>",
+        "semantics": "event dropped, never thrown, when credential or tenant check fails"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

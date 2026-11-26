@@ -1,0 +1,15 @@
+{
+  "id": "T3-059",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-059"
+  ],
+  "kind": "refactor",
+  "path": "src/main/java/com/blackboard/conversationalagent/memory/application/WindowQueryTimeout.java",
+  "export": "WindowQueryTimeout",
+  "intent": "Refactor WindowQueryTimeout: keep the tabled contract and the paired tests green; no behavior, status, meter or route change.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent"
+}

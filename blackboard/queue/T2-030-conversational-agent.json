@@ -1,0 +1,31 @@
+{
+  "id": "T2-030",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-030",
+    "T0-001"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/domain/ChatSession.java",
+  "export": "ChatSession",
+  "intent": "ChatSession is the pure-Java aggregate record: session id, owner user id, tenant id, created timestamp, optimistic version. Invariant: belongs to exactly one user and tenant, ownership immutable; blank ids refused with IllegalArgumentException.",
+  "layer": "domain",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.domain",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "ChatSession(String sessionId, String ownerUserId, String tenantId, Instant createdAt, long version)",
+        "returns": "",
+        "semantics": "rejects null or blank sessionId, ownerUserId and tenantId"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

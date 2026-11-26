@@ -1,0 +1,47 @@
+{
+  "id": "T2-029",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-029",
+    "T0-001",
+    "T2-011",
+    "T2-018",
+    "T2-027"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/shared/GoldenSetHarness.java",
+  "export": "GoldenSetHarness",
+  "intent": "AC-09 eval-golden-set: no framework mechanism, so the plan's versioned golden-set constants (input, expected property) plus this assertion class run each example offline against the OfflineModelStub, never a live port.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.shared",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "OfflineModelStub",
+        "task_id": "T2-027"
+      },
+      {
+        "type": "PromptContract",
+        "task_id": "T2-018"
+      },
+      {
+        "type": "ProgressEvent",
+        "task_id": "T2-011"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Boolean> runAll()",
+        "returns": "Mono<Boolean>",
+        "semantics": "true: every golden example satisfied its expected property; false: at least one example failed"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

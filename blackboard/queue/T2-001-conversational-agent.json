@@ -1,0 +1,243 @@
+{
+  "id": "T2-001",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-001",
+    "T0-001",
+    "T0-006"
+  ],
+  "kind": "code",
+  "path": "src/main/resources/application.yml",
+  "export": "application.yml",
+  "intent": "The ONE configuration artifact, nested YAML. Base document: BARE ${...} placeholders for R2DBC and JDBC urls (distinct variables), flyway enabled at classpath:db/migration, ECS rolling JSON-lines file logs/conversational-agent.log, server.error.* hidden, every chat.* default from rules. A second --- test document activated by spring.profiles.active=test uses embedded H2 with NON_KEYWORDS=VALUE, flyway disabled. BOOT POSTURE: fail-fast on valueless chat.tools.allowed.",
+  "layer": "root",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.shared",
+    "implements": [],
+    "dependencies": [],
+    "methods": [],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "spring.r2dbc.url",
+        "kind": "value",
+        "value": "${CONVERSATIONAL_AGENT_R2DBC_URL}"
+      },
+      {
+        "path": "spring.flyway.url",
+        "kind": "value",
+        "value": "${CONVERSATIONAL_AGENT_JDBC_URL}"
+      },
+      {
+        "path": "spring.flyway.enabled",
+        "kind": "value",
+        "value": "true"
+      },
+      {
+        "path": "spring.flyway.locations",
+        "kind": "value",
+        "value": "classpath:db/migration"
+      },
+      {
+        "path": "logging.file.name",
+        "kind": "value",
+        "value": "logs/conversational-agent.log"
+      },
+      {
+        "path": "logging.structured.format.file",
+        "kind": "value",
+        "value": "ecs"
+      },
+      {
+        "path": "logging.logback.rollingpolicy.max-file-size",
+        "kind": "value",
+        "value": "10MB"
+      },
+      {
+        "path": "logging.logback.rollingpolicy.max-history",
+        "kind": "value",
+        "value": "14"
+      },
+      {
+        "path": "management.metrics.tags.application",
+        "kind": "value",
+        "value": "conversational-agent"
+      },
+      {
+        "path": "server.error.include-message",
+        "kind": "value",
+        "value": "never"
+      },
+      {
+        "path": "server.error.include-stacktrace",
+        "kind": "value",
+        "value": "never"
+      },
+      {
+        "path": "server.error.include-binding-errors",
+        "kind": "value",
+        "value": "never"
+      },
+      {
+        "path": "chat.turn.max-tool-calls",
+        "kind": "value",
+        "value": "5"
+      },
+      {
+        "path": "chat.turn.timeout",
+        "kind": "value",
+        "value": "PT30S"
+      },
+      {
+        "path": "chat.turn.token-budget",
+        "kind": "value",
+        "value": "16000"
+      },
+      {
+        "path": "chat.context.max-messages",
+        "kind": "value",
+        "value": "12"
+      },
+      {
+        "path": "chat.context.max-tokens",
+        "kind": "value",
+        "value": "16000"
+      },
+      {
+        "path": "chat.stream.buffer-capacity",
+        "kind": "value",
+        "value": "256"
+      },
+      {
+        "path": "chat.stream.idle-timeout",
+        "kind": "value",
+        "value": "PT30S"
+      },
+      {
+        "path": "chat.tools.allowed",
+        "kind": "list"
+      },
+      {
+        "path": "chat.fallback.refusal-message",
+        "kind": "value",
+        "value": "The assistant could not complete this request. Please try again later."
+      },
+      {
+        "path": "chat.model.reask-max",
+        "kind": "value",
+        "value": "1"
+      },
+      {
+        "path": "spring.r2dbc.pool.max-size",
+        "kind": "value",
+        "value": "10"
+      },
+      {
+        "path": "spring.security.oauth2.resourceserver.jwt.jwk-set-uri",
+        "kind": "value"
+      },
+      {
+        "path": "spring.security.oauth2.resourceserver.jwt.jws-algorithms",
+        "kind": "list",
+        "value": "RS256"
+      },
+      {
+        "path": "spring.security.oauth2.resourceserver.jwt.audiences",
+        "kind": "list"
+      },
+      {
+        "path": "chat.turn.max-concurrent-turns",
+        "kind": "value"
+      },
+      {
+        "path": "chat.rate-limit.rate",
+        "kind": "value"
+      },
+      {
+        "path": "chat.rate-limit.burst",
+        "kind": "value"
+      },
+      {
+        "path": "spring.codec.max-in-memory-size",
+        "kind": "value"
+      },
+      {
+        "path": "chat.memory.summarizer.max-concurrent",
+        "kind": "value",
+        "value": "8"
+      },
+      {
+        "path": "chat.memory.summary.max-attempts",
+        "kind": "value",
+        "value": "3"
+      },
+      {
+        "path": "chat.memory.summary.backoff",
+        "kind": "value",
+        "value": "PT0.2S"
+      },
+      {
+        "path": "chat.service-credentials",
+        "kind": "list",
+        "fields": [
+          "id",
+          "secret-hash",
+          "scope"
+        ]
+      },
+      {
+        "path": "chat.memory.event-buffer-capacity",
+        "kind": "value",
+        "value": "1024"
+      },
+      {
+        "path": "chat.history.page.size",
+        "kind": "value",
+        "value": 50
+      },
+      {
+        "path": "chat.history.page.max",
+        "kind": "value",
+        "value": 50
+      },
+      {
+        "path": "chat.history.append.max-attempts",
+        "kind": "value",
+        "value": 3
+      },
+      {
+        "path": "chat.history.append.backoff",
+        "kind": "value",
+        "value": "PT0.1S"
+      },
+      {
+        "path": "chat.history.service-credentials",
+        "kind": "list",
+        "fields": [
+          "id",
+          "secret-hash",
+          "scope"
+        ]
+      },
+      {
+        "path": "chat.history.buffer.capacity",
+        "kind": "value",
+        "value": 1024
+      },
+      {
+        "path": "chat.history.reload.batch-size",
+        "kind": "value",
+        "value": 50
+      },
+      {
+        "path": "chat.history.reload.batch-timeout",
+        "kind": "value",
+        "value": "PT0.05S"
+      }
+    ]
+  }
+}

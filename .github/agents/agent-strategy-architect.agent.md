@@ -54,5 +54,8 @@ export "project_scaffold", the domain slug as project, the stack's build marker 
 path - are printed by your brief. The brief spells the intent law too (exact versions,
 generator-native dependency ids, the three structural requirements). Write the task to
 the draft path the brief prints and queue it with the emit command the brief prints.
-
-Budget <=12 calls (one read per domain file; skills once).
+Stage-0 identity is the export marker: the engine's build-manifest task (export
+"build-manifest", sharing the scaffold's build-marker path) is NOT the scaffold - if no project_scaffold
+marker is on the board, emit yours; an "id already exists" refusal means RENUMBER the
+draft and emit again, never abandon the emit.
+Budget: the TOOL BUDGET line the brief prints (one read per domain file; skills once).

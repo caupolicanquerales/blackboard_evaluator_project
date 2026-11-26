@@ -1,0 +1,67 @@
+{
+  "id": "T2-071",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-071",
+    "T0-001",
+    "T2-063",
+    "T2-064",
+    "T2-068",
+    "T2-069",
+    "T2-014",
+    "T2-006",
+    "T2-007"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/history/interfaces/ToolCalledHistoryConsumer.java",
+  "export": "ToolCalledHistoryConsumer",
+  "intent": "Unit IS the surface 'tool called history consumer': the pinned ServiceCredentialVerifier (AZ-06 service-credential-proof) must accept the producer before any append; SessionAccessCheck confirms the tenant (AZ-07: a valid session id owned by someone else is refused). A permitted event becomes one tool call entry with its token count, a usage-free HistoryBatch offered to HistoryEventBuffer. Rejected events are dropped and audited through AuditPort as session access denied.",
+  "layer": "interface",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.history.interfaces",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ServiceCredentialVerifier",
+        "task_id": "T2-068"
+      },
+      {
+        "type": "HistoryEventBuffer",
+        "task_id": "T2-069"
+      },
+      {
+        "type": "SessionAccessCheck",
+        "task_id": "T2-014"
+      },
+      {
+        "type": "AuditPort",
+        "task_id": "T2-007"
+      },
+      {
+        "type": "AuditEntry",
+        "task_id": "T2-006"
+      },
+      {
+        "type": "HistoryEntry",
+        "task_id": "T2-063"
+      },
+      {
+        "type": "HistoryBatch",
+        "task_id": "T2-064"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> consume(String serviceId, String secret, String sessionId, String turnId, String userId, String tenantId, int entrySequence, String toolSummary, int tokenCount)",
+        "returns": "Mono<Void>",
+        "semantics": "event dropped, never thrown, when credential or tenant check fails"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

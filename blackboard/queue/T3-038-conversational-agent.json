@@ -1,0 +1,15 @@
+{
+  "id": "T3-038",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-038"
+  ],
+  "kind": "refactor",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/application/HistoryQuery.java",
+  "export": "HistoryQuery",
+  "intent": "Refactor HistoryQuery: keep the tabled contract and the paired tests green; no behavior, status, meter or route change.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent"
+}

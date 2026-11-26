@@ -85,6 +85,21 @@ SECURITY_LEAK_RE = re.compile(
     + r"|\b(?:blackboard|red-phase|coder-changes|ast-context|gate-cache|weave-results|"
       r"execution-strategy)\b", re.I)
 
+# ONE home for the board's artifact filename shapes (2026-11-26: these prefixes were
+# re-spelled as raw literals at a dozen sites - same "case per problem" growth as the
+# toolchain tables that stacks.py consolidated; the layout belongs here, once).
+DOMAIN_PREFIX = "domain-boundary-"
+DOMAIN_GLOB = DOMAIN_PREFIX + "*.json"
+CONTEXT_MAP_PREFIX = "context-map-"
+CONTEXT_MAP_GLOB = CONTEXT_MAP_PREFIX + "*.json"
+
+
+def domain_path(slug):
+    return settings.DOMAIN_DIR / f"{DOMAIN_PREFIX}{slug}.json"
+
+
+def context_map_path(slug):
+    return settings.CONTEXT_MAP_DIR / f"{CONTEXT_MAP_PREFIX}{slug}.json"
 
 def _security_strings(value, path=""):
     """Every string in a nested artifact, with its JSON path for the refusal message."""
@@ -428,9 +443,18 @@ def write_phase2_digest(slug):
                                          "cells": (row or {}).get("cells")} if row else None})
     persistence = strategy.get("persistence") or {}
     contexts = strategy_contexts(slug)
+    # COMMITMENTS channel (2026-11-26): the strategy's risk lines split by VOICE.
+    # "accepted:" lines are exposures the plan chose to live with - documentation,
+    # never work. Every other line is a COMMITMENT the map adjudicated and phase 1
+    # accepted (an ordering, a fallback, a serialization): decomposition must land it
+    # on an enforcing unit or report it as a phase-1 gap. Carried on the digest - the
+    # session's own input - because DG6's audit rightly keeps the whole strategy file
+    # out of the slices, while a decision no unit carries ships as prose.
+    _risk_lines = [str(r).strip() for r in (strategy.get("risks") or []) if str(r).strip()]
     digest = {
         "slug": slug,
         "specs": specs,
+        "commitments": [r for r in _risk_lines if not r.lower().startswith("accepted:")],
         "surfaces": strategy.get("surfaces") or [],
         "bounded_contexts": contexts,
         "draft_order": context_draft_order(slug),
@@ -604,7 +628,7 @@ def context_draft_order(slug):
     known = set(contexts)
     edges = {name: set() for name in contexts}
     indegree = {name: 0 for name in contexts}
-    report = _read_json(settings.CONTEXT_MAP_DIR / f"context-map-{slug}.json") or {}
+    report = _read_json(context_map_path(slug)) or {}
     for entry in (report.get("context_map") or []):
         if not isinstance(entry, dict):
             continue
@@ -734,22 +758,35 @@ def plan_build_manifest(slug):
     if scaffold is None:
         return None, [], [f"{slug}: no stage-0 scaffold task on the board - the manifest "
                           "patches the scaffold's build file, so phase 1 must land first"]
-    used = {str(f.name.split("-")[1]) for folder in (settings.QUEUE_DIR, settings.COMPLETE_DIR,
-                                                     settings.ERROR_DIR)
+    # (2026-11-26 collision fix) the set previously stored RAW numbers ("001") while the
+    # loop compared against FULL ids ("T0-001"): it never advanced, and the manifest was
+    # written OVER the strategy's scaffold task at T0-001 - the board lost its only
+    # project-root bootstrap. One format on both sides, and a last-line guard: the
+    # engine's stage-0 prepass may queue, never overwrite.
+    used = {f"T0-{f.name.split('-')[1]}" for folder in (settings.QUEUE_DIR, settings.COMPLETE_DIR,
+                                                        settings.ERROR_DIR)
             for f in folder.glob(f"T0-*-{slug}.json")}
     number = 1
     while f"T0-{number:03d}" in used:
         number += 1
     tid = f"T0-{number:03d}"
     spelled = "; ".join(f"{c} ({s})" if s else c for c, s in rows)
+    if not scaffold.get("path"):
+        return None, [], [f"{slug}: the scaffold task carries no build-marker path - the "
+                          "manifest patches that file, so its name must be on the record "
+                          "(the tech-stack skill's build marker; the engine never assumes one)"]
     task = {"id": tid, "targetAgent": settings.STAGE_AGENTS[0], "stage": 0, "dependsOn": [],
-            "path": scaffold.get("path") or "pom.xml", "kind": settings.STAGE_KINDS[0][0],
+            "path": scaffold.get("path"), "kind": settings.STAGE_KINDS[0][0],
             "layer": "root", "feature": None, "export": settings.BUILD_MANIFEST_EXPORT,
             "project": slug,
-            "intent": ("Add generator-native dependencies to the scaffold build file; the "
-                       f"parent owns versions: {spelled}. Engine-queued from the stack "
-                       "table's Build coordinates (PHASE 1.5) - never a second manifest.")}
+            "intent": ("Add the planned stack's generator-native dependency coordinates to "
+                       "the scaffold build file, versions and spelling owned by the build "
+                       f"definition: {spelled}. Engine-queued from the stack table's Build "
+                       "coordinates (PHASE 1.5) - never a second manifest.")}
     destination = settings.QUEUE_DIR / f"{tid}-{slug}.json"
+    if destination.is_file():
+        return None, [], [f"{slug}: {destination.name} already exists - the manifest "
+                          "prepass queues, it never overwrites a stage-0 record"]
     destination.write_text(json.dumps(task, indent=2) + "\n", encoding="utf-8")
     return tid, [f"{tid}: build manifest queued by the ENGINE from the stack table "
                  f"({len(rows)} coordinate row(s)) - zero sessions"], []
@@ -783,6 +820,7 @@ def write_phase2_digest_slice(slug, context):
         root_slice = {
             "slug": slug, "context": ROOT_CONTEXT,
             "engine_build_manifest": build_manifest_state(slug),
+            "commitments": full.get("commitments") or [],
             "duties": root_duties,
             "rules": {k: v for k, v in (full.get("rules") or {}).items()},
             "mechanisms": mechanisms,
@@ -824,6 +862,23 @@ def write_phase2_digest_slice(slug, context):
         for jk in SLICE_DUTY_JOIN_KEYS:
             if jk in rule and rule[jk] not in (None, "", [], {}):
                 flat[jk] = rule[jk]
+        # (2026-11-26 row-case inheritance) a duty that COVERS rule rows carries their
+        # test cases and surface even when its OWN row states none: control rows guard
+        # the authorization rows they discharge, and the cross-owner case lives ON the
+        # row. Losing it at the join is how a covered IDOR rule reached the planner as
+        # an empty field - the machine then enforced "what is written", and what was
+        # written was nothing: the hole itself.
+        if not str(flat.get("test_duty") or "").strip() or not str(flat.get("surface") or "").strip():
+            for cid in (flat.get("covers") or []):
+                centry = ((full.get("rules") or {}).get(str(cid)) or {}).get("entry") or {}
+                if not str(flat.get("test_duty") or "").strip() \
+                        and str(centry.get("test_duty") or "").strip():
+                    flat["test_duty"] = centry["test_duty"]
+                    flat["test_duty_of"] = str(cid)
+                if not str(flat.get("surface") or "").strip() \
+                        and str(centry.get("surface") or "").strip():
+                    flat["surface"] = centry["surface"]
+                    flat["surface_of"] = str(cid)
         # y5 pre-joined (2026-11-24 v4): the surface's declared KIND rides the duty, so
         # the session learns the entry SHAPE (route-taking controller vs events-arrive-at
         # adapter vs runner) without re-deriving it - and with no room to guess it.
@@ -861,6 +916,7 @@ def write_phase2_digest_slice(slug, context):
     slice_digest = {
         "slug": slug,
         "context": context,
+        "commitments": full.get("commitments") or [],
         "draft_order": order,
         "drafted_before": [name for name in order if order.index(name) < order.index(context)]
         if context in order else [],
@@ -1205,7 +1261,7 @@ def _security_strategy_errors(slug, spec, rows):
                 problems.append(f"{entry.get('id', 'SI-??')}: owner_context {owner!r} is not one "
                                 f"of the strategy's bounded_contexts {contexts} - a rule owned "
                                 "by no context is enforced by no module")
-    slice_report = _read_json(settings.DOMAIN_DIR / f"domain-boundary-{slug}.json")
+    slice_report = _read_json(domain_path(slug))
     if slice_report is not None:
         haystack = norm_surface(json.dumps(slice_report))
         for entry in [e for e in (spec.get("principals") or []) if isinstance(e, dict)]:
@@ -1725,7 +1781,7 @@ def validate_ai_spec(slug):
     problems = _spec_shell_errors(spec, slug, "ai-spec", AI_SPEC_KEYS)
     surfaces = {norm_surface(s.get("name")) for s in (strategy_surfaces(slug) or [])
                 if isinstance(s, dict) and str(s.get("name") or "").strip()}
-    map_report = _read_json(settings.CONTEXT_MAP_DIR / f"context-map-{slug}.json")
+    map_report = _read_json(context_map_path(slug))
     flows = norm_surface(json.dumps((map_report or {}).get("cross_boundary_flows") or {}))
     capabilities = [e for e in (spec.get("capabilities") or []) if isinstance(e, dict)]
     if not capabilities:
@@ -1914,7 +1970,7 @@ def validate_ai_spec(slug):
 
 def ai_directive(slug):
     """The slice's recorded AI directive, or None (= no AI capability; the phase skips)."""
-    slice_report = _read_json(settings.DOMAIN_DIR / f"domain-boundary-{slug}.json")
+    slice_report = _read_json(domain_path(slug))
     if slice_report is None:
         return None
     directive = slice_report.get("ai_directive")
@@ -1924,7 +1980,7 @@ def ai_directive(slug):
 def ai_required(slug):
     """(required, note): true only when the business description itself states the AI
     capability and the quote is found VERBATIM in the cited description file."""
-    slice_report = _read_json(settings.DOMAIN_DIR / f"domain-boundary-{slug}.json")
+    slice_report = _read_json(domain_path(slug))
     directive = (slice_report or {}).get("ai_directive")
     if not isinstance(directive, dict) or directive.get("required") is not True:
         return False, ""
@@ -1955,8 +2011,8 @@ def validate_ai_directives():
     the AI phase must not silently run on an invented trigger, and must not silently
     skip because a real one was mis-copied)."""
     problems = []
-    for path in sorted(settings.DOMAIN_DIR.glob("domain-boundary-*.json")):
-        slug = path.stem.removeprefix("domain-boundary-")
+    for path in sorted(settings.DOMAIN_DIR.glob(DOMAIN_GLOB)):
+        slug = path.stem.removeprefix(DOMAIN_PREFIX)
         directive = ai_directive(slug)
         if not directive:
             continue
@@ -2005,7 +2061,7 @@ def _norm_text(text):
 
 def security_directive(slug):
     """The slice's recorded security directive, or None when the domain declares none (= required)."""
-    slice_report = _read_json(settings.DOMAIN_DIR / f"domain-boundary-{slug}.json")
+    slice_report = _read_json(domain_path(slug))
     if slice_report is None:
         return None
     directive = slice_report.get("security_directive")
@@ -2017,7 +2073,7 @@ def _waiver_note(slug):
     word for word, in the description file the slice itself names - discovery is the single agent that
     reads the seed, and this is what stops any later phase from inferring, paraphrasing or inventing
     "the user did not ask for security"."""
-    slice_report = _read_json(settings.DOMAIN_DIR / f"domain-boundary-{slug}.json")
+    slice_report = _read_json(domain_path(slug))
     directive = (slice_report or {}).get("security_directive")
     if not isinstance(directive, dict) or directive.get("required") is not False:
         return False, ""
@@ -2055,8 +2111,8 @@ def validate_security_directives():
     user's own words, so the only witness is the description file - the same no-self-witness rule the
     rest of the board runs on."""
     problems = []
-    for path in sorted(settings.DOMAIN_DIR.glob("domain-boundary-*.json")):
-        slug = path.stem.removeprefix("domain-boundary-")
+    for path in sorted(settings.DOMAIN_DIR.glob(DOMAIN_GLOB)):
+        slug = path.stem.removeprefix(DOMAIN_PREFIX)
         directive = security_directive(slug)
         if not directive:
             continue
@@ -2076,8 +2132,8 @@ def validate_strategy_coverage():
     one domain unplanned and its surfaces undefended - the escape hatch was never the waiver, it was a
     phase that quietly wrote nothing."""
     missing = []
-    for path in sorted(settings.DOMAIN_DIR.glob("domain-boundary-*.json")):
-        slug = path.stem.removeprefix("domain-boundary-")
+    for path in sorted(settings.DOMAIN_DIR.glob(DOMAIN_GLOB)):
+        slug = path.stem.removeprefix(DOMAIN_PREFIX)
         if not strategy_path(slug).is_file():
             missing.append(slug)
     if missing:
@@ -2096,7 +2152,7 @@ def validate_domain_files():
     """
     if not settings.DOMAIN_DIR.is_dir():
         return f"discovery did not create {settings.DOMAIN_DIR.relative_to(settings.ROOT)}/"
-    files = sorted(settings.DOMAIN_DIR.glob("domain-boundary-*.json"))
+    files = sorted(settings.DOMAIN_DIR.glob(DOMAIN_GLOB))
     if not files:
         return f"no domain-boundary-*.json files in {settings.DOMAIN_DIR.relative_to(settings.ROOT)}/"
     for path in files:
@@ -2118,9 +2174,9 @@ def validate_context_maps():
     reason = validate_domain_files()
     if reason:
         return reason
-    for domain_file in sorted(settings.DOMAIN_DIR.glob("domain-boundary-*.json")):
-        slug = domain_file.stem.removeprefix("domain-boundary-")
-        map_file = settings.CONTEXT_MAP_DIR / f"context-map-{slug}.json"
+    for domain_file in sorted(settings.DOMAIN_DIR.glob(DOMAIN_GLOB)):
+        slug = domain_file.stem.removeprefix(DOMAIN_PREFIX)
+        map_file = context_map_path(slug)
         reason = validate_report(map_file, "any")
         if reason:
             return f"{map_file.relative_to(settings.ROOT)}: {reason}"

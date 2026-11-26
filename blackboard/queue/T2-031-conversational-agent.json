@@ -1,0 +1,40 @@
+{
+  "id": "T2-031",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-031",
+    "T0-001",
+    "T2-030"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/application/SessionRepository.java",
+  "export": "SessionRepository",
+  "intent": "SessionRepository is the outbound port persisting ChatSession and loading it only by id plus owner and tenant; the lookup never exposes a session of another user or tenant.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ChatSession",
+        "task_id": "T2-030"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<ChatSession> save(ChatSession session)",
+        "returns": "Mono<ChatSession>"
+      },
+      {
+        "signature": "Mono<ChatSession> byIdAndTenant(String sessionId, String ownerUserId, String tenantId)",
+        "returns": "Mono<ChatSession>"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

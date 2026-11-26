@@ -1,0 +1,15 @@
+{
+  "id": "T3-014",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-014"
+  ],
+  "kind": "refactor",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/application/SessionAccessCheck.java",
+  "export": "SessionAccessCheck",
+  "intent": "Refactor SessionAccessCheck: keep the tabled contract and the paired tests green; no behavior, status, meter or route change.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent"
+}

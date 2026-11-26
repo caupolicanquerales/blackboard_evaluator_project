@@ -1,0 +1,47 @@
+{
+  "id": "T2-065",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-065",
+    "T0-001",
+    "T2-063"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/history/application/HistoryStore.java",
+  "export": "HistoryStore",
+  "intent": "HistoryStore is the outbound store port of the history log: insert-only append of one entry (true when inserted, false for a duplicate identity), insert-only token usage per turn, and a tenant-scoped keyset page read. It declares no update or delete operation. Reactive Mono/Flux types only, no framework imports.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.history.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "HistoryEntry",
+        "task_id": "T2-063"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Boolean> append(HistoryEntry entry, String tenantId)",
+        "returns": "Mono<Boolean>",
+        "semantics": "rejects null entry and blank tenantId; false means duplicate identity"
+      },
+      {
+        "signature": "Mono<Boolean> appendUsage(String sessionId, String turnId, String tenantId, int promptTokens, int completionTokens)",
+        "returns": "Mono<Boolean>",
+        "semantics": "true when the usage row was inserted; false when the session id + turn id already has one (duplicate)"
+      },
+      {
+        "signature": "Flux<HistoryEntry> byIdAndTenant(String sessionId, String tenantId, String afterTurnId, int afterSequence, int limit)",
+        "returns": "Flux<HistoryEntry>",
+        "semantics": "limit clamped to the configured maximum; rejects blank sessionId or tenantId"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

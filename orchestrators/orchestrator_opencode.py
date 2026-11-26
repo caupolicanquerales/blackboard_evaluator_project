@@ -59,6 +59,9 @@ Agents never talk to each other: every hand-off is a validated file on disk.
 """
 import sys
 
+import family_paths  # noqa: F401  - first project import: registers the family
+                      # folders (orchestration/, task_contract/, task_creation/)
+                      # on sys.path so the flat imports below resolve post-split.
 import opencode_backend
 import pipeline
 

@@ -1,0 +1,73 @@
+{
+  "id": "T2-061",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-061",
+    "T0-001",
+    "T2-022",
+    "T2-025",
+    "T2-050",
+    "T2-056",
+    "T2-058"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/memory/interfaces/TurnCompletedMemoryConsumer.java",
+  "export": "TurnCompletedMemoryConsumer",
+  "intent": "Unit IS the surface 'turn completed memory consumer': PB-12 bounded-buffer - events enter a Sinks onBackpressureBuffer(capacity, false) sized by chat.memory.event-buffer-capacity (1,024); overflow is rejected and counted. Each event applies messages through MemoryBoundaryAdapter, then SummaryRefreshService; idempotent by session id + turn id. AZ-05: service identity verified via ServiceCredentialAuthenticator before applying data; no identity is rejected and dropped; a session owned by another tenant is refused.",
+  "layer": "interface",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.memory.interfaces",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "SummaryRefreshService",
+        "task_id": "T2-056"
+      },
+      {
+        "type": "MemoryBoundaryAdapter",
+        "task_id": "T2-025"
+      },
+      {
+        "type": "TurnCompletedEvent",
+        "task_id": "T2-050"
+      },
+      {
+        "type": "ContextEntry",
+        "task_id": "T2-022"
+      },
+      {
+        "type": "ServiceCredentialAuthenticator",
+        "task_id": "T2-058"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> onTurnCompleted(TurnCompletedEvent event)",
+        "returns": "Mono<Void>",
+        "semantics": "event must be non-null; overflow beyond capacity is rejected"
+      }
+    ],
+    "meters": [
+      {
+        "name": "chat.memory.summary.refreshed",
+        "duty": "uses"
+      }
+    ],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.memory.event-buffer-capacity",
+        "kind": "value",
+        "value": "1024"
+      }
+    ]
+  },
+  "observability": {
+    "step_logs": [
+      "turn completed event received"
+    ]
+  }
+}

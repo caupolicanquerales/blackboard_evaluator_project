@@ -1,0 +1,44 @@
+{
+  "id": "T1-044",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/orchestration/interfaces/ChatPayloadPolicyTest.java",
+  "export": "ChatPayloadPolicyTest",
+  "intent": "ChatPayloadPolicyTest proves PB-04: a body above the configured limit is refused before any model call and one at the limit admitted; PB-06: the stream buffer bound read from the key equals 256 chunks and overflow is reported as stream end.",
+  "layer": "interface",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.interfaces",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "boolean withinPayloadLimit(long contentLength)",
+        "returns": "boolean",
+        "semantics": "negative length refused"
+      },
+      {
+        "signature": "int streamBufferCapacity()",
+        "returns": "int"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "spring.codec.max-in-memory-size",
+        "kind": "value"
+      },
+      {
+        "path": "chat.stream.buffer-capacity",
+        "kind": "value",
+        "value": "256"
+      }
+    ]
+  }
+}

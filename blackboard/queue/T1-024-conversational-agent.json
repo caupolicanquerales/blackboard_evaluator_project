@@ -1,0 +1,37 @@
+{
+  "id": "T1-024",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/orchestration/application/TurnTokenBudgetTest.java",
+  "export": "TurnTokenBudgetTest",
+  "intent": "TurnTokenBudgetTest proves AC-08 token-cost-cap: usage up to the configured budget is allowed; the call that exceeds it returns the stop-and-inform outcome and further charges stay refused.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.application",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "boolean charge(int tokens)",
+        "returns": "boolean",
+        "semantics": "tokens must not be negative"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.turn.token-budget",
+        "kind": "value",
+        "value": "16000"
+      }
+    ]
+  }
+}

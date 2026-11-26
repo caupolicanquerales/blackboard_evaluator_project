@@ -1,0 +1,41 @@
+{
+  "id": "T2-002",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-002",
+    "T0-001",
+    "T2-001"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/shared/ObservabilityConfiguration.java",
+  "export": "ObservabilityConfiguration",
+  "intent": "SI-13 metric-tag-bound: MeterRegistry meters over a CLOSED tag set via a MeterFilter refusing unbounded tags (tenant id, session id, user id), common tag from management.metrics.tags. Also installs Hooks.enableAutomaticContextPropagation() once so requestId from micrometer context-propagation reaches ECS log lines.",
+  "layer": "root",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.shared",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "MeterFilter boundedTagFilter()",
+        "returns": "MeterFilter"
+      },
+      {
+        "signature": "void enableContextPropagation()",
+        "returns": ""
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "management.metrics.tags.application",
+        "kind": "value",
+        "value": "conversational-agent"
+      }
+    ]
+  }
+}

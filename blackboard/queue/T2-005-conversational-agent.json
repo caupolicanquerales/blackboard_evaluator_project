@@ -1,0 +1,39 @@
+{
+  "id": "T2-005",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-005",
+    "T0-001",
+    "T2-004"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/shared/ContentRedactionAdapter.java",
+  "export": "ContentRedactionAdapter",
+  "intent": "SI-08 log-redaction (DC-01, DC-03, DC-04, DC-05, DC-07): no framework mask for FIELDS, so the RedactionPort adapter replaces conversation content and personal fields with a fixed mask, applied BEFORE the audit or step-log write, never a logger call.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.shared",
+    "implements": [
+      "RedactionPort"
+    ],
+    "dependencies": [
+      {
+        "type": "RedactionPort",
+        "task_id": "T2-004"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "String redact(String value)",
+        "returns": "String",
+        "semantics": "value must not be null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

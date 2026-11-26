@@ -1,0 +1,31 @@
+{
+  "id": "T1-003",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/shared/CorrelationWebFilterTest.java",
+  "export": "CorrelationWebFilterTest",
+  "intent": "CorrelationWebFilterTest proves an inbound request without requestId gets a generated one, a supplied valid requestId is adopted, and the downstream chain reads it from the Reactor Context under the key requestId.",
+  "layer": "interface",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.shared",
+    "implements": [
+      "WebFilter"
+    ],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain)",
+        "returns": "Mono<Void>"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

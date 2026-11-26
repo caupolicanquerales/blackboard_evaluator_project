@@ -1,0 +1,45 @@
+{
+  "id": "T2-011",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-011",
+    "T0-001"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/domain/ProgressEvent.java",
+  "export": "ProgressEvent",
+  "intent": "Immutable record of one Token Stream event: kind (chunk, tool-status, notice, completion) and text payload; static factories per kind, null payload refused.",
+  "layer": "domain",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.domain",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "static ProgressEvent chunk(String text)",
+        "returns": "ProgressEvent",
+        "semantics": "text must not be null"
+      },
+      {
+        "signature": "static ProgressEvent toolStatus(String text)",
+        "returns": "ProgressEvent",
+        "semantics": "text must not be null"
+      },
+      {
+        "signature": "static ProgressEvent notice(String text)",
+        "returns": "ProgressEvent",
+        "semantics": "text must not be null"
+      },
+      {
+        "signature": "static ProgressEvent completion()",
+        "returns": "ProgressEvent"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

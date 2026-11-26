@@ -1,0 +1,60 @@
+{
+  "id": "T2-009",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-009",
+    "T0-001",
+    "T2-001",
+    "T2-003"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/shared/SecurityErrorHandlers.java",
+  "export": "SecurityErrorHandlers",
+  "intent": "SI-09 error-code-only: ServerAuthenticationEntryPoint plus ServerAccessDeniedHandler on the chain's exceptionHandling, answering opaque code, human-safe message and the correlation key read from the Reactor Context; server.error.* keep message, stacktrace and binding errors hidden.",
+  "layer": "interface",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.shared",
+    "implements": [
+      "ServerAuthenticationEntryPoint",
+      "ServerAccessDeniedHandler"
+    ],
+    "dependencies": [
+      {
+        "type": "CorrelationWebFilter",
+        "task_id": "T2-003"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> commence(ServerWebExchange exchange, AuthenticationException ex)",
+        "returns": "Mono<Void>"
+      },
+      {
+        "signature": "Mono<Void> handle(ServerWebExchange exchange, AccessDeniedException denied)",
+        "returns": "Mono<Void>"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "server.error.include-message",
+        "kind": "value",
+        "value": "never"
+      },
+      {
+        "path": "server.error.include-stacktrace",
+        "kind": "value",
+        "value": "never"
+      },
+      {
+        "path": "server.error.include-binding-errors",
+        "kind": "value",
+        "value": "never"
+      }
+    ]
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "id": "T1-049",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/memory/domain/RollingSummaryTest.java",
+  "export": "RollingSummaryTest",
+  "intent": "RollingSummaryTest proves construction keeps session id, summary text, last applied turn id, token count and version; a null session id or turn id is rejected; a negative token count is rejected.",
+  "layer": "domain",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.memory.domain",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "RollingSummary(String sessionId, String summaryText, String lastAppliedTurnId, int tokenCount, long version)",
+        "returns": "",
+        "semantics": "sessionId and lastAppliedTurnId must be non-null; tokenCount must be >= 0"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

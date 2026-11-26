@@ -1,0 +1,15 @@
+{
+  "id": "T3-057",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-057"
+  ],
+  "kind": "refactor",
+  "path": "src/main/java/com/blackboard/conversationalagent/memory/infrastructure/R2dbcMemoryStore.java",
+  "export": "R2dbcMemoryStore",
+  "intent": "Refactor R2dbcMemoryStore: keep the tabled contract and the paired tests green; no behavior, status, meter or route change.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent"
+}

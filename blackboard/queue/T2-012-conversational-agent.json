@@ -1,0 +1,37 @@
+{
+  "id": "T2-012",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-012",
+    "T0-001",
+    "T2-011"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/application/TokenStreamPort.java",
+  "export": "TokenStreamPort",
+  "intent": "Inbound port a Turn runs through: returns Flux<ProgressEvent> of chunk and tool-status events then one terminal completion, non-blocking.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ProgressEvent",
+        "task_id": "T2-011"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Flux<ProgressEvent> stream(String sessionId, String message)",
+        "returns": "Flux<ProgressEvent>",
+        "semantics": "neither argument may be null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

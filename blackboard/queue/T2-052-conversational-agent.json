@@ -1,0 +1,60 @@
+{
+  "id": "T2-052",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-052",
+    "T0-001",
+    "T2-049",
+    "T2-022"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/memory/application/MemoryStore.java",
+  "export": "MemoryStore",
+  "intent": "MemoryStore is the outbound port of the memory context: summary, recent messages, overflow messages and applied-turn lookups, all scoped by session id and tenant id. It has no framework types and is bound by R2dbcMemoryStore.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.memory.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "RollingSummary",
+        "task_id": "T2-049"
+      },
+      {
+        "type": "ContextEntry",
+        "task_id": "T2-022"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<RollingSummary> summaryByIdAndTenant(String sessionId, String tenantId)",
+        "returns": "Mono<RollingSummary>"
+      },
+      {
+        "signature": "Mono<RollingSummary> saveSummary(RollingSummary summary, String tenantId)",
+        "returns": "Mono<RollingSummary>"
+      },
+      {
+        "signature": "Flux<ContextEntry> recentMessages(String sessionId, String tenantId, int limit)",
+        "returns": "Flux<ContextEntry>",
+        "semantics": "limit must be > 0; at most limit newest messages"
+      },
+      {
+        "signature": "Flux<ContextEntry> overflowMessages(String sessionId, String tenantId, int keep)",
+        "returns": "Flux<ContextEntry>",
+        "semantics": "keep must be > 0; messages older than the newest keep"
+      },
+      {
+        "signature": "Mono<Boolean> turnApplied(String sessionId, String turnId, String tenantId)",
+        "returns": "Mono<Boolean>",
+        "semantics": "true when the turn was already applied for this session and tenant (duplicate, caller skips); false when not yet applied (caller proceeds)"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

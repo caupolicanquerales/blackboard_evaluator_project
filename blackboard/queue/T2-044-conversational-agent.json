@@ -1,0 +1,45 @@
+{
+  "id": "T2-044",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-044",
+    "T0-001"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/interfaces/ChatPayloadPolicy.java",
+  "export": "ChatPayloadPolicy",
+  "intent": "ChatPayloadPolicy discharges PB-04 payload-limit resource-ceiling via spring.codec.max-in-memory-size (oversized answers 413 up front) and PB-06 bounded-buffer admission-control: a guard on the stream bound chat.stream.buffer-capacity, overflow ends the stream.",
+  "layer": "interface",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.interfaces",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "boolean withinPayloadLimit(long contentLength)",
+        "returns": "boolean",
+        "semantics": "negative length refused"
+      },
+      {
+        "signature": "int streamBufferCapacity()",
+        "returns": "int"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "spring.codec.max-in-memory-size",
+        "kind": "value"
+      },
+      {
+        "path": "chat.stream.buffer-capacity",
+        "kind": "value",
+        "value": "256"
+      }
+    ]
+  }
+}

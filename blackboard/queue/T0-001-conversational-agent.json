@@ -1,0 +1,15 @@
+{
+  "id": "T0-001",
+  "targetAgent": "agent-container",
+  "stage": 0,
+  "dependsOn": [
+    "T0-006"
+  ],
+  "path": "pom.xml",
+  "kind": "bootstrap",
+  "layer": "root",
+  "feature": null,
+  "export": "build-manifest",
+  "project": "conversational-agent",
+  "intent": "Add generator-native dependencies to the scaffold build file; the parent owns versions: org.springframework.boot:spring-boot-starter-security (compile); org.springframework.boot:spring-boot-starter-oauth2-resource-server (compile, ONLY when a bearer-JWT duty row (bearer-jwt-proof, or a scope-check reached by a bearer principal) is planned - an httpBasic/certificate-only plan does NOT schedule it (starter-security covers both; an inert resource-server starter is dead weight the container merges blindly)); org.springframework.boot:spring-boot-starter-validation (compile, with boundary-validation); org.springframework.security:spring-security-test (test An unlisted test coordinate kills the first red compile: schedule the manifest duty before any tester runs.). Engine-queued from the stack table's Build coordinates (PHASE 1.5) - never a second manifest."
+}

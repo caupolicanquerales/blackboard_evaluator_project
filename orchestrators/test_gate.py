@@ -17,6 +17,7 @@ import importlib.util
 import shutil
 
 import settings
+import stacks
 import tasks
 import telemetry
 import workspace
@@ -163,7 +164,7 @@ def repair_test_imports(project_root):
     nested_main = {}  # (package, name) -> enclosing file stems holding the nested type
     for f in main_root.rglob("*.java"):
         text = f.read_text(encoding="utf-8", errors="ignore")
-        pkg = re.search(r"package ([\w.]+);", text)
+        pkg = re.search(stacks.PACKAGE_REGEX, text)
         if not pkg:
             continue
         declared = re.findall(r"\b(?:class|interface|enum|record)\s+([A-Z]\w*)", text)
@@ -220,7 +221,7 @@ def repair_test_imports(project_root):
     for tree_root in (test_root, main_root):
         for tf in tree_root.rglob("*.java"):
             src = tf.read_text(encoding="utf-8", errors="ignore")
-            pkg_match = re.search(r"package ([\w.]+);", src)
+            pkg_match = re.search(stacks.PACKAGE_REGEX, src)
             if not pkg_match:
                 continue
             own_pkg = pkg_match.group(1)
@@ -529,7 +530,7 @@ def ensure_wrapper_executables(project_root):
     hygiene the engine owes every stack, not an edit of unit content: bit only, never text.
     """
     fixed = []
-    for wrapper in ("mvnw", "gradlew"):
+    for wrapper in stacks.WRAPPER_FILES:
         f = pathlib.Path(project_root) / wrapper
         if f.is_file() and not f.stat().st_mode & 0o111:
             try:
@@ -555,7 +556,7 @@ def external_type_index(project_root):
     import zipfile
     import hashlib
     project_root = pathlib.Path(project_root)
-    marker = next((project_root / m for m in ("pom.xml", "build.gradle", "build.gradle.kts")
+    marker = next((project_root / m for m in stacks.JAVA_MARKERS
                    if (project_root / m).is_file()), None)
     if marker is None:
         return {}
@@ -579,8 +580,7 @@ def external_type_index(project_root):
             pass
     cp_file = pathlib.Path("/tmp/opencode") / f"cp-{stamp}.txt"
     if not cp_file.is_file():
-        wrapper = project_root / ("mvnw" if (project_root / "mvnw").is_file() else "gradlew")
-        runner = [str(wrapper)] if wrapper.is_file() else ["mvn"]
+        runner = stacks.classpath_probe_runner(project_root)
         try:
             subprocess.run(runner + ["-q", "dependency:build-classpath",
                                      f"-Dmdep.outputFile={cp_file}"],
@@ -619,18 +619,9 @@ def external_type_index(project_root):
 def command_from_test_path(test_path, project_root):
     """The scoped test-command shapes the tester skills produce, from a test file path
     alone (None when no shape fits). Shared by green-gate synthesis and the
-    deterministic red recovery: one place knows the shapes, nothing guesses twice."""
-    p = pathlib.Path(test_path)
-    root = pathlib.Path(project_root)
-    if (root / "pom.xml").is_file() and p.suffix in (".java", ".kt", ".kts", ".scala"):
-        return f"./mvnw -Dtest={p.stem} test"
-    if (root / "package.json").is_file() and p.suffix in (".ts", ".tsx", ".js", ".jsx", ".mjs"):
-        return f"npx jest {p.stem}"
-    if (root / "go.mod").is_file() and p.suffix == ".go":
-        return f"go test -run {p.stem} ./..."
-    if p.suffix == ".py":
-        return f"python3 -m pytest {test_path}"
-    return None
+    deterministic red recovery: the ONE toolchain registry (stacks.ROWS) knows every
+    shape, nothing guesses twice."""
+    return stacks.scoped_test_command(test_path, project_root)
 
 
 def _synthesized_command(task, record):

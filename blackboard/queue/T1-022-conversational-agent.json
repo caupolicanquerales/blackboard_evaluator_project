@@ -1,0 +1,30 @@
+{
+  "id": "T1-022",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/memory/domain/ContextEntryTest.java",
+  "export": "ContextEntryTest",
+  "intent": "ContextEntryTest proves a ContextEntry refuses null role or content and a negative token count.",
+  "layer": "domain",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.memory.domain",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "ContextEntry(String role, String content, int tokenCount)",
+        "returns": "",
+        "semantics": "role and content not null, tokenCount not negative"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

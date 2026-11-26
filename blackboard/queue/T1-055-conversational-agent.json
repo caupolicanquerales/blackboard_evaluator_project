@@ -1,0 +1,41 @@
+{
+  "id": "T1-055",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/memory/application/SummaryRetryPolicyTest.java",
+  "export": "SummaryRetryPolicyTest",
+  "intent": "SummaryRetryPolicyTest proves PB-10 with StepVerifier and virtual time: a permanently failing source is invoked exactly 3 times then the error surfaces; a source that succeeds on the second attempt yields its value after 2 invocations.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.memory.application",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "Mono<String> withRetry(Mono<String> attempt)",
+        "returns": "Mono<String>",
+        "semantics": "attempt must be non-null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.memory.summary.max-attempts",
+        "kind": "value",
+        "value": "3"
+      },
+      {
+        "path": "chat.memory.summary.backoff",
+        "kind": "value",
+        "value": "PT0.2S"
+      }
+    ]
+  }
+}

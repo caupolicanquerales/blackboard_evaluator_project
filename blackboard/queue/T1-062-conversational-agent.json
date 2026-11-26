@@ -1,0 +1,68 @@
+{
+  "id": "T1-062",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-051",
+    "T1-053",
+    "T1-056",
+    "T1-061"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/memory/infrastructure/InProcessSummaryUpdatedPublisherTest.java",
+  "export": "InProcessSummaryUpdatedPublisherTest",
+  "intent": "InProcessSummaryUpdatedPublisherTest proves a subscriber receives the published event; the sink survives a subscriber cancel and later emits still arrive; an overflow beyond capacity is counted outcome rejected on the shared meter.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.memory.infrastructure",
+    "implements": [
+      "SummaryUpdatedPublisher"
+    ],
+    "dependencies": [
+      {
+        "type": "SummaryUpdatedPublisher",
+        "task_id": "T2-053"
+      },
+      {
+        "type": "SummaryUpdatedEvent",
+        "task_id": "T2-051"
+      },
+      {
+        "type": "SummaryRefreshService",
+        "task_id": "T2-056"
+      },
+      {
+        "type": "TurnCompletedMemoryConsumer",
+        "task_id": "T2-061"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> publish(SummaryUpdatedEvent event)",
+        "returns": "Mono<Void>",
+        "semantics": "event must be non-null"
+      },
+      {
+        "signature": "Flux<SummaryUpdatedEvent> events()",
+        "returns": "Flux<SummaryUpdatedEvent>"
+      }
+    ],
+    "meters": [
+      {
+        "name": "chat.memory.summary.refreshed",
+        "duty": "uses"
+      }
+    ],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.memory.event-buffer-capacity",
+        "kind": "value",
+        "value": "1024"
+      }
+    ]
+  }
+}

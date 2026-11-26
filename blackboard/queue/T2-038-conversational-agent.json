@@ -1,0 +1,37 @@
+{
+  "id": "T2-038",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-038",
+    "T0-001",
+    "T2-037"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/application/HistoryQuery.java",
+  "export": "HistoryQuery",
+  "intent": "HistoryQuery is the synchronous read port into Chat History Log, called only after the ownership check: a bounded page of a session's entries in keyset order by turn id and sequence; a non-positive page size is refused.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "HistoryEntryView",
+        "task_id": "T2-037"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Flux<HistoryEntryView> page(String sessionId, String afterTurnId, int afterSequence, int pageSize)",
+        "returns": "Flux<HistoryEntryView>",
+        "semantics": "pageSize must be positive"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

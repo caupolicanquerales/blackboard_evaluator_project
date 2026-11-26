@@ -1,0 +1,31 @@
+{
+  "id": "T2-014",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-014",
+    "T0-001"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/application/SessionAccessCheck.java",
+  "export": "SessionAccessCheck",
+  "intent": "Application port deciding owner-and-tenant admission of a session; implemented by the Orchestration context and reused unchanged by the tool guard so the model path equals the human path.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.application",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "Mono<Boolean> permits(String sessionId, String userId, String tenantId)",
+        "returns": "Mono<Boolean>",
+        "semantics": "no argument may be null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

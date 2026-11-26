@@ -1,0 +1,31 @@
+{
+  "id": "T2-015",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-015",
+    "T0-001"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/domain/ToolRequest.java",
+  "export": "ToolRequest",
+  "intent": "Immutable record of a model tool request: toolName and arguments map; compact constructor refuses blank name and null arguments.",
+  "layer": "domain",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.domain",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "ToolRequest(String toolName, Map<String, String> arguments)",
+        "returns": "",
+        "semantics": "toolName not blank, arguments not null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "id": "T1-043",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/orchestration/interfaces/UserRateLimiterTest.java",
+  "export": "UserRateLimiterTest",
+  "intent": "UserRateLimiterTest proves PB-05 with a fake clock: requests within burst are admitted, the next is refused, buckets are per user so another user is admitted, and refill after elapsed time admits again.",
+  "layer": "interface",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.interfaces",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "boolean tryAcquire(String userId)",
+        "returns": "boolean",
+        "semantics": "rejects null userId"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.rate-limit.rate",
+        "kind": "value"
+      },
+      {
+        "path": "chat.rate-limit.burst",
+        "kind": "value"
+      }
+    ]
+  }
+}

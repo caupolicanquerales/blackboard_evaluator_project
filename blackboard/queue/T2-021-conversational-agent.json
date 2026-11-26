@@ -1,0 +1,44 @@
+{
+  "id": "T2-021",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-021",
+    "T0-001",
+    "T2-001",
+    "T2-015"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/infrastructure/StructuredOutputGuard.java",
+  "export": "StructuredOutputGuard",
+  "intent": "AC-05 structured-output-guard: BeanOutputConverter<ToolRequest> validates each tool request before execution; a violation yields one re-ask (bound from the key) then the declared refusal (empty Mono), never a raw parse or coercion; blocking converter wrapped on boundedElastic.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.infrastructure",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ToolRequest",
+        "task_id": "T2-015"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<ToolRequest> validate(String rawModelOutput, Function<String, Mono<String>> reask)",
+        "returns": "Mono<ToolRequest>",
+        "semantics": "no argument may be null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.model.reask-max",
+        "kind": "value",
+        "value": "1"
+      }
+    ]
+  }
+}

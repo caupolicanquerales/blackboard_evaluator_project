@@ -1,0 +1,660 @@
+{
+  "schema_version": "1.0",
+  "report_type": "security-spec",
+  "slug": "conversational-agent",
+  "metadata": {
+    "generated_at": "2026-11-26T11:00:00-03:00",
+    "agent": "agent-security-architect",
+    "inputs": [
+      "blackboard/complete/execution-strategy-conversational-agent.json",
+      "blackboard/domain/domain-boundary-conversational-agent.json",
+      "blackboard/context-map/context-map-conversational-agent.json"
+    ],
+    "confidence": "medium"
+  },
+  "assumptions": [
+    {
+      "id": "AS-01",
+      "text": "Caller identity and tenant arrive as verified claims on every user request.",
+      "source": "User",
+      "excludes": "Identity taken from body, path or header values supplied by the client."
+    },
+    {
+      "id": "AS-02",
+      "text": "Single baseline scope grants chat use; ownership binds every instance.",
+      "source": "baseline rule",
+      "excludes": "Role-based widening of access to another user's sessions."
+    },
+    {
+      "id": "AS-03",
+      "text": "Internal consumers and queries run as one trusted service identity.",
+      "source": "System",
+      "excludes": "Anonymous or user-originated calls to internal surfaces."
+    },
+    {
+      "id": "AS-04",
+      "text": "Model provider and backend tool replies are untrusted input.",
+      "source": "LLM provider",
+      "excludes": "Trusting provider output as typed, safe or authorized data."
+    }
+  ],
+  "trust_boundaries": [
+    {
+      "id": "TB-01",
+      "name": "User to chat session boundary",
+      "from": "P-01",
+      "to": "Chat Session & Turn Orchestration",
+      "untrusted_inputs": ["message text", "sessionId", "history cursor"],
+      "controls": ["AZ-01", "AZ-02", "AZ-03", "SI-01", "SI-02", "SI-04"]
+    },
+    {
+      "id": "TB-02",
+      "name": "Orchestration to model provider and tools",
+      "from": "Chat Session & Turn Orchestration",
+      "to": "LLM provider",
+      "untrusted_inputs": ["model reply", "tool result", "tool arguments"],
+      "controls": ["SI-03", "SI-10"]
+    },
+    {
+      "id": "TB-03",
+      "name": "Orchestration to memory and history contexts",
+      "from": "Chat Session & Turn Orchestration",
+      "to": "Conversation Memory",
+      "untrusted_inputs": ["sessionId", "turnId", "event payload"],
+      "controls": ["AZ-04", "AZ-05", "AZ-06", "AZ-07", "AZ-08", "SI-06", "SI-07"]
+    },
+    {
+      "id": "TB-04",
+      "name": "Service to logs, errors and audit trail",
+      "from": "Chat Session & Turn Orchestration",
+      "to": "DC-07",
+      "untrusted_inputs": ["conversation content", "error detail"],
+      "controls": ["SI-08", "SI-09", "SI-12", "SI-13"]
+    }
+  ],
+  "principals": [
+    {
+      "id": "P-01",
+      "name": "User",
+      "kind": "human",
+      "source": "User",
+      "authentication": "required",
+      "credential_capability": "bearer-jwt-proof",
+      "identity_claims": ["owner_id", "tenant_id", "scopes"]
+    },
+    {
+      "id": "P-02",
+      "name": "System",
+      "kind": "job",
+      "source": "System",
+      "authentication": "required",
+      "credential_capability": "service-credential-proof",
+      "identity_claims": ["service_id", "tenant_id"]
+    }
+  ],
+  "data_classification": [
+    {
+      "id": "DC-01",
+      "concept": "ChatSession",
+      "class": "confidential",
+      "pii": true,
+      "secret": false,
+      "fields": ["session id", "owner user id", "tenant id", "created timestamp"],
+      "at_rest": "none",
+      "in_transit": "tls",
+      "masking": "partial",
+      "retention": "life of session; unspecified bound",
+      "deletion": "owner request; policy unspecified",
+      "log_visibility": "masked",
+      "error_visibility": "forbidden",
+      "export_visibility": "masked",
+      "reason": "Links user identity to conversations"
+    },
+    {
+      "id": "DC-02",
+      "concept": "Turn",
+      "class": "internal",
+      "pii": false,
+      "secret": false,
+      "fields": ["turn id", "state", "tool call count", "started timestamp"],
+      "at_rest": "none",
+      "in_transit": "tls",
+      "masking": "none",
+      "retention": "life of session",
+      "deletion": "with session",
+      "log_visibility": "allowed",
+      "error_visibility": "masked",
+      "export_visibility": "allowed",
+      "reason": "Operational state without content"
+    },
+    {
+      "id": "DC-03",
+      "concept": "RollingSummary",
+      "class": "confidential",
+      "pii": true,
+      "secret": false,
+      "fields": ["summary text", "last applied turn id", "token count"],
+      "at_rest": "none",
+      "in_transit": "tls",
+      "masking": "redact",
+      "retention": "life of session",
+      "deletion": "with session",
+      "log_visibility": "forbidden",
+      "error_visibility": "forbidden",
+      "export_visibility": "forbidden",
+      "reason": "Distilled personal conversation content"
+    },
+    {
+      "id": "DC-04",
+      "concept": "ContextMessage",
+      "class": "confidential",
+      "pii": true,
+      "secret": false,
+      "fields": ["role", "content", "token count"],
+      "at_rest": "none",
+      "in_transit": "tls",
+      "masking": "redact",
+      "retention": "last 12 messages only",
+      "deletion": "with session",
+      "log_visibility": "forbidden",
+      "error_visibility": "forbidden",
+      "export_visibility": "forbidden",
+      "reason": "Verbatim personal conversation content"
+    },
+    {
+      "id": "DC-05",
+      "concept": "HistoryEntry",
+      "class": "confidential",
+      "pii": true,
+      "secret": false,
+      "fields": ["kind", "content", "token count", "recorded timestamp"],
+      "at_rest": "none",
+      "in_transit": "tls",
+      "masking": "redact",
+      "retention": "unspecified; append-only",
+      "deletion": "none: append-only; policy owed",
+      "log_visibility": "forbidden",
+      "error_visibility": "forbidden",
+      "export_visibility": "forbidden",
+      "reason": "Permanent personal conversation record"
+    },
+    {
+      "id": "DC-06",
+      "concept": "TokenUsageRecord",
+      "class": "internal",
+      "pii": false,
+      "secret": false,
+      "fields": ["prompt tokens", "completion tokens", "tenant id"],
+      "at_rest": "none",
+      "in_transit": "tls",
+      "masking": "none",
+      "retention": "unspecified; append-only",
+      "deletion": "none: append-only",
+      "log_visibility": "allowed",
+      "error_visibility": "masked",
+      "export_visibility": "masked",
+      "reason": "Usage counts scoped by tenant"
+    },
+    {
+      "id": "DC-07",
+      "concept": "AuditTrailEntry",
+      "class": "confidential",
+      "pii": true,
+      "secret": false,
+      "fields": ["actor", "action", "outcome", "timestamp", "correlation id"],
+      "at_rest": "none",
+      "in_transit": "tls",
+      "masking": "partial",
+      "retention": "unspecified; append-only",
+      "deletion": "none: append-only",
+      "log_visibility": "masked",
+      "error_visibility": "forbidden",
+      "export_visibility": "masked",
+      "reason": "Names actors of sensitive actions"
+    }
+  ],
+  "authorization_matrix": [
+    {
+      "id": "AZ-01",
+      "surface": "create chat session HTTP inbound",
+      "operation": "POST",
+      "principal_ids": ["P-01"],
+      "roles": ["chat-user"],
+      "scopes": ["chat"],
+      "ownership_rule": "owner-and-tenant",
+      "client_supplied_ids": [],
+      "decision_point": {
+        "layer": "interface",
+        "component": "Chat Session & Turn Orchestration"
+      },
+      "default": "deny",
+      "effect_on_deny": "unauthenticated",
+      "fields_read": [],
+      "fields_written": ["DC-01"],
+      "audit_event": "session created",
+      "test_duty": "Permitted: valid user creates session. Denied: no credential. Cross-owner: body-supplied owner ignored."
+    },
+    {
+      "id": "AZ-02",
+      "surface": "send message SSE HTTP inbound",
+      "operation": "POST",
+      "principal_ids": ["P-01"],
+      "roles": ["chat-user"],
+      "scopes": ["chat"],
+      "ownership_rule": "owner-and-tenant",
+      "client_supplied_ids": ["sessionId"],
+      "decision_point": {
+        "layer": "application",
+        "component": "Chat Session & Turn Orchestration"
+      },
+      "default": "deny",
+      "effect_on_deny": "forbidden-not-found",
+      "fields_read": ["DC-01", "DC-04", "DC-03"],
+      "fields_written": ["DC-02", "DC-04"],
+      "audit_event": "message sent",
+      "test_duty": "Permitted: owner sends message. Denied: no credential. Cross-owner: other user's session refused."
+    },
+    {
+      "id": "AZ-03",
+      "surface": "reload chat history HTTP inbound",
+      "operation": "GET",
+      "principal_ids": ["P-01"],
+      "roles": ["chat-user"],
+      "scopes": ["chat"],
+      "ownership_rule": "owner-and-tenant",
+      "client_supplied_ids": ["sessionId", "history cursor"],
+      "decision_point": {
+        "layer": "application",
+        "component": "Chat Session & Turn Orchestration"
+      },
+      "default": "deny",
+      "effect_on_deny": "forbidden-not-found",
+      "fields_read": ["DC-01", "DC-05"],
+      "fields_written": [],
+      "audit_event": "history reloaded",
+      "test_duty": "Permitted: owner reloads history. Denied: no credential. Cross-owner: other tenant's session refused."
+    },
+    {
+      "id": "AZ-04",
+      "surface": "context window query internal call",
+      "operation": "internal-call",
+      "principal_ids": ["P-02"],
+      "roles": ["internal-service"],
+      "scopes": ["context-read"],
+      "ownership_rule": "tenant",
+      "client_supplied_ids": ["sessionId"],
+      "decision_point": {
+        "layer": "application",
+        "component": "Conversation Memory"
+      },
+      "default": "deny",
+      "effect_on_deny": "reject-drop",
+      "fields_read": ["DC-03", "DC-04"],
+      "fields_written": [],
+      "audit_event": "none",
+      "test_duty": "Permitted: service reads own-tenant window. Denied: no service identity. Cross-owner: other tenant's session refused."
+    },
+    {
+      "id": "AZ-05",
+      "surface": "turn completed memory consumer",
+      "operation": "consume",
+      "principal_ids": ["P-02"],
+      "roles": ["internal-service"],
+      "scopes": ["summary-write"],
+      "ownership_rule": "tenant",
+      "client_supplied_ids": ["sessionId", "turnId"],
+      "decision_point": {
+        "layer": "application",
+        "component": "Conversation Memory"
+      },
+      "default": "deny",
+      "effect_on_deny": "reject-drop",
+      "fields_read": ["DC-03"],
+      "fields_written": ["DC-03", "DC-04"],
+      "audit_event": "none",
+      "test_duty": "Permitted: event for known session applied. Denied: unauthenticated event dropped. Cross-owner: tenant mismatch dropped."
+    },
+    {
+      "id": "AZ-06",
+      "surface": "turn completed history consumer",
+      "operation": "consume",
+      "principal_ids": ["P-02"],
+      "roles": ["internal-service"],
+      "scopes": ["history-append"],
+      "ownership_rule": "tenant",
+      "client_supplied_ids": ["sessionId", "turnId"],
+      "decision_point": {
+        "layer": "application",
+        "component": "Chat History Log"
+      },
+      "default": "deny",
+      "effect_on_deny": "reject-drop",
+      "fields_read": [],
+      "fields_written": ["DC-05", "DC-06"],
+      "audit_event": "none",
+      "test_duty": "Permitted: event appended once. Denied: unauthenticated event dropped. Cross-owner: tenant mismatch dropped."
+    },
+    {
+      "id": "AZ-07",
+      "surface": "tool called history consumer",
+      "operation": "consume",
+      "principal_ids": ["P-02"],
+      "roles": ["internal-service"],
+      "scopes": ["history-append"],
+      "ownership_rule": "tenant",
+      "client_supplied_ids": ["sessionId", "turnId"],
+      "decision_point": {
+        "layer": "application",
+        "component": "Chat History Log"
+      },
+      "default": "deny",
+      "effect_on_deny": "reject-drop",
+      "fields_read": [],
+      "fields_written": ["DC-05", "DC-06"],
+      "audit_event": "none",
+      "test_duty": "Permitted: tool event appended once. Denied: unauthenticated event dropped. Cross-owner: tenant mismatch dropped."
+    },
+    {
+      "id": "AZ-08",
+      "surface": "history reload query internal call",
+      "operation": "internal-call",
+      "principal_ids": ["P-02"],
+      "roles": ["internal-service"],
+      "scopes": ["history-read"],
+      "ownership_rule": "tenant",
+      "client_supplied_ids": ["sessionId", "history cursor"],
+      "decision_point": {
+        "layer": "application",
+        "component": "Chat History Log"
+      },
+      "default": "deny",
+      "effect_on_deny": "reject-drop",
+      "fields_read": ["DC-05"],
+      "fields_written": [],
+      "audit_event": "none",
+      "test_duty": "Permitted: service reads own-tenant history. Denied: no service identity. Cross-owner: other tenant's session refused."
+    }
+  ],
+  "invariants": [
+    {
+      "id": "SI-01",
+      "rule": "Session read or write requires owner and tenant match; mismatch refused.",
+      "capability": "owner-scoped-query",
+      "enforcement_layer": "application",
+      "owner_context": "Chat Session & Turn Orchestration",
+      "failure_mode": "closed"
+    },
+    {
+      "id": "SI-02",
+      "rule": "Identity and tenant come only from verified credential claims.",
+      "capability": "bearer-jwt-proof",
+      "enforcement_layer": "edge",
+      "owner_context": "Chat Session & Turn Orchestration",
+      "failure_mode": "closed"
+    },
+    {
+      "id": "SI-03",
+      "rule": "Turn never exceeds 5 tool calls or 30 seconds.",
+      "capability": "turn-budget-limit",
+      "enforcement_layer": "domain",
+      "owner_context": "Chat Session & Turn Orchestration",
+      "failure_mode": "closed"
+    },
+    {
+      "id": "SI-04",
+      "rule": "Client message and identifiers validated before any use.",
+      "capability": "boundary-validation",
+      "enforcement_layer": "edge",
+      "owner_context": "Chat Session & Turn Orchestration",
+      "failure_mode": "closed"
+    },
+    {
+      "id": "SI-05",
+      "rule": "History entries are never updated or deleted after append.",
+      "capability": "append-only-history",
+      "enforcement_layer": "store",
+      "owner_context": "Chat History Log",
+      "failure_mode": "closed"
+    },
+    {
+      "id": "SI-06",
+      "rule": "Context window and summary access is scoped to session tenant.",
+      "capability": "tenant-scoped-query",
+      "enforcement_layer": "store",
+      "owner_context": "Conversation Memory",
+      "failure_mode": "closed"
+    },
+    {
+      "id": "SI-07",
+      "rule": "History reads and appends are scoped to session tenant.",
+      "capability": "tenant-scoped-query",
+      "enforcement_layer": "store",
+      "owner_context": "Chat History Log",
+      "failure_mode": "closed"
+    },
+    {
+      "id": "SI-08",
+      "rule": "Conversation content never appears in logs.",
+      "capability": "log-redaction",
+      "enforcement_layer": "pipeline",
+      "owner_context": "Chat Session & Turn Orchestration",
+      "failure_mode": "closed"
+    },
+    {
+      "id": "SI-09",
+      "rule": "Error responses carry code, message and correlation key only.",
+      "capability": "error-code-only",
+      "enforcement_layer": "edge",
+      "owner_context": "Chat Session & Turn Orchestration",
+      "failure_mode": "closed"
+    },
+    {
+      "id": "SI-10",
+      "rule": "Provider and tool replies are typed and validated before use.",
+      "capability": "typed-deserialization",
+      "enforcement_layer": "edge",
+      "owner_context": "Chat Session & Turn Orchestration",
+      "failure_mode": "closed"
+    },
+    {
+      "id": "SI-12",
+      "rule": "Denials, authentication failures and credential use emit audit events.",
+      "capability": "audit-event",
+      "enforcement_layer": "application",
+      "owner_context": "Chat Session & Turn Orchestration",
+      "failure_mode": "closed"
+    },
+    {
+      "id": "SI-13",
+      "rule": "Metric tags and log keys are bounded sets without identifiers.",
+      "capability": "metric-tag-bound",
+      "enforcement_layer": "pipeline",
+      "owner_context": "Chat Session & Turn Orchestration",
+      "failure_mode": "closed"
+    }
+  ],
+  "secrets": {
+    "must_not_appear_in": ["source", "logs", "error responses", "test fixtures", "build artifacts"],
+    "inventory": [
+      {
+        "id": "SD-01",
+        "name": "model-provider-access-credential",
+        "owner": "Chat Session & Turn Orchestration",
+        "custody": "runtime-injection",
+        "rotation": "operator rotation; revocation takes effect immediately"
+      },
+      {
+        "id": "SD-02",
+        "name": "service-identity-credential",
+        "owner": "shared",
+        "custody": "runtime-injection",
+        "rotation": "operator rotation; short lifetime"
+      }
+    ],
+    "handling_rules": [
+      "Secrets injected at runtime, never persisted with conversation data.",
+      "Revoked or expired credential denies the request.",
+      "Credential values never logged, echoed or exported."
+    ]
+  },
+  "error_policy": {
+    "allowed_fields": ["code", "message", "correlation_key"],
+    "never_expose": ["stack traces", "internal identifiers", "queries", "paths", "secrets", "input echo"],
+    "security_audit_events": {
+      "classes": ["authentication-failure", "authorization-denied", "bulk-export", "service-credential-use"],
+      "fields": ["actor", "action", "resource", "outcome", "reason", "timestamp", "correlation_key"]
+    }
+  },
+  "duties": [
+    {
+      "spec_ref": "AZ-01",
+      "obligation": "Verify user credential and derive owner and tenant from claims.",
+      "capability": "bearer-jwt-proof",
+      "unit_kind": "policy-adapter",
+      "owner_context": "Chat Session & Turn Orchestration",
+      "covers": ["AZ-02", "AZ-03", "SI-02"]
+    },
+    {
+      "spec_ref": "AZ-04",
+      "obligation": "Verify internal service identity before serving or applying data.",
+      "capability": "service-credential-proof",
+      "unit_kind": "credential-handling",
+      "owner_context": "Conversation Memory",
+      "covers": ["AZ-05"]
+    },
+    {
+      "spec_ref": "AZ-06",
+      "obligation": "Verify internal service identity before appending history.",
+      "capability": "service-credential-proof",
+      "unit_kind": "credential-handling",
+      "owner_context": "Chat History Log",
+      "covers": ["AZ-07"]
+    },
+    {
+      "spec_ref": "SI-01",
+      "obligation": "Load sessions only by id plus owner and tenant.",
+      "capability": "owner-scoped-query",
+      "unit_kind": "ownership-predicate",
+      "owner_context": "Chat Session & Turn Orchestration"
+    },
+    {
+      "spec_ref": "SI-03",
+      "obligation": "Stop turn cleanly at tool call or time limit.",
+      "capability": "turn-budget-limit",
+      "unit_kind": "validator",
+      "owner_context": "Chat Session & Turn Orchestration"
+    },
+    {
+      "spec_ref": "SI-04",
+      "obligation": "Reject malformed or oversized-by-contract client input at the boundary.",
+      "capability": "boundary-validation",
+      "unit_kind": "validator",
+      "owner_context": "Chat Session & Turn Orchestration"
+    },
+    {
+      "spec_ref": "SI-05",
+      "obligation": "Expose only append and read operations for history.",
+      "capability": "append-only-history",
+      "unit_kind": "policy-port",
+      "owner_context": "Chat History Log"
+    },
+    {
+      "spec_ref": "SI-06",
+      "obligation": "Filter memory reads and writes by session tenant.",
+      "capability": "tenant-scoped-query",
+      "unit_kind": "ownership-predicate",
+      "owner_context": "Conversation Memory"
+    },
+    {
+      "spec_ref": "SI-07",
+      "obligation": "Filter history reads and appends by session tenant.",
+      "capability": "tenant-scoped-query",
+      "unit_kind": "ownership-predicate",
+      "owner_context": "Chat History Log",
+      "covers": ["AZ-08"]
+    },
+    {
+      "spec_ref": "SI-08",
+      "obligation": "Strip conversation content and personal fields from log output.",
+      "capability": "log-redaction",
+      "unit_kind": "redaction",
+      "covers": ["DC-01", "DC-03", "DC-04", "DC-05", "DC-07"]
+    },
+    {
+      "spec_ref": "SI-09",
+      "obligation": "Return opaque code, safe message and correlation key on failure.",
+      "capability": "error-code-only",
+      "unit_kind": "redaction"
+    },
+    {
+      "spec_ref": "SI-10",
+      "obligation": "Deserialize provider and tool replies into closed typed values.",
+      "capability": "typed-deserialization",
+      "unit_kind": "validator",
+      "owner_context": "Chat Session & Turn Orchestration"
+    },
+    {
+      "spec_ref": "SI-12",
+      "obligation": "Emit audit event for each denial, failure and credential use.",
+      "capability": "audit-event",
+      "unit_kind": "audit-event"
+    },
+    {
+      "spec_ref": "SI-13",
+      "obligation": "Restrict metric tags and log keys to fixed vocabularies.",
+      "capability": "metric-tag-bound",
+      "unit_kind": "redaction"
+    }
+  ],
+  "risks": [
+    {
+      "id": "R-01",
+      "risk": "Another user reads or writes a session by guessing its id.",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigation": "SI-01 owner-and-tenant predicate on AZ-02 and AZ-03",
+      "residual": "Denial is indistinguishable from absence; audit event recorded."
+    },
+    {
+      "id": "R-02",
+      "risk": "Model or tool output carries injected instructions or malformed data.",
+      "likelihood": "high",
+      "impact": "medium",
+      "mitigation": "SI-10 typed replies and SI-03 turn budget",
+      "residual": "accepted: tool side effects before a cut are not undone."
+    },
+    {
+      "id": "R-03",
+      "risk": "Conversation content leaks through logs or error responses.",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigation": "SI-08 log redaction and SI-09 error code only",
+      "residual": "Content still sent to the external model provider."
+    },
+    {
+      "id": "R-04",
+      "risk": "Unbounded retention of personal history under append-only rule.",
+      "likelihood": "high",
+      "impact": "medium",
+      "mitigation": "accepted: retention policy unspecified by inputs",
+      "residual": "History entries persist indefinitely; deletion requests cannot be honored."
+    },
+    {
+      "id": "R-05",
+      "risk": "Operator usage tracking has no declared surface to guard.",
+      "likelihood": "medium",
+      "impact": "medium",
+      "mitigation": "accepted: no operator surface in plan; none exposed",
+      "residual": "Usage reads stay unavailable until a surface is declared and gated."
+    },
+    {
+      "id": "R-06",
+      "risk": "Personal data stored without encryption at rest.",
+      "likelihood": "low",
+      "impact": "high",
+      "mitigation": "operator: storage-level encryption owned by the operator",
+      "residual": "Store compromise exposes content until operator controls apply."
+    }
+  ],
+  "open_questions": []
+}

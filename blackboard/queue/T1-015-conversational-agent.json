@@ -1,0 +1,30 @@
+{
+  "id": "T1-015",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/orchestration/domain/ToolRequestTest.java",
+  "export": "ToolRequestTest",
+  "intent": "ToolRequestTest proves a ToolRequest with blank tool name or null arguments is refused and a valid one keeps its members.",
+  "layer": "domain",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.domain",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "ToolRequest(String toolName, Map<String, String> arguments)",
+        "returns": "",
+        "semantics": "toolName not blank, arguments not null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

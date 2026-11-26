@@ -1,0 +1,47 @@
+{
+  "id": "T2-068",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-068",
+    "T0-001"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/history/infrastructure/ServiceCredentialVerifier.java",
+  "export": "ServiceCredentialVerifier",
+  "intent": "ServiceCredentialVerifier discharges AZ-06 service-credential-proof (covers AZ-07): a per-service ReactiveAuthenticationManager over the chat.history.service-credentials list (id, secret-hash, scope), the principal being the internal service. Secrets compare by hash; an empty list fails fast at startup; unknown id, wrong secret or wrong scope answers false.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.history.infrastructure",
+    "implements": [
+      "ReactiveAuthenticationManager"
+    ],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "Mono<Authentication> authenticate(Authentication authentication)",
+        "returns": "Mono<Authentication>"
+      },
+      {
+        "signature": "Mono<Boolean> verify(String serviceId, String secret)",
+        "returns": "Mono<Boolean>",
+        "semantics": "false for null or blank serviceId or secret"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.history.service-credentials",
+        "kind": "list",
+        "fields": [
+          "id",
+          "secret-hash",
+          "scope"
+        ]
+      }
+    ]
+  }
+}

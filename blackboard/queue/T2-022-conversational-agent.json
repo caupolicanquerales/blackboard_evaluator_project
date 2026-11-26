@@ -1,0 +1,31 @@
+{
+  "id": "T2-022",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-022",
+    "T0-001"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/memory/domain/ContextEntry.java",
+  "export": "ContextEntry",
+  "intent": "Immutable record of one context message: role, content, tokenCount; compact constructor refuses null members and negative token count.",
+  "layer": "domain",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.memory.domain",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "ContextEntry(String role, String content, int tokenCount)",
+        "returns": "",
+        "semantics": "role and content not null, tokenCount not negative"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

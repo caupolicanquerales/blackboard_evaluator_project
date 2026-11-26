@@ -1,0 +1,36 @@
+{
+  "id": "T1-038",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-037"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/orchestration/application/HistoryQueryContractTest.java",
+  "export": "HistoryQueryContractTest",
+  "intent": "HistoryQueryContractTest pins the port with a fake: entries come back in keyset order by turn id then sequence, bounded by the page size, resuming strictly after the given cursor.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "HistoryEntryView",
+        "task_id": "T2-037"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Flux<HistoryEntryView> page(String sessionId, String afterTurnId, int afterSequence, int pageSize)",
+        "returns": "Flux<HistoryEntryView>",
+        "semantics": "pageSize must be positive"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

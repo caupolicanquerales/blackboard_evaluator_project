@@ -1,0 +1,42 @@
+{
+  "id": "T2-055",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-055",
+    "T0-001"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/memory/application/SummaryRetryPolicy.java",
+  "export": "SummaryRetryPolicy",
+  "intent": "PB-10 bounded-attempts: wraps a summary refresh in Reactor retryWhen(Retry.backoff(N, Duration)) with N from chat.memory.summary.max-attempts (3) and the delay from chat.memory.summary.backoff; used only behind the session id + turn id dedup identity, so a retry never double-applies. After the last attempt the error surfaces.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.memory.application",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "Mono<String> withRetry(Mono<String> attempt)",
+        "returns": "Mono<String>",
+        "semantics": "attempt must be non-null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.memory.summary.max-attempts",
+        "kind": "value",
+        "value": "3"
+      },
+      {
+        "path": "chat.memory.summary.backoff",
+        "kind": "value",
+        "value": "PT0.2S"
+      }
+    ]
+  }
+}

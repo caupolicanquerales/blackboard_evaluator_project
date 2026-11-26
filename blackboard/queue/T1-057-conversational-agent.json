@@ -1,0 +1,71 @@
+{
+  "id": "T1-057",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T0-003",
+    "T1-052"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/memory/infrastructure/R2dbcMemoryStoreTest.java",
+  "export": "R2dbcMemoryStoreTest",
+  "intent": "R2dbcMemoryStoreTest runs the real V2 migration DDL on embedded H2 and asserts rows back with a UNIQUE session id per case: summary save and read by session and tenant, a foreign tenant gets nothing (SI-06 cross-owner), newest-first limit, overflow beyond keep, turnApplied, and the 16000-token CHECK refusal. PB-13: the pool maximum is read from spring.r2dbc.pool.max-size and equals 10.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.memory.infrastructure",
+    "implements": [
+      "MemoryStore"
+    ],
+    "dependencies": [
+      {
+        "type": "MemoryStore",
+        "task_id": "T2-052"
+      },
+      {
+        "type": "RollingSummary",
+        "task_id": "T2-049"
+      },
+      {
+        "type": "ContextEntry",
+        "task_id": "T2-022"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<RollingSummary> summaryByIdAndTenant(String sessionId, String tenantId)",
+        "returns": "Mono<RollingSummary>"
+      },
+      {
+        "signature": "Mono<RollingSummary> saveSummary(RollingSummary summary, String tenantId)",
+        "returns": "Mono<RollingSummary>"
+      },
+      {
+        "signature": "Flux<ContextEntry> recentMessages(String sessionId, String tenantId, int limit)",
+        "returns": "Flux<ContextEntry>",
+        "semantics": "limit must be > 0"
+      },
+      {
+        "signature": "Flux<ContextEntry> overflowMessages(String sessionId, String tenantId, int keep)",
+        "returns": "Flux<ContextEntry>",
+        "semantics": "keep must be > 0"
+      },
+      {
+        "signature": "Mono<Boolean> turnApplied(String sessionId, String turnId, String tenantId)",
+        "returns": "Mono<Boolean>",
+        "semantics": "true when the turn was already applied for this session and tenant (duplicate, caller skips); false when not yet applied (caller proceeds)"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "spring.r2dbc.pool.max-size",
+        "kind": "value",
+        "value": "10"
+      }
+    ]
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "id": "T2-020",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-020",
+    "T0-001"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/memory/application/SummarizerPort.java",
+  "export": "SummarizerPort",
+  "intent": "AR-02 summarization port: condenses the previous summary and older messages into a new rolling summary text; no provider type leaks.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.memory.application",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "Mono<String> summarize(String previousSummary, List<String> olderMessages)",
+        "returns": "Mono<String>",
+        "semantics": "olderMessages must not be null; previousSummary may be empty"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

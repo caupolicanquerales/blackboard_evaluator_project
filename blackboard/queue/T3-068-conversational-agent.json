@@ -1,0 +1,15 @@
+{
+  "id": "T3-068",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-068"
+  ],
+  "kind": "refactor",
+  "path": "src/main/java/com/blackboard/conversationalagent/history/infrastructure/ServiceCredentialVerifier.java",
+  "export": "ServiceCredentialVerifier",
+  "intent": "Refactor ServiceCredentialVerifier: keep the tabled contract and the paired tests green; no behavior, status, meter or route change.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent"
+}

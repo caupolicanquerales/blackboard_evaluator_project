@@ -1,0 +1,36 @@
+{
+  "id": "T1-007",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-006"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/shared/AuditPortContractTest.java",
+  "export": "AuditPortContractTest",
+  "intent": "AuditPortContractTest records an AuditEntry through the port against the pinned adapter fake and asserts it is delivered once; a null entry is refused.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.shared",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "AuditEntry",
+        "task_id": "T2-006"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> record(AuditEntry entry)",
+        "returns": "Mono<Void>",
+        "semantics": "entry must not be null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

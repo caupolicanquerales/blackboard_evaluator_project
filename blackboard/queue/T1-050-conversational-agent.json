@@ -1,0 +1,36 @@
+{
+  "id": "T1-050",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-022"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/memory/domain/TurnCompletedEventTest.java",
+  "export": "TurnCompletedEventTest",
+  "intent": "TurnCompletedEventTest proves the event keeps session id, turn id, tenant id and its messages; null identifiers are rejected and the message list is defensively copied.",
+  "layer": "domain",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.memory.domain",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ContextEntry",
+        "task_id": "T2-022"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "TurnCompletedEvent(String sessionId, String turnId, String tenantId, List<ContextEntry> messages)",
+        "returns": "",
+        "semantics": "sessionId, turnId and tenantId must be non-null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

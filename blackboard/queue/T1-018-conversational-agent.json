@@ -1,0 +1,35 @@
+{
+  "id": "T1-018",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/orchestration/application/PromptContractTest.java",
+  "export": "PromptContractTest",
+  "intent": "PromptContractTest proves AC-04 prompt-contract: all five members are non-empty, an empty member is refused, and the rendered prompt contains every declared placeholder.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.application",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "PromptContract(String version, String role, List<String> placeholders, String outputSchemaRef, String refusal)",
+        "returns": "",
+        "semantics": "no member may be null or empty"
+      },
+      {
+        "signature": "String render(Map<String, String> values)",
+        "returns": "String",
+        "semantics": "values must hold every placeholder"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

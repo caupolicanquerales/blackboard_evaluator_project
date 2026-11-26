@@ -1,0 +1,73 @@
+{
+  "id": "T2-040",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-040",
+    "T0-001",
+    "T2-006",
+    "T2-007",
+    "T2-011",
+    "T2-028"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/application/TurnBudgetPolicy.java",
+  "export": "TurnBudgetPolicy",
+  "intent": "TurnBudgetPolicy discharges SI-03 turn-budget-limit validator, PB-01 bounded-attempts retry-policy (attempts bound N from chat.turn.max-tool-calls via the pinned LoopGovernor, Retry.backoff shape unused: refusal, not retry) and PB-02 timeout-budget timeout-policy (Mono.timeout(Duration) from chat.turn.timeout). Past either limit: stop cleanly, emit ProgressEvent.notice, count chat.turn.limit.reached, audit.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "LoopGovernor",
+        "task_id": "T2-028"
+      },
+      {
+        "type": "ProgressEvent",
+        "task_id": "T2-011"
+      },
+      {
+        "type": "AuditPort",
+        "task_id": "T2-007"
+      },
+      {
+        "type": "AuditEntry",
+        "task_id": "T2-006"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Flux<ProgressEvent> bound(Flux<ProgressEvent> events)",
+        "returns": "Flux<ProgressEvent>",
+        "semantics": "rejects null events"
+      }
+    ],
+    "meters": [
+      {
+        "name": "chat.turn.limit.reached",
+        "duty": "owns"
+      }
+    ],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.turn.max-tool-calls",
+        "kind": "value",
+        "value": "5"
+      },
+      {
+        "path": "chat.turn.timeout",
+        "kind": "value",
+        "value": "PT30S"
+      }
+    ]
+  },
+  "observability": {
+    "step_logs": [
+      "turn limit reached"
+    ]
+  }
+}

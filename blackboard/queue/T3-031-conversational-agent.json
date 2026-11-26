@@ -1,0 +1,15 @@
+{
+  "id": "T3-031",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-031"
+  ],
+  "kind": "refactor",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/application/SessionRepository.java",
+  "export": "SessionRepository",
+  "intent": "Refactor SessionRepository: keep the tabled contract and the paired tests green; no behavior, status, meter or route change.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent"
+}

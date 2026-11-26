@@ -1,0 +1,43 @@
+{
+  "id": "T2-058",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-058",
+    "T0-001"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/memory/infrastructure/ServiceCredentialAuthenticator.java",
+  "export": "ServiceCredentialAuthenticator",
+  "intent": "AZ-04 service-credential-proof (covers AZ-05): a per-service ReactiveAuthenticationManager over the configured credential list chat.service-credentials (fields id, secret-hash, scope); the principal is a service, secrets compared by hash. Known service authenticated; unknown or mismatching credential denied. Missing list fails startup.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.memory.infrastructure",
+    "implements": [
+      "ReactiveAuthenticationManager"
+    ],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "Mono<Authentication> authenticate(Authentication authentication)",
+        "returns": "Mono<Authentication>",
+        "semantics": "authentication must be non-null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.service-credentials",
+        "kind": "list",
+        "fields": [
+          "id",
+          "secret-hash",
+          "scope"
+        ]
+      }
+    ]
+  }
+}

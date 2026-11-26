@@ -1,0 +1,15 @@
+{
+  "id": "T3-056",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-056"
+  ],
+  "kind": "refactor",
+  "path": "src/main/java/com/blackboard/conversationalagent/memory/application/SummaryRefreshService.java",
+  "export": "SummaryRefreshService",
+  "intent": "Refactor SummaryRefreshService: keep the tabled contract and the paired tests green; no behavior, status, meter or route change.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent"
+}

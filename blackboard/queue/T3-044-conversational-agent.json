@@ -1,0 +1,15 @@
+{
+  "id": "T3-044",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-044"
+  ],
+  "kind": "refactor",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/interfaces/ChatPayloadPolicy.java",
+  "export": "ChatPayloadPolicy",
+  "intent": "Refactor ChatPayloadPolicy: keep the tabled contract and the paired tests green; no behavior, status, meter or route change.",
+  "layer": "interface",
+  "feature": null,
+  "project": "conversational-agent"
+}

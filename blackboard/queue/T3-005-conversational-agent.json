@@ -1,0 +1,15 @@
+{
+  "id": "T3-005",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-005"
+  ],
+  "kind": "refactor",
+  "path": "src/main/java/com/blackboard/conversationalagent/shared/ContentRedactionAdapter.java",
+  "export": "ContentRedactionAdapter",
+  "intent": "Refactor ContentRedactionAdapter: keep the tabled contract and the paired tests green; no behavior, status, meter or route change.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent"
+}

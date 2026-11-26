@@ -1,0 +1,30 @@
+{
+  "id": "T1-004",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/shared/RedactionPortContractTest.java",
+  "export": "RedactionPortContractTest",
+  "intent": "RedactionPortContractTest drives the pinned adapter through the RedactionPort: conversation content and personal fields come back masked, null input is refused.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.shared",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "String redact(String value)",
+        "returns": "String",
+        "semantics": "value must not be null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

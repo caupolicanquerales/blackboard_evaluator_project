@@ -1,0 +1,50 @@
+{
+  "id": "T2-008",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-008",
+    "T0-001",
+    "T0-005",
+    "T2-004",
+    "T2-006",
+    "T2-007"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/shared/AuditTrailAdapter.java",
+  "export": "AuditTrailAdapter",
+  "intent": "SI-12 audit-event: the strategy's AuditPort implemented by ONE infrastructure adapter fed by an ApplicationEventPublisher listener, appending to the append-only audit_trail table through DatabaseClient after RedactionPort masking; insert-only, never a second ad-hoc logger.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.shared",
+    "implements": [
+      "AuditPort"
+    ],
+    "dependencies": [
+      {
+        "type": "AuditEntry",
+        "task_id": "T2-006"
+      },
+      {
+        "type": "RedactionPort",
+        "task_id": "T2-004"
+      },
+      {
+        "type": "AuditPort",
+        "task_id": "T2-007"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> record(AuditEntry entry)",
+        "returns": "Mono<Void>",
+        "semantics": "entry must not be null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

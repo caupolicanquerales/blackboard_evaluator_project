@@ -1,0 +1,69 @@
+{
+  "id": "T2-062",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-062",
+    "T0-001",
+    "T2-051",
+    "T2-053",
+    "T2-056",
+    "T2-061"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/memory/infrastructure/InProcessSummaryUpdatedPublisher.java",
+  "export": "InProcessSummaryUpdatedPublisher",
+  "intent": "In-process adapter of SummaryUpdatedPublisher over Sinks.many().multicast().onBackpressureBuffer(capacity, false), capacity from chat.memory.event-buffer-capacity, emitted with a bounded busyLooping handler. Events are at-least-once for downstream subscribers; overflow is dropped and counted with outcome rejected.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.memory.infrastructure",
+    "implements": [
+      "SummaryUpdatedPublisher"
+    ],
+    "dependencies": [
+      {
+        "type": "SummaryUpdatedPublisher",
+        "task_id": "T2-053"
+      },
+      {
+        "type": "SummaryUpdatedEvent",
+        "task_id": "T2-051"
+      },
+      {
+        "type": "SummaryRefreshService",
+        "task_id": "T2-056"
+      },
+      {
+        "type": "TurnCompletedMemoryConsumer",
+        "task_id": "T2-061"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> publish(SummaryUpdatedEvent event)",
+        "returns": "Mono<Void>",
+        "semantics": "event must be non-null"
+      },
+      {
+        "signature": "Flux<SummaryUpdatedEvent> events()",
+        "returns": "Flux<SummaryUpdatedEvent>"
+      }
+    ],
+    "meters": [
+      {
+        "name": "chat.memory.summary.refreshed",
+        "duty": "uses"
+      }
+    ],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.memory.event-buffer-capacity",
+        "kind": "value",
+        "value": "1024"
+      }
+    ]
+  }
+}

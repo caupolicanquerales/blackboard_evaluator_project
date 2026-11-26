@@ -1,0 +1,49 @@
+{
+  "id": "T2-017",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-017",
+    "T0-001",
+    "T2-001",
+    "T2-011"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/infrastructure/FallbackModelRoute.java",
+  "export": "FallbackModelRoute",
+  "intent": "AC-03 fallback-model-route: no framework mechanism, so Flux.timeout(Duration).onErrorResume routes a model failure or timeout to an honest refusal notice event then completion, using the refusal text and turn timeout keys; no retry.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.infrastructure",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ProgressEvent",
+        "task_id": "T2-011"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Flux<ProgressEvent> guard(Flux<ProgressEvent> modelStream)",
+        "returns": "Flux<ProgressEvent>",
+        "semantics": "modelStream must not be null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.turn.timeout",
+        "kind": "value",
+        "value": "PT30S"
+      },
+      {
+        "path": "chat.fallback.refusal-message",
+        "kind": "value",
+        "value": "The assistant could not complete this request. Please try again later."
+      }
+    ]
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "id": "T1-064",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-063"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/history/domain/HistoryBatchTest.java",
+  "export": "HistoryBatchTest",
+  "intent": "HistoryBatchTest proves a batch keeps tenant id and entries, rejects blank tenant or an empty entry list, copies the list defensively, and carriesUsage is true only when both token counts are non-negative (turn batch) and false for the -1/-1 tool batch.",
+  "layer": "domain",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.history.domain",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "HistoryEntry",
+        "task_id": "T2-063"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "HistoryBatch(String tenantId, List<HistoryEntry> entries, int promptTokens, int completionTokens)",
+        "returns": "",
+        "semantics": "rejects blank tenantId and null or empty entries; entries copied immutably"
+      },
+      {
+        "signature": "boolean carriesUsage()",
+        "returns": "boolean",
+        "semantics": "true when both token counts are non-negative (usage is recorded); false for the -1 tool-call sentinel (no usage recorded)"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

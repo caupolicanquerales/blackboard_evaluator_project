@@ -1,0 +1,67 @@
+{
+  "id": "T1-067",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-064",
+    "T1-065"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/history/application/HistoryAppenderTest.java",
+  "export": "HistoryAppenderTest",
+  "intent": "HistoryAppenderTest uses a fake HistoryStore and SimpleMeterRegistry: a batch appends each entry and counts chat.history.appended by kind; a redelivered batch adds zero rows and logs the duplicate; a store failing every call is tried 3 times (PB-16 idempotent-retry, redelivery adds zero rows) then the error surfaces; usage appended once only when the batch carries usage, counting chat.tokens.used by direction.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.history.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "HistoryStore",
+        "task_id": "T2-065"
+      },
+      {
+        "type": "HistoryBatch",
+        "task_id": "T2-064"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> appendBatch(HistoryBatch batch)",
+        "returns": "Mono<Void>",
+        "semantics": "rejects null batch; retries at most chat.history.append.max-attempts times"
+      }
+    ],
+    "meters": [
+      {
+        "name": "chat.history.appended",
+        "duty": "owns"
+      },
+      {
+        "name": "chat.tokens.used",
+        "duty": "owns"
+      }
+    ],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.history.append.max-attempts",
+        "kind": "value",
+        "value": 3
+      },
+      {
+        "path": "chat.history.append.backoff",
+        "kind": "value",
+        "value": "PT0.1S"
+      }
+    ]
+  },
+  "observability": {
+    "step_logs": [
+      "history entry appended",
+      "duplicate entry ignored"
+    ]
+  }
+}

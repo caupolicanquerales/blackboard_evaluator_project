@@ -1,0 +1,66 @@
+{
+  "id": "T1-071",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-063",
+    "T1-064",
+    "T1-068",
+    "T1-069",
+    "T1-014",
+    "T1-006",
+    "T1-007"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/history/interfaces/ToolCalledHistoryConsumerTest.java",
+  "export": "ToolCalledHistoryConsumerTest",
+  "intent": "ToolCalledHistoryConsumerTest uses fakes with a UNIQUE session id per case: a valid ToolCalled event offers one tool call entry carrying its token count and no usage; redelivery is offered with the same identity; an unauthenticated event is dropped and audited; AZ-07 session-ownership at the lookup: a valid event whose session id is owned by another tenant is refused, dropped and audited (cross-owner), through SessionAccessCheck.",
+  "layer": "interface",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.history.interfaces",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ServiceCredentialVerifier",
+        "task_id": "T2-068"
+      },
+      {
+        "type": "HistoryEventBuffer",
+        "task_id": "T2-069"
+      },
+      {
+        "type": "SessionAccessCheck",
+        "task_id": "T2-014"
+      },
+      {
+        "type": "AuditPort",
+        "task_id": "T2-007"
+      },
+      {
+        "type": "AuditEntry",
+        "task_id": "T2-006"
+      },
+      {
+        "type": "HistoryEntry",
+        "task_id": "T2-063"
+      },
+      {
+        "type": "HistoryBatch",
+        "task_id": "T2-064"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> consume(String serviceId, String secret, String sessionId, String turnId, String userId, String tenantId, int entrySequence, String toolSummary, int tokenCount)",
+        "returns": "Mono<Void>",
+        "semantics": "event dropped, never thrown, when credential or tenant check fails"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

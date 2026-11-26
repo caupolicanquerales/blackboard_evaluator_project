@@ -1,0 +1,63 @@
+{
+  "id": "T2-069",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-069",
+    "T0-001",
+    "T2-064",
+    "T2-067"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/history/interfaces/HistoryEventBuffer.java",
+  "export": "HistoryEventBuffer",
+  "intent": "HistoryEventBuffer discharges PB-15 bounded-buffer: Sinks.many().multicast().onBackpressureBuffer(capacity, false) sized by chat.history.buffer.capacity (1,024), bounded emit retry, FAIL_OVERFLOW rejected and counted by chat.history.dropped. A SmartLifecycle subscription drains batches into the pinned HistoryAppender and is disposed on shutdown; offer returns false on overflow.",
+  "layer": "interface",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.history.interfaces",
+    "implements": [
+      "SmartLifecycle"
+    ],
+    "dependencies": [
+      {
+        "type": "HistoryAppender",
+        "task_id": "T2-067"
+      },
+      {
+        "type": "HistoryBatch",
+        "task_id": "T2-064"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "boolean offer(HistoryBatch batch)",
+        "returns": "boolean",
+        "semantics": "false when the buffer is full; rejects null batch"
+      },
+      {
+        "signature": "void start()",
+        "returns": ""
+      },
+      {
+        "signature": "void stop()",
+        "returns": ""
+      },
+      {
+        "signature": "boolean isRunning()",
+        "returns": "boolean",
+        "semantics": "true while the drain subscription is active; false before start and after stop"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.history.buffer.capacity",
+        "kind": "value",
+        "value": 1024
+      }
+    ]
+  }
+}

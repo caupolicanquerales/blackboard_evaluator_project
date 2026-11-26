@@ -28,6 +28,7 @@ import tempfile
 from pathlib import Path
 
 import settings
+import stacks
 import task_queue
 import tasks
 import test_gate
@@ -77,7 +78,7 @@ STACKS = {
         # ancestor-or-self of every other main-source package, UNLESS the entry spells
         # one of the row's coverage markers (scan/config directives). Stacks without
         # a package_regex row key (explicit module graphs) skip the rule.
-        "package_regex": r"^\s*package\s+([\w.]+)\s*;",
+        "package_regex": stacks.PACKAGE_MATCH,
         "coverage_markers": ("scanBasePackages", "basePackages", "ComponentScan"),
         # seed-002 rerun, 13:45 live shape: @SpringBootTest/@DataR2dbcTest-style tests
         # find the configuration by searching packages UPWARDS from the test class -
@@ -138,10 +139,11 @@ STACKS = {
     },
 }
 
-# Build markers whose ecosystem the pipeline knows: when one exists but no probe matched,
-# that is a scaffold defect, NOT an unknown stack - the log must say which.
-_ECOSYSTEM_MARKERS = ("pom.xml", "build.gradle", "build.gradle.kts", "package.json",
-                      "pyproject.toml", "setup.py", "requirements.txt", "go.mod", "Cargo.toml")
+# Build markers whose ecosystem the pipeline knows (the ONE toolchain registry,
+# stacks.ROWS, owns this list): when one exists but no assembly probe matched, that is
+# a scaffold defect, NOT an unknown stack - the log must say which.
+import stacks as _stacks
+_ECOSYSTEM_MARKERS = _stacks.BUILD_MARKERS
 
 
 def _read(path: Path) -> str:

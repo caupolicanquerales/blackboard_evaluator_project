@@ -1,0 +1,30 @@
+{
+  "id": "T1-037",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/orchestration/application/HistoryEntryViewTest.java",
+  "export": "HistoryEntryViewTest",
+  "intent": "HistoryEntryViewTest proves the read-only view record carries turn id, sequence, kind, content and token count, and rejects a null kind.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.application",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "HistoryEntryView(String turnId, int entrySequence, String kind, String content, int tokenCount)",
+        "returns": "",
+        "semantics": "rejects null turnId, kind and content"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

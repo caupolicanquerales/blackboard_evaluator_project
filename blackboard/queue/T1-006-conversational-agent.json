@@ -1,0 +1,30 @@
+{
+  "id": "T1-006",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/shared/AuditEntryTest.java",
+  "export": "AuditEntryTest",
+  "intent": "AuditEntryTest proves construction rejects null or blank actor, action, outcome and correlationId, and that occurredAt is kept as supplied.",
+  "layer": "domain",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.shared",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "AuditEntry(String actor, String action, String outcome, Instant occurredAt, String correlationId)",
+        "returns": "",
+        "semantics": "no argument may be null or blank"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

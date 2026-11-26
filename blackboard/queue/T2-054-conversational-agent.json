@@ -1,0 +1,37 @@
+{
+  "id": "T2-054",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-054",
+    "T0-001"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/memory/application/SummarizerConcurrencyGuard.java",
+  "export": "SummarizerConcurrencyGuard",
+  "intent": "PB-09 bounded-semaphore: caps concurrent summarizer calls with a Semaphore(int) sized by chat.memory.summarizer.max-concurrent (8), without blocking threads. The ninth concurrent call waits in a bounded buffer and never runs; the permit is released on success, error or cancel.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.memory.application",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "Mono<String> guarded(Mono<String> summarizerCall)",
+        "returns": "Mono<String>",
+        "semantics": "summarizerCall must be non-null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.memory.summarizer.max-concurrent",
+        "kind": "value",
+        "value": "8"
+      }
+    ]
+  }
+}

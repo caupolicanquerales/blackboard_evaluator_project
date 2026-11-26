@@ -1,0 +1,445 @@
+{
+  "schema_version": "1.0",
+  "report_type": "performance-spec",
+  "slug": "conversational-agent",
+  "metadata": {
+    "generated_at": "2026-11-26T11:00:00-03:00",
+    "agent": "agent-performance-architect",
+    "inputs": [
+      "blackboard/complete/execution-strategy-conversational-agent.json",
+      "blackboard/domain/domain-boundary-conversational-agent.json",
+      "blackboard/context-map/context-map-conversational-agent.json"
+    ],
+    "confidence": "medium"
+  },
+  "assumptions": [
+    {
+      "id": "PA-01",
+      "text": "Single-node baseline ceiling assumed; rates, message sizes and volumes are omitted by inputs.",
+      "source": "baseline rule"
+    }
+  ],
+  "workload": {
+    "entries": [
+      {
+        "id": "WB-01",
+        "surface": "create chat session HTTP inbound",
+        "driver": "Low rate, tiny payload, one ChatSession row per call, per PA-01",
+        "data": ["ChatSession"]
+      },
+      {
+        "id": "WB-02",
+        "surface": "send message SSE HTTP inbound",
+        "driver": "Long-lived stream, at most 5 tool calls, 30-second turn, per PA-01",
+        "data": ["ChatSession", "Turn"]
+      },
+      {
+        "id": "WB-03",
+        "surface": "reload chat history HTTP inbound",
+        "driver": "Read-heavy, one ownership lookup plus one bounded page, per PA-01",
+        "data": ["ChatSession", "HistoryEntry"]
+      },
+      {
+        "id": "WB-04",
+        "surface": "context window query internal call",
+        "driver": "One call per turn start, 12 messages plus summary, 16,000 tokens",
+        "data": ["ContextMessage", "RollingSummary"]
+      },
+      {
+        "id": "WB-05",
+        "surface": "turn completed memory consumer",
+        "driver": "One event per completed turn, at-least-once, summarizer call each, per PA-01",
+        "data": ["RollingSummary", "ContextMessage"]
+      },
+      {
+        "id": "WB-06",
+        "surface": "turn completed history consumer",
+        "driver": "One event per turn, two appended entries, at-least-once, per PA-01",
+        "data": ["HistoryEntry", "TokenUsageRecord"]
+      },
+      {
+        "id": "WB-07",
+        "surface": "tool called history consumer",
+        "driver": "Up to 5 events per turn, one appended entry each, per PA-01",
+        "data": ["HistoryEntry"]
+      },
+      {
+        "id": "WB-08",
+        "surface": "history reload query internal call",
+        "driver": "One keyset page per reload, ordered by turn and sequence, per PA-01",
+        "data": ["HistoryEntry"]
+      }
+    ],
+    "surfaces_exempt": []
+  },
+  "budgets": [
+    {
+      "id": "PB-01",
+      "target": "Tool calls per turn",
+      "limit": "At most 5 per turn, bound to configuration",
+      "capability": "bounded-attempts",
+      "measurement": {
+        "kind": "deterministic-count",
+        "assertion": "Sixth tool call is refused; turn ends cleanly with limit notice"
+      }
+    },
+    {
+      "id": "PB-02",
+      "target": "Turn duration ceiling",
+      "limit": "30 seconds, bound to configuration",
+      "capability": "timeout-budget",
+      "measurement": {
+        "kind": "config-key",
+        "assertion": "Turn timeout read from a bounded key; value equals 30 seconds"
+      }
+    },
+    {
+      "id": "PB-03",
+      "target": "Concurrent active turns",
+      "limit": "At most 64 overall, 1 per session, per PA-01",
+      "capability": "bounded-semaphore",
+      "measurement": {
+        "kind": "status-code",
+        "assertion": "Excess turn start answered 429; no waiter queued"
+      }
+    },
+    {
+      "id": "PB-04",
+      "target": "Inbound message body size",
+      "limit": "At most 32 KiB, per PA-01",
+      "capability": "payload-limit",
+      "measurement": {
+        "kind": "payload-size",
+        "assertion": "Body above limit answered 413 before any model call"
+      }
+    },
+    {
+      "id": "PB-05",
+      "target": "Session creation and message send admission",
+      "limit": "At most 30 requests per user per window, per PA-01",
+      "capability": "rate-limit",
+      "measurement": {
+        "kind": "status-code",
+        "assertion": "Request above limit answered 429"
+      }
+    },
+    {
+      "id": "PB-06",
+      "target": "Token stream buffer per client",
+      "limit": "At most 256 pending chunks, per PA-01",
+      "capability": "bounded-buffer",
+      "measurement": {
+        "kind": "queue-depth",
+        "assertion": "Slow consumer never exceeds 256 queued chunks; overflow ends stream"
+      }
+    },
+    {
+      "id": "PB-07",
+      "target": "Orchestration store connections",
+      "limit": "At most 10 connections, per PA-01",
+      "capability": "pool-limit",
+      "measurement": {
+        "kind": "config-key",
+        "assertion": "Pool maximum read from a bounded key; value equals 10"
+      }
+    },
+    {
+      "id": "PB-08",
+      "target": "Context window size",
+      "limit": "12 full messages plus summary, at most 16,000 tokens",
+      "capability": "payload-limit",
+      "measurement": {
+        "kind": "deterministic-count",
+        "assertion": "Window holds at most 12 messages and 16,000 tokens"
+      }
+    },
+    {
+      "id": "PB-09",
+      "target": "Concurrent summarizer model calls",
+      "limit": "At most 8 in flight, per PA-01",
+      "capability": "bounded-semaphore",
+      "measurement": {
+        "kind": "deterministic-count",
+        "assertion": "Ninth concurrent summarization waits in bounded buffer, never runs"
+      }
+    },
+    {
+      "id": "PB-10",
+      "target": "Summary refresh attempts per event",
+      "limit": "At most 3 attempts, idempotent by session and turn",
+      "capability": "bounded-attempts",
+      "measurement": {
+        "kind": "deterministic-count",
+        "assertion": "Failing summarizer invoked exactly 3 times, then given up"
+      }
+    },
+    {
+      "id": "PB-11",
+      "target": "Context window query wait for pending summary",
+      "limit": "Bounded by remaining turn timeout, then last committed summary",
+      "capability": "timeout-budget",
+      "measurement": {
+        "kind": "config-key",
+        "assertion": "Wait limit derived from the turn timeout key, no separate value"
+      }
+    },
+    {
+      "id": "PB-12",
+      "target": "Memory event buffer",
+      "limit": "At most 1,024 pending events, per PA-01",
+      "capability": "bounded-buffer",
+      "measurement": {
+        "kind": "queue-depth",
+        "assertion": "Buffer never exceeds 1,024; overflow rejected with counter"
+      }
+    },
+    {
+      "id": "PB-13",
+      "target": "Memory store connections",
+      "limit": "At most 10 connections, per PA-01",
+      "capability": "pool-limit",
+      "measurement": {
+        "kind": "config-key",
+        "assertion": "Pool maximum read from a bounded key; value equals 10"
+      }
+    },
+    {
+      "id": "PB-14",
+      "target": "History reload page size",
+      "limit": "At most 50 entries per page, keyset order",
+      "capability": "page-size-limit",
+      "measurement": {
+        "kind": "deterministic-count",
+        "assertion": "Page never returns more than 50 entries; larger request clamped"
+      }
+    },
+    {
+      "id": "PB-15",
+      "target": "History event buffer",
+      "limit": "At most 1,024 pending events, per PA-01",
+      "capability": "bounded-buffer",
+      "measurement": {
+        "kind": "queue-depth",
+        "assertion": "Buffer never exceeds 1,024; overflow rejected with counter"
+      }
+    },
+    {
+      "id": "PB-16",
+      "target": "History append attempts per event",
+      "limit": "At most 3 attempts, duplicate identity is no-op",
+      "capability": "idempotent-retry",
+      "measurement": {
+        "kind": "deterministic-count",
+        "assertion": "Redelivered event adds zero rows; failing append tried 3 times"
+      }
+    },
+    {
+      "id": "PB-17",
+      "target": "History store connections",
+      "limit": "At most 10 connections, per PA-01",
+      "capability": "pool-limit",
+      "measurement": {
+        "kind": "config-key",
+        "assertion": "Pool maximum read from a bounded key; value equals 10"
+      }
+    },
+    {
+      "id": "PB-18",
+      "target": "Queries per request on ownership-checked reads",
+      "limit": "At most 2 store queries per reload request",
+      "capability": "batch-load",
+      "measurement": {
+        "kind": "query-count",
+        "assertion": "Reload issues one ownership query and one page query"
+      }
+    }
+  ],
+  "invariants": [
+    {
+      "id": "PI-01",
+      "rule": "No unbounded queue or buffer on any path",
+      "capability": "bounded-buffer"
+    },
+    {
+      "id": "PI-02",
+      "rule": "Saturation answered with rejection status, never silently absorbed",
+      "capability": "rate-limit",
+      "owner_context": "Chat Session & Turn Orchestration"
+    },
+    {
+      "id": "PI-03",
+      "rule": "Redelivery and retries bounded; duplicate identity never adds rows",
+      "capability": "idempotent-retry",
+      "owner_context": "Chat History Log"
+    },
+    {
+      "id": "PI-04",
+      "rule": "Streaming applies backpressure; event-loop threads never wait",
+      "capability": "backpressure",
+      "owner_context": "Chat Session & Turn Orchestration"
+    }
+  ],
+  "duties": [
+    {
+      "spec_ref": "PB-01",
+      "obligation": "Count tool calls per turn; refuse beyond 5",
+      "capability": "bounded-attempts",
+      "unit_kind": "retry-policy",
+      "owner_context": "Chat Session & Turn Orchestration"
+    },
+    {
+      "spec_ref": "PB-02",
+      "obligation": "Cancel turn at configured 30-second ceiling",
+      "capability": "timeout-budget",
+      "unit_kind": "timeout-policy",
+      "owner_context": "Chat Session & Turn Orchestration"
+    },
+    {
+      "spec_ref": "PB-03",
+      "obligation": "Cap active turns; reject excess with 429",
+      "capability": "bounded-semaphore",
+      "unit_kind": "concurrency-guard",
+      "owner_context": "Chat Session & Turn Orchestration",
+      "covers": ["WB-02"]
+    },
+    {
+      "spec_ref": "PB-04",
+      "obligation": "Reject oversized body with 413 up front",
+      "capability": "payload-limit",
+      "unit_kind": "admission-control",
+      "owner_context": "Chat Session & Turn Orchestration"
+    },
+    {
+      "spec_ref": "PB-05",
+      "obligation": "Limit requests per user; reject excess with 429",
+      "capability": "rate-limit",
+      "unit_kind": "rate-limit-policy",
+      "owner_context": "Chat Session & Turn Orchestration",
+      "covers": ["PI-02", "WB-01"]
+    },
+    {
+      "spec_ref": "PB-06",
+      "obligation": "Bound stream buffer; apply backpressure to producers",
+      "capability": "bounded-buffer",
+      "unit_kind": "resource-ceiling",
+      "owner_context": "Chat Session & Turn Orchestration",
+      "covers": ["PI-01", "PI-04"]
+    },
+    {
+      "spec_ref": "PB-07",
+      "obligation": "Cap store connections for this context",
+      "capability": "pool-limit",
+      "unit_kind": "resource-ceiling",
+      "owner_context": "Chat Session & Turn Orchestration"
+    },
+    {
+      "spec_ref": "PB-08",
+      "obligation": "Cap window at 12 messages and 16,000 tokens",
+      "capability": "payload-limit",
+      "unit_kind": "resource-ceiling",
+      "owner_context": "Conversation Memory",
+      "covers": ["WB-04"]
+    },
+    {
+      "spec_ref": "PB-09",
+      "obligation": "Cap concurrent summarizer calls at 8",
+      "capability": "bounded-semaphore",
+      "unit_kind": "concurrency-guard",
+      "owner_context": "Conversation Memory"
+    },
+    {
+      "spec_ref": "PB-10",
+      "obligation": "Retry summary refresh at most 3 times",
+      "capability": "bounded-attempts",
+      "unit_kind": "retry-policy",
+      "owner_context": "Conversation Memory",
+      "covers": ["WB-05"]
+    },
+    {
+      "spec_ref": "PB-11",
+      "obligation": "Bound window query wait by remaining turn timeout",
+      "capability": "timeout-budget",
+      "unit_kind": "timeout-policy",
+      "owner_context": "Conversation Memory"
+    },
+    {
+      "spec_ref": "PB-12",
+      "obligation": "Bound memory event buffer; reject overflow with counter",
+      "capability": "bounded-buffer",
+      "unit_kind": "resource-ceiling",
+      "owner_context": "Conversation Memory"
+    },
+    {
+      "spec_ref": "PB-13",
+      "obligation": "Cap store connections for this context",
+      "capability": "pool-limit",
+      "unit_kind": "resource-ceiling",
+      "owner_context": "Conversation Memory"
+    },
+    {
+      "spec_ref": "PB-14",
+      "obligation": "Clamp page size to 50 in keyset order",
+      "capability": "page-size-limit",
+      "unit_kind": "pagination-rule",
+      "owner_context": "Chat History Log",
+      "covers": ["WB-03", "WB-08"]
+    },
+    {
+      "spec_ref": "PB-15",
+      "obligation": "Bound history event buffer; reject overflow with counter",
+      "capability": "bounded-buffer",
+      "unit_kind": "resource-ceiling",
+      "owner_context": "Chat History Log",
+      "covers": ["WB-06", "WB-07"]
+    },
+    {
+      "spec_ref": "PB-16",
+      "obligation": "Retry appends at most 3 times; dedupe by identity",
+      "capability": "idempotent-retry",
+      "unit_kind": "retry-policy",
+      "owner_context": "Chat History Log",
+      "covers": ["PI-03"]
+    },
+    {
+      "spec_ref": "PB-17",
+      "obligation": "Cap store connections for this context",
+      "capability": "pool-limit",
+      "unit_kind": "resource-ceiling",
+      "owner_context": "Chat History Log"
+    },
+    {
+      "spec_ref": "PB-18",
+      "obligation": "Reload uses at most 2 store queries",
+      "capability": "batch-load",
+      "unit_kind": "batch-policy",
+      "owner_context": "Chat History Log"
+    }
+  ],
+  "risks": [
+    {
+      "id": "R-01",
+      "risk": "Overflowing event buffers may reject events, losing history entries",
+      "mitigation": "PB-15",
+      "residual": "Rejected events counted; no replay source beyond redelivery"
+    },
+    {
+      "id": "R-02",
+      "risk": "Message size, summary length and retention unspecified by inputs",
+      "mitigation": "accepted: baseline limits per PA-01",
+      "residual": "Real traffic may need larger limits; history growth unbounded"
+    },
+    {
+      "id": "R-03",
+      "risk": "External model latency cannot be bounded by the environment",
+      "mitigation": "PB-02",
+      "residual": "Turns near ceiling hold concurrency slots until cancelled"
+    },
+    {
+      "id": "R-04",
+      "risk": "Tool side effects persist when a turn is cut at a limit",
+      "mitigation": "accepted: limits stop further calls only",
+      "residual": "Completed tool effects are not undone"
+    }
+  ],
+  "open_questions": []
+}

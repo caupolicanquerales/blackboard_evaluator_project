@@ -1,0 +1,15 @@
+{
+  "id": "T3-030",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-030"
+  ],
+  "kind": "refactor",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/domain/ChatSession.java",
+  "export": "ChatSession",
+  "intent": "Refactor ChatSession: keep the tabled contract and the paired tests green; no behavior, status, meter or route change.",
+  "layer": "domain",
+  "feature": null,
+  "project": "conversational-agent"
+}

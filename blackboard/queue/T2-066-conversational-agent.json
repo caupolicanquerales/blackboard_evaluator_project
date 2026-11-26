@@ -1,0 +1,71 @@
+{
+  "id": "T2-066",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-066",
+    "T0-001",
+    "T0-002",
+    "T2-063",
+    "T2-065"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/history/infrastructure/R2dbcHistoryStore.java",
+  "export": "R2dbcHistoryStore",
+  "intent": "R2dbcHistoryStore implements HistoryStore over DatabaseClient. SI-05 append-only-history: insert-only, no update or delete member. SI-07 tenant-scoped-query: byIdAndTenant binds tenantId as a parameter on the lookup, never concatenated. PB-14 page-size-limit: every list query binds LIMIT :limit from chat.history.page.size, clamped to chat.history.page.max. PB-17 pool-limit: spring.r2dbc.pool.max-size is 10. Duplicate key is a no-op returning false.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.history.infrastructure",
+    "implements": [
+      "HistoryStore"
+    ],
+    "dependencies": [
+      {
+        "type": "HistoryStore",
+        "task_id": "T2-065"
+      },
+      {
+        "type": "HistoryEntry",
+        "task_id": "T2-063"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Boolean> append(HistoryEntry entry, String tenantId)",
+        "returns": "Mono<Boolean>",
+        "semantics": "true when the row was inserted; false for a duplicate identity (nothing written)"
+      },
+      {
+        "signature": "Mono<Boolean> appendUsage(String sessionId, String turnId, String tenantId, int promptTokens, int completionTokens)",
+        "returns": "Mono<Boolean>",
+        "semantics": "true when the usage row was inserted; false when the session id + turn id already has one (duplicate)"
+      },
+      {
+        "signature": "Flux<HistoryEntry> byIdAndTenant(String sessionId, String tenantId, String afterTurnId, int afterSequence, int limit)",
+        "returns": "Flux<HistoryEntry>",
+        "semantics": "limit clamped to chat.history.page.max (50)"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.history.page.size",
+        "kind": "value",
+        "value": 50
+      },
+      {
+        "path": "chat.history.page.max",
+        "kind": "value",
+        "value": 50
+      },
+      {
+        "path": "spring.r2dbc.pool.max-size",
+        "kind": "value",
+        "value": 10
+      }
+    ]
+  }
+}

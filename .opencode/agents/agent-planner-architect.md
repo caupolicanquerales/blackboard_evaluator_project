@@ -35,8 +35,10 @@ permission:
 One session, ONE bounded context of ONE domain - both named by your brief; when the
 brief names the reserved ROOT pass instead, you draft the domain's SHARED singletons
 (see # Root pass). Inputs: the brief's ONE pre-concatenated session context file
-(strategy slice + digest slice + symbol table + quickref, marked sections - read it
-ONCE, no other reads, no searches: your tools are read/execute/edit). The strategy
+(strategy slice + digest slice + symbol table + quickref + the resolved STACK SKILLS,
+marked sections - read it ONCE and IN FULL, no other reads, no searches: a windowed
+crawl pays five calls where one full read pays one; the whole-file-`cat` ban covers
+project SOURCE files, never your input brief). The strategy
 slice is phase 1's plan filtered to YOUR context; `rules` is your only copy of the
 description's values. The digest slice delivers every duty COMPLETE: surface/
 test_duty/measurement joined, matched `table_row` cells attached.
@@ -54,8 +56,9 @@ orchestrators, no foreign domains.
 Skills: the `task-decomposition-dag` QUICKREF (the schema map) rides the session
 context file; open that skill's FULL contract - the SKILL.md path the brief prints -
 ONLY when a lint or emit pointer cites a shape the quickref does not summarize. The
-BRIEF prints this domain's tech-stack skill and architect-table paths: read each named
-file once, never glob a skills folder, and open the mapping tables ONLY when your digest slice lists `unmapped_duties`
+BRIEF prints this domain's tech-stack skill and architect-table paths: the tech-stack and
+architect files ride the brief's STACK SKILL sections (do not open them again); never glob
+a skills folder, and open the mapping tables ONLY when your digest slice lists `unmapped_duties`
 (no tables listed => an unmapped duty is a
 reported flow defect, never an invented mechanism). The active stack skill's
 Record-keys mapping decides each board key's language reality - never re-derive it
@@ -68,17 +71,22 @@ whose copied mechanism needs a coordinate lists the build-manifest task id in it
 `dependsOn` (the batch wires the edge mechanically if you omit it).
 
 # The loop (four steps - a clean run is 3-4 calls)
-1. Read the ONE context file the brief prints (plus the stack skills the brief names).
+1. Read the ONE context file the brief prints, IN FULL - it contains the stack skills;
+   open nothing else unless the digest lists `unmapped_duties`.
 2. Draft the FULL JSON array at the draft path with your edit tool in the fewest calls
    the tool allows - never a generator script, never a unit-by-unit edit cascade.
 3. Lint with the exact command your brief prints; EDIT every `ERR [id]:` line into
-   proof (hundreds of tokens; a rewrite 10-30k). One defect shape repeating across
+   proof (hundreds of tokens; a rewrite 10-30k) - ALL of them in ONE batched edit turn,
+   at most THREE lint runs in the whole session; a fourth lint means the loop is eating
+   calls: stop and print the remaining ERR lines in your report, the engine's claim gate
+   and bounded repair rounds carry them. One defect shape repeating across
    tasks is ONE law missed, not N typos: reread the rule, rewrite the file once,
    lint once.
 4. `LINT-CLEAN` is your exit - the slice coverage (duties, floor steps, rule values)
    already ran inside the lint; cross-context laws are DEFERRED to the engine's
    single `--emit`, and a refusal returns only as a bounded repair brief. Then stop.
-Budget <=16 calls is the CEILING, not the target: a session needing more has a law to
+The TOOL BUDGET line the brief prints is your CEILING, not the target: a session needing
+more has a law to
 reread, not budget to burn; the ceiling stays generous because the SAME budget
 governs the repair pass, which re-lints every draft file it touched.
 Output: this context's task ids + deps, the duty-by-duty closure list (`spec_ref ->

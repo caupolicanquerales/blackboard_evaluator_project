@@ -1,0 +1,73 @@
+{
+  "id": "T2-072",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-072",
+    "T0-001",
+    "T2-063",
+    "T2-065",
+    "T2-014",
+    "T2-006",
+    "T2-007"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/history/application/HistoryReloadQuery.java",
+  "export": "HistoryReloadQuery",
+  "intent": "Unit IS the surface 'history reload query internal call': read-only keyset-ordered entries of a session. PB-18 batch-load: one SessionAccessCheck ownership query then one byIdAndTenant page query on the pinned HistoryStore, rows grouped by Reactor bufferTimeout(chat.history.reload.batch-size, chat.history.reload.batch-timeout). Audits history reloaded through AuditPort. The published Flux<HistoryEntry> is consumed by downstream subscribers (out-of-process internal callers of the reload call).",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.history.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "HistoryStore",
+        "task_id": "T2-065"
+      },
+      {
+        "type": "SessionAccessCheck",
+        "task_id": "T2-014"
+      },
+      {
+        "type": "AuditPort",
+        "task_id": "T2-007"
+      },
+      {
+        "type": "AuditEntry",
+        "task_id": "T2-006"
+      },
+      {
+        "type": "HistoryEntry",
+        "task_id": "T2-063"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Flux<HistoryEntry> reload(String sessionId, String userId, String tenantId, String afterTurnId, int afterSequence, int pageSize)",
+        "returns": "Flux<HistoryEntry>",
+        "semantics": "pageSize clamped to at most 50; rejects blank sessionId, userId or tenantId"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.history.reload.batch-size",
+        "kind": "value",
+        "value": 50
+      },
+      {
+        "path": "chat.history.reload.batch-timeout",
+        "kind": "value",
+        "value": "PT0.05S"
+      }
+    ]
+  },
+  "observability": {
+    "step_logs": [
+      "history reloaded"
+    ]
+  }
+}

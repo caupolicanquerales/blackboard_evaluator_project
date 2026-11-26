@@ -1,0 +1,40 @@
+{
+  "id": "T2-042",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-042",
+    "T0-001"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/application/TurnConcurrencyGuard.java",
+  "export": "TurnConcurrencyGuard",
+  "intent": "TurnConcurrencyGuard discharges PB-03 bounded-semaphore concurrency-guard: a non-blocking Semaphore(int) tryAcquire around the turn start, permits from chat.turn.max-concurrent-turns; false means the caller answers 429, no waiter queued.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.application",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "boolean tryAcquire()",
+        "returns": "boolean",
+        "semantics": "true when a permit was taken; false when none is free, the caller answers 429"
+      },
+      {
+        "signature": "void release()",
+        "returns": ""
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.turn.max-concurrent-turns",
+        "kind": "value"
+      }
+    ]
+  }
+}

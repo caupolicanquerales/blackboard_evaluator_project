@@ -1,0 +1,30 @@
+{
+  "id": "T1-030",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/orchestration/domain/ChatSessionTest.java",
+  "export": "ChatSessionTest",
+  "intent": "ChatSessionTest proves a session carries exactly one owner user id and tenant id, rejects blank ids, and that ownership is immutable: no accessor or copy method can change the owner or tenant.",
+  "layer": "domain",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.domain",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "ChatSession(String sessionId, String ownerUserId, String tenantId, Instant createdAt, long version)",
+        "returns": "",
+        "semantics": "rejects null or blank sessionId, ownerUserId and tenantId"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

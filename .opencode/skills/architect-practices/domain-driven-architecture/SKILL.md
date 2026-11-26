@@ -5,7 +5,7 @@ description: "Use when the architect agent translates blackboard/domain-boundary
 # Input
 Per domain read `blackboard/domain/domain-boundary-<slug>.json` + `blackboard/context-map/context-map-<slug>.json` via the reader (validate first; non-zero => stop+report; never re-run discovery/mapping):
 the `read-write-file-ddd` reader, run with `--report <file> --expect any --validate-only`
-Slice: subdomain, bounded_contexts[{invariants,source_of_truth,publishes,consumes,actors,external_systems}], ubiquitous_language, assumptions. Map: relationships, cross_boundary_flows.consistency_expectation.
+Slice: subdomain, bounded_contexts[{invariants,source_of_truth,publishes,consumes,reads?,actors,external_systems}], ubiquitous_language, assumptions. publishes/consumes are asynchronous domain events; `reads` names synchronous query dependencies a context needs to do its own work - wire reads as direct ports/queries, never as event machinery. Map: relationships, cross_boundary_flows.consistency_expectation, and any read-after-event staleness posture the flow names - a posture the plan COMMITS to is a `rules` row {context, statement} naming its enforcing context, so it rides the digest to a unit that implements it; a `risks` row records an EXPOSURE the plan accepts, and an ordering guarantee parked there is enforced nowhere (a risk has no claiming unit - only rules and surfaces reach the planner).
 # Rules
 - One context => one logical module; never merge/split contexts or move invariants/source of truth; core = deepest model, generic = adapter+reuse; assumptions become explicit risks.
 - RULE VALUES TRAVEL WITH THE STRATEGY: every numeric bound, window length, limit and named

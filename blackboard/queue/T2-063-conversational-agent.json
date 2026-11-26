@@ -1,0 +1,31 @@
+{
+  "id": "T2-063",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-063",
+    "T0-001"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/history/domain/HistoryEntry.java",
+  "export": "HistoryEntry",
+  "intent": "HistoryEntry is the immutable history value: natural identity session id + turn id + entry sequence, kind user message|tool call|assistant reply, content, token count, recorded timestamp. Every entry carries a token count; blank identifiers, null kind or content and a negative count or sequence are refused. Pure Java, no framework types, never updated.",
+  "layer": "domain",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.history.domain",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "HistoryEntry(String sessionId, String turnId, int entrySequence, String kind, String content, int tokenCount, Instant recordedAt)",
+        "returns": "",
+        "semantics": "rejects blank sessionId/turnId, null kind/content/recordedAt, negative entrySequence or tokenCount"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

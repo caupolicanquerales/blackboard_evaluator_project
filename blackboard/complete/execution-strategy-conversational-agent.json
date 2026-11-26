@@ -1,0 +1,139 @@
+{
+  "slug": "conversational-agent",
+  "project_root": "/home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/ai-chat-agent-service/services/conversational-agent",
+  "tech_stack": {
+    "language": "Java 21",
+    "framework": "Spring Boot 3 (WebFlux)",
+    "ai": "Spring AI",
+    "build": "Maven wrapper (./mvnw)",
+    "persistence_access": "Spring Data R2DBC + Flyway (embedded H2 for boot/test only)",
+    "skill": "tech-stack/java-springboot3"
+  },
+  "topology": "modular monolith, hexagonal per module; one deployable, one composition root",
+  "bounded_contexts": [
+    "Chat Session & Turn Orchestration",
+    "Conversation Memory",
+    "Chat History Log"
+  ],
+  "modules": [
+    {"context": "Chat Session & Turn Orchestration", "name": "orchestration", "package": "com.blackboard.conversationalagent.orchestration", "depth": "core: richest model (ChatSession, Turn, ToolCall, TokenStream)"},
+    {"context": "Conversation Memory", "name": "memory", "package": "com.blackboard.conversationalagent.memory", "depth": "ContextWindow, RollingSummary"},
+    {"context": "Chat History Log", "name": "history", "package": "com.blackboard.conversationalagent.history", "depth": "append-only HistoryEntry, TokenUsage"},
+    {"context": "shared", "name": "shared", "package": "com.blackboard.conversationalagent.shared", "depth": "minimal shared kernel: published events (TurnCompleted, ToolCalled, TurnLimitReached, SummaryUpdated), correlation filter, config"}
+  ],
+  "layers": [
+    {"name": "domain", "rule": "pure Java; owns invariants; no framework annotations"},
+    {"name": "application", "rule": "use cases behind inbound ports; outbound ports (repositories, LlmGateway, ToolGateway, ContextWindowQuery, HistoryQuery, AuditTrail); no framework types"},
+    {"name": "infrastructure", "rule": "R2DBC adapters, Spring AI adapters (anticorruption layer), in-process event adapters, config"},
+    {"name": "interface", "rule": "WebFlux controllers (SSE), event consumers; imports application only; never exposes domain objects"},
+    {"name": "composition-root", "rule": "single @SpringBootApplication in base package com.blackboard.conversationalagent; wiring configuration units"}
+  ],
+  "module_layout": {
+    "base_package": "com.blackboard.conversationalagent",
+    "packages": [
+      "com.blackboard.conversationalagent.orchestration.{domain,application,infrastructure,interfaces}",
+      "com.blackboard.conversationalagent.memory.{domain,application,infrastructure,interfaces}",
+      "com.blackboard.conversationalagent.history.{domain,application,infrastructure,interfaces}",
+      "com.blackboard.conversationalagent.shared"
+    ],
+    "integration": [
+      "Orchestration -> Memory: async event TurnCompleted (customer-supplier); Memory -> Orchestration: synchronous ContextWindowQuery port read at turn start",
+      "Orchestration -> History: async events TurnCompleted and ToolCalled (conformist, History only appends); History -> Orchestration: synchronous HistoryQuery port read after ownership check",
+      "external LLM provider and Spring AI backend tools -> Orchestration and Memory: anticorruption layer in infrastructure adapters; no provider types leak inward",
+      "events are in-process, at-least-once, delivered over non-blocking Reactor sinks (onBackpressureBuffer(capacity,false)); reads are direct query ports, never event machinery"
+    ]
+  },
+  "build_order": [
+    "T0 scaffold (pom, wrapper, single composition root, test-profile activation, surefire timeout, Flyway runner + embedded H2 substitute)",
+    "shared: published events, correlation WebFilter, audit port",
+    "history: domain -> application ports -> infrastructure (migration, R2DBC adapter) -> consumers and query",
+    "memory: domain -> application ports -> infrastructure (migration, R2DBC adapter, LLM summarizer ACL) -> TurnCompleted consumer and query",
+    "orchestration: domain -> application (turn loop, limits) -> infrastructure (R2DBC session store, Spring AI LLM/tool ACL, event publishers) -> interface (SSE controller)",
+    "composition-root wiring configuration, observability config, integration slice with WebTestClient"
+  ],
+  "rules": [
+    {"context": "Chat Session & Turn Orchestration", "statement": "Every chat session belongs to a specific user and tenant; nobody can read or send messages into someone else's conversation (403 Forbidden)"},
+    {"context": "Chat Session & Turn Orchestration", "statement": "A turn makes at most 5 tool calls and lasts at most 30 seconds; on hitting either limit it stops cleanly and informs the user"},
+    {"context": "Chat Session & Turn Orchestration", "statement": "Streaming and LLM waits never block Netty event-loop threads"},
+    {"context": "Chat Session & Turn Orchestration", "statement": "Cap of 5 tool calls and 30-second timeout per message, stopping cleanly and telling the user"},
+    {"context": "Chat Session & Turn Orchestration", "statement": "Token Stream: The live SSE feed sending text chunks and status updates back to the client."},
+    {"context": "Conversation Memory", "statement": "The Context Window holds the last 12 messages in full detail and older messages only as a running summary, never exceeding the 16,000-token limit"},
+    {"context": "Conversation Memory", "statement": "Context Window: The recent messages (last 12 in full detail) plus a rolling summary sent to the model on each turn, within the 16,000-token limit."},
+    {"context": "Chat History Log", "statement": "History entries are append-only and each carries token counts"}
+  ],
+  "surfaces": [
+    {"name": "create chat session HTTP inbound", "kind": "http", "context": "Chat Session & Turn Orchestration", "method": "POST", "path": "/chat/sessions", "operations": ["create a Chat Session owned by the calling user and tenant"], "traced_from": "Chat Session & Turn Orchestration.in_scope: Session ownership by user and tenant"},
+    {"name": "send message SSE HTTP inbound", "kind": "http", "context": "Chat Session & Turn Orchestration", "method": "POST", "path": "/chat/sessions/{sessionId}/messages", "operations": ["run a Turn and stream the Token Stream over SSE (text chunks and tool status updates)", "403 Forbidden for a session of another user or tenant", "stop cleanly and inform the user at 5 tool calls or 30 seconds"], "traced_from": "Chat Session & Turn Orchestration.in_scope: Turn execution, Status updates, SSE streaming of tokens"},
+    {"name": "reload chat history HTTP inbound", "kind": "http", "context": "Chat Session & Turn Orchestration", "method": "GET", "path": "/chat/sessions/{sessionId}/history", "operations": ["reload past chat entries after ownership check (403 otherwise); delegates to the History query port"], "traced_from": "context-map: Chat History Log -> Orchestration reload of past chats"},
+    {"name": "context window query internal call", "kind": "internal-call", "context": "Conversation Memory", "operations": ["return the read-only current Context Window (last 12 messages + rolling summary, 16,000-token limit) for a session"], "traced_from": "context-map: Conversation Memory -> Orchestration synchronous query"},
+    {"name": "turn completed memory consumer", "kind": "consumer", "context": "Conversation Memory", "operations": ["consume TurnCompleted, update rolling summary idempotently by session id + turn id, publish SummaryUpdated"], "traced_from": "Conversation Memory.consumes: TurnCompleted"},
+    {"name": "turn completed history consumer", "kind": "consumer", "context": "Chat History Log", "operations": ["consume TurnCompleted, append user message and assistant reply entries with token counts"], "traced_from": "Chat History Log.consumes: TurnCompleted"},
+    {"name": "tool called history consumer", "kind": "consumer", "context": "Chat History Log", "operations": ["consume ToolCalled, append tool call entry with token counts"], "traced_from": "Chat History Log.consumes: ToolCalled"},
+    {"name": "history reload query internal call", "kind": "internal-call", "context": "Chat History Log", "operations": ["return read-only history entries of a session in keyset order; ownership already verified by Orchestration"], "traced_from": "context-map: Chat History Log -> Orchestration synchronous query"}
+  ],
+  "contexts_without_inbound": [],
+  "assumptions": [
+    {"id": "A1", "context": "Chat History Log", "statement": "RESOLVED idempotency: delivery is at-least-once; the dedup discriminator is the natural identity (session id + turn id + entry sequence within the turn). The mutable message payload is excluded from identity. Outcome per resend class: same identity = repeat, no-op (no second row, even when payload differs); new identity = new fact, appended. A client retry of POST message with a new turn id is a new turn. Invariant owner: Chat History Log (unique constraint plus append-only domain rule)."},
+    {"id": "A2", "context": "Memory / Orchestration", "statement": "RESOLVED TurnLimitReached: Candidate B. The user-visible notice travels in the Token Stream and in the final assistant reply carried by TurnCompleted; TurnLimitReached is internal, observability-only (metric and step log), with no subscriber and no history schema of its own."},
+    {"id": "A3", "context": "Conversation Memory", "statement": "RESOLVED SummaryUpdated: Candidate B. No subscriber; serialization is internal to Memory: the Context Window query for a session waits until the pending TurnCompleted for that session is applied, bounded by the remaining 30-second turn timeout, after which the last committed summary is served (last 12 messages stay fresh). SummaryUpdated is observability-only."},
+    {"id": "A4", "context": "all", "statement": "Tenant/role model, message size, summary length and history retention are unspecified and left unbounded; no values invented."},
+    {"id": "A5", "context": "all", "statement": "No Spring AI version, LLM provider or authentication scheme is named by the description; the user and tenant identity of the caller arrives as a trusted principal resolved by the security phase."}
+  ],
+  "risks": [
+    "Staleness posture (map): next turn of the same session is serialized behind the previous TurnCompleted application in Memory; summary freshness may lag only beyond the 30-second budget",
+    "History reload is eventual: a just-finished turn may be briefly missing",
+    "Event/query loop Orchestration <-> Memory is deliberate; no shared model",
+    "Blocking LLM or R2DBC calls on Netty event-loop threads would violate the non-blocking rule; all adapters reactive",
+    "Duplicate history rows under retried delivery unless A1 identity is enforced by a unique key",
+    "Unbounded quantities (A4) risk model-context overflow on very large single messages; 16,000-token limit enforced by Memory",
+    "Timeouts and caps (5 tool calls, 30 seconds, 12 messages, 16,000 tokens) must be bound to config keys, not hardcoded",
+    "Tool calls with side effects are not undone when a turn is cut at a limit"
+  ],
+  "persistence": {
+    "drivers": ["append-only audit and history of every user message, tool call and assistant reply", "reload of past chats and usage tracking via token counts", "session ownership checks must be strongly consistent", "one rolling summary per session"],
+    "storage_paradigm": {"primary": "relational (one logical store, one table group per context, no cross-context joins)", "derived": "none", "rejected": ["document (no need for flexible shape)", "log/stream store (adds an engine without measured need)"], "change_conditions": "measured history volume exceeding relational capacity"},
+    "data_model": [
+      {"concept": "ChatSession", "context": "Chat Session & Turn Orchestration", "key": "session id", "attributes": ["owner user id", "tenant id", "created timestamp"], "invariants": "belongs to exactly one user and tenant; immutable ownership", "versioning": "optimistic version", "sensitivity": "identifiers; personal data classification by security phase"},
+      {"concept": "Turn", "context": "Chat Session & Turn Orchestration", "key": "turn id; session id by reference", "attributes": ["state", "tool call count", "started timestamp"], "invariants": "at most 5 tool calls and 30 seconds", "versioning": "optimistic version"},
+      {"concept": "RollingSummary", "context": "Conversation Memory", "key": "session id by reference", "attributes": ["summary text", "last applied turn id", "token count"], "invariants": "context window never exceeds 16,000 tokens; last 12 messages in full", "versioning": "optimistic version", "sensitivity": "conversation content"},
+      {"concept": "ContextMessage", "context": "Conversation Memory", "key": "session id + turn id + sequence", "attributes": ["role", "content", "token count"], "invariants": "only the last 12 held in full detail", "sensitivity": "conversation content"},
+      {"concept": "HistoryEntry", "context": "Chat History Log", "key": "session id + turn id + entry sequence (natural identity, unique)", "attributes": ["kind user message|tool call|assistant reply", "content", "token count", "recorded timestamp"], "invariants": "append-only, never updated or deleted; each carries token counts", "versioning": "none (immutable)", "sensitivity": "conversation content; retention unspecified"},
+      {"concept": "TokenUsageRecord", "context": "Chat History Log", "key": "session id + turn id", "attributes": ["prompt tokens", "completion tokens", "tenant id"], "invariants": "append-only usage tracking"},
+      {"concept": "AuditTrailEntry", "context": "shared", "key": "audit id", "attributes": ["actor", "action", "outcome", "timestamp", "correlation id"], "invariants": "append-only"}
+    ],
+    "queries": [
+      "session by id and owner/tenant (strong, per request)",
+      "context window of session: last 12 messages + summary (strong per session, bounded)",
+      "history of session in keyset order by turn id and sequence, bounded page size (bounded staleness)",
+      "token usage per tenant (operator, bounded)"
+    ],
+    "migration_plan": "Flyway, ordered, expand-only V<n>__snake_case.sql scripts under src/main/resources/db/migration, runner configured in src/main/resources/application.yml with spring.flyway.locations classpath:db/migration; distinct JDBC and R2DBC URL placeholders; rollback by forward-fix; embedded H2 only under the test profile",
+    "backup_recovery": "operator-owned periodic backup of the primary store with restore test; history is the only irrecoverable concept; sessions and summaries are rebuildable from history in part",
+    "open_questions": ["history retention and archive policy unspecified", "tenant model and message size bounds unspecified"]
+  },
+  "observability": {
+    "step_logs": {
+      "Chat Session & Turn Orchestration": ["session ownership verified", "turn started", "tool call started", "tool call finished", "turn limit reached", "turn completed", "token stream closed"],
+      "Conversation Memory": ["turn completed event received", "summary refreshed", "context window served"],
+      "Chat History Log": ["history entry appended", "duplicate entry ignored", "history reloaded"]
+    },
+    "correlation_key": "requestId",
+    "uncounted_steps": [
+      {"step": "session ownership verified", "reason": "counted through chat.access.denied on refusal; the permitted path is covered by chat.turn.completed"},
+      {"step": "context window served", "reason": "read-only query served inside the turn, timed by chat.turn.duration"},
+      {"step": "duplicate entry ignored", "reason": "benign no-op under at-least-once delivery; recorded as a step log only"}
+    ],
+    "audit_trail": {"records": ["actor", "action", "outcome", "timestamp", "correlationId"], "actions": ["session created", "message sent", "session access denied", "turn limit reached", "history reloaded"]},
+    "metrics": [
+      {"name": "chat.turn.completed", "type": "counter", "tags": ["outcome"]},
+      {"name": "chat.turn.duration", "type": "timer", "tags": ["outcome"]},
+      {"name": "chat.tool.calls", "type": "counter", "tags": ["status"]},
+      {"name": "chat.turn.limit.reached", "type": "counter", "tags": ["limit"]},
+      {"name": "chat.access.denied", "type": "counter", "tags": []},
+      {"name": "chat.memory.summary.refreshed", "type": "counter", "tags": ["outcome"]},
+      {"name": "chat.history.appended", "type": "counter", "tags": ["kind"]},
+      {"name": "chat.tokens.used", "type": "counter", "tags": ["direction"]}
+    ],
+    "export": {"schema": "ecs", "sink": "local append-only rolling JSON-lines log file (logs/conversational-agent.log) shipped by an external collector; metrics via actuator only, no push or scrape target named; no hard runtime dependency on any external tool, boot test passes with it absent", "log_correlation": "micrometer context-propagation with Hooks.enableAutomaticContextPropagation(); correlationId also a field of each audit record"}
+  }
+}

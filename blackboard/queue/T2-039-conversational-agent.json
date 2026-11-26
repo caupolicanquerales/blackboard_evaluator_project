@@ -1,0 +1,36 @@
+{
+  "id": "T2-039",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-039",
+    "T0-001",
+    "T2-022"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/application/ContextWindowQuery.java",
+  "export": "ContextWindowQuery",
+  "intent": "ContextWindowQuery is the synchronous read port into Conversation Memory called at turn start: the session's Context Window entries (rolling summary then recent messages); a direct query, never event machinery.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ContextEntry",
+        "task_id": "T2-022"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Flux<ContextEntry> window(String sessionId)",
+        "returns": "Flux<ContextEntry>"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

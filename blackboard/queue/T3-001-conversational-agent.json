@@ -1,0 +1,15 @@
+{
+  "id": "T3-001",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-001"
+  ],
+  "kind": "refactor",
+  "path": "src/main/resources/application.yml",
+  "export": "application.yml",
+  "intent": "Refactor application.yml: keep the tabled contract and the paired tests green; no behavior, status, meter or route change.",
+  "layer": "root",
+  "feature": null,
+  "project": "conversational-agent"
+}

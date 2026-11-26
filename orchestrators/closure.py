@@ -22,6 +22,7 @@ import tempfile
 from pathlib import Path
 
 import settings
+import stacks
 import task_queue
 import tasks
 import test_gate
@@ -33,7 +34,7 @@ MAX_REPORT = 6
 def _imported_classes(test_file: Path):
     """(class_name, package) pairs imported from the test file's own root package."""
     text = test_file.read_text(encoding="utf-8", errors="ignore")
-    pkg = re.search(r"package ([\w.]+);", text)
+    pkg = re.search(stacks.PACKAGE_REGEX, text)
     if not pkg:
         return
     root = ".".join(pkg.group(1).split(".")[:4])
@@ -165,17 +166,13 @@ def gaps(service_root: Path, slug: str, index: dict) -> list:
     strategies that only report references grounded in the project's OWN tree. Unknown
     stacks return nothing: closure must never fabricate work it cannot ground. Every gap
     dict carries a `layout` key so the emitted task lands in the right source layout.
+    (2026-11-26 consolidation) the marker chain that chose a parser now lives in the
+    ONE toolchain registry (stacks.closure_language); the parsers below stay - they are
+    grammars, not configuration facts, and a grammar legitimately belongs to its language.
     """
-    if (service_root / "src" / "test" / "java").is_dir() or (service_root / "pom.xml").is_file() \
-            or (service_root / "build.gradle").is_file() or (service_root / "build.gradle.kts").is_file():
-        return _java_gaps(service_root, slug, index)
-    if any((service_root / marker).exists() for marker in ("pyproject.toml", "setup.py", "requirements.txt")) \
-            or any(next((service_root / d).rglob("*.py"), None) is not None
-                   for d in ("src", "app", "backend") if (service_root / d).is_dir()):
-        return _python_gaps(service_root, slug, index)
-    if (service_root / "package.json").is_file() and (service_root / "src").is_dir():
-        return _ts_gaps(service_root, slug, index)
-    return []
+    parsers = {"java": _java_gaps, "python": _python_gaps, "ts": _ts_gaps}
+    parse = parsers.get(stacks.closure_language(service_root))
+    return parse(service_root, slug, index) if parse else []
 
 
 def _python_gaps(service_root: Path, slug: str, index: dict) -> list:
@@ -378,7 +375,7 @@ def _java_gaps(service_root: Path, slug: str, index: dict) -> list:
     for tree_root in (test_root, main_root):
         for f in source_files(tree_root):
             text = f.read_text(encoding="utf-8", errors="ignore")
-            pkg_match = re.search(r"package ([\w.]+);", text)
+            pkg_match = re.search(stacks.PACKAGE_REGEX, text)
             own_pkg = pkg_match.group(1) if pkg_match else ""
             imported_simple = set(re.findall(r"import (?:static )?[\w.]*?\.([A-Z]\w*);", text))
             declared = declared_in_tree(f, tree_root)

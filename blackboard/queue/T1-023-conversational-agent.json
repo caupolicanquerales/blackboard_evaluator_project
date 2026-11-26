@@ -1,0 +1,48 @@
+{
+  "id": "T1-023",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-001",
+    "T1-022"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/memory/application/ContextWindowAssemblerTest.java",
+  "export": "ContextWindowAssemblerTest",
+  "intent": "ContextWindowAssemblerTest proves AC-06 context-budget-cap: over 12 messages the window keeps exactly the last 12 verbatim plus the summary; the token total never exceeds the configured limit, truncating the summary first; a shorter history is kept whole.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.memory.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ContextEntry",
+        "task_id": "T2-022"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "List<ContextEntry> assemble(List<ContextEntry> messages, ContextEntry summary)",
+        "returns": "List<ContextEntry>",
+        "semantics": "messages must not be null; summary may be null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.context.max-messages",
+        "kind": "value",
+        "value": "12"
+      },
+      {
+        "path": "chat.context.max-tokens",
+        "kind": "value",
+        "value": "16000"
+      }
+    ]
+  }
+}

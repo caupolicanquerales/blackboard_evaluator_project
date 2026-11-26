@@ -1,0 +1,15 @@
+{
+  "id": "T3-007",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-007"
+  ],
+  "kind": "refactor",
+  "path": "src/main/java/com/blackboard/conversationalagent/shared/AuditPort.java",
+  "export": "AuditPort",
+  "intent": "Refactor AuditPort: keep the tabled contract and the paired tests green; no behavior, status, meter or route change.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent"
+}

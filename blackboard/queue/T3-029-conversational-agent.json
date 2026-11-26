@@ -1,0 +1,15 @@
+{
+  "id": "T3-029",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-029"
+  ],
+  "kind": "refactor",
+  "path": "src/main/java/com/blackboard/conversationalagent/shared/GoldenSetHarness.java",
+  "export": "GoldenSetHarness",
+  "intent": "Refactor GoldenSetHarness: keep the tabled contract and the paired tests green; no behavior, status, meter or route change.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent"
+}

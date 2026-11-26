@@ -608,6 +608,14 @@ import io
 import re
 
 import pipeline   # patches the tagged-line clock at import (entry-module side effect)
+def _phases_src():
+    # (2026-11-26 family split) run() is thin glue; the phase-order assertions
+    # read the three functions that now carry its body, in execution order.
+    import pipeline as _pm
+    return "".join(inspect.getsource(f) for f in
+                   (_pm.entry, _pm.ddd_and_strategy, _pm.specs_and_tasks))
+
+
 
 buf = io.StringIO()
 with contextlib.redirect_stdout(buf):
@@ -2233,7 +2241,7 @@ check("S17b the split planner's per-context brief demands the PAIR (spec_ref + c
       "see the whole plan while no session carries a second context's draft (2026-11-18 "
       "audit: one 57-task file forced a 40,442-token single output turn; the split's answer: "
       "the same law, the transcript cost of one ~8k context)",
-      "READ EXACTLY THESE" in sec_planner_flat
+      "INPUT - ONE FILE, ONE FULL READ" in sec_planner_flat
       and "`table_row`" in sec_planner_flat
       and "spelling its `spec_ref` AND `capability` VERBATIM" in sec_planner_flat
       and "CROSS-OWNER case" in sec_planner_flat
@@ -2241,7 +2249,7 @@ check("S17b the split planner's per-context brief demands the PAIR (spec_ref + c
       and "--lint" in sec_planner_flat and "LINT-CLEAN" in sec_planner_flat
       and "Do NOT run" in sec_planner_flat
       and "the ENGINE emits the batch" in sec_planner_flat
-      and "strategy-slice-" in sec_planner_msg
+      and "planner-context-" in sec_planner_msg
       and "arrives COMPLETE" in sec_planner_flat
       and "joined ONTO the duty" in sec_planner_flat)
 check("S17c the refusal is machine-enforced, not just taught: the emit gate itself carries the "
@@ -2396,7 +2404,7 @@ z_spec(principals=None)
 z_spec(questions=["the read surface carries no row: no input declared it"])
 check("Z8 the pipeline reads what the spec leaves undecided (an open question is a STOP signal, "
       "not a filed-away note)", ddd.security_open_questions(Z_SLUG) != []
-      and "open question(s)" in inspect.getsource(pipeline_mod.run)
+      and "open question(s)" in _phases_src()
       and "--replan" in inspect.getsource(pipeline_mod.build_parser),
       str(ddd.security_open_questions(Z_SLUG))[:120])
 z_spec(questions=[])
@@ -2577,8 +2585,8 @@ check("Z15 --replan archives the PLAN (strategy, spec, stage 1-3 records) and no
       json.dumps(moved)[:200])
 check("Z16 the hint that made a late spec advisory is gone: the pipeline stops the run on "
       "security claim gaps instead of printing and draining on",
-      "[hint ] security" not in inspect.getsource(pipeline_mod.run)
-      and "security claim gap(s)" in inspect.getsource(pipeline_mod.run))
+      "[hint ] security" not in _phases_src()
+      and "security claim gap(s)" in _phases_src())
 z_reset()
 
 _strategy_docs = [(SEC_REPO / ".opencode/agents/agent-strategy-architect.md").read_text(),
@@ -2590,10 +2598,10 @@ check("S26 each split agent's stated budget is the ENGINE's budget, sized for th
       "planner: three brief reads, skills, one draft, lint rounds) - the 2026-11-19 pairing "
       "of stated==engine survives the split per carrier, and only the PLANNER carries the "
       "mapping tables",
-      settings.call_budget(settings.ARCHITECT_STRATEGY_AGENT) == 12
-      and settings.call_budget(settings.ARCHITECT_PLANNER_AGENT) == 16
-      and all("Budget <=12" in doc for doc in _strategy_docs)
-      and all("Budget <=16" in doc for doc in _planner_docs2)
+      settings.call_budget(settings.ARCHITECT_STRATEGY_AGENT) == 14
+      and settings.call_budget(settings.ARCHITECT_PLANNER_AGENT) == 22
+      and all("TOOL BUDGET line the brief prints" in doc for doc in _strategy_docs)
+      and all("TOOL BUDGET line the brief prints" in doc for doc in _planner_docs2)
       and all("spring-security-architect: allow" in doc for doc in _planner_docs2[:1])
       and not any("spring-security-architect: allow" in doc for doc in _strategy_docs)
       and not any("task-decomposition-dag: allow" in doc for doc in _strategy_docs),
@@ -2608,8 +2616,8 @@ check("S26 each split agent's stated budget is the ENGINE's budget, sized for th
 #     (2) an agent child must never outlive the orchestrator - v4: the kill left an
 #         orphan session streaming an unread transcript and billing turns.
 import re as _r1_re
-_pipe = (Path(__file__).resolve().parents[1] / "orchestrators/pipeline.py").read_text()
-_r1_i = _pipe.find("reason = task_queue.emit_draft_batch(slug, drafted)")
+_pipe = (Path(__file__).resolve().parents[1] / "orchestrators/orchestration/plan_flow.py").read_text()
+_r1_i = _pipe.find("reason = _batch()")
 _r1_body = _pipe[_r1_i:_pipe.find("\n    if reason:", _r1_i)] if _r1_i >= 0 else ""
 _r1_claims = _pipe[:_r1_i]
 check("R1a the batch repair loop guards the NO-OP round: fingerprint the drafts before "
@@ -2623,7 +2631,7 @@ check("R1a the batch repair loop guards the NO-OP round: fingerprint the drafts 
       and "def _repair_fingerprint(slug, contexts):" in _pipe,
       _r1_body[:160])
 _ar = (Path(__file__).resolve().parents[1] / "orchestrators/agent_runners.py").read_text()
-_ar_cb = (Path(__file__).resolve().parents[1] / "orchestrators/copilot_backend.py").read_text()
+_ar_cb = (Path(__file__).resolve().parents[1] / "orchestrators/backends/copilot_backend.py").read_text()
 check("R1b every spawned child is ADOPTED and killed when the orchestrator dies: the "
       "adoption shim + SIGTERM/SIGINT handler live in agent_runners, BOTH backends call "
       "adopt_child, and both RELEASE on completion so the death handler only ever kills "
@@ -2741,7 +2749,7 @@ _mixed_scaffold = {"id": "T0-001", "targetAgent": settings.STAGE_AGENTS[0],
                    "ast_hints": {"package": "x", "implements": [], "dependencies": [],
                                   "methods": []}}
 _ar_src = (Path(__file__).resolve().parents[1] / "orchestrators/agent_runners.py").read_text()
-_cb_src = (Path(__file__).resolve().parents[1] / "orchestrators/copilot_backend.py").read_text()
+_cb_src = (Path(__file__).resolve().parents[1] / "orchestrators/backends/copilot_backend.py").read_text()
 _r1c_adopt = (_ar_src[:_ar_src.find("def _dying")].count("adopt_child(process)")
               + _cb_src[:_cb_src.find("def run_discovery")].count("adopt_child(process)"))
 # the call sites, not the def: agent_runners adopts inside _run_agent (4-space call),
@@ -2802,7 +2810,7 @@ check("SA6 the register is READ by the pipeline on every launch, including the r
       "spec was already valid and the phase printed nothing (an accepted exposure must be a line an "
       "operator saw, not a field that aged out of a JSON file)",
       "risk" in str(ddd.security_risks(SEC_SLUG)[0])
-      and inspect.getsource(pipeline_mod.run).count("_surface_security_risks(slug)") >= 2
+      and _phases_src().count("_surface_security_risks(slug)") >= 2
       and '[risk  ]' in inspect.getsource(pipeline_mod._surface_security_risks))
 sec_spec()
 _arch_profile = (SEC_REPO / ".opencode/agents/agent-planner-architect.md").read_text()
@@ -2896,7 +2904,7 @@ check("SB5 an unverifiable waiver is no waiver: without metadata.source_descript
       and "source_description" in str(ddd.validate_security_directives()),
       str(ddd.validate_security_directives())[:160])
 sb_slice()
-src_run = inspect.getsource(pipeline_mod.run)
+src_run = _phases_src()
 src_tree = inspect.getsource(pipeline_mod._terminal_tree_report)
 check("SB6 the flow acts on a verified waiver out loud: the security phase prints WAIVED with the "
       "quote and the file, the terminal tree verdict carries SECURITY WAIVED by directive, and the "
@@ -2914,7 +2922,7 @@ check("SB6b a waiver is never a shortcut past planning: coverage and directive v
       and "validate_security_directives" in inspect.getsource(ddd.validate_domain_files)
       and "surfaces" in inspect.getsource(ddd.validate_strategy)
       and "security_directive" not in inspect.getsource(ddd.validate_strategy))
-_backend_src = "".join((SEC_REPO / "orchestrators" / name).read_text()
+_backend_src = "".join((SEC_REPO / "orchestrators" / "backends" / name).read_text()
                        for name in ("opencode_backend.py", "copilot_backend.py"))
 check("SB7 both backends refuse to finish phase 1 while any discovered slice lacks a strategy - the "
       "repair happens inside the session that can still write it",
@@ -4178,7 +4186,7 @@ check("PG12 --replan archives the performance and AI specs beside the strategy a
       moved_pg["performance"] and moved_pg["ai"]
       and not (settings.COMPLETE_DIR / "performance-spec-pg2x.json").exists()
       and not (settings.COMPLETE_DIR / "ai-spec-pg2x.json").exists())
-_pg_src = inspect.getsource(pipeline_mod.run)
+_pg_src = _phases_src()
 check("PG13 the pipeline runs BOTH new phases between the specs' inputs and decomposition, "
       "stops on their refusals and open questions, fatals on planning claim gaps, and "
       "discloses the directive in the terminal verdict (source-order assertion, zero "
@@ -4503,7 +4511,7 @@ try:
           and "SECTION: STRATEGY SLICE" in _ctx_text and "SECTION: DIGEST SLICE" in _ctx_text
           and "SECTION: SYMBOL TABLE" in _ctx_text and "SECTION: CONTRACT QUICKREF" in _ctx_text
           and "surfaces" in _ctx_text and "duties" in _ctx_text
-          and str(_ctx_file) in _ctx_msg and "READ EXACTLY THESE" in _ctx_msg)
+          and str(_ctx_file) in _ctx_msg and "INPUT - ONE FILE, ONE FULL READ" in _ctx_msg)
     _ctx_file.unlink(missing_ok=True)
     _ctx_ss.unlink(missing_ok=True); _ctx_ds.unlink(missing_ok=True)
     _ctx_strategy.unlink(missing_ok=True)
@@ -4754,14 +4762,13 @@ try:
           "still holds an old .gaps.json can neither ghost-patch nor ghost-refuse",
       _sp7_legacy == ([], []))
 
-    # SP8 (2026-11-20 resume economics; RE-HOMED 2026-11-25 to CONTENT HASHES - R2):
-    # the budget-killed planner's draft was LINT-CLEAN - the run's RESULT - yet the
-    # next launch wiped every draft unconditionally and would re-bill the whole
-    # context for it. Freshness is now a hash contract, not a wall-clock race: the
-    # sidecar claim stamps carries the exact bytes of every binding input the draft
-    # was validated against; a rewrite of a binding input flips it, an edit of the
-    # derivative map does not, and touch-only churn re-bills NOTHING (the mtime
-    # design re-billed provably compliant drafts whenever a doc was resaved).
+    # SP8 (2026-11-20 resume economics; RE-HOMED 2026-11-25 to CONTENT HASHES - R2;
+    # FACT/LAW SPLIT 2026-11-26): freshness is a FACT contract - strategy + specs.
+    # The contract SKILL.md is LAW prose and is deliberately NOT hashed: a prose edit
+    # must never re-bill compliant drafts (live 2026-11-26: two SKILL.md edits rotated
+    # every sidecar and re-drafted 8 billed sessions). Law moves ride the explicit
+    # LAW_VERSION constant and only trigger FREE re-validation (draft_state ->
+    # "unjudged" -> the claim gate), never a re-draft by construction.
     import os as _os
     _SP8b_SLUG = "splw"
     task_queue.clear_drafts(_SP8b_SLUG)
@@ -4771,17 +4778,18 @@ try:
     _sp8_bytes = json.dumps([{"id": "T2-950", "project": _SP8b_SLUG}])
     _sp8_draft.write_text(_sp8_bytes, encoding="utf-8")
     task_queue.stamp_draft_meta(_SP8b_SLUG, "Alpha")
-    _sp8_kept = task_queue.draft_is_fresh(_SP8b_SLUG, "Alpha")
+    _sp8_kept = task_queue.draft_state(_SP8b_SLUG, "Alpha") == "fresh"
     _sp8_strategy.write_text(json.dumps({"slug": _SP8b_SLUG, "rewritten": True}),
                              encoding="utf-8")
-    _sp8_stale = task_queue.draft_is_fresh(_SP8b_SLUG, "Alpha")
+    _sp8_stale = task_queue.draft_state(_SP8b_SLUG, "Alpha") == "fresh"
     _sp8_strategy.write_text(json.dumps({"slug": _SP8b_SLUG}), encoding="utf-8")
-    _sp8_rehashed_back = task_queue.draft_is_fresh(_SP8b_SLUG, "Alpha")
+    _sp8_rehashed_back = task_queue.draft_state(_SP8b_SLUG, "Alpha") == "fresh"
     _sp8_draft.unlink()
-    _sp8_missing = task_queue.draft_is_fresh(_SP8b_SLUG, "Alpha")
-    # the map/contract hierarchy: QUICKREF is the derivative MAP (not a hashed input -
-    # a wording fix must never re-bill a compliant draft); SKILL.md IS a hashed input -
-    # a content change older-dates every draft, a touch-without-change does not.
+    _sp8_missing = task_queue.draft_state(_SP8b_SLUG, "Alpha") != "absent"
+    # the map/contract hierarchy (2026-11-26): NEITHER QUICKREF nor SKILL.md is a hashed
+    # FACT - a wording or law-prose edit re-bills NOTHING; a LAW change that alters
+    # verdicts is an explicit LAW_VERSION bump, and the state machine maps it to
+    # "unjudged": free re-validation at the claim gate, escalation only on refusal.
     _sp8_dag = SEC_REPO / ".opencode/skills/architect-practices/task-decomposition-dag"
     _sp8_qr = _sp8_dag / "QUICKREF.md"
     _sp8_sk = _sp8_dag / "SKILL.md"
@@ -4790,29 +4798,35 @@ try:
     task_queue.stamp_draft_meta(_SP8b_SLUG, "Alpha")
     try:
         _sp8_qr.write_bytes(_sp8_qr_orig + b"\n")
-        _sp8_map_edit = task_queue.draft_is_fresh(_SP8b_SLUG, "Alpha")
+        _sp8_map_edit = task_queue.draft_state(_SP8b_SLUG, "Alpha") == "fresh"
         _sp8_qr.write_bytes(_sp8_qr_orig)
         _sp8_sk.write_bytes(_sp8_sk_orig + b"\n")
-        _sp8_contract_edit = task_queue.draft_is_fresh(_SP8b_SLUG, "Alpha")
+        _sp8_contract_edit = task_queue.draft_state(_SP8b_SLUG, "Alpha") == "fresh"
+        _sp8_sk.write_bytes(_sp8_sk_orig)
+        import plan_drafts as _pdr
+        _saved_law, _pdr.LAW_VERSION = _pdr.LAW_VERSION, _pdr.LAW_VERSION + ".probe"
+        _sp8_law_move = task_queue.draft_state(_SP8b_SLUG, "Alpha")
+        _pdr.LAW_VERSION = _saved_law
     finally:
         _sp8_qr.write_bytes(_sp8_qr_orig)
         _sp8_sk.write_bytes(_sp8_sk_orig)
-    _sp8_restored = task_queue.draft_is_fresh(_SP8b_SLUG, "Alpha")
-    _sp8_touch = None
-    _sp8_src = (SEC_REPO / "orchestrators/pipeline.py").read_text()
-    check("SP8 draft_is_fresh is the resume gate on CONTENT HASHES: a claimed draft "
-          "whose hashes match every binding input is kept, a rewritten strategy flips "
-          "it and re-writing the old bytes back re-heals it (hashes, not clocks), a "
-          "normative SKILL.md CONTENT edit makes it stale while a QUICKREF map edit "
-          "does not (map drift is caught by lint/emit: the gate is the law), an "
-          "absent/sidecarless/malformed draft is never trusted, and the loop clears "
-          "ONLY stale bytes and claims kept drafts without spawning a session",
+    _sp8_restored = task_queue.draft_state(_SP8b_SLUG, "Alpha") == "fresh"
+    _sp8_src = (SEC_REPO / "orchestrators/orchestration/plan_flow.py").read_text()
+    check("SP8 draft_state is the resume gate on the FACT/LAW/VERDICT split: a claimed "
+          "draft whose fact hashes match is kept, a rewritten strategy flips it and "
+          "re-writing the old bytes back re-heals it (hashes, not clocks), NEITHER a "
+          "QUICKREF nor a SKILL.md content edit re-bills anything (prose is not a fact - "
+          "the coupling that burned 8 sessions on 2026-11-26 is refused by construction), "
+          "a LAW_VERSION move re-VALIDATES for free ('unjudged', never a session), an "
+          "absent draft is 'absent', and the loop clears ONLY stale/broken bytes while "
+          "kept drafts are claimed without spawning a session",
       _sp8_kept and not _sp8_stale and _sp8_rehashed_back and not _sp8_missing
-      and _sp8_map_edit and not _sp8_contract_edit and _sp8_restored
-      and "[resume]" in _sp8_src and "draft_is_fresh" in _sp8_src
+      and _sp8_map_edit and _sp8_contract_edit and _sp8_restored
+      and _sp8_law_move == "unjudged"
+      and "[resume]" in _sp8_src and "draft_state" in _sp8_src
       and "clear_drafts(slug)" not in _sp8_src,
       f"kept={_sp8_kept} stale={_sp8_stale} back={_sp8_rehashed_back} "
-      f"map={_sp8_map_edit} contract={_sp8_contract_edit} rest={_sp8_restored}")
+      f"map={_sp8_map_edit} contract={_sp8_contract_edit} law={_sp8_law_move} rest={_sp8_restored}")
     _sp8_strategy.unlink(missing_ok=True)
 
     # SP9 the symbol-table fold (2026-11-20 context audit: 46K of symbols for one
@@ -5213,7 +5227,7 @@ try:
                        encoding="utf-8")
     _sp15_b.write_text(json.dumps([{"id": "T2-902", "project": _SP15_SLUG, "stage": 2}]),
                        encoding="utf-8")
-    _sp15_routed = task_queue.route_refusals(
+    _sp15_routed, _scope = task_queue.route_refusals(
         "\n".join(["ERR [T2-901]: bad thing one", "   detail belongs to Alpha",
                     "ERR [T2-902]: bad thing two",
                     "ERR [spq]: domain-wide step log 'z' claimed by NO stage-2 unit",

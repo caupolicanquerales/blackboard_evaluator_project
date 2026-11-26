@@ -1,0 +1,91 @@
+{
+  "id": "T2-060",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-060",
+    "T0-001",
+    "T0-003",
+    "T2-022",
+    "T2-023",
+    "T2-039",
+    "T2-049",
+    "T2-052",
+    "T2-057",
+    "T2-058",
+    "T2-059"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/memory/interfaces/ContextWindowQueryAdapter.java",
+  "export": "ContextWindowQueryAdapter",
+  "intent": "Unit IS the surface 'context window query internal call': AZ-04 service-credential-proof enforced by the pinned ServiceCredentialAuthenticator, no identity denied; SI-06 byIdAndTenant on MemoryStore so another tenant's session yields nothing. PB-08 payload-limit: ContextWindowAssembler caps at 12 messages and 16,000 tokens (spring.codec.max-in-memory-size bounds payloads); wait bounded by WindowQueryTimeout.",
+  "layer": "interface",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.memory.interfaces",
+    "implements": [
+      "ContextWindowQuery"
+    ],
+    "dependencies": [
+      {
+        "type": "ContextWindowQuery",
+        "task_id": "T2-039"
+      },
+      {
+        "type": "MemoryStore",
+        "task_id": "T2-052"
+      },
+      {
+        "type": "ServiceCredentialAuthenticator",
+        "task_id": "T2-058"
+      },
+      {
+        "type": "WindowQueryTimeout",
+        "task_id": "T2-059"
+      },
+      {
+        "type": "ContextWindowAssembler",
+        "task_id": "T2-023"
+      },
+      {
+        "type": "ContextEntry",
+        "task_id": "T2-022"
+      },
+      {
+        "type": "RollingSummary",
+        "task_id": "T2-049"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Flux<ContextEntry> window(String sessionId)",
+        "returns": "Flux<ContextEntry>",
+        "semantics": "sessionId must be non-null; tenant read from the Reactor Context principal"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.context.max-messages",
+        "kind": "value",
+        "value": "12"
+      },
+      {
+        "path": "chat.context.max-tokens",
+        "kind": "value",
+        "value": "16000"
+      },
+      {
+        "path": "spring.codec.max-in-memory-size",
+        "kind": "value"
+      }
+    ]
+  },
+  "observability": {
+    "step_logs": [
+      "context window served"
+    ]
+  }
+}

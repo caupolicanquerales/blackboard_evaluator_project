@@ -1,0 +1,53 @@
+{
+  "id": "T2-016",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-016",
+    "T0-001",
+    "T2-001",
+    "T2-014",
+    "T2-015"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/infrastructure/ToolCallGuard.java",
+  "export": "ToolCallGuard",
+  "intent": "AC-02 tool-call-guard: @Tool methods exposed as ToolCallbacks DELEGATE to the existing use case after the same SessionAccessCheck as the human path; only tools in the allow-list are callable, the call count above the per-turn cap is refused; no ambient authority.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.infrastructure",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "SessionAccessCheck",
+        "task_id": "T2-014"
+      },
+      {
+        "type": "ToolRequest",
+        "task_id": "T2-015"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Boolean> admit(String sessionId, String userId, String tenantId, ToolRequest request, int callsSoFar)",
+        "returns": "Mono<Boolean>",
+        "semantics": "no argument may be null; callsSoFar is not negative"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.tools.allowed",
+        "kind": "list"
+      },
+      {
+        "path": "chat.turn.max-tool-calls",
+        "kind": "value",
+        "value": "5"
+      }
+    ]
+  }
+}

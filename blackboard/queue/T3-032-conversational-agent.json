@@ -1,0 +1,15 @@
+{
+  "id": "T3-032",
+  "targetAgent": "agent-evaluator",
+  "stage": 3,
+  "dependsOn": [
+    "T2-032"
+  ],
+  "kind": "refactor",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/application/CallerIdentity.java",
+  "export": "CallerIdentity",
+  "intent": "Refactor CallerIdentity: keep the tabled contract and the paired tests green; no behavior, status, meter or route change.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent"
+}

@@ -1,0 +1,13 @@
+{
+  "id": "T0-006",
+  "targetAgent": "agent-container",
+  "stage": 0,
+  "dependsOn": [],
+  "kind": "bootstrap",
+  "layer": "root",
+  "feature": null,
+  "export": "project_scaffold",
+  "project": "conversational-agent",
+  "path": "pom.xml",
+  "intent": "Generate the conversational-agent project root and build scaffold using the matching mcp-server-springboot skill, rooted at /home/caupolican/Desktop/Blackboard/blackboard_evaluator_project/projects/ai-chat-agent-service/services/conversational-agent/, with language version Java 21, framework version Spring Boot 3 (WebFlux), base package com.blackboard.aichatagent, and build dependencies webflux, data-r2dbc, flyway, actuator, validation, security, test, reactor-test, h2. Structural requirements: (1) a SINGLE composition root: only the scaffold's @SpringBootApplication class, placed at the base package com.blackboard.aichatagent, never a second boot class; (2) test-run timeout guardrails: surefire forkedProcessTimeoutInSeconds written via the scaffold script flag --surefire-timeout so a hung test fails fast; (3) schema MIGRATION RUNNER: Flyway wired into the build with scripts under src/main/resources/db/migration and spring.flyway.locations classpath:db/migration, plus the embeddable in-process substitute (embedded H2, test scope only) activated via src/test/resources/application.properties carrying spring.profiles.active=test so the scaffold's own boot test passes without external services. The wrapper ./mvnw must be present."
+}

@@ -1,0 +1,49 @@
+{
+  "id": "T2-023",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-023",
+    "T0-001",
+    "T2-001",
+    "T2-022"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/memory/application/ContextWindowAssembler.java",
+  "export": "ContextWindowAssembler",
+  "intent": "AC-06 context-budget-cap: no framework mechanism, so the plan's assembler selects the last N messages verbatim, N and the token ceiling read from configuration, and truncates the rolling summary so the total never exceeds the limit.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.memory.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ContextEntry",
+        "task_id": "T2-022"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "List<ContextEntry> assemble(List<ContextEntry> messages, ContextEntry summary)",
+        "returns": "List<ContextEntry>",
+        "semantics": "messages must not be null; summary may be null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.context.max-messages",
+        "kind": "value",
+        "value": "12"
+      },
+      {
+        "path": "chat.context.max-tokens",
+        "kind": "value",
+        "value": "16000"
+      }
+    ]
+  }
+}

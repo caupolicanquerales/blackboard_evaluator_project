@@ -1,0 +1,37 @@
+{
+  "id": "T2-053",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-053",
+    "T0-001",
+    "T2-051"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/memory/application/SummaryUpdatedPublisher.java",
+  "export": "SummaryUpdatedPublisher",
+  "intent": "SummaryUpdatedPublisher is the outbound port announcing SummaryUpdated; it has no framework types and is bound by InProcessSummaryUpdatedPublisher.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.memory.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "SummaryUpdatedEvent",
+        "task_id": "T2-051"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> publish(SummaryUpdatedEvent event)",
+        "returns": "Mono<Void>",
+        "semantics": "event must be non-null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

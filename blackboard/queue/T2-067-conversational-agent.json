@@ -1,0 +1,68 @@
+{
+  "id": "T2-067",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-067",
+    "T0-001",
+    "T2-064",
+    "T2-065"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/history/application/HistoryAppender.java",
+  "export": "HistoryAppender",
+  "intent": "HistoryAppender appends a HistoryBatch through the pinned HistoryStore. PB-16 idempotent-retry: Reactor retryWhen(Retry.backoff(N, Duration)) with attempts from chat.history.append.max-attempts (3) and chat.history.append.backoff, retrying only behind the identity dedup session id + turn id + entry sequence. Counts chat.history.appended per kind and chat.tokens.used per direction; a duplicate is a no-op.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.history.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "HistoryStore",
+        "task_id": "T2-065"
+      },
+      {
+        "type": "HistoryBatch",
+        "task_id": "T2-064"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> appendBatch(HistoryBatch batch)",
+        "returns": "Mono<Void>",
+        "semantics": "rejects null batch; retries at most chat.history.append.max-attempts times"
+      }
+    ],
+    "meters": [
+      {
+        "name": "chat.history.appended",
+        "duty": "owns"
+      },
+      {
+        "name": "chat.tokens.used",
+        "duty": "owns"
+      }
+    ],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.history.append.max-attempts",
+        "kind": "value",
+        "value": 3
+      },
+      {
+        "path": "chat.history.append.backoff",
+        "kind": "value",
+        "value": "PT0.1S"
+      }
+    ]
+  },
+  "observability": {
+    "step_logs": [
+      "history entry appended",
+      "duplicate entry ignored"
+    ]
+  }
+}

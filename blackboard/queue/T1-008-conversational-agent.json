@@ -1,0 +1,49 @@
+{
+  "id": "T1-008",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T0-005",
+    "T1-004",
+    "T1-006",
+    "T1-007"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/shared/AuditTrailAdapterTest.java",
+  "export": "AuditTrailAdapterTest",
+  "intent": "AuditTrailAdapterTest runs the real V4 migration DDL on embedded H2 and proves SI-12 audit-event: a recorded entry reads back with correlationId, content is redacted before insert, an event published through ApplicationEventPublisher is persisted, and no update path exists.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.shared",
+    "implements": [
+      "AuditPort"
+    ],
+    "dependencies": [
+      {
+        "type": "AuditEntry",
+        "task_id": "T2-006"
+      },
+      {
+        "type": "RedactionPort",
+        "task_id": "T2-004"
+      },
+      {
+        "type": "AuditPort",
+        "task_id": "T2-007"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> record(AuditEntry entry)",
+        "returns": "Mono<Void>",
+        "semantics": "entry must not be null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

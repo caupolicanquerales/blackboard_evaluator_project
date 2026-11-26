@@ -1,0 +1,43 @@
+{
+  "id": "T1-021",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-001",
+    "T1-015"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/orchestration/infrastructure/StructuredOutputGuardTest.java",
+  "export": "StructuredOutputGuardTest",
+  "intent": "StructuredOutputGuardTest proves AC-05 structured-output-guard by stub: a valid tool request JSON converts to a ToolRequest; malformed JSON triggers exactly one re-ask then an empty refusal outcome and zero tool executions.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.infrastructure",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ToolRequest",
+        "task_id": "T2-015"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<ToolRequest> validate(String rawModelOutput, Function<String, Mono<String>> reask)",
+        "returns": "Mono<ToolRequest>",
+        "semantics": "no argument may be null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.model.reask-max",
+        "kind": "value",
+        "value": "1"
+      }
+    ]
+  }
+}

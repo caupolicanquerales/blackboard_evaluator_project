@@ -1,0 +1,77 @@
+{
+  "id": "T2-056",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-056",
+    "T0-001",
+    "T2-020",
+    "T2-049",
+    "T2-050",
+    "T2-052",
+    "T2-053",
+    "T2-054",
+    "T2-055"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/memory/application/SummaryRefreshService.java",
+  "export": "SummaryRefreshService",
+  "intent": "Refreshes the rolling summary after TurnCompleted, idempotent by session id + turn id: an already applied turn is a no-op. Otherwise summarizes overflow messages through the pinned summarizer inside the concurrency guard and retry policy, saves, publishes SummaryUpdated, counts chat.memory.summary.refreshed with outcome refreshed or failed.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.memory.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "MemoryStore",
+        "task_id": "T2-052"
+      },
+      {
+        "type": "SummarizerPort",
+        "task_id": "T2-020"
+      },
+      {
+        "type": "SummarizerConcurrencyGuard",
+        "task_id": "T2-054"
+      },
+      {
+        "type": "SummaryRetryPolicy",
+        "task_id": "T2-055"
+      },
+      {
+        "type": "SummaryUpdatedPublisher",
+        "task_id": "T2-053"
+      },
+      {
+        "type": "TurnCompletedEvent",
+        "task_id": "T2-050"
+      },
+      {
+        "type": "RollingSummary",
+        "task_id": "T2-049"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<Void> refresh(TurnCompletedEvent event)",
+        "returns": "Mono<Void>",
+        "semantics": "event must be non-null"
+      }
+    ],
+    "meters": [
+      {
+        "name": "chat.memory.summary.refreshed",
+        "duty": "owns"
+      }
+    ],
+    "routes": [],
+    "config": []
+  },
+  "observability": {
+    "step_logs": [
+      "summary refreshed"
+    ]
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "id": "T1-032",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/orchestration/application/CallerIdentityTest.java",
+  "export": "CallerIdentityTest",
+  "intent": "CallerIdentityTest proves the record holds user id and tenant id and rejects null or blank values.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.application",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "CallerIdentity(String userId, String tenantId)",
+        "returns": "",
+        "semantics": "rejects null or blank userId and tenantId"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

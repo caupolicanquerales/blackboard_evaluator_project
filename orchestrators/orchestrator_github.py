@@ -7,6 +7,9 @@ CLI using the custom agent profiles in ``.github/agents/``.
 """
 import sys
 
+import family_paths  # noqa: F401  - first project import: registers the family
+                      # folders (orchestration/, task_contract/, task_creation/)
+                      # on sys.path so the flat imports below resolve post-split.
 import copilot_backend
 import pipeline
 

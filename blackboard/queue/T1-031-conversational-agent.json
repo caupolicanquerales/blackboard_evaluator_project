@@ -1,0 +1,39 @@
+{
+  "id": "T1-031",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-030"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/orchestration/application/SessionRepositoryContractTest.java",
+  "export": "SessionRepositoryContractTest",
+  "intent": "SessionRepositoryContractTest pins the outbound port contract with a fake: save then byIdAndTenant returns the session for its owner and tenant, and completes empty for a foreign user or tenant.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ChatSession",
+        "task_id": "T2-030"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<ChatSession> save(ChatSession session)",
+        "returns": "Mono<ChatSession>"
+      },
+      {
+        "signature": "Mono<ChatSession> byIdAndTenant(String sessionId, String ownerUserId, String tenantId)",
+        "returns": "Mono<ChatSession>"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

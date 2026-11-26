@@ -14,7 +14,7 @@ strategies with its edit tool and queues tasks through `--emit`
 (orchestrators/task_queue.emit_tasks); the strategy shape that pipeline actually enforces is
 `orchestrators/ddd.py::validate_strategy` (phase-1 post-check: bounded_contexts, the inbound
 `surfaces` table and `contexts_without_inbound`), and the task schema is
-`orchestrators/settings.py::REQUIRED_KEYS` + `orchestrators/tasks.py::validate`. The key
+`orchestrators/settings.py::REQUIRED_KEYS` + `orchestrators/task_contract/tasks.py::validate`. The key
 lists below are the older single-file/`tdd` shape and are kept only so this standalone tool
 still runs; a rule added here changes nothing until it is added there.
 """

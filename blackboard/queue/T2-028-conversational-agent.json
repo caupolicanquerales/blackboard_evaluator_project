@@ -1,0 +1,42 @@
+{
+  "id": "T2-028",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-028",
+    "T0-001",
+    "T2-001"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/application/LoopGovernor.java",
+  "export": "LoopGovernor",
+  "intent": "AM-02 loop-budget-cap: no framework mechanism, so LoopGovernor counts tool cycles of a turn and breaks at the bound from the max-turns key with the named clean-stop outcome, via Flux.take(n); the turn-time bound is the fallback route's.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.application",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "boolean tryNextCycle()",
+        "returns": "boolean",
+        "semantics": "true: another tool cycle is permitted and counted; false: the configured maximum is reached, the caller stops cleanly and informs the user"
+      },
+      {
+        "signature": "int cyclesUsed()",
+        "returns": "int"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.turn.max-tool-calls",
+        "kind": "value",
+        "value": "5"
+      }
+    ]
+  }
+}

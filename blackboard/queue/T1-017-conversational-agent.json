@@ -1,0 +1,48 @@
+{
+  "id": "T1-017",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-001",
+    "T1-011"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/orchestration/infrastructure/FallbackModelRouteTest.java",
+  "export": "FallbackModelRouteTest",
+  "intent": "FallbackModelRouteTest proves AC-03 fallback-model-route by stub call count: a failing stub yields one refusal notice event, one completion and no further model calls; a stub slower than the configured timeout yields the same; a healthy stream passes through untouched.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.infrastructure",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ProgressEvent",
+        "task_id": "T2-011"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Flux<ProgressEvent> guard(Flux<ProgressEvent> modelStream)",
+        "returns": "Flux<ProgressEvent>",
+        "semantics": "modelStream must not be null"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.turn.timeout",
+        "kind": "value",
+        "value": "PT30S"
+      },
+      {
+        "path": "chat.fallback.refusal-message",
+        "kind": "value",
+        "value": "The assistant could not complete this request. Please try again later."
+      }
+    ]
+  }
+}

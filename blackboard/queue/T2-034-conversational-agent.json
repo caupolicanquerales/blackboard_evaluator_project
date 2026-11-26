@@ -1,0 +1,55 @@
+{
+  "id": "T2-034",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-034",
+    "T0-001",
+    "T2-032"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/infrastructure/JwtCallerAdapter.java",
+  "export": "JwtCallerAdapter",
+  "intent": "JwtCallerAdapter discharges AZ-01 bearer-jwt-proof policy-adapter: a resource-server JWT decoder bean (ReactiveJwtDecoder) validates the credential, and identify derives owner and tenant only from verified claims; an absent tenant claim is refused as unauthenticated.",
+  "layer": "infrastructure",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.infrastructure",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "CallerIdentity",
+        "task_id": "T2-032"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "ReactiveJwtDecoder jwtDecoder()",
+        "returns": "ReactiveJwtDecoder"
+      },
+      {
+        "signature": "Mono<CallerIdentity> identify(Jwt jwt)",
+        "returns": "Mono<CallerIdentity>",
+        "semantics": "rejects null jwt"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "spring.security.oauth2.resourceserver.jwt.jwk-set-uri",
+        "kind": "value"
+      },
+      {
+        "path": "spring.security.oauth2.resourceserver.jwt.jws-algorithms",
+        "kind": "list",
+        "value": "RS256"
+      },
+      {
+        "path": "spring.security.oauth2.resourceserver.jwt.audiences",
+        "kind": "list"
+      }
+    ]
+  }
+}

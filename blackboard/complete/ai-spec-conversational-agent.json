@@ -1,0 +1,264 @@
+{
+  "schema_version": "1.0",
+  "report_type": "ai-spec",
+  "slug": "conversational-agent",
+  "metadata": {
+    "generated_at": "2026-11-26T11:00:50-03:00",
+    "agent": "agent-ai-architect",
+    "inputs": [
+      "blackboard/complete/execution-strategy-conversational-agent.json",
+      "blackboard/domain/domain-boundary-conversational-agent.json",
+      "blackboard/context-map/context-map-conversational-agent.json"
+    ],
+    "confidence": "high"
+  },
+  "assumptions": [
+    {
+      "id": "AA-01",
+      "text": "Delivery is incremental: text chunks and tool status updates are emitted as events and followed by one terminal completion, so no caller waits for the full answer.",
+      "source": "streams its answer back word by word in real time"
+    },
+    {
+      "id": "AA-02",
+      "text": "The directed capability is a single conversational agent with a bounded tool loop, not a multi-agent topology, so no delegation edge exists.",
+      "source": "the agent thinks through the request, calls backend tools when it needs real data or actions"
+    },
+    {
+      "id": "AA-03",
+      "text": "No backend tool is declared as high-impact or irreversible and no approval resume surface exists, so no approval gate is planned.",
+      "source": "send message SSE HTTP inbound"
+    },
+    {
+      "id": "AA-04",
+      "text": "Conversation memory is kept per session as the last 12 messages verbatim plus a rolling summary persisted in the store, within the 16,000-token limit.",
+      "source": "turn completed memory consumer"
+    }
+  ],
+  "model_roles": [
+    {
+      "id": "AR-01",
+      "role": "generation",
+      "statefulness": "durable",
+      "memory_technique": "rolling-summary",
+      "data_classes": ["ChatSession", "ContextMessage", "RollingSummary", "Turn"]
+    },
+    {
+      "id": "AR-02",
+      "role": "summarization",
+      "statefulness": "none",
+      "data_classes": ["ContextMessage", "RollingSummary"]
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "AC-01",
+      "surface_or_flow": "send message SSE HTTP inbound",
+      "requirement": "The answer reaches the caller as incremental text chunk and tool status events followed by a terminal completion event.",
+      "capability": "incremental-progress-stream",
+      "roles": ["AR-01"],
+      "measurement": {
+        "kind": "deterministic-count",
+        "assertion": "A stub emitting N chunks yields N chunk events then exactly one terminal completion event, observed without waiting for full completion first."
+      }
+    },
+    {
+      "id": "AC-02",
+      "surface_or_flow": "send message SSE HTTP inbound",
+      "requirement": "Every tool the model requests passes the same session ownership admission as the human path, only enumerated tools are callable, and a turn makes at most 5 tool calls.",
+      "capability": "tool-call-guard",
+      "roles": ["AR-01"],
+      "measurement": {
+        "kind": "stub-call-count",
+        "assertion": "A stub requesting a non-enumerated tool or a sixth call yields zero extra tool invocations and a clean stop notice."
+      }
+    },
+    {
+      "id": "AC-03",
+      "surface_or_flow": "send message SSE HTTP inbound",
+      "requirement": "A model failure or the 30-second turn timeout degrades to an honest refusal notice in the stream instead of an unhandled error.",
+      "capability": "fallback-model-route",
+      "roles": ["AR-01"],
+      "measurement": {
+        "kind": "stub-call-count",
+        "assertion": "A failing stub yields one refusal notice event, one terminal completion and no further model calls."
+      }
+    },
+    {
+      "id": "AC-04",
+      "surface_or_flow": "send message SSE HTTP inbound",
+      "requirement": "The generation prompt is a versioned source type whose members are version, role identity, input placeholders, output-schema reference and refusal text.",
+      "capability": "prompt-contract",
+      "roles": ["AR-01"],
+      "measurement": {
+        "kind": "schema-validation",
+        "assertion": "The prompt source type exposes all five members non-empty and the rendered prompt contains every declared placeholder."
+      }
+    },
+    {
+      "id": "AC-05",
+      "surface_or_flow": "send message SSE HTTP inbound",
+      "requirement": "A tool-call request emitted by the model is schema-validated before execution and a violation is refused, never coerced.",
+      "capability": "structured-output-guard",
+      "roles": ["AR-01"],
+      "measurement": {
+        "kind": "schema-validation",
+        "assertion": "A stub returning a malformed tool request executes zero tools and yields a refusal outcome."
+      }
+    },
+    {
+      "id": "AC-06",
+      "surface_or_flow": "context window query internal call",
+      "requirement": "Every context assembly keeps the last 12 messages verbatim and older content only as the rolling summary within the 16,000-token limit.",
+      "capability": "context-budget-cap",
+      "roles": ["AR-01"],
+      "measurement": {
+        "kind": "payload-size",
+        "assertion": "An assembled window over more than 12 messages holds exactly 12 verbatim messages and a token count at or below the configured limit."
+      }
+    },
+    {
+      "id": "AC-07",
+      "surface_or_flow": "turn completed memory consumer",
+      "requirement": "Memory is durable per session, bounded by a rolling summary updated idempotently by session id and turn id, and never shared across sessions.",
+      "capability": "memory-boundary",
+      "roles": ["AR-01", "AR-02"],
+      "measurement": {
+        "kind": "stub-call-count",
+        "assertion": "Replaying the same turn completion twice calls the summarizer stub once and leaves one summary row for the session."
+      }
+    },
+    {
+      "id": "AC-08",
+      "surface_or_flow": "send message SSE HTTP inbound",
+      "requirement": "A turn has a token budget per call taken from configuration with a named over-budget behavior of stopping cleanly and informing the user.",
+      "capability": "token-cost-cap",
+      "roles": ["AR-01"],
+      "measurement": {
+        "kind": "config-key",
+        "assertion": "The budget is read from a named configuration key and a stub exceeding it ends the turn with the stop notice."
+      }
+    },
+    {
+      "id": "AC-09",
+      "surface_or_flow": "send message SSE HTTP inbound",
+      "requirement": "Conversational behavior is pinned by a versioned golden example set of input and expected property run offline against the stub port.",
+      "capability": "eval-golden-set",
+      "roles": ["AR-01"],
+      "measurement": {
+        "kind": "deterministic-count",
+        "assertion": "Every golden example runs against the stub and satisfies its expected property such as chunk count, tool-call count or refusal."
+      }
+    }
+  ],
+  "invariants": [
+    {
+      "id": "AM-01",
+      "rule": "Every model access is a port with an offline stand-in that takes precedence over the production adapter, and no unit test, slice or boot reaches a live endpoint.",
+      "capability": "offline-model-port",
+      "roles": ["AR-01", "AR-02"]
+    },
+    {
+      "id": "AM-02",
+      "rule": "The think-and-call-tool cycle of a turn is capped at 5 tool calls and 30 seconds and ends with the named cycle-break outcome of a clean stop notice to the user.",
+      "capability": "loop-budget-cap",
+      "roles": ["AR-01"]
+    }
+  ],
+  "duties": [
+    {
+      "spec_ref": "AC-01",
+      "obligation": "Deliver the AR-01 answer as chunk and status events then one terminal completion over a non-blocking channel.",
+      "capability": "incremental-progress-stream",
+      "unit_kind": "stream-delivery"
+    },
+    {
+      "spec_ref": "AC-02",
+      "obligation": "Admit each AR-01 tool request only for enumerated tools after the same ownership check as the human path.",
+      "capability": "tool-call-guard",
+      "unit_kind": "tool-guard"
+    },
+    {
+      "spec_ref": "AC-03",
+      "obligation": "Route an AR-01 failure or timeout to an honest refusal notice with a declared trigger.",
+      "capability": "fallback-model-route",
+      "unit_kind": "fallback-policy"
+    },
+    {
+      "spec_ref": "AC-04",
+      "obligation": "Hold the versioned prompt as a source type with version, role identity, input placeholders, output-schema reference and refusal text members.",
+      "capability": "prompt-contract",
+      "unit_kind": "prompt-contract"
+    },
+    {
+      "spec_ref": "AC-05",
+      "obligation": "Validate each AR-01 tool request against its schema before execution and refuse violations.",
+      "capability": "structured-output-guard",
+      "unit_kind": "output-validator"
+    },
+    {
+      "spec_ref": "AC-06",
+      "obligation": "Assemble the context window with the 12-message and 16,000-token bounds read from configuration.",
+      "capability": "context-budget-cap",
+      "unit_kind": "context-budget"
+    },
+    {
+      "spec_ref": "AC-07",
+      "obligation": "Persist the rolling summary per session with idempotent update, using AR-02 to condense older turns for AR-01.",
+      "capability": "memory-boundary",
+      "unit_kind": "memory-adapter"
+    },
+    {
+      "spec_ref": "AC-08",
+      "obligation": "Enforce the configured per-turn token budget with the stop-and-inform behavior when exceeded.",
+      "capability": "token-cost-cap",
+      "unit_kind": "context-budget"
+    },
+    {
+      "spec_ref": "AC-09",
+      "obligation": "Provide an offline harness that runs the versioned golden set against the stub port.",
+      "capability": "eval-golden-set",
+      "unit_kind": "eval-harness"
+    },
+    {
+      "spec_ref": "AM-01",
+      "obligation": "Provide offline stand-ins for the AR-01 and AR-02 ports that win precedence in every test context, proved by the context resolving the port to the stand-in.",
+      "capability": "offline-model-port",
+      "unit_kind": "offline-stub"
+    },
+    {
+      "spec_ref": "AM-02",
+      "obligation": "Bound the AR-01 tool cycle by a max-turns count and a clean-stop outcome proved by stub call count.",
+      "capability": "loop-budget-cap",
+      "unit_kind": "loop-governor"
+    }
+  ],
+  "risks": [
+    {
+      "id": "R-01",
+      "risk": "A live model call from a test or boot would bill real tokens and make results non-deterministic.",
+      "mitigation": "AM-01"
+    },
+    {
+      "id": "R-02",
+      "risk": "A tool-calling cycle could spin without end while each call stays small and valid.",
+      "mitigation": "AM-02"
+    },
+    {
+      "id": "R-03",
+      "risk": "A time-to-first-token stall would make the interface feel slow.",
+      "mitigation": "AC-01"
+    },
+    {
+      "id": "R-04",
+      "risk": "Tool calls with side effects are not undone when a turn is cut at a limit.",
+      "mitigation": "accepted: the turn stops cleanly and informs the user",
+      "residual": "Side effects of tools already executed before the cut remain."
+    },
+    {
+      "id": "R-05",
+      "risk": "Message size, summary length and retention are unbounded by the inputs.",
+      "mitigation": "AC-06"
+    }
+  ],
+  "open_questions": []
+}

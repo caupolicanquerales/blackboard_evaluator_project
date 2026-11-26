@@ -1,0 +1,72 @@
+{
+  "id": "T1-072",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-063",
+    "T1-065",
+    "T1-014",
+    "T1-006",
+    "T1-007"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/history/application/HistoryReloadQueryTest.java",
+  "export": "HistoryReloadQueryTest",
+  "intent": "HistoryReloadQueryTest with fakes counting store calls: a reload issues one ownership query and one page query (PB-18 batch-load, query-count 2); entries return in keyset order; a request for more than 50 returns at most 50; a denied ownership returns an empty flux without a page query; each reload records one history reloaded audit entry.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.history.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "HistoryStore",
+        "task_id": "T2-065"
+      },
+      {
+        "type": "SessionAccessCheck",
+        "task_id": "T2-014"
+      },
+      {
+        "type": "AuditPort",
+        "task_id": "T2-007"
+      },
+      {
+        "type": "AuditEntry",
+        "task_id": "T2-006"
+      },
+      {
+        "type": "HistoryEntry",
+        "task_id": "T2-063"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Flux<HistoryEntry> reload(String sessionId, String userId, String tenantId, String afterTurnId, int afterSequence, int pageSize)",
+        "returns": "Flux<HistoryEntry>",
+        "semantics": "pageSize clamped to at most 50; rejects blank sessionId, userId or tenantId"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "chat.history.reload.batch-size",
+        "kind": "value",
+        "value": 50
+      },
+      {
+        "path": "chat.history.reload.batch-timeout",
+        "kind": "value",
+        "value": "PT0.05S"
+      }
+    ]
+  },
+  "observability": {
+    "step_logs": [
+      "history reloaded"
+    ]
+  }
+}

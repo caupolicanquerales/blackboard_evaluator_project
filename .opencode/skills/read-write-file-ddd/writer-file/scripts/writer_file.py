@@ -87,6 +87,12 @@ BUSINESS_SUMMARY_KEYS = ("goal", "actors", "end_to_end_processes", "key_outcomes
 LANGUAGE_KEYS = ("term", "context", "definition", "synonyms_conflicts")
 LANGUAGE_REQUIRED_KEYS = ("term", "context", "definition")
 SUBDOMAIN_KEYS = ("name", "type", "capability", "why_distinct")
+# Two interaction channels, one law each: publishes/consumes carry asynchronous domain
+# EVENTS (occurrences that happened); `reads` is the optional channel for SYNCHRONOUS
+# query dependencies - a context needing another context's current answer as a
+# precondition of its own work. Without it an agent that models a direct read must
+# fake an event handshake (2026-11-26 live: an in-turn assembly forced into a
+# publish/complete pub/sub loop). Names only, like the event lists.
 CONTEXT_KEYS = (
     "name",
     "responsibility",
@@ -97,6 +103,7 @@ CONTEXT_KEYS = (
     "source_of_truth",
     "publishes",
     "consumes",
+    "reads",
     "actors",
     "external_systems",
     "confidence",
@@ -301,7 +308,8 @@ def validate_bounded_contexts(contexts, label):
     sources = {}
     for index, context in enumerate(contexts):
         context_label = f"{label}[{index}]"
-        reason = check_keys(context, CONTEXT_REQUIRED_KEYS, ("external_systems",), context_label)
+        reason = check_keys(context, CONTEXT_REQUIRED_KEYS, ("external_systems", "reads"),
+                            context_label)
         if reason:
             return reason
         for key in ("name", "responsibility"):
@@ -322,6 +330,10 @@ def validate_bounded_contexts(contexts, label):
                 return reason
         if "external_systems" in context:
             reason = require_string_list(context, "external_systems", context_label)
+            if reason:
+                return reason
+        if "reads" in context:
+            reason = require_string_list(context, "reads", context_label)
             if reason:
                 return reason
         if context["confidence"] not in CONFIDENCES:
@@ -440,6 +452,28 @@ def validate_context_map(context_map, context_names, label):
             return (
                 f"{relationship_label}.relationship must be one of {sorted(RELATIONSHIPS)} "
                 f"(got {relationship['relationship']!r})"
+            )
+        # External-edge conventions (2026-11-26): direction follows SUPPLY, and an
+        # external system's side of the edge follows from the relationship's own
+        # definition, never from which side dialed the connection. The writer cannot
+        # know the domain's intent, but it can refuse the two shapes that contradict
+        # the relationship itself - which is how a flipped edge survives review.
+        upstream_ext = str(relationship.get("upstream", "")).strip().casefold() in EXTERNAL_MARKERS
+        downstream_ext = str(relationship.get("downstream", "")).strip().casefold() in EXTERNAL_MARKERS
+        if relationship["relationship"] == "Anticorruption layer" and downstream_ext:
+            return (
+                f"{relationship_label}: an Anticorruption layer protects the DOWNSTREAM "
+                "model from an upstream it adapts - the provider you translate is always "
+                "upstream, so flip this edge (external -> internal). Pointing an ACL at "
+                "'external' claims the outside world adapts to your model."
+            )
+        if (relationship["relationship"] == "Open host service / published language"
+                and upstream_ext):
+            return (
+                f"{relationship_label}: an Open host service publishes YOUR contract to "
+                "consumers - an external system cannot be its upstream. If you consume "
+                "their protocol, you are downstream: use Conformist or Anticorruption "
+                "layer with external as the upstream."
             )
         for key in ("direction", "exchanged_information", "boundary_protection"):
             reason = require_text(relationship, key, relationship_label)
@@ -818,6 +852,7 @@ def build_discovery_template():
                 "source_of_truth": ["Concept this context owns"],
                 "publishes": ["Domain event published"],
                 "consumes": [],
+                "reads": [],
                 "actors": ["Actor or role"],
                 "external_systems": [],
                 "confidence": "medium",
@@ -880,6 +915,7 @@ def build_final_template():
                 "source_of_truth": ["Concept this context owns"],
                 "publishes": ["Domain event published"],
                 "consumes": [],
+                "reads": [],
                 "actors": ["Actor or role"],
                 "external_systems": [],
                 "confidence": "medium",
@@ -935,6 +971,7 @@ def build_slice_template():
                 "source_of_truth": ["Concept this context owns"],
                 "publishes": ["Domain event published"],
                 "consumes": [],
+                "reads": [],
                 "actors": ["Actor or role"],
                 "external_systems": [],
                 "confidence": "medium",

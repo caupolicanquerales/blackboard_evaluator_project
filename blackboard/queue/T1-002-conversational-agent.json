@@ -1,0 +1,40 @@
+{
+  "id": "T1-002",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-001"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/shared/ObservabilityConfigurationTest.java",
+  "export": "ObservabilityConfigurationTest",
+  "intent": "ObservabilityConfigurationTest proves SI-13 metric-tag-bound: a SimpleMeterRegistry with the filter keeps allowed tags and drops an unbounded tag such as a tenant or session id; and that Reactor automatic context propagation hook is enabled once.",
+  "layer": "root",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.shared",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "MeterFilter boundedTagFilter()",
+        "returns": "MeterFilter"
+      },
+      {
+        "signature": "void enableContextPropagation()",
+        "returns": ""
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": [
+      {
+        "path": "management.metrics.tags.application",
+        "kind": "value",
+        "value": "conversational-agent"
+      }
+    ]
+  }
+}

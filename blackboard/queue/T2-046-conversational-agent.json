@@ -1,0 +1,140 @@
+{
+  "id": "T2-046",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-046",
+    "T0-001",
+    "T0-004",
+    "T2-010",
+    "T2-034",
+    "T2-036",
+    "T2-043",
+    "T2-009",
+    "T2-058",
+    "T2-068",
+    "T2-005",
+    "T2-008",
+    "T2-002",
+    "T2-013",
+    "T2-016",
+    "T2-017",
+    "T2-018",
+    "T2-021",
+    "T2-023",
+    "T2-025",
+    "T2-024",
+    "T2-029",
+    "T2-027",
+    "T2-028"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/interfaces/CreateSessionController.java",
+  "export": "CreateSessionController",
+  "intent": "Unit IS the surface 'create chat session HTTP inbound': AZ-01 bearer-jwt-proof enforced by the pinned JwtCallerAdapter identify, owner and tenant derived only from claims, body owner ignored; a UserRateLimiter refusal answers 429; delegates to CreateSessionService and returns only the session id.",
+  "layer": "interface",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.interfaces",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "JwtCallerAdapter",
+        "task_id": "T2-034"
+      },
+      {
+        "type": "CreateSessionService",
+        "task_id": "T2-036"
+      },
+      {
+        "type": "UserRateLimiter",
+        "task_id": "T2-043"
+      },
+      {
+        "type": "SecurityErrorHandlers",
+        "task_id": "T2-009"
+      },
+      {
+        "type": "ServiceCredentialAuthenticator",
+        "task_id": "T2-058"
+      },
+      {
+        "type": "ServiceCredentialVerifier",
+        "task_id": "T2-068"
+      },
+      {
+        "type": "ContentRedactionAdapter",
+        "task_id": "T2-005"
+      },
+      {
+        "type": "AuditTrailAdapter",
+        "task_id": "T2-008"
+      },
+      {
+        "type": "ObservabilityConfiguration",
+        "task_id": "T2-002"
+      },
+      {
+        "type": "SseProgressEncoder",
+        "task_id": "T2-013"
+      },
+      {
+        "type": "ToolCallGuard",
+        "task_id": "T2-016"
+      },
+      {
+        "type": "FallbackModelRoute",
+        "task_id": "T2-017"
+      },
+      {
+        "type": "PromptContract",
+        "task_id": "T2-018"
+      },
+      {
+        "type": "StructuredOutputGuard",
+        "task_id": "T2-021"
+      },
+      {
+        "type": "ContextWindowAssembler",
+        "task_id": "T2-023"
+      },
+      {
+        "type": "MemoryBoundaryAdapter",
+        "task_id": "T2-025"
+      },
+      {
+        "type": "TurnTokenBudget",
+        "task_id": "T2-024"
+      },
+      {
+        "type": "GoldenSetHarness",
+        "task_id": "T2-029"
+      },
+      {
+        "type": "OfflineModelStub",
+        "task_id": "T2-027"
+      },
+      {
+        "type": "LoopGovernor",
+        "task_id": "T2-028"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Mono<ResponseEntity<Map<String, String>>> create(Jwt jwt)",
+        "returns": "Mono<ResponseEntity<Map<String, String>>>",
+        "semantics": "rejects null jwt"
+      }
+    ],
+    "meters": [],
+    "routes": [
+      {
+        "method": "POST",
+        "path": "/chat/sessions",
+        "duty": "serves"
+      }
+    ],
+    "config": []
+  }
+}

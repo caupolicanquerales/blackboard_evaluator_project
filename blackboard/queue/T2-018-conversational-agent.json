@@ -1,0 +1,36 @@
+{
+  "id": "T2-018",
+  "targetAgent": "agent-coder",
+  "stage": 2,
+  "dependsOn": [
+    "T1-018",
+    "T0-001"
+  ],
+  "kind": "code",
+  "path": "src/main/java/com/blackboard/conversationalagent/orchestration/application/PromptContract.java",
+  "export": "PromptContract",
+  "intent": "AC-04 prompt-contract: Java PromptContract record holding the FIVE members version, role, placeholders, outputSchemaRef, refusal; render fills placeholders and ChatClient.prompt() is reached only through it; no template file.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.application",
+    "implements": [],
+    "dependencies": [],
+    "methods": [
+      {
+        "signature": "PromptContract(String version, String role, List<String> placeholders, String outputSchemaRef, String refusal)",
+        "returns": "",
+        "semantics": "no member may be null or empty"
+      },
+      {
+        "signature": "String render(Map<String, String> values)",
+        "returns": "String",
+        "semantics": "values must hold every placeholder"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "id": "T1-039",
+  "targetAgent": "agent-tester",
+  "stage": 1,
+  "dependsOn": [
+    "T0-001",
+    "T1-022"
+  ],
+  "kind": "test",
+  "path": "src/test/java/com/blackboard/conversationalagent/orchestration/application/ContextWindowQueryContractTest.java",
+  "export": "ContextWindowQueryContractTest",
+  "intent": "ContextWindowQueryContractTest pins the port with a fake: the window of a session returns the summary entry first followed by recent messages in order, empty for a new session.",
+  "layer": "application",
+  "feature": null,
+  "project": "conversational-agent",
+  "ast_hints": {
+    "package": "com.blackboard.conversationalagent.orchestration.application",
+    "implements": [],
+    "dependencies": [
+      {
+        "type": "ContextEntry",
+        "task_id": "T2-022"
+      }
+    ],
+    "methods": [
+      {
+        "signature": "Flux<ContextEntry> window(String sessionId)",
+        "returns": "Flux<ContextEntry>"
+      }
+    ],
+    "meters": [],
+    "routes": [],
+    "config": []
+  }
+}
